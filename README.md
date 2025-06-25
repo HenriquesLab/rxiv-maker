@@ -51,7 +51,40 @@ RXiv-Maker extends the capabilities of traditional scientific writing by ensurin
 <details>
 <summary><strong>🚀 Quick Start (2 minutes)</strong></summary>
 
-### Local Development
+### 🎯 **Which Option is Right for You?**
+
+| User Type | Best Option | Requirements | Setup Time |
+|-----------|-------------|--------------|------------|
+| **📚 New to coding** | Google Colab | Google account | 2 minutes |
+| **⚡ Want automation** | GitHub Actions | GitHub account | 5 minutes |
+| **🔧 Full control** | Local Install | Python 3.9+, LaTeX, Make | 10-30 minutes |
+
+### Google Colab (Easiest - No Installation Required)
+**Perfect for beginners and quick experiments without any local setup.**
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/henriqueslab/rxiv-maker/blob/main/rxiv_forge_colab.ipynb)
+
+**✅ Perfect for:**
+- First-time users wanting to try RXiv-Maker
+- Quick one-off document generation
+- Users without technical setup experience
+- Collaborative editing with shared notebooks
+
+### GitHub Actions (Recommended for Regular Use)
+**Automatic PDF generation on every commit - works with both public and private repos.**
+
+1. **Fork** this repository to your GitHub account
+2. **Go to Actions tab** → "Build and Release PDF"
+3. **Click "Run workflow"** → Select manuscript path → "Run workflow"
+4. **Download PDF** from completed workflow run
+
+**✅ Perfect for:**
+- Regular manuscript writing and revisions
+- Team collaboration and version control
+- Automatic backup and PDF generation
+- Professional workflow without local setup
+
+### Local Development (Full Control)
 **First time? See [platform setup guide](docs/platforms/LOCAL_DEVELOPMENT.md) for Windows/macOS/Linux installation.**
 
 ```bash
@@ -68,14 +101,11 @@ make setup
 make pdf MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT
 ```
 
-### GitHub Actions (Recommended)
-1. **Fork** this repository to your GitHub account
-2. **Go to Actions tab** → "Build and Release PDF"
-3. **Click "Run workflow"** → Select manuscript path → "Run workflow"
-4. **Download PDF** from completed workflow run
-
-### Google Colab
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/henriqueslab/rxiv-maker/blob/main/rxiv_forge_colab.ipynb)
+**✅ Perfect for:**
+- Advanced users and developers
+- Custom modifications and extensions
+- Offline work environments
+- Integration with local development tools
 
 </details>
 
@@ -181,6 +211,8 @@ Perfect for quick testing and collaboration:
 ## Documentation
 
 ### Essential Guides
+- **[Google Colab Tutorial](docs/tutorials/google_colab.md)** – Browser-based PDF generation (no installation required)
+- **[GitHub Actions Tutorial](docs/tutorials/github_actions.md)** – Automated PDF generation and team workflows
 - **[GitHub Actions Guide](docs/github-actions-guide.md)** – Complete cloud PDF generation tutorial
 - **[User Guide](docs/user_guide.md)** – Comprehensive usage instructions and troubleshooting
 - **[Architecture Overview](docs/architecture.md)** – System design and technical details
@@ -287,11 +319,6 @@ MIT License - see [LICENSE](LICENSE) for details. Use it, modify it, share it fr
 
 ---
 
-## Original Project
-
-This is a fork of the original RXiv-Maker project by the Henriques Lab. The original project can be found at [https://github.com/henriqueslab/rxiv-maker](https://github.com/henriqueslab/rxiv-maker) and should be referenced for citation purposes.
-
----
 
 **© 2024 Jacquemet and Henriques Labs | RXiv-Maker**  
 *"Because science is hard enough without fighting with LaTeX."*
