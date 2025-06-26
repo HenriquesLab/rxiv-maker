@@ -11,7 +11,6 @@ Usage:
 
 import argparse
 import os
-import re
 import shutil
 import subprocess
 import zipfile
@@ -41,28 +40,55 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None):
 
     print(f"Preparing arXiv submission package in {arxiv_path}")
 
-    # Copy the arXiv-compatible style file
-    style_source = Path("src/tex/style/rxiv_maker_style_arxiv.cls")
+    # Copy the unified style file (already arXiv-compatible)
+    style_source = Path("src/tex/style/rxiv_maker_style.cls")
     if not style_source.exists():
-        raise FileNotFoundError(f"arXiv style file not found: {style_source}")
+        raise FileNotFoundError(f"Style file not found: {style_source}")
 
-    shutil.copy2(style_source, arxiv_path / "rxiv_maker_style_arxiv.cls")
-    print("✓ Copied arXiv-compatible style file")
+    shutil.copy2(style_source, arxiv_path / "rxiv_maker_style.cls")
+    print("✓ Copied unified arXiv-compatible style file")
+
+    # Determine the main manuscript file name by looking for .tex files
+    tex_files = list(output_path.glob("*.tex"))
+    main_tex_file = None
+
+    # Find the main manuscript file (not Supplementary.tex)
+    for tex_file in tex_files:
+        if tex_file.name != "Supplementary.tex":
+            main_tex_file = tex_file.name
+            break
+
+    if not main_tex_file:
+        raise FileNotFoundError("No main LaTeX file found in output directory")
+
+    # Base name without extension for .bbl file
+    main_name = main_tex_file.replace(".tex", "")
 
     # Copy main LaTeX files
     main_files = [
-        "EXAMPLE_MANUSCRIPT.tex",
+        main_tex_file,
         "Supplementary.tex",
         "03_REFERENCES.bib",
-        "EXAMPLE_MANUSCRIPT.bbl",  # Include compiled bibliography if it exists
+        f"{main_name}.bbl",  # Include compiled bibliography if it exists
         "rxiv_maker_style.bst",  # Bibliography style file
     ]
 
     for filename in main_files:
         source_file = output_path / filename
         if source_file.exists():
-            shutil.copy2(source_file, arxiv_path / filename)
-            print(f"✓ Copied {filename}")
+            # Copy and modify the main tex file to use arxiv style
+            if filename == main_tex_file:
+                with open(source_file) as f:
+                    content = f.read()
+                # No need to replace documentclass - unified style is arXiv-compatible
+                # Keep the original style file name since it's unified
+                # Write the modified content
+                with open(arxiv_path / filename, "w") as f:
+                    f.write(content)
+                print(f"✓ Copied and modified {filename} for arXiv compatibility")
+            else:
+                shutil.copy2(source_file, arxiv_path / filename)
+                print(f"✓ Copied {filename}")
         else:
             if filename.endswith(".bbl") or filename.endswith(".bst"):
                 print(f"⚠ Optional file not found: {filename}")
@@ -101,9 +127,6 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None):
 
     print(f"\n📦 arXiv package prepared in {arxiv_path}")
 
-    # Convert minted syntax to listings for arXiv compatibility
-    convert_minted_to_listings(arxiv_path)
-
     # Verify all required files are present
     package_valid = verify_package(arxiv_path)
 
@@ -128,104 +151,27 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None):
     return arxiv_path
 
 
-def convert_minted_to_listings(arxiv_path):
-    """Convert minted syntax to listings syntax for arXiv compatibility."""
-    print("\n🔄 Converting for arXiv compatibility...")
-
-    tex_files = ["EXAMPLE_MANUSCRIPT.tex", "Supplementary.tex"]
-
-    # Create stub word count files to prevent arXiv errors
-    stub_files = ["EXAMPLE_MANUSCRIPT-words.sum", "EXAMPLE_MANUSCRIPT-chars.sum"]
-    for stub_file in stub_files:
-        stub_path = arxiv_path / stub_file
-        with open(stub_path, "w") as f:
-            f.write("0")  # Placeholder count
-        print(f"✓ Created stub file: {stub_file}")
-
-    # Disable word count commands in style file for arXiv compatibility
-    style_file = arxiv_path / "rxiv_maker_style_arxiv.cls"
-    if style_file.exists():
-        with open(style_file, encoding="utf-8") as f:
-            style_content = f.read()
-
-        # Comment out shell escape commands for word counting
-        style_content = re.sub(
-            r"(\\immediate\\write18\{texcount[^}]*\})",
-            r"% \1  % Disabled for arXiv compatibility",
-            style_content,
-        )
-
-        with open(style_file, "w", encoding="utf-8") as f:
-            f.write(style_content)
-
-        print("✓ Disabled word count commands in style file")
-
-    for tex_file in tex_files:
-        file_path = arxiv_path / tex_file
-        if not file_path.exists():
-            print(f"⚠ File not found: {tex_file}")
-            continue
-
-        # Read the file
-        with open(file_path, encoding="utf-8") as f:
-            content = f.read()
-
-        # Convert minted blocks to listings
-        # Pattern: {\mintedconsize\n\begin{minted}{language}\ncontent\n\end{minted}\n}
-        def replace_minted_block(match):
-            language = match.group(1)
-            content = match.group(2)
-            return (
-                f"\\begin{{lstlisting}}[language={language}]\n"
-                f"{content}\n\\end{{lstlisting}}"
-            )
-
-        # Replace minted blocks
-        content = re.sub(
-            r"\{\\mintedconsize\s*\\begin\{minted\}\{([^}]+)\}\s*(.*?)\s*\\end\{minted\}\s*\}",
-            replace_minted_block,
-            content,
-            flags=re.DOTALL,
-        )
-
-        # Also handle simpler minted blocks without mintedconsize wrapper
-        content = re.sub(
-            r"\\begin\{minted\}\{([^}]+)\}\s*(.*?)\s*\\end\{minted\}",
-            replace_minted_block,
-            content,
-            flags=re.DOTALL,
-        )
-
-        # Convert document class to arXiv version
-        content = re.sub(
-            r"\\documentclass(\[[^\]]*\])?\{rxiv_maker_style\}",
-            r"\\documentclass\1{rxiv_maker_style_arxiv}",
-            content,
-        )
-
-        # Fix escaped underscores in figure filenames for arXiv compatibility
-        # Convert Figure\_1.png to Figure_1.png etc.
-        content = re.sub(
-            r"(Figures/[^/]+/[^}]+)\\_([^}]*\.(?:png|pdf|jpg|jpeg|eps|svg))",
-            r"\1_\2",
-            content,
-        )
-
-        # Write back the modified content
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(content)
-
-        print(f"✓ Converted {tex_file}")
-
-
 def verify_package(arxiv_path):
     """Verify that the arXiv package contains all necessary files."""
     print("\n🔍 Verifying package contents...")
 
+    # Find the main manuscript file dynamically
+    tex_files = list(arxiv_path.glob("*.tex"))
+    main_tex_file = None
+
+    for tex_file in tex_files:
+        if tex_file.name != "Supplementary.tex":
+            main_tex_file = tex_file.name
+            break
+
+    if not main_tex_file:
+        print("✗ No main LaTeX file found")
+        return False
+
     required_files = [
-        "EXAMPLE_MANUSCRIPT.tex",
+        main_tex_file,
         "Supplementary.tex",
-        "rxiv_maker_style_arxiv.cls",
+        "rxiv_maker_style.cls",
         "03_REFERENCES.bib",
     ]
 
@@ -274,10 +220,16 @@ def test_arxiv_compilation(arxiv_path):
     os.chdir(arxiv_path)
 
     try:
-        # Run pdflatex compilation sequence
-        tex_file = "EXAMPLE_MANUSCRIPT.tex"
+        # Find the main manuscript file dynamically
+        tex_files = list(Path(".").glob("*.tex"))
+        tex_file = None
 
-        if not Path(tex_file).exists():
+        for tf in tex_files:
+            if tf.name != "Supplementary.tex":
+                tex_file = tf.name
+                break
+
+        if not tex_file or not Path(tex_file).exists():
             print(f"❌ LaTeX file not found: {tex_file}")
             return False
 
@@ -293,8 +245,9 @@ def test_arxiv_compilation(arxiv_path):
         # BibTeX pass
         if Path("03_REFERENCES.bib").exists():
             print("  Running bibtex...")
+            main_name = tex_file.replace(".tex", "")
             subprocess.run(
-                ["bibtex", "EXAMPLE_MANUSCRIPT"],
+                ["bibtex", main_name],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 check=False,
@@ -319,13 +272,17 @@ def test_arxiv_compilation(arxiv_path):
         )
 
         # Check if PDF was created
-        if Path("EXAMPLE_MANUSCRIPT.pdf").exists():
-            pdf_size = Path("EXAMPLE_MANUSCRIPT.pdf").stat().st_size
+        main_name = tex_file.replace(".tex", "")
+        pdf_file = f"{main_name}.pdf"
+        log_file = f"{main_name}.log"
+
+        if Path(pdf_file).exists():
+            pdf_size = Path(pdf_file).stat().st_size
             print(f"✅ PDF compilation successful! Size: {pdf_size:,} bytes")
 
             # Check for common LaTeX warnings/errors in log
-            if Path("EXAMPLE_MANUSCRIPT.log").exists():
-                with open("EXAMPLE_MANUSCRIPT.log") as f:
+            if Path(log_file).exists():
+                with open(log_file) as f:
                     log_content = f.read()
 
                 error_count = log_content.count("! ")
@@ -354,8 +311,8 @@ def test_arxiv_compilation(arxiv_path):
             print("❌ PDF compilation failed - no output PDF generated")
 
             # Show compilation errors from log if available
-            if Path("EXAMPLE_MANUSCRIPT.log").exists():
-                with open("EXAMPLE_MANUSCRIPT.log") as f:
+            if Path(log_file).exists():
+                with open(log_file) as f:
                     log_content = f.read()
                     print("\n📋 Last few lines from compilation log:")
                     lines = log_content.split("\n")

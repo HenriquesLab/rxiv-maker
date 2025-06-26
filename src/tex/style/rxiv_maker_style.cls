@@ -1,6 +1,10 @@
 %%
 %% This is file `rxiv_maker_style.cls',
 %%
+%% Unified version combining regular and arXiv-compatible features
+%% Uses listings instead of minted for maximum compatibility
+%% Watermark functionality disabled for arXiv compatibility
+%%
 %% Class files for pre-print servers such as Rxiv
 %%
 %% Copyright (C) Jacquemet and Henriques Labs <ricardo@henriqueslab.org>
@@ -8,7 +12,7 @@
 \typeout{Document Class `rxiv_maker_style' <20-June-2025>.}
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesClass{rxiv_maker_style}
-  [2025/06/20 revision by Jacquemet and Henriques Labs]
+  [2025/06/20 unified arXiv compatible revision by Jacquemet and Henriques Labs]
 
 %% Load base class
 \LoadClass[a4paper]{article}
@@ -67,8 +71,8 @@
 \RequirePackage[misc]{ifsym} % For the \Letter symbol
 \RequirePackage{bbding} % For the \Envelope symbol
 \RequirePackage[twoside,%
-				letterpaper,includeheadfoot,%
-				layoutsize={8.125in,10.875in},%
+			letterpaper,includeheadfoot,%
+			layoutsize={8.125in,10.875in},%
                 layouthoffset=0.1875in,%
                 layoutvoffset=0.0625in,%
                 left=38.5pt,%
@@ -146,7 +150,7 @@
 }
 
 %% Core document functionality packages
-\RequirePackage{minted}     % Code formatting
+\RequirePackage{listings}   % Code formatting (arXiv compatible replacement for minted)
 \RequirePackage{pdfpages}   % Document assembly
 \RequirePackage{url}        % URL formatting and line breaks
 \RequirePackage{seqsplit}   % Better long text breaking
@@ -155,19 +159,57 @@
 %% Jacquemet and Henriques lab dependencies - End %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% Code block formatting (minted configuration)
-%% Configure minted to use same font size as document text (10pt)
-\newcommand{\mintedconsize}{\fontsize{10}{12}\selectfont}
+%% Code block formatting (listings configuration - arXiv compatible)
+%% Configure listings to mimic minted appearance
+\definecolor{codebg}{RGB}{248,248,248}
+\definecolor{codeframe}{RGB}{204,204,204}
 
-%% Enhanced minted configuration
-\setminted{
-    fontsize=\mintedconsize,
+\lstdefinestyle{arxivstyle}{
+    backgroundcolor=\color{codebg},
+    commentstyle=\color{green!60!black},
+    keywordstyle=\color{blue},
+    numberstyle=\tiny\color{gray},
+    stringstyle=\color{red},
+    basicstyle=\fontsize{10}{12}\ttfamily,
+    breakatwhitespace=false,
     breaklines=true,
-    breakanywhere=true,
-    linenos=false,
+    captionpos=b,
+    keepspaces=true,
+    numbers=none,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
     frame=none,
-    bgcolor=white
+    aboveskip=6pt,
+    belowskip=6pt,
+    xleftmargin=0pt,
+    xrightmargin=0pt
 }
+
+%% Set default style
+\lstset{style=arxivstyle}
+
+%% Define languages for syntax highlighting
+\lstdefinelanguage{latex}{
+    keywords={begin,end,documentclass,usepackage,newcommand,renewcommand,section,subsection,subsubsection,
+              textbf,textit,emph,cite,ref,label,caption,includegraphics,
+              nabla,times,mathbf,frac,partial,sum,int,alpha,beta,gamma,delta,epsilon,mu,sigma,rho,
+              align,equation,gather,multiline},
+    keywordstyle=\color{blue},
+    sensitive=true,
+    comment=[l]{\%},
+    commentstyle=\color{green!60!black},
+    string=[b]{"},
+    stringstyle=\color{red},
+    morestring=[b]',
+    moredelim=*[s][\color{purple}]{\$}{\$},
+    moredelim=*[s][\color{purple}]{\$\$}{\$\$}
+}
+
+%% Command to mimic minted font size setting
+\newcommand{\mintedconsize}{\fontsize{10}{12}\selectfont}
 
 %% Fonts
 
@@ -332,13 +374,14 @@
 \DeclareCaptionFormat{largeformat}{\normalfont\sffamily\fontsize{9}{12}\selectfont#1#2#3}
 \captionsetup*{format=smallformat}
 
-% %% Watermark
-\usepackage[printwatermark]{xwatermark}
-\AtBeginDocument{%
-  \ifwatermark%
-  \newwatermark[allpages,color=gray!20,angle=45,scale=3,xpos=0,ypos=0]{DRAFT}
-  \fi
-}
+% %% Watermark - Disabled for arXiv compatibility
+% arXiv doesn't support xwatermark package due to grouping issues
+% \usepackage[printwatermark]{xwatermark}
+% \AtBeginDocument{%
+%   \ifwatermark%
+%   \newwatermark[allpages,color=gray!20,angle=45,scale=3,xpos=0,ypos=0]{DRAFT}
+%   \fi
+% }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Jacquemet and Henriques lab parts adapted from PNAS - END %%

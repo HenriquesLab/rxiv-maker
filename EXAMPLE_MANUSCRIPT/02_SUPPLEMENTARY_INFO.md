@@ -35,28 +35,36 @@
 
 | **Markdown Element** | **LaTeX Equivalent** | **Description** |
 |------------------|------------------|-------------|
+| *Basic Text Formatting* | | |
 | `**bold text**` | `\textbf{bold text}` | Bold formatting for emphasis |
 | `*italic text*` | `\textit{italic text}` | Italic formatting for emphasis |
 | `~subscript~` | `\textsubscript{subscript}` | Subscript formatting (H~2~O, CO~2~) |
 | `^superscript^` | `\textsuperscript{superscript}` | Superscript formatting (E=mc^2^, x^n^) |
+| *Document Structure* | | |
 | `# Header 1` | `\section{Header 1}` | Top-level section heading |
 | `## Header 2` | `\subsection{Header 2}` | Second-level section heading |
 | `### Header 3` | `\subsubsection{Header 3}` | Third-level section heading |
+| *Lists* | | |
+| `- list item` | `\begin{itemize}\item...\end{itemize}` | Unordered list |
+| `1. list item` | `\begin{enumerate}\item...\end{enumerate}` | Ordered list |
+| *Links and URLs* | | |
+| `[link text](url)` | `\href{url}{link text}` | Hyperlink with custom text |
+| `https://example.com` | `\url{https://example.com}` | Bare URL |
+| *Citations* | | |
 | `@citation` | `\cite{citation}` | Single citation reference |
 | `[@cite1;@cite2]` | `\cite{cite1,cite2}` | Multiple citation references |
+| **Cross-References** | | |
 | `@fig:label` | `\ref{fig:label}` | Figure cross-reference |
 | `@sfig:label` | `\ref{sfig:label}` | Supplementary figure cross-reference |
 | `@table:label` | `\ref{table:label}` | Table cross-reference |
 | `@stable:label` | `\ref{stable:label}` | Supplementary table cross-reference |
 | `@eq:label` | `\eqref{eq:label}` | Equation cross-reference |
 | `@snote:label` | `\sidenote{label}` | Supplement note cross-reference |
-| Image with caption | `\begin{figure}...\end{figure}` | Figure with separate caption |
-| `- list item` | `\begin{itemize}\item...\end{itemize}` | Unordered list |
-| `1. list item` | `\begin{enumerate}\item...\end{enumerate}` | Ordered list |
-| `[link text](url)` | `\href{url}{link text}` | Hyperlink with custom text |
-| `https://example.com` | `\url{https://example.com}` | Bare URL |
-| `<!-- comment -->` | `% comment` | Comments (converted to LaTeX style) |
+| *Tables and Figures* | | |
 | Markdown table | `\begin{table}...\end{table}` | Table with automatic formatting |
+| Image with caption | `\begin{figure}...\end{figure}` | Figure with separate caption |
+| *Document Control* | | |
+| `<!-- comment -->` | `% comment` | Comments (converted to LaTeX style) |
 | `<newpage>` | `\newpage` | Manual page break control |
 | `<clearpage>` | `\clearpage` | Page break with float clearing |
 
@@ -93,14 +101,7 @@ demonstrate the framework's capability to handle sophisticated mathematical typo
 
 The system also supports LaTeX's advanced mathematical environments by directly including LaTeX code blocks. This hybrid approach enables authors to utilise simple markdown syntax for straightforward expressions whilst retaining access to LaTeX's full mathematical typesetting capabilities for complex multi-line derivations:
 
-```latex
-\begin{align}
-\nabla \times \mathbf{E} &= -\frac{\partial \mathbf{B}}{\partial t} \\
-\nabla \times \mathbf{B} &= \mu_0 \mathbf{J} + \mu_0 \epsilon_0 \frac{\partial \mathbf{E}}{\partial t} \\
-\nabla \cdot \mathbf{E} &= \frac{\rho}{\epsilon_0} \\
-\nabla \cdot \mathbf{B} &= 0
-\end{align}
-```
+The framework supports Maxwell's equations and complex mathematical expressions in various formats for flexible scientific notation.
 
 Mathematical expressions within figure captions, table entries, and cross-references are automatically processed, ensuring consistent mathematical typography throughout the document. The framework's content protection system ensures that mathematical expressions are preserved during the multi-stage conversion pipeline, preventing unwanted modifications to delicate mathematical syntax.
 

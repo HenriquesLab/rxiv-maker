@@ -59,7 +59,7 @@ Rxiv-Maker enhances the capabilities of traditional scientific writing by ensuri
 | `@table:label` | `\ref{table:label}` | Table cross-reference |
 | `@stable:label` | `\ref{stable:label}` | Supplementary table cross-reference |
 | `@eq:label` | `\eqref{eq:label}` | Equation cross-reference |
-| `@snote:label` | `\sidenote{label}` | Supplement note cross-reference |
+| `@snote:label` | `\ref{snote:label}` | Supplement note cross-reference |
 | **Tables and Figures** | | |
 | Markdown table | `\begin{table}...\end{table}` | Table with automatic formatting |
 | Image with caption | `\begin{figure}...\end{figure}` | Figure with separate caption |

@@ -211,24 +211,24 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
     Returns:
         Text with LaTeX special characters escaped
     """
-    # First, handle all specific cases that contain minted environments
+    # First, handle all specific cases that contain listings environments
     # This handles the nested brace issue where regex fails
 
-    # Find all texttt environments that contain minted
-    def replace_minted_texttt(text: str) -> str:
-        # Simple approach: find texttt blocks with minted and replace with verb
+    # Find all texttt environments that contain listings
+    def replace_listings_texttt(text: str) -> str:
+        # Simple approach: find texttt blocks with listings and replace with verb
         import re
 
         # Debug output
-        if "\\texttt{" in text and "\\begin{minted}" in text:
-            print("DEBUG: escape_special_characters found texttt with minted in text")
+        if "\\texttt{" in text and "\\begin{lstlisting}" in text:
+            print("DEBUG: escape_special_characters found texttt with listings in text")
 
         # Find all \texttt{...} blocks
         def process_texttt_block(match):
             full_content = match.group(1)
 
-            # If this texttt block contains minted, replace with verb
-            if "\\begin{minted}" in full_content:
+            # If this texttt block contains listings, replace with verb
+            if "\\begin{lstlisting}" in full_content:
                 # Use verb with a delimiter that's not in the content
                 delimiters = [
                     "|",
@@ -250,7 +250,7 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
                         delimiter = d
                         break
                 print(
-                    f"DEBUG: Converting texttt with minted to verb: "
+                    f"DEBUG: Converting texttt with listings to verb: "
                     f"{full_content[:50]}..."
                 )
                 return f"\\verb{delimiter}{full_content}{delimiter}"
@@ -268,14 +268,14 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
 
         return text
 
-    text = replace_minted_texttt(text)
+    text = replace_listings_texttt(text)
 
     # Then apply the general function for other cases
     # Escape special characters in texttt commands
     def escape_specials_in_texttt_content(content: str) -> str:
-        # Special handling for minted environments - they interfere with texttt
-        if "\\begin{minted}" in content or "\\end{minted}" in content:
-            # Use verb instead of texttt for minted content
+        # Special handling for listings environments - they interfere with texttt
+        if "\\begin{lstlisting}" in content or "\\end{lstlisting}" in content:
+            # Use verb instead of texttt for listings content
             # Find a delimiter that's not in the content
             delimiters = ["|", "!", "@", "#", "$", "%", "^", "&", "*", "+", "=", "~"]
             delimiter = "|"

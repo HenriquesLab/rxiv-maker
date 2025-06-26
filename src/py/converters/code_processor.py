@@ -1,7 +1,7 @@
 """Code block processing for markdown to LaTeX conversion.
 
 This module handles conversion of markdown code blocks (both fenced and indented)
-to LaTeX minted or verbatim environments with proper syntax highlighting.
+to LaTeX listings or verbatim environments with proper syntax highlighting.
 """
 
 import re
@@ -10,7 +10,7 @@ from .types import LatexContent, MarkdownContent
 
 
 def convert_code_blocks_to_latex(text: MarkdownContent) -> LatexContent:
-    """Convert markdown code blocks to LaTeX minted environments.
+    """Convert markdown code blocks to LaTeX listings environments.
 
     Args:
         text: Text containing markdown code blocks
@@ -37,7 +37,7 @@ def _process_fenced_code_blocks(text: MarkdownContent) -> LatexContent:
 
         if language_match:
             language = language_match.group(1).lower()
-            # Map common language names to minted-compatible ones
+            # Map common language names to listings-compatible ones
             language_map = {
                 "yml": "yaml",
                 "sh": "bash",
@@ -62,13 +62,13 @@ def _process_fenced_code_blocks(text: MarkdownContent) -> LatexContent:
             # No language specified
             code_content = match.group(1)
 
-        # Use minted if language is specified and supported, otherwise use verbatim
+        # Use listings if language is specified and supported, otherwise use verbatim
         if language and language in _get_supported_languages():
             return (
-                f"{{\\mintedconsize\n"
-                f"\\begin{{minted}}{{{language}}}\n"
+                f"{{\\footnotesize\n"
+                f"\\begin{{lstlisting}}[style=arxivstyle,language={language}]\n"
                 f"{code_content}\n"
-                f"\\end{{minted}}\n}}"
+                f"\\end{{lstlisting}}\n}}"
             )
         else:
             # Fallback to verbatim for unknown languages or no language specified
@@ -98,13 +98,13 @@ def _process_indented_code_blocks(text: MarkdownContent) -> LatexContent:
     while i < len(lines):
         line = lines[i]
 
-        # Track code environment state (verbatim or minted)
-        if "\\begin{verbatim}" in line or re.search(r"\\begin\{minted\}", line):
+        # Track code environment state (verbatim or listings)
+        if "\\begin{verbatim}" in line or re.search(r"\\begin\{lstlisting\}", line):
             in_code_env = True
             result_lines.append(line)
             i += 1
             continue
-        elif "\\end{verbatim}" in line or "\\end{minted}" in line:
+        elif "\\end{verbatim}" in line or "\\end{lstlisting}" in line:
             in_code_env = False
             result_lines.append(line)
             i += 1
@@ -152,7 +152,7 @@ def _process_indented_code_blocks(text: MarkdownContent) -> LatexContent:
 
 
 def _get_supported_languages() -> list[str]:
-    """Get list of languages supported by minted."""
+    """Get list of languages supported by listings."""
     return [
         "yaml",
         "markdown",
@@ -196,9 +196,9 @@ def protect_code_content(text: MarkdownContent) -> tuple[LatexContent, dict[str,
         flags=re.DOTALL,
     )
 
-    # Protect all minted environments from further markdown processing
+    # Protect all listings environments from further markdown processing
     text = re.sub(
-        r"\\begin\{minted\}\{[^}]+\}.*?\\end\{minted\}",
+        r"\\begin\{lstlisting\}\[.*?\].*?\\end\{lstlisting\}",
         protect_verbatim_content,
         text,
         flags=re.DOTALL,

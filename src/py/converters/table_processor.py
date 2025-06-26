@@ -186,7 +186,7 @@ def generate_latex_table(
     num_cols = len(headers)
 
     # Check if this is a Markdown Syntax Overview table to preserve literal
-    # syntax in all columns
+    # syntax in the first column
     # Remove markdown formatting from header for comparison
     first_header_clean = headers[0].lower().strip() if headers else ""
     first_header_clean = re.sub(
@@ -229,12 +229,13 @@ def generate_latex_table(
 
     # Format headers
     formatted_headers: list[str] = []
-    for header in headers:
-        # If this is the markdown syntax overview table, treat all cells as literal
+    for i, header in enumerate(headers):
+        # For markdown syntax table, treat first two columns as literal code examples
+        is_code_example_column = i < 2 and is_markdown_syntax_table
         formatted_headers.append(
             _format_table_cell(
                 header,
-                is_markdown_syntax_table,
+                is_code_example_column,
                 is_header=True,
                 protected_backtick_content=protected_backtick_content,
             )
@@ -244,12 +245,13 @@ def generate_latex_table(
     formatted_data_rows: list[list[str]] = []
     for row in data_rows:
         formatted_row: list[str] = []
-        for cell in row:
-            # If this is the markdown syntax overview table, treat all cells as literal
+        for i, cell in enumerate(row):
+            # For markdown syntax table, treat first two columns as literal code
+            is_code_example_column = i < 2 and is_markdown_syntax_table
             formatted_row.append(
                 _format_table_cell(
                     cell,
-                    is_markdown_syntax_table,
+                    is_code_example_column,
                     is_header=False,
                     protected_backtick_content=protected_backtick_content,
                 )
@@ -361,45 +363,51 @@ def _format_table_cell(
     for placeholder, original in protected_backtick_content.items():
         cell = cell.replace(placeholder, original)
 
-    # If this is the "Markdown Element" column but it's a header, process normally
-    if is_markdown_example_column and is_header:
-        # For headers in markdown syntax table, process markdown normally
-        # Convert **bold** to \textbf{bold}
-        cell = re.sub(r"\*\*(.+?)\*\*", r"\\textbf{\1}", cell)
-        # Convert *italic* to \textit{italic}
-        cell = re.sub(r"\*([^*]+)\*", r"\\textit{\1}", cell)
-        return cell
-
     # If this is the "Markdown Element" column, preserve literal syntax
     if is_markdown_example_column:
         return _format_markdown_syntax_cell(cell)
 
-    # Regular cell formatting
+    # Regular cell formatting (including headers)
     return _format_regular_table_cell(cell)
 
 
 def _format_markdown_syntax_cell(cell: str) -> str:
     """Format a cell in markdown syntax overview table to preserve literal syntax."""
 
-    # Only convert backticks to \texttt{} but preserve other markdown syntax
+    # First, process backticks to preserve literal syntax
     def process_code_only(match: re.Match[str]) -> str:
         code_content = match.group(1)
-        # Escape special characters for LaTeX, including brackets and @
-        code_content = _escape_latex_special_chars(code_content)
+
+        # Check if this looks like LaTeX syntax (starts with backslash)
+        if code_content.startswith("\\"):
+            # This is LaTeX syntax - use special LaTeX escaping
+            code_content = _escape_latex_syntax_for_texttt(code_content)
+        else:
+            # This is markdown syntax - use regular literal escaping
+            code_content = _escape_literal_markdown_for_texttt(code_content)
+
         return f"\\texttt{{{code_content}}}"
 
-    # Convert backticks to \texttt{} but preserve ** * @ [] etc.
+    # Process backticks first to protect literal syntax
     cell = re.sub(r"`([^`]+)`", process_code_only, cell)
 
-    # For non-backtick content, wrap entire cell in \texttt{} to preserve
-    # literal display
-    if not re.search(r"\\texttt\{", cell):  # Only if not already wrapped
-        # Escape special characters that would break LaTeX, including
-        # brackets and @
-        cell = _escape_latex_special_chars(cell)
-        return f"\\texttt{{{cell}}}"
+    # Now apply markdown formatting only to text outside of \texttt{} blocks
+    # Convert **bold** to \textbf{...} and *italic* to \textit{...} if not in \texttt
+    def apply_markdown_formatting(text: str) -> str:
+        # Don't apply formatting inside \texttt{} blocks
+        if "\\texttt{" in text:
+            return text
+        text = re.sub(r"\*\*([^*]+)\*\*", r"\\textbf{\1}", text)
+        text = re.sub(r"\*([^*]+)\*", r"\\textit{\1}", text)
+        return text
 
-    return cell
+    # Split by \texttt blocks and apply formatting only to the non-texttt parts
+    parts = re.split(r"(\\texttt\{[^}]*\})", cell)
+    for i in range(len(parts)):
+        if not parts[i].startswith("\\texttt{"):
+            parts[i] = apply_markdown_formatting(parts[i])
+
+    return "".join(parts)
 
 
 def _format_regular_table_cell(cell: str) -> str:
@@ -436,8 +444,8 @@ def _format_regular_table_cell(cell: str) -> str:
     # Process citations after formatting but before escaping
     cell = convert_citations_to_latex(cell)
 
-    # Escape remaining special characters outside texttt blocks
-    cell = _escape_outside_texttt(cell)
+    # Escape remaining special characters outside LaTeX commands
+    cell = _escape_outside_latex_commands(cell)
 
     return cell
 
@@ -457,6 +465,93 @@ def _escape_latex_special_chars(text: str) -> str:
     text = text.replace("[", "\\lbrack{}")
     text = text.replace("]", "\\rbrack{}")
     text = text.replace("@", "\\@")
+    return text
+
+
+def _escape_latex_syntax_for_texttt(text: str) -> str:
+    r"""Escape LaTeX syntax examples for display in texttt without double-escaping.
+
+    This function is specifically for LaTeX command examples (like \textbf{bold})
+    that should be displayed literally in tables without breaking LaTeX parsing.
+    """
+    # For LaTeX syntax examples, we want to show the command as-is
+    # The key insight: \textbackslash{} renders as a single backslash in LaTeX
+    # So \textbackslash{}textbf\{bold\} should render as \textbf{bold}
+
+    # Replace backslashes with \textbackslash (no {})
+    text = text.replace("\\", "\\textbackslash ")
+
+    # Escape curly braces so they display as literal braces
+    text = text.replace("{", "\\{")
+    text = text.replace("}", "\\}")
+
+    # Escape other special characters that could break table parsing
+    text = text.replace("&", "\\&")
+    text = text.replace("%", "\\%")
+    text = text.replace("$", "\\$")
+    text = text.replace("#", "\\#")
+    text = text.replace("^", "\\textasciicircum{}")
+    text = text.replace("~", "\\textasciitilde{}")
+    text = text.replace("_", "\\_")
+
+    return text
+
+
+def _escape_literal_markdown_for_texttt(text: str) -> str:
+    """Escape literal markdown syntax for display in texttt without breaking LaTeX.
+
+    This function is specifically for markdown syntax examples that should be displayed
+    literally in tables (e.g., showing `**bold**` instead of converting to LaTeX).
+    """
+    # For literal markdown syntax, we want minimal escaping to preserve readability
+    # Only escape characters that would break LaTeX parsing
+
+    # Handle backslashes carefully - don't add extra spaces for literal syntax
+    text = text.replace("\\", "\\textbackslash{}")
+
+    # Escape curly braces
+    text = text.replace("{", "\\{")
+    text = text.replace("}", "\\}")
+
+    # Escape other LaTeX special characters
+    text = text.replace("&", "\\&")
+    text = text.replace("%", "\\%")
+    text = text.replace("$", "\\$")
+    text = text.replace("#", "\\#")
+    text = text.replace("^", "\\textasciicircum{}")
+    text = text.replace("~", "\\textasciitilde{}")
+    text = text.replace("_", "\\_")
+
+    return text
+
+
+def _escape_latex_for_texttt_safe(text: str) -> str:
+    """Escape LaTeX special characters safely for use in texttt environments.
+
+    This function uses a more robust approach to prevent LaTeX from interpreting
+    escaped characters as commands when they appear inside texttt environments.
+    """
+    # For texttt content, use a simpler approach that doesn't break LaTeX parsing
+    # Only escape the minimal set of characters that actually cause problems
+
+    # Replace backslashes with a safer representation
+    # Remove the extra space that was causing LaTeX parsing issues
+    text = text.replace("\\", "\\textbackslash{}")
+
+    # Use simpler curly brace escaping that doesn't break parsing
+    text = text.replace("{", "\\{")
+    text = text.replace("}", "\\}")
+
+    # Handle other special characters
+    text = text.replace("&", "\\&")
+    text = text.replace("%", "\\%")
+    text = text.replace("$", "\\$")
+    text = text.replace("#", "\\#")
+    text = text.replace("^", "\\textasciicircum{}")
+    text = text.replace("~", "\\textasciitilde{}")
+    text = text.replace("_", "\\_")
+    text = text.replace("@", "\\@")
+
     return text
 
 
@@ -536,20 +631,21 @@ def _escape_underscores_outside_cite(text: str) -> str:
     return "".join(result)
 
 
-def _escape_outside_texttt(text: str) -> str:
-    """Escape special characters outside texttt blocks."""
-    parts = re.split(r"(\\texttt\{[^}]*\})", text)
+def _escape_outside_latex_commands(text: str) -> str:
+    """Escape special characters outside LaTeX formatting commands."""
+    # Split on all LaTeX formatting commands to protect them
+    parts = re.split(r"(\\texttt\{[^}]*\}|\\textbf\{[^}]*\}|\\textit\{[^}]*\})", text)
     result: list[str] = []
     for _i, part in enumerate(parts):
-        if part.startswith("\\texttt{"):
+        if part.startswith(("\\texttt{", "\\textbf{", "\\textit{")):
             result.append(part)
         else:
             part = part.replace("&", "\\&")
             part = part.replace("%", "\\%")
             part = part.replace("$", "\\$")
             part = part.replace("#", "\\#")
-            part = part.replace("^", "\\textasciircum{}")
-            part = part.replace("~", "\\textasciitilde{}")
+            part = part.replace("^", "\\^{}")
+            part = part.replace("~", "\\~{}")
             # Escape underscores but not inside \cite{} commands
             part = _escape_underscores_outside_cite(part)
             # Handle Unicode arrows that can cause LaTeX math mode issues

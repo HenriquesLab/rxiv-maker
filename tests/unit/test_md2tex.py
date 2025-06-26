@@ -330,8 +330,9 @@ class TestCodeBlockConversion:
         """Test conversion of fenced code blocks with language specification."""
         markdown = "```python\nprint('Hello, world!')\nprint('Second line')\n```"
         expected = (
-            "\\begin{minted}{python}\nprint('Hello, world!')\n"
-            "print('Second line')\n\\end{minted}"
+            "\\begin{lstlisting}[style=arxivstyle,language=python]\n"
+            "print('Hello, world!')\n"
+            "print('Second line')\n\\end{lstlisting}"
         )
         result = convert_code_blocks_to_latex(markdown)
         assert expected in result
@@ -389,8 +390,8 @@ Numbered steps:
         assert "\\end{itemize}" in result
         assert "\\begin{enumerate}" in result
         assert "\\end{enumerate}" in result
-        assert "\\begin{minted}{python}" in result
-        assert "\\end{minted}" in result
+        assert "\\begin{lstlisting}[style=arxivstyle,language=python]" in result
+        assert "\\end{lstlisting}" in result
         assert "def hello():" in result
 
 
@@ -551,24 +552,26 @@ And some more text with @citation."""
         assert "\\cite{citation}" in result
 
         # Check that content inside code blocks is NOT converted
-        assert "\\begin{minted}{yaml}" in result
-        assert "\\end{minted}" in result
-        # The YAML should be preserved exactly as-is within minted
+        assert "\\begin{lstlisting}[style=arxivstyle,language=yaml]" in result
+        assert "\\end{lstlisting}" in result
+        # The YAML should be preserved exactly as-is within lstlisting
         assert 'title: "Test Document"' in result
         assert '  - name: "Test Author"' in result
         assert '    email: "test@example.com"' in result
 
         # Make sure no LaTeX conversion happened inside the code block
-        minted_sections = re.findall(
-            r"\\begin\{minted\}\{yaml\}(.*?)\\end\{minted\}", result, re.DOTALL
+        lst_sections = re.findall(
+            r"\\begin\{lstlisting\}\[style=arxivstyle,language=yaml\](.*?)\\end\{lstlisting\}",
+            result,
+            re.DOTALL,
         )
-        assert len(minted_sections) == 1
-        minted_content = minted_sections[0]
+        assert len(lst_sections) == 1
+        lst_content = lst_sections[0]
 
-        # These should NOT be in the minted content (no conversion should happen)
-        assert "\\textbf{" not in minted_content
-        assert "\\cite{" not in minted_content
-        assert "\\begin{itemize}" not in minted_content
+        # These should NOT be in the lstlisting content (no conversion should happen)
+        assert "\\textbf{" not in lst_content
+        assert "\\cite{" not in lst_content
+        assert "\\begin{itemize}" not in lst_content
 
     def test_code_block_with_markdown_syntax(self) -> None:
         """Test that markdown syntax inside code blocks is preserved."""
@@ -585,32 +588,34 @@ And some more text with @citation."""
 
         result = convert_markdown_to_latex(markdown, is_supplementary=False)
 
-        # Should contain minted environment for markdown
-        assert "\\begin{minted}{markdown}" in result
-        assert "\\end{minted}" in result
+        # Should contain lstlisting environment for markdown
+        assert "\\begin{lstlisting}[style=arxivstyle,language=markdown]" in result
+        assert "\\end{lstlisting}" in result
 
-        # Extract minted content
-        minted_sections = re.findall(
-            r"\\begin\{minted\}\{markdown\}(.*?)\\end\{minted\}", result, re.DOTALL
+        # Extract lstlisting content
+        lst_sections = re.findall(
+            r"\\begin\{lstlisting\}\[style=arxivstyle,language=markdown\](.*?)\\end\{lstlisting\}",
+            result,
+            re.DOTALL,
         )
-        assert len(minted_sections) == 1
-        minted_content = minted_sections[0].strip()
+        assert len(lst_sections) == 1
+        lst_content = lst_sections[0].strip()
 
         # Markdown syntax should be preserved exactly
-        assert "## Header" in minted_content
-        assert "**Bold text**" in minted_content
-        assert "*italic text*" in minted_content
-        assert "- List item 1" in minted_content
-        assert "[@citation1;@citation2]" in minted_content
-        assert "![Figure](image.png){#fig:test}" in minted_content
+        assert "## Header" in lst_content
+        assert "**Bold text**" in lst_content
+        assert "*italic text*" in lst_content
+        assert "- List item 1" in lst_content
+        assert "[@citation1;@citation2]" in lst_content
+        assert "![Figure](image.png){#fig:test}" in lst_content
 
         # Should NOT be converted to LaTeX
-        assert "\\subsection{" not in minted_content
-        assert "\\textbf{" not in minted_content
-        assert "\\textit{" not in minted_content
-        assert "\\begin{itemize}" not in minted_content
-        assert "\\cite{" not in minted_content
-        assert "\\begin{figure}" not in minted_content
+        assert "\\subsection{" not in lst_content
+        assert "\\textbf{" not in lst_content
+        assert "\\textit{" not in lst_content
+        assert "\\begin{itemize}" not in lst_content
+        assert "\\cite{" not in lst_content
+        assert "\\begin{figure}" not in lst_content
 
     def test_code_block_with_bibtex_syntax(self) -> None:
         """Test that BibTeX syntax inside code blocks is preserved."""
@@ -627,24 +632,26 @@ And some more text with @citation."""
 
         result = convert_markdown_to_latex(markdown, is_supplementary=False)
 
-        # Should contain minted environment for bibtex
-        assert "\\begin{minted}{bibtex}" in result
-        assert "\\end{minted}" in result
+        # Should contain lstlisting environment for bibtex
+        assert "\\begin{lstlisting}[style=arxivstyle,language=bibtex]" in result
+        assert "\\end{lstlisting}" in result
 
-        # Extract minted content
-        minted_sections = re.findall(
-            r"\\begin\{minted\}\{bibtex\}(.*?)\\end\{minted\}", result, re.DOTALL
+        # Extract lstlisting content
+        lst_sections = re.findall(
+            r"\\begin\{lstlisting\}\[style=arxivstyle,language=bibtex\](.*?)\\end\{lstlisting\}",
+            result,
+            re.DOTALL,
         )
-        assert len(minted_sections) == 1
-        minted_content = minted_sections[0].strip()
+        assert len(lst_sections) == 1
+        lst_content = lst_sections[0].strip()
 
         # BibTeX syntax should be preserved exactly
-        assert "@article{test2023," in minted_content
-        assert "title={Test Article}," in minted_content
-        assert "author={Test Author}," in minted_content
+        assert "@article{test2023," in lst_content
+        assert "title={Test Article}," in lst_content
+        assert "author={Test Author}," in lst_content
 
         # Should NOT be converted (e.g., @ shouldn't become \cite{})
-        assert "\\cite{" not in minted_content
+        assert "\\cite{" not in lst_content
 
 
 class TestSupplementaryNoteIntegration:
@@ -723,7 +730,7 @@ End of note."""
         result = convert_markdown_to_latex(markdown, is_supplementary=True)
 
         assert "\\suppnotesection{Code Example.}\\label{snote:code}" in result
-        assert "\\begin{minted}{python}" in result
+        assert "\\begin{lstlisting}[style=arxivstyle,language=python]" in result
         assert "def example():" in result
 
     def test_supplementary_note_with_citations(self):
@@ -836,7 +843,7 @@ And references to @snote:detailed and @fig:example."""
         assert "Fig. \\ref{fig:example}" in result
 
         # Verify code blocks are processed
-        assert "\\begin{minted}{bash}" in result
+        assert "\\begin{lstlisting}[style=arxivstyle,language=python]" in result
         assert "make build" in result
 
 
