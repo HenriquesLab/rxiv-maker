@@ -1,10 +1,24 @@
-# Figures Directory
+# FIGURES Directory
 
-Place your figure files here:
+This directory contains figure generation scripts and data for your manuscript.
 
-- `.mmd` files for Mermaid diagrams
-- `.py` files for Python-generated figures  
-- `.png`, `.pdf`, `.svg` files for static images
-- `/DATA/` subdirectory for data files used in figure generation
+## Structure
 
-The build process will automatically process these files and include them in your manuscript.
+- `*.py` - Python scripts that generate figures programmatically
+- `*.mmd` - Mermaid diagram files
+- `DATA/` - Directory for data files used by figure generation scripts
+- Generated figure directories (created automatically when scripts run)
+
+## Usage
+
+Place your figure generation scripts here. The system will automatically:
+1. Execute Python scripts during build
+2. Process Mermaid diagrams  
+3. Generate PNG and PDF outputs
+4. Include figures in your manuscript
+
+## Examples
+
+- `example_figure.py` - Sample Python figure script
+- `supplementary_figure.py` - Sample supplementary figure script
+- `DATA/example_data.csv` - Sample data file

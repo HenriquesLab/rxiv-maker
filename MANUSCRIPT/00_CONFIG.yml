@@ -1,40 +1,40 @@
 title:
-  - long: 'Rxiv-Maker: A Template Engine for Scientific Publications'
-  - short: 'Rxiv-Maker Template'
+  - long: 'Your Article Title Here'
+  - short: 'Short Title'
   - lead_author: "Author"
 
-date: "2025-06-20"
+date: "2025-01-01"
 status: "draft"
-use_line_numbers: false
+use_line_numbers: true
 license: "CC BY 4.0"
 acknowledge_rxiv_maker: true
 
 keywords:
-  - "scientific publishing"
-  - "markdown"
-  - "automated workflow"
+  - "keyword1"
+  - "keyword2"
+  - "keyword3"
 
 authors:
   - name: "First Author"
     affiliations:
-      - "University"
+      - "Affiliation1"
     corresponding_author: true
     co_first_author: false
-    email: "first.author@university.edu"
+    email: "first.author@example.com"
     orcid: 0000-0000-0000-0000
   - name: "Second Author"
     affiliations:
-      - "Institute"
+      - "Affiliation2"
     corresponding_author: false
     co_first_author: false
-    email: "second.author@institute.org"
+    email: "second.author@example.com"
 
 affiliations:
-  - shortname: "University"
-    full_name: "Example University"
+  - shortname: "Affiliation1"
+    full_name: "First Institution Name"
     location: "City, Country"
-  - shortname: "Institute"
-    full_name: "Research Institute"
+  - shortname: "Affiliation2"
+    full_name: "Second Institution Name"
     location: "City, Country"
 
 bibliography: 03_REFERENCES.bib

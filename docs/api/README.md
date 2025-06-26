@@ -24,14 +24,11 @@ Welcome to the API documentation for rxiv-maker.
 ## Scripts Modules
 
 - [scripts.custom_doc_generator.py](scripts_custom_doc_generator.py.md)
-- [scripts.fix_minted.py](scripts_fix_minted.py.md)
 - [scripts.validate_manuscript.py](scripts_validate_manuscript.py.md)
 
 ## Debug Modules
 
 - [debug.__init__.py](debug___init__.py.md)
-- [debug.debug_conversion.py](debug_debug_conversion.py.md)
-- [debug.debug_regex.py](debug_debug_regex.py.md)
 
 ## Core Modules
 

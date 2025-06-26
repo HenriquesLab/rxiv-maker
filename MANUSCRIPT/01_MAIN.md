@@ -1,80 +1,68 @@
-# Rxiv-Maker: A Template Engine for Scientific Publications
-<!-- note that this title is not rendered in the PDF, rather the one in the YAML metadata is used -->
+# Article Title Template
+<!-- Note: This title is not rendered in the PDF; the title from 00_CONFIG.yml is used instead -->
 
 ## Abstract
 
-This document demonstrates the essential features of Rxiv-Maker, a markdown-based template engine for scientific publications. The system automatically converts markdown content into publication-ready LaTeX documents, supporting citations [@example2023], cross-references to Fig. @fig:workflow, programmatic figure generation, and comprehensive document formatting. This minimal example showcases the core functionality needed for scientific manuscript preparation.
+Your abstract goes here. This should be a concise summary of your research. You can include citations like [@reference2024] and cross-references to figures like @fig:example.
 
-## Main
+## Introduction
 
-**Introduction.** Rxiv-Maker transforms scientific writing by enabling authors to focus on content while the system handles formatting and compilation [@modern_publishing2024]. The framework supports multiple deployment strategies and integrates seamlessly with version control systems.
+Write your introduction here. Use **bold** and *italic* formatting as needed. Reference your figures using @fig:example and your tables as shown below.
 
-Key features demonstrated in this template include:
-- Automatic markdown-to-LaTeX conversion
-- Programmatic figure generation (see Fig. @fig:workflow)
-- Citation processing with BibTeX integration
-- Cross-referencing system for figures and sections
-- Supplementary material support (detailed in @snote:examples)
+You can include equations:
+$$E = mc^2$${#eq:einstein}
 
-**Methods.** The Rxiv-Maker system processes markdown files through a multi-stage pipeline:
+And reference them using @eq:einstein.
 
-1. **Content parsing**: Markdown files are parsed for special syntax
-2. **Figure generation**: Python scripts and Mermaid diagrams are executed
-3. **LaTeX conversion**: Content is converted to LaTeX with proper formatting
-4. **Document compilation**: Final PDF is generated using LaTeX
+## Methods
 
-Code blocks are preserved during processing:
+Describe your methodology here. Include code blocks when relevant:
 
 ```python
-# Example Python code
-import matplotlib.pyplot as plt
+# Example code
 import numpy as np
+import matplotlib.pyplot as plt
 
-# Generate sample data
-x = np.linspace(0, 10, 100)
-y = np.sin(x)
-
-# Create plot
-plt.plot(x, y)
-plt.savefig('output.png')
+# Your code here
+data = np.random.randn(100)
+plt.hist(data)
+plt.savefig('histogram.png')
 ```
 
-![](FIGURES/workflow.svg)
-{#fig:workflow tex_position="t"} **Rxiv-Maker Workflow Diagram.** This Mermaid-generated diagram shows the conversion process from markdown input to PDF output, demonstrating automated figure generation capabilities.
+## Results
 
-**Results.** The system successfully converts markdown syntax into professional LaTeX output. Table @stable:features summarizes the key capabilities:
+Present your results here. Include figures and tables:
 
-| Feature | Input | Output |
-|:-------|:------|:-------|
-| Format | `**bold**` | `\textbf{}` |
-| Citations | `[@example2023]` | `\cite{example2023}` |
-| Figures | `![](image.png)` | `\includegraphics{}` |
+![](FIGURES/example_figure/example_figure.png)
+{#fig:example} **Example Figure Caption.** Describe what your figure shows.
 
-{#stable:features} **Core Rxiv-Maker Features.** Essential functionality for scientific document preparation.
+| Column 1 | Column 2 | Column 3 |
+|----------|----------|----------|
+| Data 1   | Data 2   | Data 3   |
+| Data 4   | Data 5   | Data 6   |
 
-![](FIGURES/sample_plot.png)
-{#fig:data width="0.8"} **Sample Data Visualization.** This figure demonstrates Python-generated plots with automatic integration into the document.
+{#tbl:example} **Example Table Caption.** Describe what your table contains.
 
-**Discussion.** Rxiv-Maker addresses the common challenges in scientific writing by providing:
-- **Simplicity**: Authors write in familiar markdown syntax
-- **Reproducibility**: Figures are generated programmatically from source data
-- **Automation**: Complex LaTeX formatting is handled automatically
-- **Flexibility**: Multiple deployment options support different workflows
+## Discussion
 
-The template system is designed to be minimal yet comprehensive, showcasing all essential features without overwhelming complexity.
+Discuss your findings here. Reference supplementary information using @snote:example if needed.
+
+## Conclusions
+
+Summarize your main conclusions here.
 
 ## Data availability
 
-Example data used in this template is included in the `FIGURES/DATA/` directory.
+Describe where your data is available.
 
 ## Code availability
 
-Rxiv-Maker source code is available at the project repository.
+Describe where your code is available.
 
 ## Author contributions
 
-All authors contributed to the design and testing of the Rxiv-Maker system.
+Describe author contributions here.
 
 ## Acknowledgements
 
-We thank the scientific community for feedback on manuscript preparation workflows.
+Add your acknowledgements here.
