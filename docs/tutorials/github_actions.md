@@ -21,9 +21,9 @@ GitHub Actions provides automated PDF generation for Rxiv-Maker manuscripts. Eve
    - Add figures to `MANUSCRIPT/FIGURES/`
 
 ### Step 3: Generate PDF
-**Option A: Automatic on Push**
+**Option A: Automatic on Tagged Commit**
 1. Make any changes to your manuscript
-2. Commit and push to the main branch
+2. Create a new commit tag and push to the main branch
 3. PDF generation starts automatically
 
 **Option B: Manual Trigger**
