@@ -78,14 +78,27 @@ setup:
 	@echo "✅ Setup complete! Now you can run 'make pdf' to create your document."
 	@echo "Note: You'll also need LaTeX installed on your system."
 
-# Generate PDF (requires LaTeX installation)
+# Generate PDF with validation (requires LaTeX installation)
 .PHONY: pdf
-pdf: _build_pdf
+pdf: validate _build_pdf
 	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) src/py/commands/copy_pdf.py --output-dir $(OUTPUT_DIR)
 	@if [ -f "$(OUTPUT_DIR)/$(OUTPUT_PDF)" ]; then \
 		echo "✅ PDF compilation complete: $(OUTPUT_DIR)/$(OUTPUT_PDF)"; \
 	else \
 		echo "❌ Error: PDF file was not created"; \
+		echo "💡 Run 'make validate-detailed' for comprehensive error analysis"; \
+		exit 1; \
+	fi
+
+# Generate PDF without validation (for debugging)
+.PHONY: pdf-no-validate
+pdf-no-validate: _build_pdf
+	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) src/py/commands/copy_pdf.py --output-dir $(OUTPUT_DIR)
+	@if [ -f "$(OUTPUT_DIR)/$(OUTPUT_PDF)" ]; then \
+		echo "✅ PDF compilation complete: $(OUTPUT_DIR)/$(OUTPUT_PDF)"; \
+	else \
+		echo "❌ Error: PDF file was not created"; \
+		echo "💡 Run 'make validate-detailed' for comprehensive error analysis"; \
 		exit 1; \
 	fi
 
@@ -104,6 +117,23 @@ arxiv: _generate_files
 	@echo "📤 Upload the renamed file to arXiv for submission"
 
 # ======================================================================
+# 🔍 VALIDATION COMMANDS
+# ======================================================================
+
+# Validate manuscript structure and content
+.PHONY: validate
+validate:
+	@echo "🔍 Running manuscript validation..."
+	@$(PYTHON_CMD) src/py/scripts/validate_manuscript.py "$(MANUSCRIPT_PATH)" || { \
+		echo ""; \
+		echo "❌ Validation failed! Please fix the issues above before building PDF."; \
+		echo "💡 Run 'make validate --help' for validation options"; \
+		echo "💡 Use 'make pdf-no-validate' to skip validation and build anyway."; \
+		exit 1; \
+	}
+	@echo "✅ Validation passed!"
+
+# ======================================================================
 # 🔨 INTERNAL BUILD TARGETS
 # ======================================================================
 
@@ -111,11 +141,19 @@ arxiv: _generate_files
 .PHONY: _build_pdf
 _build_pdf: _generate_files
 	@echo "Compiling LaTeX to PDF..."
+	@COMPILATION_SUCCESS=true; \
 	cd $(OUTPUT_DIR) && \
-	 pdflatex -interaction=nonstopmode $(OUTPUT_TEX) || true && \
-	 bibtex $(MANUSCRIPT_NAME) || true && \
-	 pdflatex -interaction=nonstopmode $(OUTPUT_TEX) || true && \
-	 pdflatex -interaction=nonstopmode $(OUTPUT_TEX) || true
+	 pdflatex -interaction=nonstopmode $(OUTPUT_TEX) || COMPILATION_SUCCESS=false; \
+	 bibtex $(MANUSCRIPT_NAME) || true; \
+	 pdflatex -interaction=nonstopmode $(OUTPUT_TEX) || COMPILATION_SUCCESS=false; \
+	 pdflatex -interaction=nonstopmode $(OUTPUT_TEX) || COMPILATION_SUCCESS=false; \
+	if [ "$$COMPILATION_SUCCESS" = "false" ] && [ -f "$(OUTPUT_DIR)/$(MANUSCRIPT_NAME).log" ]; then \
+		echo ""; \
+		echo "⚠️  LaTeX compilation encountered errors. Analyzing..."; \
+		$(PYTHON_CMD) src/py/commands/validate.py "$(MANUSCRIPT_PATH)" --no-latex=false --detailed 2>/dev/null || true; \
+		echo ""; \
+		echo "💡 Run 'make validate-latex' for detailed LaTeX error analysis"; \
+	fi
 	@echo "PDF compilation complete: $(OUTPUT_DIR)/$(OUTPUT_PDF)"
 	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) src/py/commands/analyze_word_count.py
 
@@ -190,7 +228,8 @@ help:
 	echo ""; \
 	echo "🚀 ESSENTIAL COMMANDS:"; \
 	echo "  make setup          - Install Python dependencies"; \
-	echo "  make pdf            - Generate PDF (requires LaTeX)"; \
+	echo "  make pdf            - Generate PDF with validation (requires LaTeX)"; \
+	echo "  make validate       - Check manuscript for issues"; \
 	echo "  make arxiv          - Prepare arXiv submission package"; \
 	echo "  make clean          - Remove output directory"; \
 	echo "  make help           - Show this help message"; \
@@ -207,7 +246,9 @@ help:
 	echo "   4. Edit files in $(ARTICLE_DIR)/ and re-run 'make pdf'"; \
 	echo ""; \
 	echo "💡 ADVANCED OPTIONS:"; \
+	echo "   - Skip validation: make pdf-no-validate"; \
 	echo "   - Force figure regeneration: make pdf FORCE_FIGURES=true"; \
 	echo "   - Use different manuscript folder: make pdf MANUSCRIPT_PATH=path/to/folder"; \
+	echo "   - Validation options: python3 src/py/scripts/validate_manuscript.py --help"; \
 	echo "   - arXiv files created in: $(OUTPUT_DIR)/arxiv_submission/"; \
 	echo "   - arXiv ZIP file: $(OUTPUT_DIR)/for_arxiv.zip"

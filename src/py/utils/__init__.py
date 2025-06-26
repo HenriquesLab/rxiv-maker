@@ -32,6 +32,14 @@ except ImportError:
     from datetime import datetime
 
     def find_manuscript_md():
+        """Find the main manuscript markdown file.
+
+        Returns:
+            Path to the main manuscript file (01_MAIN.md).
+
+        Raises:
+            FileNotFoundError: If the manuscript file cannot be found.
+        """
         current_dir = Path.cwd()
         manuscript_path = os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
         manuscript_md = current_dir / manuscript_path / "01_MAIN.md"
@@ -76,6 +84,12 @@ except ImportError:
         return filename
 
     def copy_pdf_to_manuscript_folder(output_dir, yaml_metadata):
+        """Copy the generated PDF to the manuscript folder with proper naming.
+
+        Args:
+            output_dir: Directory containing the generated PDF.
+            yaml_metadata: Metadata dictionary from YAML config.
+        """
         # Get manuscript path from environment variable to determine the output PDF name
         manuscript_path = os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
         manuscript_name = os.path.basename(manuscript_path)

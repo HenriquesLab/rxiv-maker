@@ -5,6 +5,11 @@ import sys
 
 
 def fix_minted_issues(filename):
+    """Fix minted package issues in LaTeX files by replacing problematic patterns.
+
+    Args:
+        filename: Path to the LaTeX file to fix.
+    """
     with open(filename) as f:
         content = f.read()
 

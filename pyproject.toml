@@ -31,7 +31,6 @@ dev = [
     "nox>=2023.0.0",
     "pytest-cov>=4.0",
     "coverage[toml]>=7.0",
-    "lazydocs>=0.4.8",
     "pytest-notebook>=0.10.0",
     "nbstripout>=0.7.1",
     "pre-commit>=4.0.0",
@@ -65,9 +64,6 @@ select = [
 ignore = [
     "E203",  # whitespace before ':'
     "D100",  # Missing docstring in public module
-    "D101",  # Missing docstring in public class
-    "D102",  # Missing docstring in public method
-    "D103",  # Missing docstring in public function
     "D104",  # Missing docstring in public package
     "D105",  # Missing docstring in magic method
 ]
@@ -88,8 +84,12 @@ known-first-party = ["rxiv_maker"]
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-# Ignore certain rules in test files
+# Ignore certain rules in test files (but keep docstring checks for main classes)
 "tests/*" = ["D"]
+# Ignore debug and example files
+"debug_*.py" = ["D"]
+"trace_*.py" = ["D"]
+"notebooks/*" = ["D", "E501"]
 # Ignore auto-generated files
 "src/py/_version.py" = ["ALL"]
 "versioneer.py" = ["ALL"]

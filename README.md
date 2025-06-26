@@ -23,6 +23,7 @@ Rxiv-Maker enhances the capabilities of traditional scientific writing by ensuri
 ## Key Features
 
 - **20+ Enhanced Markdown Features** - Scientific cross-references, citations, subscript/superscript, and programmatic figure generation
+- **Intelligent Validation System** - Pre-build validation catches errors with actionable feedback and suggestions
 - **Automated Figure Generation** - Python scripts and Mermaid diagrams with smart caching
 - **GitHub Actions Integration** - Cloud-based PDF generation with manual triggers
 - **Professional LaTeX Templates** - Various citation styles and academic formatting
@@ -97,7 +98,7 @@ Rxiv-Maker enhances the capabilities of traditional scientific writing by ensuri
 |-----------|-------------|--------------|------------|
 | **📚 New to coding** | Google Colab | Google account | 2 minutes |
 | **⚡ Want automation** | GitHub Actions | GitHub account | 5 minutes |
-| **🔧 Full control** | Local Install | Python 3.9+, LaTeX, Make | 10-30 minutes |
+| **🔧 Full control** | Local Install | Python 3.11+, LaTeX, Make | 10-30 minutes |
 
 ### Google Colab (Easiest - No Installation Required)
 **Perfect for beginners and quick experiments without any local setup.**
@@ -155,7 +156,8 @@ make pdf MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT
 git clone https://github.com/henriqueslab/rxiv-maker.git
 cd rxiv-maker
 make setup
-make pdf MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT
+make validate MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT  # Check for issues first
+make pdf MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT       # Generate PDF
 ```
 
 ## Core Workflow
@@ -164,8 +166,9 @@ make pdf MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT
 2. **Configure** metadata in YAML (`00_CONFIG.yml`). Directly or using our notebook [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_YAML_editor.ipynb)
 
 3. **Create** figures with Python scripts, Mermaid diagrams or upload images
-4. **Build** your PDF locally (`make pdf`) or via GitHub Actions
-5. **Collaborate** using Git workflows with automated PDF generation
+4. **Validate** your manuscript (`make validate`) to catch issues early
+5. **Build** your PDF locally (`make pdf`) or via GitHub Actions
+6. **Collaborate** using Git workflows with automated PDF generation
 
 ## Documentation
 
@@ -186,6 +189,7 @@ make pdf MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT
 | Task | Command | Documentation |
 |------|---------|---------------|
 | Generate PDF | `make pdf` | [User Guide](docs/user_guide.md) |
+| Validate Manuscript | `make validate` | [Validation Guide](docs/validate_manuscript.md) |
 | Cloud PDF Generation | Actions → "Run workflow" | [GitHub Actions Guide](docs/github-actions-guide.md) |
 | Custom Manuscript | `make pdf MANUSCRIPT_PATH=MY_PAPER` | [User Guide](docs/user_guide.md) |
 | Force Figure Regeneration | `make pdf FORCE_FIGURES=true` | [User Guide](docs/user_guide.md) |

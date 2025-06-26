@@ -18,8 +18,6 @@ This script can be called from the Makefile or other build systems.
 main()
 ```
 
-
-
-
+Main entry point for copying PDF to manuscript directory. 
 
 

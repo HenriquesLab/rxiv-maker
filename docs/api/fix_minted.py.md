@@ -16,8 +16,12 @@ Quick script to fix the minted issues in MANUSCRIPT.tex.
 fix_minted_issues(filename)
 ```
 
+Fix minted package issues in LaTeX files by replacing problematic patterns. 
 
 
 
+**Args:**
+ 
+ - <b>`filename`</b>:  Path to the LaTeX file to fix. 
 
 

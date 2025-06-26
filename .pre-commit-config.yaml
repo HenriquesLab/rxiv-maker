@@ -28,7 +28,7 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.12.0
     hooks:
-      # Linting
+      # Linting (includes docstring validation with Google convention)
       - id: ruff
         args: [--fix]
         exclude: ^.*\.ipynb$
@@ -68,16 +68,15 @@ repos:
         args: [--curly, --numeric, --align=13, --sort=year, --duplicates=key]
         files: \.bib$
 
-  # API documentation generation and validation with lazydocs
+  # Generate API documentation with lazydocs (without validation)
   - repo: local
     hooks:
-      - id: lazydocs-generate-validate
-        name: Generate and validate API documentation
+      - id: lazydocs-generate
+        name: Generate API documentation
         entry: python src/py/commands/generate_docs.py
-        language: python
+        language: system
         files: ^src/py/.*\.py$
         pass_filenames: false
-        additional_dependencies: [lazydocs]
 
 default_language_version:
   python: python3

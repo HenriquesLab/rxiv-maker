@@ -58,6 +58,7 @@ def generate_preprint(output_dir, yaml_metadata):
 
 
 def main():
+    """Main entry point for the preprint generation command."""
     parser = argparse.ArgumentParser(
         description="Generate LaTeX article from markdown template"
     )

@@ -1,23 +1,53 @@
 #!/usr/bin/env python3
-"""Manuscript Validation Script for Rxiv-Maker.
+"""Enhanced Manuscript Validation Script for Rxiv-Maker.
 
-This script validates that a manuscript directory contains all required files
-and has the proper structure before attempting to build the PDF.
+This script provides comprehensive validation for manuscript directories,
+including structure, content, syntax, and LaTeX compilation error analysis.
 
 The validator checks for:
 - Required files (config, main content, bibliography)
 - Required directories (figures)
 - Configuration file validity
 - Basic content structure
-- Figure reference consistency
+- Citation syntax and bibliography references
+- Cross-reference consistency (figures, tables, equations)
+- Figure file existence and syntax
+- Mathematical expression validity
+- Special Markdown syntax elements
+- LaTeX compilation errors (if log file exists)
 """
 
 import argparse
 import logging
 import sys
 from pathlib import Path
+from typing import Any
 
 import yaml
+
+# Import new validators
+try:
+    import os
+    import sys
+
+    # Add parent directory to path for relative imports
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir = os.path.dirname(current_dir)
+    sys.path.insert(0, parent_dir)
+
+    from validators import (
+        CitationValidator,
+        FigureValidator,
+        LaTeXErrorParser,
+        MathValidator,
+        ReferenceValidator,
+        SyntaxValidator,
+        ValidationLevel,
+    )
+
+    ENHANCED_VALIDATION_AVAILABLE = True
+except ImportError:
+    ENHANCED_VALIDATION_AVAILABLE = False
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -48,11 +78,20 @@ class ManuscriptValidator:
         "keywords": "Keywords for the manuscript",
     }
 
-    def __init__(self, manuscript_path: Path):
+    def __init__(
+        self,
+        manuscript_path: Path,
+        skip_enhanced: bool = False,
+        show_stats: bool = False,
+    ):
         """Initialize validator with manuscript directory path."""
         self.manuscript_path = Path(manuscript_path)
         self.errors: list[str] = []
         self.warnings: list[str] = []
+        self.info_messages: list[str] = []
+        self.validation_metadata: dict[str, Any] = {}
+        self.skip_enhanced = skip_enhanced
+        self.show_stats = show_stats
 
     def validate_directory_structure(self) -> bool:
         """Validate that the manuscript directory exists and is accessible."""
@@ -248,6 +287,115 @@ class ManuscriptValidator:
         elif figure_refs:
             logger.info(f"✓ All {len(figure_refs)} referenced figures found")
 
+    def run_enhanced_validation(self) -> bool:
+        """Run enhanced semantic validation using new validators."""
+        if self.skip_enhanced:
+            logger.info("Skipping enhanced validation (--basic-only)")
+            return True
+
+        if not ENHANCED_VALIDATION_AVAILABLE:
+            self.warnings.append(
+                "Enhanced validation not available - install validation dependencies"
+            )
+            return True
+
+        enhanced_validation_passed = True
+        manuscript_str = str(self.manuscript_path)
+
+        # Run citation validation
+        try:
+            citation_validator = CitationValidator(manuscript_str)
+            citation_result = citation_validator.validate()
+            enhanced_validation_passed &= self._process_validation_result(
+                citation_result
+            )
+        except Exception as e:
+            self.warnings.append(f"Citation validation failed: {e}")
+
+        # Run reference validation
+        try:
+            reference_validator = ReferenceValidator(manuscript_str)
+            reference_result = reference_validator.validate()
+            enhanced_validation_passed &= self._process_validation_result(
+                reference_result
+            )
+        except Exception as e:
+            self.warnings.append(f"Reference validation failed: {e}")
+
+        # Run figure validation
+        try:
+            figure_validator = FigureValidator(manuscript_str)
+            figure_result = figure_validator.validate()
+            enhanced_validation_passed &= self._process_validation_result(figure_result)
+        except Exception as e:
+            self.warnings.append(f"Figure validation failed: {e}")
+
+        # Run math validation
+        try:
+            math_validator = MathValidator(manuscript_str)
+            math_result = math_validator.validate()
+            enhanced_validation_passed &= self._process_validation_result(math_result)
+        except Exception as e:
+            self.warnings.append(f"Math validation failed: {e}")
+
+        # Run syntax validation
+        try:
+            syntax_validator = SyntaxValidator(manuscript_str)
+            syntax_result = syntax_validator.validate()
+            enhanced_validation_passed &= self._process_validation_result(syntax_result)
+        except Exception as e:
+            self.warnings.append(f"Syntax validation failed: {e}")
+
+        # Run LaTeX error parsing (if log file exists)
+        try:
+            latex_parser = LaTeXErrorParser(manuscript_str)
+            latex_result = latex_parser.validate()
+            enhanced_validation_passed &= self._process_validation_result(latex_result)
+        except Exception as e:
+            self.warnings.append(f"LaTeX error parsing failed: {e}")
+
+        return enhanced_validation_passed
+
+    def _process_validation_result(self, result) -> bool:
+        """Process validation result and add to error/warning lists."""
+        validation_passed = True
+
+        # Store metadata
+        self.validation_metadata[result.validator_name] = result.metadata
+
+        for error in result.errors:
+            if error.level == ValidationLevel.ERROR:
+                self.errors.append(self._format_validation_error(error))
+                validation_passed = False
+            elif error.level == ValidationLevel.WARNING:
+                self.warnings.append(self._format_validation_error(error))
+            elif error.level == ValidationLevel.INFO:
+                self.info_messages.append(self._format_validation_error(error))
+
+        return validation_passed
+
+    def _format_validation_error(self, error) -> str:
+        """Format validation error for display."""
+        parts = []
+
+        # Add file location if available
+        if error.file_path:
+            location = error.file_path
+            if error.line_number:
+                location += f":{error.line_number}"
+                if error.column:
+                    location += f":{error.column}"
+            parts.append(f"({location})")
+
+        # Add main message
+        parts.append(error.message)
+
+        # Add suggestion if available
+        if error.suggestion:
+            parts.append(f"→ {error.suggestion}")
+
+        return " ".join(parts)
+
     def validate(self) -> bool:
         """Run all validation checks."""
         logger.info(f"Validating manuscript: {self.manuscript_path}")
@@ -270,6 +418,10 @@ class ManuscriptValidator:
         # Run optional checks that don't affect overall validation
         self.validate_optional_files()
         self.check_figure_references()
+
+        # Run enhanced validation
+        enhanced_passed = self.run_enhanced_validation()
+        validation_passed = validation_passed and enhanced_passed
 
         return validation_passed
 
@@ -296,7 +448,76 @@ class ManuscriptValidator:
             for i, warning in enumerate(self.warnings, 1):
                 print(f"  {i}. {warning}")
 
+        if self.info_messages:
+            print(f"\n💡 INFO ({len(self.info_messages)}):")
+            for i, info in enumerate(self.info_messages, 1):
+                print(f"  {i}. {info}")
+
+        # Print validation statistics if available
+        if (
+            self.validation_metadata
+            and ENHANCED_VALIDATION_AVAILABLE
+            and self.show_stats
+        ):
+            self._print_validation_statistics()
+
         print("\n" + "=" * 60)
+
+    def _print_validation_statistics(self) -> None:
+        """Print enhanced validation statistics."""
+        print("\n📊 VALIDATION STATISTICS:")
+
+        for validator_name, metadata in self.validation_metadata.items():
+            if not metadata:
+                continue
+
+            validator_display = validator_name.replace("Validator", "").replace(
+                "Parser", ""
+            )
+            print(f"\n  {validator_display}:")
+
+            # Display key statistics for each validator
+            if validator_name == "CitationValidator":
+                if "total_citations" in metadata:
+                    print(f"    • Total citations: {metadata['total_citations']}")
+                if "unique_citations" in metadata:
+                    print(f"    • Unique citations: {metadata['unique_citations']}")
+                if "bibliography_keys" in metadata:
+                    print(
+                        f"    • Bibliography entries: {metadata['bibliography_keys']}"
+                    )
+
+            elif validator_name == "ReferenceValidator":
+                if "total_labels_defined" in metadata:
+                    print(f"    • Labels defined: {metadata['total_labels_defined']}")
+                if "total_references_used" in metadata:
+                    print(f"    • References used: {metadata['total_references_used']}")
+
+            elif validator_name == "FigureValidator":
+                if "total_figures" in metadata:
+                    print(f"    • Total figures: {metadata['total_figures']}")
+                if "available_files" in metadata:
+                    print(f"    • Available files: {metadata['available_files']}")
+
+            elif validator_name == "MathValidator":
+                if "total_math_expressions" in metadata:
+                    print(
+                        f"    • Math expressions: {metadata['total_math_expressions']}"
+                    )
+                if "unique_equation_labels" in metadata:
+                    print(
+                        f"    • Equation labels: {metadata['unique_equation_labels']}"
+                    )
+
+            elif validator_name == "SyntaxValidator":
+                if "total_elements" in metadata:
+                    print(f"    • Syntax elements: {metadata['total_elements']}")
+
+            elif validator_name == "LaTeXErrorParser":
+                if "total_errors" in metadata:
+                    print(f"    • LaTeX errors: {metadata['total_errors']}")
+                if "total_warnings" in metadata:
+                    print(f"    • LaTeX warnings: {metadata['total_warnings']}")
 
 
 def main():
@@ -306,9 +527,25 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s MANUSCRIPT
-  %(prog)s EXAMPLE_MANUSCRIPT
-  %(prog)s path/to/my/manuscript --verbose
+  %(prog)s MANUSCRIPT                    # Basic validation
+  %(prog)s MANUSCRIPT --detailed         # Comprehensive analysis
+  %(prog)s MANUSCRIPT --show-stats       # Include statistics
+  %(prog)s MANUSCRIPT --basic-only       # Structure only
+  %(prog)s MANUSCRIPT --verbose          # Detailed output
+
+Validation Types:
+  • Basic validation: File structure, YAML syntax, bibliography format
+  • Enhanced validation: Citations, cross-references, figures, math syntax
+  • Detailed validation: Comprehensive error analysis with context and suggestions
+
+Common Validation Issues:
+  • Undefined citations: Add missing entries to 03_REFERENCES.bib
+  • Missing figures: Check file paths in FIGURES/ directory
+  • Broken references: Ensure labels are properly defined
+  • Table formatting: Add separator rows (| --- |) after headers
+  • Math errors: Check for balanced braces in LaTeX expressions
+
+For LaTeX compilation errors after building, check the .log file in output/
         """,
     )
 
@@ -330,6 +567,24 @@ Examples:
         help="Suppress informational messages",
     )
 
+    parser.add_argument(
+        "--basic-only",
+        action="store_true",
+        help="Run only basic validation (skip enhanced semantic validation)",
+    )
+
+    parser.add_argument(
+        "--show-stats",
+        action="store_true",
+        help="Show detailed validation statistics",
+    )
+
+    parser.add_argument(
+        "--detailed",
+        action="store_true",
+        help="Run comprehensive validation with detailed error analysis",
+    )
+
     args = parser.parse_args()
 
     # Configure logging level
@@ -338,8 +593,29 @@ Examples:
     elif args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
+    # Handle detailed mode by calling the unified validator
+    if args.detailed:
+        import subprocess
+
+        try:
+            cmd = [
+                sys.executable,
+                "src/py/commands/validate.py",
+                args.manuscript_path,
+                "--detailed",
+                "--verbose",
+            ]
+            result = subprocess.run(cmd, check=False)
+            sys.exit(result.returncode)
+        except FileNotFoundError:
+            print("❌ Detailed validation not available")
+            print("💡 Use basic validation options instead")
+            sys.exit(1)
+
     # Validate the manuscript
-    validator = ManuscriptValidator(args.manuscript_path)
+    validator = ManuscriptValidator(
+        args.manuscript_path, skip_enhanced=args.basic_only, show_stats=args.show_stats
+    )
     validation_passed = validator.validate()
     validator.print_summary()
 

@@ -4,6 +4,7 @@ This guide covers everything from getting started to advanced workflows, practic
 
 ## Table of Contents
 - [Getting Started](#getting-started)
+- [Manuscript Validation](#manuscript-validation)
 - [Advanced Usage](#advanced-usage)
 - [Examples & Cookbook](#examples--cookbook)
 - [Troubleshooting & Debugging](#troubleshooting--debugging)
@@ -19,12 +20,91 @@ For platform-specific setup, see [platforms/LOCAL_DEVELOPMENT.md](platforms/LOCA
 - Build your first PDF:
   ```bash
   make setup
-  make pdf
+  make validate  # Check for issues first
+  make pdf       # Generate PDF
   ```
 - Use a different manuscript folder:
   ```bash
   MANUSCRIPT_PATH=MY_ARTICLE make pdf
   ```
+
+---
+
+## Manuscript Validation
+
+Rxiv-Maker includes a comprehensive validation system that checks your manuscript for errors before PDF generation. This helps catch issues early and provides actionable feedback.
+
+### Quick Validation
+```bash
+# Basic validation check
+make validate
+
+# Validate specific manuscript
+make validate MANUSCRIPT_PATH=MY_PAPER
+
+# Recommended workflow: validate then build
+make validate && make pdf
+```
+
+### Detailed Validation
+```bash
+# Get comprehensive feedback with suggestions
+python src/py/scripts/validate_manuscript.py --detailed MANUSCRIPT
+
+# Advanced validation with rich output
+python src/py/commands/validate.py MANUSCRIPT --verbose
+```
+
+### What Gets Validated
+
+**Content & Structure:**
+- Required files (`00_CONFIG.yml`, `01_MAIN.md`, `03_REFERENCES.bib`)
+- YAML configuration syntax and required fields
+- File readability and basic format checks
+
+**Citations & References:**
+- Citation syntax (`@citation`, `[@cite1;@cite2]`)
+- Cross-references (`@fig:label`, `@tbl:label`, `@eq:label`)
+- Bibliography entries against citations
+- Undefined references and unused definitions
+
+**Figures & Math:**
+- Figure file existence and accessibility
+- Mathematical expression syntax (`$...$`, `$$...$$`)
+- LaTeX command validity
+- Figure generation script errors
+
+**Build Issues:**
+- LaTeX compilation error analysis
+- Common error pattern recognition
+- User-friendly error explanations
+
+### Understanding Validation Output
+
+**Error Levels:**
+- 🔴 **ERROR**: Critical issues preventing PDF generation
+- 🟡 **WARNING**: Potential problems or quality issues  
+- 🔵 **INFO**: Statistics and informational messages
+
+**Example Output:**
+```
+ERROR: Citation 'smith2023' not found in bibliography
+  File: 01_MAIN.md:42
+  Context: > See @smith2023 for details
+  Suggestion: Add reference to 03_REFERENCES.bib or check spelling
+
+WARNING: Figure file FIGURES/plot.png not found
+  Suggestion: Create the figure or update the path
+```
+
+### Integration with Build Process
+
+Validation runs automatically before PDF generation:
+```bash
+make pdf  # Includes validation step
+```
+
+For more detailed validation information, see [Manuscript Validation Guide](validate_manuscript.md).
 
 ---
 
@@ -64,7 +144,8 @@ For platform-specific setup, see [platforms/LOCAL_DEVELOPMENT.md](platforms/LOCA
 
 - **Basic PDF Generation:**
   ```bash
-  make pdf
+  make validate  # Check for issues first
+  make pdf       # Generate PDF
   ```
 - **Custom Manuscript Directory:**
   ```bash
@@ -99,6 +180,10 @@ For platform-specific setup, see [platforms/LOCAL_DEVELOPMENT.md](platforms/LOCA
 
 ## Troubleshooting & Debugging
 
+- **Validation Errors:**
+  - Error: Various validation failures
+  - Solution: Run `make validate` to see specific issues and suggestions
+  - Debug: Use `python src/py/scripts/validate_manuscript.py --detailed MANUSCRIPT` for comprehensive feedback
 - **LaTeX Not Found:**
   - Error: `LaTeX Error: File not found`
   - Solution: Install LaTeX (see [platforms/LOCAL_DEVELOPMENT.md](platforms/LOCAL_DEVELOPMENT.md))
@@ -120,8 +205,10 @@ For platform-specific setup, see [platforms/LOCAL_DEVELOPMENT.md](platforms/LOCA
   - Solution: Review workflow logs in Actions tab → Click failed run → Click "build-pdf" job
   - See [GitHub Actions Guide](github-actions-guide.md) for detailed troubleshooting
 - **Debugging Tips:**
+  - Always start with `make validate` to catch issues early
   - Use `make pdf VERBOSE=true` for more output
   - Check `output/ARTICLE.log` for LaTeX errors
+  - Use detailed validation: `python src/py/scripts/validate_manuscript.py --detailed MANUSCRIPT`
   - Use `pytest` for running tests
 
 ---

@@ -394,6 +394,7 @@ def create_zip_package(arxiv_path, zip_filename="for_arxiv.zip"):
 
 
 def main():
+    """Main entry point for preparing arXiv submission package."""
     parser = argparse.ArgumentParser(description="Prepare arXiv submission package")
     parser.add_argument(
         "--output-dir",

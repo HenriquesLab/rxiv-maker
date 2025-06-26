@@ -191,10 +191,11 @@ your-repo/
 **Problem**: The workflow runs but fails to generate PDF
 
 **Solutions**:
-1. **Check manuscript path**: Ensure the directory exists and has required files
-2. **Verify file structure**: Must have `00_CONFIG.yml` and `01_MAIN.md`
-3. **Check Python scripts**: Ensure figure generation scripts are valid
-4. **Review workflow logs**: Click on failed workflow → click on "build-pdf" job → check red X steps
+1. **Run validation first**: Use `make validate` locally to catch issues before pushing
+2. **Check manuscript path**: Ensure the directory exists and has required files
+3. **Verify file structure**: Must have `00_CONFIG.yml` and `01_MAIN.md`
+4. **Check Python scripts**: Ensure figure generation scripts are valid
+5. **Review workflow logs**: Click on failed workflow → click on "build-pdf" job → check red X steps
 
 #### ❌ "LaTeX compilation failed"
 
@@ -233,13 +234,23 @@ your-repo/
 
 2. **Test locally first**:
    ```bash
-   make pdf MANUSCRIPT_PATH=your_manuscript
+   make validate MANUSCRIPT_PATH=your_manuscript  # Check for issues first
+   make pdf MANUSCRIPT_PATH=your_manuscript       # Then generate PDF
    ```
 
 3. **Use example manuscript**:
    - Try with `EXAMPLE_MANUSCRIPT` first to ensure workflow works
 
-4. **Check file structure**:
+4. **Run validation locally**:
+   ```bash
+   # Quick validation check
+   make validate MANUSCRIPT_PATH=MANUSCRIPT
+   
+   # Detailed validation with suggestions
+   python src/py/scripts/validate_manuscript.py --detailed MANUSCRIPT
+   ```
+
+5. **Check file structure**:
    ```bash
    ls -la MANUSCRIPT/
    # Should show: 00_CONFIG.yml, 01_MAIN.md, FIGURES/, etc.
@@ -304,8 +315,9 @@ Override default build commands:
 | Manual trigger | Actions tab → "Run workflow" |
 | Download PDF | Actions tab → Completed run → "Artifacts" |
 | Permanent link | Releases → Download from "Assets" |
-| Test locally | `make pdf MANUSCRIPT_PATH=MANUSCRIPT` |
+| Test locally | `make validate && make pdf MANUSCRIPT_PATH=MANUSCRIPT` |
 | Check logs | Actions → Failed run → "build-pdf" job |
+| Validate manuscript | `make validate MANUSCRIPT_PATH=MANUSCRIPT` |
 
 ### File Locations
 
@@ -329,10 +341,11 @@ Override default build commands:
 
 1. **Start with manual triggers** until you're comfortable
 2. **Test with EXAMPLE_MANUSCRIPT** first
-3. **Keep manuscript files organized** in dedicated directories
-4. **Use descriptive tag names** like `v1.0.0`, `draft-2024-01-15`
-5. **Check builds regularly** to catch issues early
-6. **Use meaningful commit messages** for easier debugging
+3. **Always validate locally** before pushing (`make validate`)
+4. **Keep manuscript files organized** in dedicated directories
+5. **Use descriptive tag names** like `v1.0.0`, `draft-2024-01-15`
+6. **Check builds regularly** to catch issues early
+7. **Use meaningful commit messages** for easier debugging
 
 ---
 

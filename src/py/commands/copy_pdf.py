@@ -16,6 +16,7 @@ from utils import copy_pdf_to_manuscript_folder, find_manuscript_md
 
 
 def main():
+    """Main entry point for copying PDF to manuscript directory."""
     parser = argparse.ArgumentParser(
         description="Copy PDF to base directory with custom filename"
     )
