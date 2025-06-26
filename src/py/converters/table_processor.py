@@ -778,9 +778,10 @@ def _split_table_row_respecting_backticks(row: str) -> list[str]:
 
 
 def convert_table_references_to_latex(text: MarkdownContent) -> LatexContent:
-    r"""Convert table references from @tbl:id and @stable:id to LaTeX.
+    r"""Convert table references from @table:id and @stable:id to LaTeX.
 
-    Converts @tbl:id to Table \\ref{tbl:id} and @stable:id to Table \\ref{stable:id}.
+    Converts @table:id to Table \\ref{table:id} and @stable:id to
+    Table \\ref{stable:id}.
 
     Args:
         text: Text containing table references
@@ -788,8 +789,8 @@ def convert_table_references_to_latex(text: MarkdownContent) -> LatexContent:
     Returns:
         Text with table references converted to LaTeX format with "Table" prefix
     """
-    # Convert @tbl:id to Table \ref{tbl:id} (regular tables)
-    text = re.sub(r"@tbl:([a-zA-Z0-9_-]+)", r"Table \\ref{tbl:\1}", text)
+    # Convert @table:id to Table \ref{table:id} (regular tables)
+    text = re.sub(r"@table:([a-zA-Z0-9_-]+)", r"Table \\ref{table:\1}", text)
 
     # Convert @stable:id to Table \ref{stable:id} (supplementary tables)
     text = re.sub(r"@stable:([a-zA-Z0-9_-]+)", r"Table \\ref{stable:\1}", text)

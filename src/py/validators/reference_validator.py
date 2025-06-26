@@ -14,7 +14,7 @@ class ReferenceValidator(BaseValidator):
     REFERENCE_PATTERNS = {
         "figure_ref": re.compile(r"@fig:([a-zA-Z0-9_-]+)"),
         "supplementary_figure_ref": re.compile(r"@sfig:([a-zA-Z0-9_-]+)"),
-        "table_ref": re.compile(r"@tbl:([a-zA-Z0-9_-]+)"),
+        "table_ref": re.compile(r"@table:([a-zA-Z0-9_-]+)"),
         "supplementary_table_ref": re.compile(r"@stable:([a-zA-Z0-9_-]+)"),
         "equation_ref": re.compile(r"@eq:([a-zA-Z0-9_-]+)"),
         "supplementary_note_ref": re.compile(r"@snote:([a-zA-Z0-9_-]+)"),
@@ -295,7 +295,7 @@ class ReferenceValidator(BaseValidator):
         mapping = {
             "figure_label": "fig",
             "supplementary_figure_label": "sfig",
-            "table_label": "tbl",
+            "table_label": "table",
             "supplementary_table_label": "stable",
             "equation_label": "eq",
             "supplementary_note_label": "snote",
@@ -307,7 +307,7 @@ class ReferenceValidator(BaseValidator):
         mapping = {
             "figure_ref": "fig",
             "supplementary_figure_ref": "sfig",
-            "table_ref": "tbl",
+            "table_ref": "table",
             "supplementary_table_ref": "stable",
             "equation_ref": "eq",
             "supplementary_note_ref": "snote",
@@ -326,7 +326,7 @@ class ReferenceValidator(BaseValidator):
                 type_names = {
                     "fig": "figure (@fig:)",
                     "sfig": "supplementary figure (@sfig:)",
-                    "tbl": "table (@tbl:)",
+                    "table": "table (@table:)",
                     "stable": "supplementary table (@stable:)",
                     "eq": "equation (@eq:)",
                     "snote": "supplementary note (@snote:)",

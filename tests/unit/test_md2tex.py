@@ -152,8 +152,10 @@ class TestTableReferenceConversion:
 
     def test_regular_table_reference_conversion(self):
         """Test conversion of regular table references."""
-        text = "As shown in @tbl:results, the performance is excellent."
-        expected = r"As shown in Table \ref{tbl:results}, the performance is excellent."
+        text = "As shown in @table:results, the performance is excellent."
+        expected = (
+            r"As shown in Table \ref{table:results}, the performance is excellent."
+        )
         result = convert_table_references_to_latex(text)
         assert result == expected
 
@@ -168,9 +170,9 @@ class TestTableReferenceConversion:
 
     def test_multiple_table_references(self):
         """Test conversion of multiple table references."""
-        text = "See @tbl:results and @stable:comparison for details."
+        text = "See @table:results and @stable:comparison for details."
         expected = (
-            r"See Table \ref{tbl:results} and "
+            r"See Table \ref{table:results} and "
             r"Table \ref{stable:comparison} for details."
         )
         result = convert_table_references_to_latex(text)
@@ -178,9 +180,9 @@ class TestTableReferenceConversion:
 
     def test_table_references_with_underscores_and_hyphens(self):
         """Test table references with underscores and hyphens in IDs."""
-        text = "Compare @tbl:result_summary and @stable:tool-comparison-detailed."
+        text = "Compare @table:result_summary and @stable:tool-comparison-detailed."
         expected = (
-            r"Compare Table \ref{tbl:result_summary} and "
+            r"Compare Table \ref{table:result_summary} and "
             r"Table \ref{stable:tool-comparison-detailed}."
         )
         result = convert_table_references_to_latex(text)
@@ -190,13 +192,13 @@ class TestTableReferenceConversion:
         """Test table references work in the complete markdown to LaTeX pipeline."""
         markdown = """## Results
 
-The performance metrics are shown in @tbl:metrics.
+The performance metrics are shown in @table:metrics.
 
 Additional details are available in @stable:extended-analysis."""
         result = convert_markdown_to_latex(markdown, is_supplementary=False)
 
         # Check that table references are converted
-        assert r"Table \ref{tbl:metrics}" in result
+        assert r"Table \ref{table:metrics}" in result
         assert r"Table \ref{stable:extended-analysis}" in result
 
         # Check that other markdown is still converted
@@ -843,7 +845,7 @@ And references to @snote:detailed and @fig:example."""
         assert "Fig. \\ref{fig:example}" in result
 
         # Verify code blocks are processed
-        assert "\\begin{lstlisting}[style=arxivstyle,language=python]" in result
+        assert "\\begin{lstlisting}[style=arxivstyle,language=bash]" in result
         assert "make build" in result
 
 

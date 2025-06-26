@@ -14,7 +14,7 @@ class CitationValidator(BaseValidator):
     CITATION_PATTERNS = {
         "bracketed_multiple": re.compile(r"\[(@[^]]+)\]"),  # [@citation1;@citation2]
         "single_citation": re.compile(
-            r"@(?!fig:|eq:|tbl:|sfig:|stable:|snote:)([a-zA-Z0-9_-]+)"
+            r"@(?!fig:|eq:|table:|tbl:|sfig:|stable:|snote:)([a-zA-Z0-9_-]+)"
         ),  # @key
         "protected_citation": re.compile(
             r"XXPROTECTEDTABLEXX\d+XXPROTECTEDTABLEXX"
@@ -217,7 +217,7 @@ class CitationValidator(BaseValidator):
                     column=column,
                     context=context,
                     suggestion=(
-                        "Use @fig:label for figures, @tbl:label for tables, "
+                        "Use @fig:label for figures, @table:label for tables, "
                         "@eq:label for equations"
                     ),
                     error_code="possible_reference_error",

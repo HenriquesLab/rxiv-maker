@@ -71,9 +71,9 @@ Figure @fig:test shows our test results.
 | Alpha     | 1.0   |
 | Beta      | 2.0   |
 
-{#tbl:params} **Parameter values used in analysis.**
+{#table:params} **Parameter values used in analysis.**
 
-See @tbl:params for parameter details.
+See @table:params for parameter details.
 
 ## Discussion
 
@@ -222,7 +222,7 @@ Reference to undefined figure @fig:nonexistent.
         output = result.stdout + result.stderr
         assert "nonexistent2023" in output  # Citation error
         assert "missing.png" in output  # Figure error
-        assert "unbalanced" in output or "brace" in output  # Math error
+        assert "Unbalanced" in output or "delimiters" in output  # Math error
 
     def test_validation_before_pdf_generation(self):
         """Test that validation is integrated into PDF generation workflow."""

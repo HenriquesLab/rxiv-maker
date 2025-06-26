@@ -140,6 +140,10 @@ class SyntaxValidator(BaseValidator):
         format_errors = self._validate_text_formatting(content, file_path)
         errors.extend(format_errors)
 
+        # Validate unbalanced formatting
+        unbalanced_errors = self._validate_unbalanced_formatting(content, file_path)
+        errors.extend(unbalanced_errors)
+
         # Validate lists
         list_errors = self._validate_lists(lines, file_path)
         errors.extend(list_errors)
@@ -291,6 +295,56 @@ class SyntaxValidator(BaseValidator):
                     error_code="long_inline_code",
                 )
             )
+
+        return errors
+
+    def _validate_unbalanced_formatting(self, content: str, file_path: str) -> list:
+        """Validate for unbalanced formatting markers."""
+        errors = []
+
+        # Check for unbalanced bold formatting (**)
+        lines = content.split("\n")
+        for line_idx, line in enumerate(lines):
+            line_num = line_idx + 1
+
+            # Count double asterisks that aren't in code blocks
+            # Remove code spans first to avoid false positives
+            clean_line = re.sub(r"`[^`]*`", "", line)
+            clean_line = re.sub(r"``[^`]*``", "", clean_line)
+
+            # Count unescaped double asterisks
+            double_star_count = len(re.findall(r"(?<!\\)\*\*", clean_line))
+
+            # If odd number, we have unbalanced bold formatting
+            if double_star_count % 2 != 0:
+                errors.append(
+                    self._create_error(
+                        ValidationLevel.WARNING,
+                        "Unbalanced bold formatting (**) detected",
+                        file_path=file_path,
+                        line_number=line_num,
+                        suggestion="Ensure all ** markers are properly paired",
+                        error_code="unbalanced_bold",
+                    )
+                )
+
+            # Count single asterisks (excluding those that are part of **)
+            # Remove ** first, then count remaining *
+            no_double_stars = re.sub(r"(?<!\\)\*\*", "", clean_line)
+            single_star_count = len(re.findall(r"(?<!\\)\*", no_double_stars))
+
+            # If odd number, we have unbalanced italic formatting
+            if single_star_count % 2 != 0:
+                errors.append(
+                    self._create_error(
+                        ValidationLevel.WARNING,
+                        "Unbalanced italic formatting (*) detected",
+                        file_path=file_path,
+                        line_number=line_num,
+                        suggestion="Ensure all * markers are properly paired",
+                        error_code="unbalanced_italic",
+                    )
+                )
 
         return errors
 
