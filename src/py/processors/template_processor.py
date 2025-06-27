@@ -264,7 +264,7 @@ def generate_bibliography(yaml_metadata):
     if bibliography.endswith(".bib"):
         bibliography = bibliography[:-4]
 
-    return f"\\bibliographystyle{{rxiv_maker_style}}\n\\bibliography{{{bibliography}}}"
+    return f"\\bibliography{{{bibliography}}}"
 
 
 def process_template_replacements(template_content, yaml_metadata, article_md):
@@ -403,6 +403,37 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
         "<PY-RPL:METHODS>", content_sections.get("methods", "")
     )
 
+    # Handle main content sections conditionally
+    # Results section
+    results_content = content_sections.get("results", "").strip()
+    if results_content:
+        results_section = f"\\section*{{Results}}\n{results_content}"
+    else:
+        results_section = ""
+    template_content = template_content.replace(
+        "<PY-RPL:RESULTS-SECTION>", results_section
+    )
+
+    # Discussion section
+    discussion_content = content_sections.get("discussion", "").strip()
+    if discussion_content:
+        discussion_section = f"\\section*{{Discussion}}\n{discussion_content}"
+    else:
+        discussion_section = ""
+    template_content = template_content.replace(
+        "<PY-RPL:DISCUSSION-SECTION>", discussion_section
+    )
+
+    # Conclusions section
+    conclusions_content = content_sections.get("conclusion", "").strip()
+    if conclusions_content:
+        conclusions_section = f"\\section*{{Conclusions}}\n{conclusions_content}"
+    else:
+        conclusions_section = ""
+    template_content = template_content.replace(
+        "<PY-RPL:CONCLUSIONS-SECTION>", conclusions_section
+    )
+
     # Handle optional sections conditionally
     # Data availability
     data_availability = content_sections.get("data_availability", "").strip()
@@ -462,7 +493,8 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
     acknowledge_rxiv = yaml_metadata.get("acknowledge_rxiv_maker", False)
     if acknowledge_rxiv and not manuscript_prep_content.strip():
         manuscript_prep_content = (
-            "This manuscript was prepared using {\\color{red}R}$\\chi$iv-Maker."
+            "This manuscript was prepared using "
+            "{\\color{red}R}$\\chi$iv-Maker~\\cite{saraiva_2025_rxivmaker}."
         )
 
     # Add license information if specified
