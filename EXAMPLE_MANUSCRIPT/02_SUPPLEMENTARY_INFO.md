@@ -87,7 +87,7 @@ Python figure generation represents a more sophisticated approach to computation
 
 The Rxiv-Maker framework seamlessly integrates mathematical notation by automatically translating markdown-style mathematical expressions into publication-ready LaTeX mathematics. This capability enables researchers to author complex mathematical content using familiar syntax whilst benefiting from LaTeX's superior mathematical typesetting capabilities.
 
-Inline mathematical expressions are supported through dollar sign delimiters (`$...$`), enabling simple formulas such as $E = mc^2$ or $\alpha = \frac{\beta}{\gamma}$ to be embedded within narrative text. The conversion system automatically preserves these expressions during the markdown-to-LaTeX transformation, ensuring that mathematical notation maintains proper formatting and spacing according to established typographical conventions.
+Inline mathematical expressions are supported through dollar sign delimiters (`$...$`), enabling simple formulas such as $E = mc^2$ or $\alpha = \frac{\beta}{\gamma}$ to be embedded within narrative text. For example, typing `$E = mc^2$` in markdown produces the formatted expression $E = mc^2$. The conversion system automatically preserves these expressions during the markdown-to-LaTeX transformation, ensuring that mathematical notation maintains proper formatting and spacing according to established typographical conventions.
 
 Display equations utilise double dollar sign delimiters (`$$...$$`) for prominent mathematical expressions that require centered presentation. Complex equations such as the Schrödinger equation:
 

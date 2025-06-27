@@ -64,11 +64,16 @@ def process_code_spans(text: MarkdownContent) -> LatexContent:
         code_content = match.group(1)
 
         # Check if this code span contains characters that are particularly problematic
-        # in LaTeX (like $( combinations that can trigger math mode)
-        has_dollar_paren = "$(" in code_content or "$)" in code_content
+        # in LaTeX (like $( combinations, $...$ patterns, or math placeholders)
+        has_dollar_paren = (
+            "$(" in code_content
+            or "$)" in code_content
+            or ("$" in code_content and code_content.count("$") >= 2)
+            or "XXPROTECTEDMATHXX" in code_content
+        )
 
         if has_dollar_paren:
-            # For code spans with $( or $) patterns, use \detokenize more robust
+            # For code spans with dollar signs, use \detokenize for robust handling
             # We use placeholder to indicate this should NOT have escapes later
             return (
                 f"PROTECTED_DETOKENIZE_START{{{code_content}}}PROTECTED_DETOKENIZE_END"

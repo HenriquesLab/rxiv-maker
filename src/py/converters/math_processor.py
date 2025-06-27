@@ -51,8 +51,83 @@ def restore_math_expressions(
     Returns:
         Content with math expressions restored
     """
+    import re
+
     for placeholder, math_expr in protected_math.items():
-        content = content.replace(placeholder, math_expr)
+        # Check if this placeholder is inside a texttt context
+        # Find all occurrences of the placeholder
+        start = 0
+        while True:
+            pos = content.find(placeholder, start)
+            if pos == -1:
+                break
+
+            # Check if this occurrence is inside \texttt{...} or \seqsplit{...}
+            # Look backward to find if we're inside texttt or seqsplit
+            before = content[:pos]
+
+            # Find most recent \texttt{, \seqsplit{, or \detokenize{ before position
+            texttt_match = None
+            seqsplit_match = None
+            detokenize_match = None
+
+            for match in re.finditer(r"\\texttt\{", before):
+                texttt_match = match
+            for match in re.finditer(r"\\seqsplit\{", before):
+                seqsplit_match = match
+            for match in re.finditer(r"\\detokenize\{", before):
+                detokenize_match = match
+
+            # Check if we're inside a texttt, seqsplit, or detokenize context
+            in_seqsplit_context = False
+            in_detokenize_context = False
+
+            if texttt_match or seqsplit_match or detokenize_match:
+                # Find the most recent opening brace and determine context type
+                last_brace_pos = -1
+                context_type = None
+
+                if texttt_match:
+                    last_brace_pos = max(last_brace_pos, texttt_match.end() - 1)
+                    context_type = "texttt"
+                if seqsplit_match and seqsplit_match.end() - 1 > last_brace_pos:
+                    last_brace_pos = seqsplit_match.end() - 1
+                    context_type = "seqsplit"
+                if detokenize_match and detokenize_match.end() - 1 > last_brace_pos:
+                    last_brace_pos = detokenize_match.end() - 1
+                    context_type = "detokenize"
+
+                if last_brace_pos != -1:
+                    # Count braces to see if we're still inside
+                    brace_count = 0
+                    for i in range(last_brace_pos, pos):
+                        if content[i] == "{":
+                            brace_count += 1
+                        elif content[i] == "}":
+                            brace_count -= 1
+
+                    if brace_count > 0:
+                        if context_type == "seqsplit":
+                            in_seqsplit_context = True
+                        elif context_type == "detokenize":
+                            in_detokenize_context = True
+
+            # Replace with appropriate content
+            if in_seqsplit_context:
+                # Escape dollar signs for seqsplit context
+                escaped_math = math_expr.replace("$", "\\$")
+                content = (
+                    content[:pos] + escaped_math + content[pos + len(placeholder) :]
+                )
+                start = pos + len(escaped_math)
+            elif in_detokenize_context:
+                # Don't escape for detokenize context - it handles literal display
+                content = content[:pos] + math_expr + content[pos + len(placeholder) :]
+                start = pos + len(math_expr)
+            else:
+                # Normal replacement
+                content = content[:pos] + math_expr + content[pos + len(placeholder) :]
+                start = pos + len(math_expr)
 
     return content
 
