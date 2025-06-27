@@ -30,6 +30,7 @@ if spec and spec.loader:
     create_output_dir = utils_module.create_output_dir
     find_manuscript_md = utils_module.find_manuscript_md
     write_manuscript_output = utils_module.write_manuscript_output
+    inject_rxiv_citation = utils_module.inject_rxiv_citation
 else:
     raise ImportError("Could not load utils.py module")
 
@@ -84,6 +85,9 @@ def main():
             f"Extracted metadata: "
             f"{list(yaml_metadata.keys()) if yaml_metadata else 'None'}"
         )
+
+        # Inject Rxiv-Maker citation if needed
+        inject_rxiv_citation(yaml_metadata)
 
         # Generate the article
         generate_preprint(args.output_dir, yaml_metadata)

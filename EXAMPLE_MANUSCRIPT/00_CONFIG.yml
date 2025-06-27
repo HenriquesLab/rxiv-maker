@@ -7,7 +7,7 @@ date: "2025-06-20"
 # status: "draft"
 use_line_numbers: false
 license: "CC BY 4.0"
-acknowledge_rxiv_maker: true
+acknowledge_rxiv_maker: false
 
 keywords:
   - "article template"

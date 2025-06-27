@@ -86,3 +86,16 @@ copy_pdf_to_base(output_dir, yaml_metadata)
 Backward compatibility function - delegates to copy_pdf_to_manuscript_folder. 
 
 
+---
+
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/py/utils.py#L129"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `inject_rxiv_citation`
+
+```python
+inject_rxiv_citation(yaml_metadata)
+```
+
+Inject Rxiv-Maker citation into bib if acknowledge_rxiv_maker is true. 
+
+

@@ -193,6 +193,13 @@ def generate_extended_author_info(yaml_metadata):
             bluesky = author.get("bluesky", "")
             linkedin = author.get("linkedin", "")
 
+            # Check if author has any extended information
+            has_extended_info = any([orcid, twitter, x, bluesky, linkedin])
+
+            # Only include authors with extended information
+            if not has_extended_info:
+                continue
+
             # Build the social media line
             social_icons = []
 

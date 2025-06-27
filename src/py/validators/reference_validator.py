@@ -44,7 +44,7 @@ class ReferenceValidator(BaseValidator):
         self.defined_labels: dict[str, dict[str, Any]] = {
             "fig": {},
             "sfig": {},
-            "tbl": {},
+            "table": {},
             "stable": {},
             "eq": {},
             "snote": {},
@@ -52,7 +52,7 @@ class ReferenceValidator(BaseValidator):
         self.referenced_labels: dict[str, list[dict[str, Any]]] = {
             "fig": [],
             "sfig": [],
-            "tbl": [],
+            "table": [],
             "stable": [],
             "eq": [],
             "snote": [],

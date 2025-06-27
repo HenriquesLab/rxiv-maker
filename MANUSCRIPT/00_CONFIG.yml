@@ -1,40 +1,52 @@
+# Rxiv-Maker Configuration File
+# This file contains all metadata and settings for your manuscript
+# See https://github.com/henriqueslab/rxiv-maker for full documentation
+
+# Article title configuration
 title:
-  - long: 'Your Article Title Here'
-  - short: 'Short Title'
-  - lead_author: "Author"
+  - long: 'Your Article Title Here'     # Full title for the manuscript
+  - short: 'Short Title'                # Abbreviated title for footer
+  - lead_author: "Author"               # Lead author surname for citation format
 
-date: "2025-01-01"
-status: "draft"
-use_line_numbers: true
-license: "CC BY 4.0"
-acknowledge_rxiv_maker: true
+# Publication metadata
+date: "2025-01-01"                      # Publication date (YYYY-MM-DD format)
+status: "draft"                         # Status: draft, submitted, accepted, published
+use_line_numbers: true                  # Enable line numbers for manuscript review
+license: "CC BY 4.0"                    # Creative Commons license (CC BY 4.0, CC BY-SA 4.0, etc.)
+acknowledge_rxiv_maker: true            # Include Rxiv-Maker acknowledgement and citation
 
+# Keywords for manuscript indexing and discovery
 keywords:
-  - "keyword1"
-  - "keyword2"
+  - "keyword1"                          # Add relevant scientific keywords
+  - "keyword2"                          # Use 3-6 keywords typically
   - "keyword3"
 
+# Author information
+# Add one entry per author in the order they should appear
 authors:
-  - name: "First Author"
+  - name: "First Author"                # Full name as it should appear
     affiliations:
-      - "Affiliation1"
-    corresponding_author: true
-    co_first_author: false
-    email: "first.author@example.com"
-    orcid: 0000-0000-0000-0000
+      - "Affiliation1"                  # Reference to affiliation shortname below
+    corresponding_author: true          # Set to true for corresponding author(s)
+    co_first_author: false              # Set to true for co-first authors
+    email: "first.author@example.com"   # Email address (required for corresponding author)
+    orcid: 0000-0000-0000-0000          # ORCID ID (16 digits with hyphens)
   - name: "Second Author"
     affiliations:
-      - "Affiliation2"
+      - "Affiliation2"                  # Authors can have multiple affiliations
     corresponding_author: false
     co_first_author: false
-    email: "second.author@example.com"
+    email: "second.author@example.com"   # Email optional for non-corresponding authors
 
+# Institution affiliations
+# Define all institutions referenced in author affiliations
 affiliations:
-  - shortname: "Affiliation1"
-    full_name: "First Institution Name"
-    location: "City, Country"
+  - shortname: "Affiliation1"          # Short identifier used in authors section
+    full_name: "First Institution Name" # Full official institution name
+    location: "City, Country"           # Institution location
   - shortname: "Affiliation2"
     full_name: "Second Institution Name"
     location: "City, Country"
 
-bibliography: 03_REFERENCES.bib
+# Bibliography file reference
+bibliography: 03_REFERENCES.bib        # Path to BibTeX bibliography file
