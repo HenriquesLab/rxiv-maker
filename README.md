@@ -1,8 +1,8 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15753534.svg)](https://doi.org/10.5281/zenodo.15753534)
 [![License](https://img.shields.io/github/license/henriqueslab/rxiv-maker?color=Green)](https://github.com/henriqueslab/rxiv-maker/blob/main/LICENSE)
 [![Contributors](https://img.shields.io/github/contributors-anon/henriqueslab/rxiv-maker)](https://github.com/henriqueslab/rxiv-maker/graphs/contributors)
-[![GitHub stars](https://img.shields.io/github/stars/henriqueslab/rxiv-maker?style=social)](https://github.com/henriqueslab/rxiv-maker/)
-[![GitHub forks](https://img.shields.io/github/forks/henriqueslab/rxiv-maker?style=social)](https://github.com/henriqueslab/rxiv-maker/)
+[![GitHub stars](https://img.shields.io/github/stars/henriqueslab/rxiv-maker?style=social)](https://github.com/HenriquesLab/rxiv-maker/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/henriqueslab/rxiv-maker?style=social)](https://github.com/henriqueslab/rxiv-maker/forks)
 
 ![Enhanced Markdown](https://img.shields.io/badge/enhanced_markdown-20+_features-blue?labelColor=white&color=gray)
 ![Figure Generation](https://img.shields.io/badge/figures-python_&_mermaid-blue?labelColor=white&color=gray)
