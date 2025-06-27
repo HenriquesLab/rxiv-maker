@@ -223,6 +223,30 @@ pip install -e ".[dev]"
 pre-commit install
 ```
 
+## How to Cite
+
+<a href="https://zenodo.org/records/15753534"><img src="docs/screenshots/preprint.png" align="right" width="300" style="margin-left: 20px; margin-bottom: 20px;" alt="Rxiv-Maker Preprint"/></a>
+
+If you use Rxiv-Maker in your research, please cite our work:
+
+**BibTeX:**
+```bibtex
+@article{saraiva_2025_rxivmaker,
+  author       = {Saraiva, Bruno M. and Jacquemet, Guillaume and Henriques, Ricardo},
+  title        = {Rxiv-Maker: an automated template engine for streamlined scientific publications},
+  journal      = {Zenodo},
+  publisher    = {Zenodo},
+  year         = 2025,
+  month        = jul,
+  doi          = {10.5281/zenodo.15753534},
+  url          = {https://zenodo.org/records/15753534},
+  eprint       = {https://zenodo.org/records/15753534/files/2025__saraiva_et_al__rxiv.pdf}
+}
+```
+
+**APA Style:**
+Saraiva, B. M., Jacquemet, G., & Henriques, R. (2025). Rxiv-Maker: an automated template engine for streamlined scientific publications. *Zenodo*. https://doi.org/10.5281/zenodo.15753534
+
 ## Acknowledgments
 
 We extend our gratitude to the scientific computing community, especially the matplotlib and seaborn communities for their plotting tools, the LaTeX Project for professional typesetting, and Mermaid for accessible diagram generation.
