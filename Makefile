@@ -3,8 +3,8 @@
 # |  __ \ \ \ / / (_)\ \ / /         |  \/  |        | |
 # | |__) | \ V /   _  \ V /   _____  | \  / |  __ _  | | __  ___  _ __
 # |  _  /   > <   | |  > <   |_____| | |\/| | / _` | | |/ / / _ \| '__|
-# |_| \_\  /_/\_\ |_| /_/\_\         | |  | || (_| | |   < |  __/| |
-#                                     |_|  |_| \__,_| |_|\_\ \___||_|
+# | |\ \   / . \  | | / . \          | |  | || (_| | |   < |  __/| |
+# |_| \_\ /_/ \_\ |_|/_/ \_\         |_|  |_| \__,_| |_|\_\ \___||_|
 #
 # ======================================================================
 # Automated Scientific Article Generation and Publishing System
@@ -36,8 +36,16 @@ ENV_FILE_EXISTS := $(shell [ -f ".env" ] && echo "true" || echo "false")
 PYTHON_CMD := $(shell if [ -f ".venv/bin/python" ]; then echo ".venv/bin/python"; else echo "python3"; fi)
 
 OUTPUT_DIR := output
-# Get MANUSCRIPT_PATH from environment, default to MANUSCRIPT if not set
-MANUSCRIPT_PATH := $(shell echo $${MANUSCRIPT_PATH:-MANUSCRIPT})
+# Get MANUSCRIPT_PATH from .env file, then environment, default to MANUSCRIPT if not set
+# Handle cases where .env file doesn't exist or doesn't contain MANUSCRIPT_PATH
+MANUSCRIPT_PATH := $(shell \
+	if [ -f ".env" ] && grep -q "^MANUSCRIPT_PATH=" .env 2>/dev/null; then \
+		grep "^MANUSCRIPT_PATH=" .env | cut -d'=' -f2 | head -1; \
+	elif [ -n "$$MANUSCRIPT_PATH" ]; then \
+		echo "$$MANUSCRIPT_PATH"; \
+	else \
+		echo "MANUSCRIPT"; \
+	fi)
 ARTICLE_DIR = $(MANUSCRIPT_PATH)
 FIGURES_DIR = $(ARTICLE_DIR)/FIGURES
 STYLE_DIR := src/tex/style
@@ -139,17 +147,29 @@ validate:
 # Internal target for generating figures only
 .PHONY: _generate_figures
 _generate_figures:
+	@echo "Checking manuscript directory structure..."
+	@if [ ! -d "$(FIGURES_DIR)" ]; then \
+		echo "⚠️  WARNING: FIGURES directory not found: $(FIGURES_DIR)"; \
+		echo "   Creating FIGURES directory..."; \
+		mkdir -p $(FIGURES_DIR); \
+		echo "   ✅ Created $(FIGURES_DIR)"; \
+		echo "   💡 Add figure generation scripts (.py) or Mermaid diagrams (.mmd) to this directory"; \
+		echo "   💡 Or manually place figure files in subdirectories (e.g., Figure_1/Figure_1.svg)"; \
+	fi
+
 	@echo "Checking if figures need to be generated..."
 	@NEED_FIGURES=false; \
-	for mmd_file in $(FIGURES_DIR)/*.mmd; do \
-		if [ -f "$$mmd_file" ]; then \
-			base_name=$$(basename "$$mmd_file" .mmd); \
-			if [ ! -f "$(FIGURES_DIR)/$$base_name/$$base_name.pdf" ]; then \
-				NEED_FIGURES=true; \
-				break; \
+	if [ -d "$(FIGURES_DIR)" ]; then \
+		for mmd_file in $(FIGURES_DIR)/*.mmd; do \
+			if [ -f "$$mmd_file" ]; then \
+				base_name=$$(basename "$$mmd_file" .mmd); \
+				if [ ! -f "$(FIGURES_DIR)/$$base_name/$$base_name.pdf" ]; then \
+					NEED_FIGURES=true; \
+					break; \
+				fi; \
 			fi; \
-		fi; \
-	done; \
+		done; \
+	fi; \
 	if [ "$$NEED_FIGURES" = "true" ] || [ "$(FORCE_FIGURES)" = "true" ]; then \
 		echo "Generating figures from $(FIGURES_DIR)..."; \
 		MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) $(FIGURE_SCRIPT) --figures-dir $(FIGURES_DIR) --output-dir $(FIGURES_DIR) --format pdf; \
@@ -157,15 +177,17 @@ _generate_figures:
 
 	@echo "Checking if Python figure scripts need to be executed..."
 	@NEED_PYTHON_FIGURES=false; \
-	for py_file in $(FIGURES_DIR)/*.py; do \
-		if [ -f "$$py_file" ]; then \
-			base_name=$$(basename "$$py_file" .py); \
-			if [ ! -f "$(FIGURES_DIR)/$$base_name/$$base_name.png" ] || [ ! -f "$(FIGURES_DIR)/$$base_name/$$base_name.pdf" ]; then \
-				NEED_PYTHON_FIGURES=true; \
-				break; \
+	if [ -d "$(FIGURES_DIR)" ]; then \
+		for py_file in $(FIGURES_DIR)/*.py; do \
+			if [ -f "$$py_file" ]; then \
+				base_name=$$(basename "$$py_file" .py); \
+				if [ ! -f "$(FIGURES_DIR)/$$base_name/$$base_name.png" ] || [ ! -f "$(FIGURES_DIR)/$$base_name/$$base_name.pdf" ]; then \
+					NEED_PYTHON_FIGURES=true; \
+					break; \
+				fi; \
 			fi; \
-		fi; \
-	done; \
+		done; \
+	fi; \
 	if [ "$$NEED_PYTHON_FIGURES" = "true" ] || [ "$(FORCE_FIGURES)" = "true" ]; then \
 		echo "Executing Python figure generation scripts..."; \
 		CURRENT_DIR=$$(pwd); \
@@ -173,7 +195,7 @@ _generate_figures:
 		for py_file in *.py; do \
 			if [ -f "$$py_file" ]; then \
 				echo "  Running $$py_file..."; \
-				$(PYTHON_CMD) "$$py_file" || { echo "Error running $$py_file"; exit 1; }; \
+				$$CURRENT_DIR/$(PYTHON_CMD) "$$py_file" || { echo "Error running $$py_file"; exit 1; }; \
 			fi; \
 		done; \
 		cd $$CURRENT_DIR; \
@@ -265,7 +287,14 @@ help:
 	echo "  - Figures:          $(FIGURES_DIR)/"; \
 	echo "  - Output:           $(OUTPUT_DIR)/"; \
 	echo ""; \
-	echo "💡 TIP: New to Rxiv-Maker?"; \
+	echo "�️  FIGURES SETUP:"; \
+	echo "   - Create $(FIGURES_DIR)/ directory for figure content"; \
+	echo "   - Add Python scripts (.py) to generate figures programmatically"; \
+	echo "   - Add Mermaid diagrams (.mmd) for flowcharts/diagrams"; \
+	echo "   - Or place static figures in subdirectories (e.g., Figure_1/Figure_1.svg)"; \
+	echo "   - Build system creates FIGURES directory automatically if missing"; \
+	echo ""; \
+	echo "�💡 TIP: New to Rxiv-Maker?"; \
 	echo "   1. Install LaTeX on your system"; \
 	echo "   2. Run 'make setup' to install Python dependencies"; \
 	echo "   3. Run 'make pdf' to generate your first PDF"; \
