@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.4.0] - 2025-07-18
+
+### Changed
+
+#### 🔧 Package Installation Improvements
+- **Removed Automatic System Dependencies**: Pip install now only installs Python dependencies for better compatibility
+  - No more automatic LaTeX, Node.js, or R installation during `pip install rxiv-maker`
+  - Manual system dependency installation available via `rxiv-install-deps` command
+  - Follows Python packaging best practices and avoids unexpected system modifications
+  - Faster and more reliable pip installation process
+
+#### 🧪 Test Suite Optimization
+- **Performance Improvements**: Optimized slow validation tests for better CI/CD performance
+  - Added `--no-doi` flag to skip DOI validation in tests for 43% speed improvement
+  - Replaced `make validate` calls with direct CLI calls in test suite
+  - Added `@pytest.mark.slow` markers for performance tracking
+  - Reduced test execution time from 2.88s to 1.64s for validation workflow tests
+
+#### 🧹 Code Quality and Maintenance
+- **Test Infrastructure Cleanup**: Removed inappropriate Docker-based installation tests
+  - Deleted entire `tests/install/` directory containing obsolete Docker installation tests
+  - Updated pyproject.toml to remove 'install' test marker
+  - Preserved legitimate Docker engine mode functionality
+  - Maintained test coverage while improving execution speed
+
+### Fixed
+
+#### 🔧 Test Suite Stability
+- **CLI Test Fixes**: Resolved 15 failing tests across multiple test modules
+  - Fixed CLI help text assertions (rxiv-maker vs Rxiv-Maker, pdf vs build commands)
+  - Resolved config get existing key test failures due to singleton config pollution
+  - Fixed build command test failures (method name updates from .build() to .run_full_build())
+  - Corrected documentation generation FileNotFoundError (path updates from src/py/ to src/rxiv_maker/)
+  - Added missing pytest imports and updated exit code expectations
+
+#### 📦 Package Publishing
+- **PyPI Release**: Successfully published v1.4.0 to PyPI with comprehensive testing
+  - Built and published both wheel and source distributions
+  - Created git release tag v1.4.0
+  - Verified installation and CLI functionality from PyPI
+  - All core features working correctly in production environment
+
+### Performance
+
+#### ⚡ Test Execution Speed
+- **43% Faster Validation Tests**: Optimized validation workflow for CI/CD environments
+  - Intelligent DOI validation skipping in test environments
+  - Direct CLI calls instead of subprocess overhead
+  - Better resource utilization in automated testing
+
 ## [v1.3.0] - 2025-07-14
 
 ### Added
