@@ -221,11 +221,48 @@ def performance(session):
         "install",
         "pytest>=7.4.0",
         "pytest-benchmark>=4.0.0",
+        "pytest-json-report>=1.5.0",
         external=True,
     )
 
+    # Run benchmarks with detailed reporting
     session.run(
-        "pytest", "tests/performance/", "-v", "--benchmark-only", *session.posargs
+        "pytest",
+        "tests/performance/",
+        "-v",
+        "--benchmark-only",
+        "--benchmark-json=benchmark_results.json",
+        "--benchmark-save=performance_baseline",
+        "--benchmark-sort=mean",
+        "--benchmark-columns=min,max,mean,stddev,median,rounds,iterations",
+        *session.posargs,
+    )
+
+    # Generate performance report
+    session.run(
+        "python",
+        "-c",
+        """
+import json
+import sys
+from pathlib import Path
+
+if Path('benchmark_results.json').exists():
+    with open('benchmark_results.json') as f:
+        data = json.load(f)
+
+    print('\\n=== PERFORMANCE BENCHMARK SUMMARY ===')
+    for benchmark in data.get('benchmarks', []):
+        name = benchmark['name']
+        stats = benchmark['stats']
+        mean_time = stats['mean']
+        stddev = stats['stddev']
+        print(f'{name:<50} {mean_time:.4f}s ± {stddev:.4f}s')
+    print('\\n' + '='*60)
+else:
+    print('No benchmark results found')
+        """,
+        external=True,
     )
 
 

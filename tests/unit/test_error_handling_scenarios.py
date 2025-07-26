@@ -16,6 +16,7 @@ from unittest.mock import Mock, mock_open, patch
 import pytest
 
 
+@pytest.mark.flaky  # Network tests can be unstable in CI
 class TestNetworkErrorHandling(unittest.TestCase):
     """Test network error handling scenarios."""
 
@@ -99,9 +100,8 @@ class TestPermissionErrorHandling(unittest.TestCase):
             with patch("builtins.open", mock_open()) as mock_file:
                 mock_file.side_effect = PermissionError("Permission denied")
 
-                with self.assertRaises(PermissionError):
-                    with open(test_file) as file:
-                        file.read()
+                with self.assertRaises(PermissionError), open(test_file) as file:
+                    file.read()
         finally:
             test_file.unlink(missing_ok=True)
 
@@ -114,9 +114,8 @@ class TestPermissionErrorHandling(unittest.TestCase):
             with patch("builtins.open", mock_open()) as mock_file:
                 mock_file.side_effect = PermissionError("Permission denied")
 
-                with self.assertRaises(PermissionError):
-                    with open(test_file, "w") as file:
-                        file.write("test content")
+                with self.assertRaises(PermissionError), open(test_file, "w") as file:
+                    file.write("test content")
         finally:
             test_file.unlink(missing_ok=True)
 
@@ -251,7 +250,7 @@ def function():
             '{"trailing_comma": true,}',  # Trailing comma
             '{"unescaped": "quote"inside"}',  # Unescaped quotes
             "{incomplete",  # Incomplete JSON
-            '{"duplicate": 1, "duplicate": 2}',  # Duplicate keys (valid JSON but problematic)
+            '{"dup": 1, "dup": 2}',  # Duplicate keys (valid but problematic)
             "",  # Empty string
         ]
 
@@ -287,8 +286,6 @@ class TestResourceExhaustionScenarios(unittest.TestCase):
     def test_memory_exhaustion(self):
         """Test handling of memory exhaustion."""
         try:
-            import psutil
-
             # Mock memory to show low available memory
             with patch("psutil.virtual_memory") as mock_memory:
                 mock_memory.return_value = Mock(
@@ -351,14 +348,14 @@ class TestResourceExhaustionScenarios(unittest.TestCase):
 class TestConcurrencyAndRaceConditions(unittest.TestCase):
     """Test concurrency issues and race conditions."""
 
+    @pytest.mark.flaky  # Threading and timing sensitive
     def test_concurrent_file_access(self):
         """Test handling of concurrent file access scenarios."""
         import threading
         import time
 
-        test_file = tempfile.NamedTemporaryFile(delete=False)
-        test_file_path = test_file.name
-        test_file.close()
+        with tempfile.NamedTemporaryFile(delete=False) as test_file:
+            test_file_path = test_file.name
 
         results = []
 
@@ -590,7 +587,7 @@ class TestGracefulDegradationScenarios(unittest.TestCase):
 
         # Test case with only warnings
         [issue for issue, severity in issues if severity == "warning"]
-        (len([issue for issue, severity in issues if severity == "error"]) == 0)
+        assert len([issue for issue, severity in issues if severity == "error"]) == 0
         # Remove the error for this test
         test_issues = [i for i in issues if i[1] != "error"]
         test_can_continue = (

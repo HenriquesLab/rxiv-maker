@@ -8,6 +8,7 @@ import pytest
 from click.testing import CliRunner
 
 from rxiv_maker.cli.main import main
+from rxiv_maker.core import logging_config
 
 
 class TestMainCLI:
@@ -16,6 +17,11 @@ class TestMainCLI:
     def setup_method(self):
         """Set up test environment."""
         self.runner = CliRunner()
+
+    def teardown_method(self):
+        """Clean up test environment, especially for Windows."""
+        # Ensure logging cleanup for Windows file locking issues
+        logging_config.cleanup()
 
     def test_cli_help(self):
         """Test CLI help output."""

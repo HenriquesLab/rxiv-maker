@@ -7,6 +7,7 @@ from unittest.mock import patch
 from click.testing import CliRunner
 
 from rxiv_maker.cli.config import Config, config_cmd
+from rxiv_maker.core import logging_config
 
 
 class TestConfigCommand:
@@ -15,6 +16,11 @@ class TestConfigCommand:
     def setup_method(self):
         """Set up test environment."""
         self.runner = CliRunner()
+
+    def teardown_method(self):
+        """Clean up test environment, especially for Windows."""
+        # Ensure logging cleanup for Windows file locking issues
+        logging_config.cleanup()
 
     def _strip_ansi_codes(self, text: str) -> str:
         """Strip ANSI escape codes from text for reliable string matching."""

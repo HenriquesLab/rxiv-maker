@@ -115,8 +115,9 @@ jobs:
 
           # Determine manuscript path based on trigger type
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            # Manual trigger: use user-provided path
-            MANUSCRIPT_PATH="${{ github.event.inputs.manuscript_path }}"
+            # Manual trigger: use user-provided path or fallback to default
+            INPUT_PATH="${{ github.event.inputs.manuscript_path }}"
+            MANUSCRIPT_PATH="${INPUT_PATH:-MANUSCRIPT}"
           else
             # Tag trigger: use .env file value or fallback to EXAMPLE_MANUSCRIPT
             MANUSCRIPT_PATH="${MANUSCRIPT_PATH:-EXAMPLE_MANUSCRIPT}"
@@ -255,8 +256,9 @@ jobs:
           ~/.cache/pip
           ~/.cache/uv
           .venv
-        key: ${{ runner.os }}-python-${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') }}
+        key: ${{ runner.os }}-python-pdf-${{ hashFiles('**/pyproject.toml', '**/uv.lock') }}
         restore-keys: |
+          ${{ runner.os }}-python-pdf-
           ${{ runner.os }}-python-
 
     # Install Python dependencies only (system dependencies pre-installed in Docker image)
@@ -418,21 +420,15 @@ jobs:
         # Enhanced PDF detection with multiple naming patterns
         MANUSCRIPT_BASENAME=$(basename "$MANUSCRIPT_PATH")
 
-        # Try multiple possible PDF names in order of preference
-        PDF_CANDIDATES=(
-          "output/${MANUSCRIPT_BASENAME}.pdf"
-          "output/MANUSCRIPT.pdf"
-          "output/${MANUSCRIPT_PATH}.pdf"
-          "$MANUSCRIPT_PATH/${MANUSCRIPT_BASENAME}.pdf"
-          "$MANUSCRIPT_PATH.pdf"
-        )
+        # Try multiple possible PDF names in order of preference (space-separated)
+        PDF_CANDIDATES="output/${MANUSCRIPT_BASENAME}.pdf output/manuscript.pdf output/MANUSCRIPT.pdf output/${MANUSCRIPT_PATH}.pdf ${MANUSCRIPT_PATH}/output/${MANUSCRIPT_BASENAME}.pdf ${MANUSCRIPT_PATH}/${MANUSCRIPT_BASENAME}.pdf ${MANUSCRIPT_PATH}.pdf output/preprint.pdf"
 
         echo "🔍 Looking for generated PDF files..."
         echo "  📂 Manuscript path: $MANUSCRIPT_PATH"
         echo "  📂 Manuscript basename: $MANUSCRIPT_BASENAME"
 
         PDF_PATH=""
-        for candidate in "${PDF_CANDIDATES[@]}"; do
+        for candidate in $PDF_CANDIDATES; do
           echo "  🔍 Checking: $candidate"
           if [ -f "$candidate" ]; then
             PDF_PATH="$candidate"
@@ -456,7 +452,7 @@ jobs:
         else
           echo "  ❌ ERROR: PDF not found at any expected locations"
           echo "  🔍 Searched locations:"
-          for candidate in "${PDF_CANDIDATES[@]}"; do
+          for candidate in $PDF_CANDIDATES; do
             echo "    - $candidate"
           done
 
@@ -589,6 +585,9 @@ jobs:
         echo "PDF_NAME=${PDF_NAME}" >> $GITHUB_OUTPUT
         echo "PDF_FILENAME=${PDF_NAME}" >> $GITHUB_ENV
 
+        # Set build date for use in release description and build info
+        echo "BUILD_DATE=$(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_ENV
+
         # Create build info
         cat > release/build_info.txt << EOF
         Build Information:
@@ -596,7 +595,7 @@ jobs:
         - Branch: ${{ github.ref_name }}
         - Commit: ${{ github.sha }}
         - Manuscript Path: ${{ needs.prepare.outputs.manuscript_path }}
-        - Build Date: $(date)
+        - Build Date: ${{ env.BUILD_DATE }}
         - Workflow: ${{ github.workflow }}
         - Run ID: ${{ github.run_id }}
         EOF
@@ -714,7 +713,7 @@ jobs:
           **Manuscript:** `${{ needs.prepare.outputs.manuscript_path }}`
           **Branch:** `${{ github.ref_name }}`
           **Commit:** `${{ github.sha }}`
-          **Build Date:** $(date)
+          **Build Date:** ${{ env.BUILD_DATE }}
 
           ### 📥 Download Links
           - **PDF:** [${{ steps.prepare-release.outputs.PDF_NAME }}](https://github.com/${{ github.repository }}/releases/download/${{ env.MOST_RECENT_TAG }}/${{ steps.prepare-release.outputs.PDF_NAME }})

@@ -6,7 +6,10 @@ manuscripts with custom directory names and PDF naming.
 
 from pathlib import Path
 
+import pytest
 
+
+@pytest.mark.xdist_group(name="practical_workflows")
 class TestPracticalManuscriptWorkflow:
     """Test realistic manuscript setup and build workflows."""
 

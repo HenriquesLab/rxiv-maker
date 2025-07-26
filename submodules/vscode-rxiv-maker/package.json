@@ -166,7 +166,8 @@
     "typescript": "^5.8.3"
   },
   "overrides": {
-    "punycode": "npm:punycode@^2.3.1"
+    "punycode": "npm:punycode@^2.3.1",
+    "xml2js": "^0.5.0"
   },
   "dependencies": {
     "vsce": "^2.15.0"

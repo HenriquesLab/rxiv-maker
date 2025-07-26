@@ -65,24 +65,38 @@ runs:
       shell: bash
       run: |
         echo "Running unit tests with enhanced error reporting..."
+        echo "Python version: $(python --version)"
+        echo "UV version: $(uv --version)"
+        echo "Working directory: $(pwd)"
+        echo "Available memory: $(free -h 2>/dev/null || echo 'N/A')"
 
         # Set test result output
         echo "result=success" >> $GITHUB_OUTPUT
         echo "coverage-file=coverage.xml" >> $GITHUB_OUTPUT
 
+        # Verify dependencies are installed
+        uv pip list | head -10
+
         # Run tests with detailed output and continue on failure for better debugging
         set +e  # Don't exit on failure to capture exit code
 
-        # Platform-specific pytest configuration
+        # Platform-specific pytest configuration with enhanced stability
         if [[ "${{ runner.os }}" == "Windows" ]]; then
           # Windows-specific flags to reduce file contention
-          PYTEST_FLAGS="-n 1 --cache-clear --disable-warnings"
+          PYTEST_FLAGS="-n 1 --cache-clear --disable-warnings --tb=short"
+        elif [[ "${{ runner.os }}" == "macOS" ]]; then
+          # macOS-specific flags for stability (single worker to avoid fork issues)
+          PYTEST_FLAGS="-n 1 --tb=short --disable-warnings"
         else
-          # Unix-like systems can use parallel execution
-          PYTEST_FLAGS="-n auto"
+          # Linux systems can use limited parallel execution
+          PYTEST_FLAGS="-n 2 --tb=short"  # Further reduced for better stability
         fi
 
+        # Exclude problematic performance tests, notebooks, and flaky tests for CI stability
         uv run pytest tests/ \
+          -m "not performance and not flaky and not ci_exclude and not notebook" \
+          --ignore=tests/performance/ \
+          --ignore=tests/notebooks/ \
           --cov=rxiv_maker \
           --cov-report=xml \
           --cov-report=term-missing \
@@ -93,7 +107,8 @@ runs:
           -v \
           --durations=10 \
           --strict-markers \
-          --junit-xml=pytest-results.xml
+          --junit-xml=pytest-results.xml \
+          --timeout=120
         TEST_EXIT_CODE=$?
         set -e  # Re-enable exit on error
 

@@ -266,7 +266,15 @@ def example_manuscript_template():
 def example_manuscript_copy(example_manuscript_template, temp_dir):
     """Fast copy of example manuscript using optimized copying."""
     dst = temp_dir / "manuscript"
-    copy_manuscript_optimized(example_manuscript_template, dst)
+    copy_tree_optimized(example_manuscript_template, dst)
+    return dst
+
+
+@pytest.fixture(scope="class")
+def class_example_manuscript_copy(example_manuscript_template, class_temp_dir):
+    """Class-scoped copy of example manuscript for shared use."""
+    dst = class_temp_dir / "class_manuscript"
+    copy_tree_optimized(example_manuscript_template, dst)
     return dst
 
 
@@ -295,6 +303,47 @@ def copy_manuscript_optimized(src: Path, dst: Path):
                 except (OSError, AttributeError):
                     # Fallback to copy if hardlink fails
                     shutil.copy2(item, dst_item)
+
+
+def copy_tree_optimized(src: Path, dst: Path, use_hardlinks: bool = True):
+    """Enhanced optimized tree copying with better hardlink strategy."""
+    import os
+
+    dst.mkdir(parents=True, exist_ok=True)
+
+    # Static file extensions that can use hardlinks safely
+    STATIC_EXTENSIONS = {".png", ".jpg", ".jpeg", ".svg", ".pdf", ".eps", ".gif"}
+    # Text file extensions that should be copied (may be modified)
+    TEXT_EXTENSIONS = {".md", ".yml", ".yaml", ".bib", ".tex", ".cls", ".bst", ".txt"}
+
+    for item in src.rglob("*"):
+        if item.is_file():
+            rel_path = item.relative_to(src)
+            dst_item = dst / rel_path
+            dst_item.parent.mkdir(parents=True, exist_ok=True)
+
+            # Strategy selection based on file type and size
+            if use_hardlinks and item.suffix.lower() in STATIC_EXTENSIONS:
+                # Use hardlinks for static binary files
+                try:
+                    os.link(item, dst_item)
+                    continue
+                except (OSError, AttributeError):
+                    pass
+            elif item.suffix.lower() in TEXT_EXTENSIONS:
+                # Always copy text files (they may be modified)
+                shutil.copy2(item, dst_item)
+                continue
+            elif use_hardlinks and item.stat().st_size > 1024:  # Files > 1KB
+                # Use hardlinks for large files to save space/time
+                try:
+                    os.link(item, dst_item)
+                    continue
+                except (OSError, AttributeError):
+                    pass
+
+            # Fallback to regular copy
+            shutil.copy2(item, dst_item)
 
 
 @pytest.fixture(scope="session")

@@ -46,6 +46,10 @@ runs:
         version: "latest"
         enable-cache: ${{ inputs.enable-cache }}
         cache-suffix: ${{ inputs.cache-suffix }}
+        cache-dependency-glob: "**/uv.lock"
+        prune-cache: true
+        ignore-nothing-to-cache: true
+      continue-on-error: true  # Don't fail on cache issues
 
     - name: Install system dependencies (Linux)
       if: inputs.install-system-deps == 'true' && runner.os == 'Linux'
@@ -101,8 +105,17 @@ runs:
       shell: bash
       run: |
         # Install Python dependencies and package in development mode
-        uv sync
-        uv pip install -e .
+        # Try sync first, fallback to manual install on persistent failures
+        if uv sync; then
+          echo "✅ Dependencies synced successfully"
+        else
+          echo "⚠️ Sync failed, attempting manual installation..."
+          # Fallback to manual dependency installation
+          uv pip install -e . || {
+            echo "❌ Manual installation failed, trying with --force-reinstall"
+            uv pip install -e . --force-reinstall
+          }
+        fi
 
     - name: Verify CLI installation
       if: inputs.install-python-deps == 'true'

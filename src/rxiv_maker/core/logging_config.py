@@ -1,5 +1,6 @@
 """Centralized logging configuration for rxiv-maker."""
 
+import atexit
 import logging
 from pathlib import Path
 from typing import Optional
@@ -142,9 +143,25 @@ class RxivLogger:
         """Get the Rich console instance."""
         return self._console
 
+    def cleanup(self) -> None:
+        """Clean up resources, especially file handlers for Windows compatibility."""
+        if self._file_handler:
+            self.logger.removeHandler(self._file_handler)
+            self._file_handler.close()
+            self._file_handler = None
+
+        # Also close any other handlers
+        for handler in self.logger.handlers[:]:
+            self.logger.removeHandler(handler)
+            if hasattr(handler, "close"):
+                handler.close()
+
 
 # Global logger instance
 _logger_instance = RxivLogger()
+
+# Register automatic cleanup on exit for Windows compatibility
+atexit.register(_logger_instance.cleanup)
 
 
 # Convenience functions
@@ -214,3 +231,8 @@ def set_log_directory(log_dir: Path) -> None:
 def get_log_file_path() -> Path | None:
     """Get the current log file path."""
     return _logger_instance.get_log_file_path()
+
+
+def cleanup() -> None:
+    """Clean up logging resources."""
+    _logger_instance.cleanup()

@@ -569,8 +569,18 @@ if __name__ == "__main__":
         """Execute a Python script with optimized Docker execution."""
         try:
             script_rel = script_file.relative_to(self.workspace_dir)
+            script_path = f"/workspace/{script_rel}"
         except ValueError:
-            script_rel = Path(script_file.name)
+            # Script is outside workspace (e.g., in temp directory during tests)
+            # Check if it's accessible through a mounted volume at /workspace
+            # Try to find the script in the workspace
+            possible_paths = [
+                f"/workspace/{script_file.name}",
+                f"/workspace/FIGURES/{script_file.name}",
+                f"/workspace/TEMP_TEST_MANUSCRIPT/FIGURES/{script_file.name}",
+            ]
+            # Use the script name but with a fallback to copy/read approach
+            script_path = f"/workspace/{script_file.name}"
 
         docker_working_dir = "/workspace"
 
@@ -581,12 +591,25 @@ if __name__ == "__main__":
             except ValueError:
                 docker_working_dir = "/workspace/output"
 
-        return self.run_command(
-            command=["python", f"/workspace/{script_rel}"],
-            working_dir=docker_working_dir,
-            environment=environment,
-            session_key="python_execution",
-        )
+        # If script is not in workspace, we need to copy it or execute it differently
+        try:
+            script_rel = script_file.relative_to(self.workspace_dir)
+            # Script is in workspace, use direct path
+            return self.run_command(
+                command=["python", f"/workspace/{script_rel}"],
+                working_dir=docker_working_dir,
+                environment=environment,
+                session_key="python_execution",
+            )
+        except ValueError:
+            # Script is outside workspace, execute by reading content
+            script_content = script_file.read_text(encoding="utf-8")
+            return self.run_command(
+                command=["python", "-c", script_content],
+                working_dir=docker_working_dir,
+                environment=environment,
+                session_key="python_execution",
+            )
 
     def run_r_script(
         self,
@@ -595,11 +618,6 @@ if __name__ == "__main__":
         environment: dict[str, str] | None = None,
     ) -> subprocess.CompletedProcess:
         """Execute an R script with optimized Docker execution."""
-        try:
-            script_rel = script_file.relative_to(self.workspace_dir)
-        except ValueError:
-            script_rel = Path(script_file.name)
-
         docker_working_dir = "/workspace"
 
         if working_dir:
@@ -609,12 +627,35 @@ if __name__ == "__main__":
             except ValueError:
                 docker_working_dir = "/workspace/output"
 
-        return self.run_command(
-            command=["Rscript", f"/workspace/{script_rel}"],
-            working_dir=docker_working_dir,
-            environment=environment,
-            session_key="r_execution",
-        )
+        # If script is not in workspace, we need to copy it or execute it differently
+        try:
+            script_rel = script_file.relative_to(self.workspace_dir)
+            # Script is in workspace, use direct path
+            return self.run_command(
+                command=["Rscript", f"/workspace/{script_rel}"],
+                working_dir=docker_working_dir,
+                environment=environment,
+                session_key="r_execution",
+            )
+        except ValueError:
+            # Script is outside workspace, execute by reading content
+            script_content = script_file.read_text(encoding="utf-8")
+            # Create a temporary file in the container and execute it
+            temp_script = f"/tmp/{script_file.name}"
+            # First write the script content to a temp file, then execute it
+            import shlex
+
+            escaped_content = shlex.quote(script_content)
+            return self.run_command(
+                command=[
+                    "sh",
+                    "-c",
+                    f"echo {escaped_content} > {temp_script} && Rscript {temp_script}",
+                ],
+                working_dir=docker_working_dir,
+                environment=environment,
+                session_key="r_execution",
+            )
 
     def run_latex_compilation(
         self, tex_file: Path, working_dir: Path | None = None, passes: int = 3

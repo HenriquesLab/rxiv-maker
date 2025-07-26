@@ -1,6 +1,5 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15752358.svg)](https://doi.org/10.5281/zenodo.15752358)
 [![License](https://img.shields.io/github/license/henriqueslab/rxiv-maker?color=Green)](https://github.com/henriqueslab/rxiv-maker/blob/main/LICENSE)
-[![Build status](https://ci.appveyor.com/api/projects/status/github/henriqueslab/rxiv-maker?svg=true)](https://ci.appveyor.com/project/henriqueslab/rxiv-maker)
 [![GitHub stars](https://img.shields.io/github/stars/henriqueslab/rxiv-maker?style=social)](https://github.com/HenriquesLab/rxiv-maker/stargazers)
 
 # Rxiv-Maker

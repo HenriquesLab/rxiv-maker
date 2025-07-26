@@ -12,6 +12,7 @@ from ..conftest import requires_latex
 
 @pytest.mark.integration
 @pytest.mark.slow
+@pytest.mark.xdist_group(name="example_manuscript")
 @requires_latex
 class TestExampleManuscript:
     """Test the full pipeline for EXAMPLE_MANUSCRIPT."""

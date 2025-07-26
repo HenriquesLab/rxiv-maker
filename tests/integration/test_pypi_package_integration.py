@@ -14,6 +14,7 @@ import pytest
 from ..conftest import requires_latex
 
 
+@pytest.mark.xdist_group(name="pypi_integration")
 class TestPyPIPackageIntegration:
     """Test that the PyPI package contains all necessary files for building PDFs."""
 

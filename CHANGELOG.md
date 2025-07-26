@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.4.11] - 2025-07-26
+
+### Fixed
+- **Windows Cross-Platform Compatibility**: Fixed Windows platform detector tests to handle path separators correctly
+- **File Permission Issues**: Resolved log file cleanup permission errors on Windows systems
+- **SVG Placeholder Generation**: Fixed path validation errors when creating SVG placeholders in temporary directories
+- **Container Script Execution**: Improved Docker container script execution with better error handling
+
 ## [v1.4.9] - 2025-07-26
 
 ### Fixed

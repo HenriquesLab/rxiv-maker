@@ -8,9 +8,12 @@ from pathlib import Path
 
 import pytest
 
+from rxiv_maker.core import logging_config
+
 
 @pytest.mark.validation
 @pytest.mark.integration
+@pytest.mark.xdist_group(name="validation_workflow")
 class TestValidationWorkflow:
     """Test validation workflow integration."""
 
@@ -26,6 +29,8 @@ class TestValidationWorkflow:
 
     def teardown_method(self):
         """Clean up test fixtures after each test method."""
+        # Ensure logging cleanup for Windows file locking issues
+        logging_config.cleanup()
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def create_valid_manuscript(self):

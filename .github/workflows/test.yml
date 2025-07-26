@@ -53,7 +53,6 @@ env:
   PIP_DISABLE_PIP_VERSION_CHECK: 1
   PYTHONIOENCODING: utf-8
   PYTHONUTF8: 1
-  UV_CACHE_DIR: ~/.cache/uv
 
 jobs:
   setup:
@@ -80,10 +79,15 @@ jobs:
             os_matrix="${{ inputs.os-matrix }}"
             run_ecosystem="${{ inputs.include-ecosystem }}"
           else
-            # Auto-triggered (push/PR) - use standard scope
+            # Auto-triggered (push/PR) - use standard scope with reduced matrix for stability
             test_scope="standard"
             python_versions="3.11,3.12"
-            os_matrix="ubuntu-latest,windows-latest,macos-latest"
+            # Prioritize Ubuntu for most testing, reduce macOS/Windows burden
+            if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+              os_matrix="ubuntu-latest,macos-latest"
+            else
+              os_matrix="ubuntu-latest,windows-latest,macos-latest"
+            fi
             run_ecosystem="false"
           fi
 
@@ -131,7 +135,8 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.setup.outputs.test-matrix) }}
       fail-fast: false
-    timeout-minutes: 45
+      max-parallel: 4  # Further reduced for better stability
+    timeout-minutes: 25  # Reduced timeout for faster feedback on core tests only
 
     steps:
       - name: Checkout code

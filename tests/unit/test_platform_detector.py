@@ -152,8 +152,9 @@ class TestPlatformDetector(unittest.TestCase):
             # Mock both venv_dir.exists() and python_path.exists() calls
             with patch("pathlib.Path.exists", return_value=True):
                 result = self.detector.get_venv_python_path()
-                # The actual implementation uses forward slashes even on Windows with pathlib
-                self.assertEqual(result, ".venv/Scripts/python.exe")
+                # The actual implementation returns string representation which uses OS path separators
+                expected = str(Path(".venv") / "Scripts" / "python.exe")
+                self.assertEqual(result, expected)
 
     def test_venv_python_path_unix(self):
         """Test virtual environment Python path on Unix."""
@@ -161,7 +162,9 @@ class TestPlatformDetector(unittest.TestCase):
             # Mock both venv_dir.exists() and python_path.exists() calls
             with patch("pathlib.Path.exists", return_value=True):
                 result = self.detector.get_venv_python_path()
-                self.assertEqual(result, ".venv/bin/python")
+                # The actual implementation returns string representation which uses OS path separators
+                expected = str(Path(".venv") / "bin" / "python")
+                self.assertEqual(result, expected)
 
     @patch("pathlib.Path.exists", return_value=False)
     def test_venv_python_path_not_exists(self, mock_exists):
@@ -171,20 +174,25 @@ class TestPlatformDetector(unittest.TestCase):
 
     def test_venv_activate_path_windows(self):
         """Test virtual environment activate path on Windows."""
-        with patch.object(self.detector, "is_windows", return_value=True):
-            # Mock both venv_dir.exists() and activate_path.exists() calls
-            with patch("pathlib.Path.exists", return_value=True):
-                result = self.detector.get_venv_activate_path()
-                # The actual implementation uses forward slashes even on Windows with pathlib
-                self.assertEqual(result, ".venv/Scripts/activate")
+        with (
+            patch.object(self.detector, "is_windows", return_value=True),
+            patch("pathlib.Path.exists", return_value=True),
+        ):
+            result = self.detector.get_venv_activate_path()
+            # The actual implementation returns string representation which uses OS path separators
+            expected = str(Path(".venv") / "Scripts" / "activate")
+            self.assertEqual(result, expected)
 
     def test_venv_activate_path_unix(self):
         """Test virtual environment activate path on Unix."""
-        with patch.object(self.detector, "is_windows", return_value=False):
-            # Mock both venv_dir.exists() and activate_path.exists() calls
-            with patch("pathlib.Path.exists", return_value=True):
-                result = self.detector.get_venv_activate_path()
-                self.assertEqual(result, ".venv/bin/activate")
+        with (
+            patch.object(self.detector, "is_windows", return_value=False),
+            patch("pathlib.Path.exists", return_value=True),
+        ):
+            result = self.detector.get_venv_activate_path()
+            # The actual implementation returns string representation which uses OS path separators
+            expected = str(Path(".venv") / "bin" / "activate")
+            self.assertEqual(result, expected)
 
     @patch("subprocess.run")
     def test_run_command_windows(self, mock_run):
