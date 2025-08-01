@@ -1,6 +1,11 @@
-name: Claude Code
+name: Claude Assistant
 
 on:
+  # Automated code review triggers
+  pull_request:
+    types: [opened, synchronize]
+
+  # Interactive assistant triggers
   issue_comment:
     types: [created]
   pull_request_review_comment:
@@ -11,7 +16,50 @@ on:
     types: [submitted]
 
 jobs:
-  claude:
+  # Job 1: Automated code review on PR events
+  automated-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@beta
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
+          # model: "claude-opus-4-20250514"
+
+          # Direct prompt for automated review (no @claude mention needed)
+          direct_prompt: |
+            Please review this pull request and provide feedback on:
+            - Code quality and best practices
+            - Potential bugs or issues
+            - Performance considerations
+            - Security concerns
+            - Test coverage
+
+            Be constructive and helpful in your feedback.
+
+          # Optional: Use sticky comments to make Claude reuse the same comment on subsequent pushes to the same PR
+          # use_sticky_comment: true
+
+          # Optional: Add specific tools for running tests or linting
+          # allowed_tools: "Bash(npm run test),Bash(npm run lint),Bash(npm run typecheck)"
+
+  # Job 2: Interactive assistant responding to @claude mentions
+  interactive-assistant:
     if: |
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
@@ -24,6 +72,7 @@ jobs:
       issues: read
       id-token: write
       actions: read # Required for Claude to read CI results on PRs
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -39,26 +88,25 @@ jobs:
           # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
             actions: read
-          
+
           # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
           # model: "claude-opus-4-20250514"
-          
+
           # Optional: Customize the trigger phrase (default: @claude)
           # trigger_phrase: "/claude"
-          
+
           # Optional: Trigger when specific user is assigned to an issue
           # assignee_trigger: "claude-bot"
-          
+
           # Optional: Allow Claude to run specific commands
           # allowed_tools: "Bash(npm install),Bash(npm run build),Bash(npm run test:*),Bash(npm run lint:*)"
-          
+
           # Optional: Add custom instructions for Claude to customize its behavior for your project
           # custom_instructions: |
           #   Follow our coding standards
           #   Ensure all new code has tests
           #   Use TypeScript for new files
-          
+
           # Optional: Custom environment variables for Claude
           # claude_env: |
           #   NODE_ENV: test
-

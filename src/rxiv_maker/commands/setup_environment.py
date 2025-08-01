@@ -211,11 +211,11 @@ class EnvironmentSetup:
     def show_completion_message(self):
         """Show completion message with next steps."""
         self.log("Setup complete! Here's what you can do next:")
-        print("  📄 Run 'make pdf' to create your first document")
-        print("  🔍 Run 'make validate' to check your manuscript")
+        print("  📄 Run 'rxiv pdf' to create your first document")
+        print("  🔍 Run 'rxiv validate' to check your manuscript")
         print("  🎨 Add figure scripts to MANUSCRIPT/FIGURES/ directory")
-        print("  📚 Run 'make help' to see all available commands")
-        print("  🔧 Run 'make check-deps' to verify system dependencies")
+        print("  📚 Run 'rxiv --help' to see all available commands")
+        print("  🔧 Run 'rxiv check-deps' to verify system dependencies")
         print()
 
         # Check if we have missing dependencies to show appropriate guidance
