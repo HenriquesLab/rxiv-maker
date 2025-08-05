@@ -84,7 +84,7 @@ def arxiv(
                     output_dir=output_dir,
                     verbose=verbose,
                 )
-                success = build_manager.build()
+                success = build_manager.run()
                 if not success:
                     console.print(
                         "❌ PDF build failed. Cannot prepare arXiv package.",
@@ -109,7 +109,7 @@ def arxiv(
             ]
 
             if not no_zip:
-                args.extend(["--zip-filename", zip_filename, "--zip"])
+                args.extend(["--zip-filename", zip_filename, "--create-zip"])
 
             if verbose:
                 args.append("--verbose")
