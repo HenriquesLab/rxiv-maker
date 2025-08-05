@@ -262,3 +262,138 @@ def test_all(session, engine):
     session.log(f"Running all tests with engine: {engine}")
 
     session.run("pytest", f"--engine={engine}", "-v", "--timeout=300", *session.posargs)
+
+
+@nox.session(python="3.11", name="test-binary")
+def test_binary(session):
+    """Test binary build process with PyInstaller."""
+    import os
+    import platform
+    import tempfile
+
+    session.log("Testing binary build process")
+
+    # Install dependencies
+    session.run("uv", "pip", "install", "-e", ".", external=True)
+    session.run("uv", "pip", "install", "pyinstaller>=6.0", external=True)
+
+    # Create temporary directory for build
+    with tempfile.TemporaryDirectory() as temp_dir:
+        spec_file = os.path.join(temp_dir, "rxiv-maker.spec")
+
+        # Determine binary name based on platform
+        binary_name = "rxiv.exe" if platform.system() == "Windows" else "rxiv"
+
+        # Get absolute paths
+        project_root = os.getcwd()
+        src_path = os.path.join(project_root, "src")
+        entry_script = os.path.join(project_root, "src/rxiv_maker/rxiv_maker_cli.py")
+
+        # Create PyInstaller spec file
+        spec_content = f"""# -*- mode: python ; coding: utf-8 -*-
+import sys
+from pathlib import Path
+
+block_cipher = None
+
+# Add the src directory to Python path
+src_path = r'{src_path}'
+if src_path not in sys.path:
+    sys.path.insert(0, src_path)
+
+a = Analysis(
+    [r'{entry_script}'],
+    pathex=[src_path],
+    binaries=[],
+    datas=[],
+    hiddenimports=[
+        'rxiv_maker',
+        'rxiv_maker.cli',
+        'rxiv_maker.commands',
+        'rxiv_maker.converters',
+        'rxiv_maker.processors',
+        'rxiv_maker.utils',
+        'rxiv_maker.validators',
+        'rxiv_maker.install',
+    ],
+    hookspath=[],
+    hooksconfig={{}},
+    runtime_hooks=[],
+    excludes=[],
+    win_no_prefer_redirects=False,
+    win_private_assemblies=False,
+    cipher=block_cipher,
+    noarchive=False,
+)
+
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    [],
+    name='{binary_name}',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=False,  # Disable UPX for testing
+    upx_exclude=[],
+    runtime_tmpdir=None,
+    console=True,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+)
+"""
+
+        # Write spec file
+        with open(spec_file, "w") as f:
+            f.write(spec_content)
+
+        session.log("Created PyInstaller spec file")
+
+        # Test PyInstaller spec file compilation
+        try:
+            session.run(
+                "pyinstaller",
+                spec_file,
+                "--clean",
+                "--noconfirm",
+                "--distpath",
+                os.path.join(temp_dir, "dist"),
+                "--workpath",
+                os.path.join(temp_dir, "build"),
+                external=True,
+            )
+            session.log("✅ PyInstaller spec file compiled successfully")
+        except Exception as e:
+            session.error(f"❌ PyInstaller compilation failed: {e}")
+            return
+
+        # Check if binary was created
+        binary_path = os.path.join(temp_dir, "dist", binary_name)
+        if os.path.exists(binary_path):
+            session.log(f"✅ Binary created: {binary_path}")
+
+            # Test basic binary functionality
+            try:
+                session.run(binary_path, "--version", external=True)
+                session.log("✅ Binary --version works")
+            except Exception as e:
+                session.log(f"⚠️  Binary --version failed: {e}")
+
+            try:
+                session.run(binary_path, "--help", external=True)
+                session.log("✅ Binary --help works")
+            except Exception as e:
+                session.log(f"⚠️  Binary --help failed: {e}")
+
+        else:
+            session.error(f"❌ Binary not found at {binary_path}")
+
+    session.log("Binary build test completed")

@@ -175,7 +175,7 @@ jobs:
               ['src/rxiv_maker/rxiv_maker_cli.py'],
               pathex=[src_path],
               binaries=[],
-              data=[
+              datas=[
                   ('src/rxiv_maker/tex', 'rxiv_maker/tex'),
                   ('src/rxiv_maker/install/templates', 'rxiv_maker/install/templates'),
                   ('src/rxiv_maker/utils/schemas', 'rxiv_maker/utils/schemas'),
@@ -208,7 +208,7 @@ jobs:
               a.scripts,
               a.binaries,
               a.zipfiles,
-              a.data,
+              a.datas,
               [],
               name='${{ matrix.binary_name }}',
               debug=False,
