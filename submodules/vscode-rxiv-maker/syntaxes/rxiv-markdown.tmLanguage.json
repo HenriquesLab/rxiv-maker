@@ -1,0 +1,270 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Rxiv-Markdown",
+  "scopeName": "source.rxiv-markdown",
+  "fileTypes": ["rxm"],
+  "patterns": [
+    {
+      "name": "comment.block.html",
+      "begin": "<!--",
+      "end": "-->",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.comment.begin.html"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.comment.end.html"}
+      },
+      "comment": "HTML-style comments"
+    },
+    {
+      "name": "markup.heading.1.markdown",
+      "match": "^(#{1})\\s+(.*)$",
+      "captures": {
+        "1": {"name": "punctuation.definition.heading.markdown"},
+        "2": {"name": "entity.name.section.markdown"}
+      },
+      "comment": "Heading level 1"
+    },
+    {
+      "name": "markup.heading.2.markdown",
+      "match": "^(#{2})\\s+(.*)$",
+      "captures": {
+        "1": {"name": "punctuation.definition.heading.markdown"},
+        "2": {"name": "entity.name.section.markdown"}
+      },
+      "comment": "Heading level 2"
+    },
+    {
+      "name": "markup.heading.3.markdown",
+      "match": "^(#{3})\\s+(.*)$",
+      "captures": {
+        "1": {"name": "punctuation.definition.heading.markdown"},
+        "2": {"name": "entity.name.section.markdown"}
+      },
+      "comment": "Heading level 3"
+    },
+    {
+      "name": "markup.heading.4.markdown",
+      "match": "^(#{4})\\s+(.*)$",
+      "captures": {
+        "1": {"name": "punctuation.definition.heading.markdown"},
+        "2": {"name": "entity.name.section.markdown"}
+      },
+      "comment": "Heading level 4"
+    },
+    {
+      "name": "markup.heading.5.markdown",
+      "match": "^(#{5})\\s+(.*)$",
+      "captures": {
+        "1": {"name": "punctuation.definition.heading.markdown"},
+        "2": {"name": "entity.name.section.markdown"}
+      },
+      "comment": "Heading level 5"
+    },
+    {
+      "name": "markup.heading.6.markdown",
+      "match": "^(#{6})\\s+(.*)$",
+      "captures": {
+        "1": {"name": "punctuation.definition.heading.markdown"},
+        "2": {"name": "entity.name.section.markdown"}
+      },
+      "comment": "Heading level 6"
+    },
+    {
+      "name": "markup.fenced_code.block.markdown",
+      "begin": "^\\s*```\\s*([a-zA-Z0-9_+-]*)",
+      "end": "^\\s*```\\s*$",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.markdown"},
+        "1": {"name": "fenced_code.block.language.markdown"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.markdown"}
+      },
+      "name": "markup.fenced_code.block.markdown",
+      "comment": "Fenced code blocks"
+    },
+    {
+      "name": "markup.inline.raw.string.markdown",
+      "begin": "`",
+      "end": "`",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.raw.markdown"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.raw.markdown"}
+      },
+      "contentName": "markup.inline.raw.string.markdown",
+      "comment": "Inline code"
+    },
+    {
+      "name": "markup.bold.markdown",
+      "match": "(\\*\\*|__)([^*_]+)(\\*\\*|__)",
+      "captures": {
+        "1": {"name": "punctuation.definition.bold.markdown"},
+        "2": {"name": "markup.bold.markdown"},
+        "3": {"name": "punctuation.definition.bold.markdown"}
+      },
+      "comment": "Bold text"
+    },
+    {
+      "name": "markup.italic.markdown",
+      "match": "(\\*|_)([^*_]+)(\\*|_)",
+      "captures": {
+        "1": {"name": "punctuation.definition.italic.markdown"},
+        "2": {"name": "markup.italic.markdown"},
+        "3": {"name": "punctuation.definition.italic.markdown"}
+      },
+      "comment": "Italic text"
+    },
+    {
+      "name": "markup.underline.link.markdown",
+      "match": "!?\\[([^\\]]*?)\\]\\(([^)]+)\\)",
+      "captures": {
+        "1": {"name": "string.other.link.title.markdown"},
+        "2": {"name": "markup.underline.link.markdown"}
+      },
+      "comment": "Links and images"
+    },
+    {
+      "name": "markup.list.unnumbered.markdown",
+      "match": "^\\s*([*+-])\\s+",
+      "captures": {
+        "1": {"name": "punctuation.definition.list.markdown"}
+      },
+      "comment": "Unordered lists"
+    },
+    {
+      "name": "markup.list.numbered.markdown",
+      "match": "^\\s*([0-9]+\\.)\\s+",
+      "captures": {
+        "1": {"name": "punctuation.definition.list.markdown"}
+      },
+      "comment": "Ordered lists"
+    },
+    {
+      "name": "markup.quote.markdown",
+      "match": "^\\s*(>)\\s*(.*)$",
+      "captures": {
+        "1": {"name": "punctuation.definition.quote.markdown"},
+        "2": {"name": "markup.quote.markdown"}
+      },
+      "comment": "Blockquotes"
+    },
+    {
+      "name": "meta.separator.markdown",
+      "match": "^\\s*(-{3,}|\\*{3,}|_{3,})\\s*$",
+      "comment": "Horizontal rules"
+    },
+    {
+      "name": "constant.numeric.subscript.rxiv",
+      "match": "~[^~]+~",
+      "comment": "Subscript notation with tilde syntax"
+    },
+    {
+      "name": "constant.numeric.subscript.rxiv",
+      "match": "<del>[^<>]+</del>",
+      "comment": "Subscript notation with del tag syntax"
+    },
+    {
+      "name": "keyword.operator.superscript.rxiv",
+      "match": "\\^[^\\^]+\\^",
+      "comment": "Superscript notation - supports x^2^ syntax"
+    },
+    {
+      "name": "keyword.control.newpage.rxiv",
+      "match": "<newpage>|<clearpage>",
+      "comment": "New page and clear page directives"
+    },
+    {
+      "name": "meta.figure.metadata.rxiv",
+      "begin": "\\{#",
+      "end": "\\}",
+      "comment": "Figure metadata block",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.metadata.begin.rxiv"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.metadata.end.rxiv"}
+      },
+      "patterns": [
+        {
+          "name": "variable.other.constant.rxiv",
+          "match": "(fig|sfig|table|stable|eq|snote):[a-zA-Z0-9_-]+",
+          "comment": "Reference labels like fig:test"
+        },
+        {
+          "name": "entity.other.attribute-name.rxiv",
+          "match": "\\b(width|height|tex_position)\\b",
+          "comment": "Attribute names"
+        },
+        {
+          "name": "string.quoted.double.rxiv",
+          "match": "\"[^\"]*\"",
+          "comment": "Double quoted values"
+        },
+        {
+          "name": "string.quoted.single.rxiv",
+          "match": "'[^']*'",
+          "comment": "Single quoted values"
+        },
+        {
+          "name": "keyword.operator.assignment.rxiv",
+          "match": "=",
+          "comment": "Assignment operator"
+        }
+      ]
+    },
+    {
+      "name": "keyword.control.rxiv",
+      "match": "@eq:[a-zA-Z0-9_-]+",
+      "comment": "Equation references"
+    },
+    {
+      "name": "entity.name.function.rxiv",
+      "match": "@snote:[a-zA-Z0-9_-]+",
+      "comment": "Supplementary note references"
+    },
+    {
+      "name": "constant.numeric.rxiv",
+      "match": "@s?fig:[a-zA-Z0-9_-]+",
+      "comment": "Figure references"
+    },
+    {
+      "name": "variable.other.rxiv",
+      "match": "@s?table:[a-zA-Z0-9_-]+",
+      "comment": "Table references"
+    },
+    {
+      "name": "string.quoted.double.rxiv",
+      "match": "@[a-zA-Z0-9_]+",
+      "comment": "Citations"
+    },
+    {
+      "name": "string.other.math.block.rxiv",
+      "begin": "\\$\\$",
+      "end": "\\$\\$",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.math.begin.rxiv"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.math.end.rxiv"}
+      },
+      "contentName": "markup.math.block.rxiv",
+      "comment": "Block math expressions $$...$$"
+    },
+    {
+      "name": "string.other.math.inline.rxiv",
+      "begin": "(?<!\\$)\\$(?!\\$)",
+      "end": "(?<!\\$)\\$(?!\\$)",
+      "beginCaptures": {
+        "0": {"name": "punctuation.definition.math.begin.rxiv"}
+      },
+      "endCaptures": {
+        "0": {"name": "punctuation.definition.math.end.rxiv"}
+      },
+      "contentName": "markup.math.inline.rxiv",
+      "comment": "Inline math expressions $...$"
+    }
+  ]
+}
