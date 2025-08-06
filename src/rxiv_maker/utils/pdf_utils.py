@@ -70,8 +70,8 @@ def copy_pdf_to_manuscript_folder(output_dir: str, yaml_metadata: dict[str, Any]
 
     # Generate custom filename
     custom_filename = get_custom_pdf_filename(yaml_metadata)
-    # Use current working directory for testability
-    manuscript_pdf_path = Path.cwd() / manuscript_path / custom_filename
+    # Use absolute path resolution to avoid nested directories
+    manuscript_pdf_path = Path(manuscript_path).resolve() / custom_filename
 
     try:
         shutil.copy2(output_pdf, manuscript_pdf_path)

@@ -74,7 +74,14 @@ class BuildManager:
         # Set up paths
         self.manuscript_dir = self.manuscript_dir_path
         self.figures_dir = self.manuscript_dir / "FIGURES"
-        self.style_dir = Path("src/tex/style")
+
+        # Find project root (where src directory is located)
+        project_root = Path(__file__).resolve().parent.parent.parent.parent
+        self.style_dir = project_root / "src" / "tex" / "style"
+        self.copy_pdf_script = project_root / "src" / "rxiv_maker" / "engine" / "copy_pdf.py"
+        self.analyze_word_count_script = project_root / "src" / "rxiv_maker" / "engine" / "analyze_word_count.py"
+        self.pdf_validator_script = project_root / "src" / "rxiv_maker" / "validators" / "pdf_validator.py"
+
         self.references_bib = self.manuscript_dir / "03_REFERENCES.bib"
 
         # Output file names
@@ -727,7 +734,7 @@ class BuildManager:
             python_parts = self.platform.python_cmd.split()
             cmd = [
                 python_parts[0] if python_parts else "python",
-                "src/rxiv_maker/engine/copy_pdf.py",
+                str(self.copy_pdf_script),
                 "--output-dir",
                 str(self.output_dir),
             ]
@@ -766,7 +773,7 @@ class BuildManager:
             python_parts = self.platform.python_cmd.split()
             cmd = [
                 python_parts[0] if python_parts else "python",
-                "src/rxiv_maker/engine/analyze_word_count.py",
+                str(self.analyze_word_count_script),
             ]
 
             if "uv run" in self.platform.python_cmd:
@@ -868,7 +875,7 @@ class BuildManager:
             python_parts = self.platform.python_cmd.split()
             cmd = [
                 python_parts[0] if python_parts else "python",
-                "src/rxiv_maker/validators/pdf_validator.py",
+                str(self.pdf_validator_script),
                 self.manuscript_path,
                 "--pdf-path",
                 str(self.output_pdf),
