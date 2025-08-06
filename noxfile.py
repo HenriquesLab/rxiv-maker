@@ -5,6 +5,12 @@ import nox
 # Configure nox to use uv as the default backend for faster environment creation
 nox.options.default_venv_backend = "uv"
 
+# Enable environment reuse to reduce disk usage and improve performance
+nox.options.reuse_existing_virtualenvs = True
+
+# Stop on first failure for faster feedback during development
+nox.options.stop_on_first_error = False
+
 # Configuration constants
 ENGINES = ["local", "docker"]  # Add "podman" here when ready
 PYTHON_VERSIONS = [
@@ -43,7 +49,7 @@ def check_engine_availability(session, engine):
 
 
 # Local Development Sessions
-@nox.session(python="3.11")
+@nox.session(python="3.11", reuse_venv=True)
 def format(session):
     """Format code with ruff (auto-fix)."""
     session.run("uv", "pip", "install", "ruff>=0.8.0", external=True)
@@ -51,14 +57,14 @@ def format(session):
     session.run("ruff", "check", "--fix", "src/", "tests/")
 
 
-@nox.session(python="3.11")
+@nox.session(python="3.11", reuse_venv=True)
 def lint(session):
     """Run comprehensive linting checks."""
     session.run("uv", "pip", "install", "ruff>=0.8.0", external=True)
     session.run("ruff", "check", "src/", "tests/")
 
 
-@nox.session(python="3.11")
+@nox.session(python="3.11", reuse_venv=True)
 def type_check(session):
     """Run type checking with mypy."""
     install_deps(
@@ -72,7 +78,7 @@ def type_check(session):
     session.run("mypy", "src/")
 
 
-@nox.session(python="3.11", name="test_local")
+@nox.session(python="3.11", name="test_local", reuse_venv=True)
 def test_local(session):
     """Run fast unit tests for local development feedback."""
     install_deps(session)
@@ -95,22 +101,25 @@ def test_local(session):
     )
 
 
-# CI/Matrix Sessions
-@nox.session(python=PYTHON_VERSIONS)
-@nox.parametrize("engine", ENGINES)
-@nox.parametrize("test_set", ["unit", "integration"])
-def test_matrix(session, engine, test_set):
-    """Matrix session for CI: runs unit and integration tests across engines and Python versions.
+# CI/Matrix Sessions - Optimized to reduce environment redundancy
+@nox.session(python=PYTHON_VERSIONS, reuse_venv=True)
+@nox.parametrize(
+    "test_config",
+    [
+        ("unit", "local"),  # Unit tests only run on local (engine-agnostic)
+        ("integration", "local"),  # Integration tests on both engines
+        ("integration", "docker"),
+    ],
+)
+def test_matrix(session, test_config):
+    """Optimized matrix session for CI: reduced redundancy compared to full matrix.
 
     Examples:
-        nox -s test_matrix(python="3.11", engine="local", test_set="unit")
-        nox -s test_matrix(engine="docker", test_set="integration")
+        nox -s test_matrix(python="3.11", test_config="('unit', 'local')")
+        nox -s test_matrix(test_config="('integration', 'docker')")
     """
+    test_set, engine = test_config
     install_deps(session)
-
-    # Skip redundant runs - unit tests are engine-agnostic except for local
-    if engine != "local" and test_set == "unit":
-        session.skip("Unit tests run only for 'local' engine to avoid redundancy.")
 
     # Check engine availability
     check_engine_availability(session, engine)
@@ -152,10 +161,13 @@ def test_matrix(session, engine, test_set):
     session.run(*args)
 
 
-@nox.session(python=PYTHON_VERSIONS)
+@nox.session(python=PYTHON_VERSIONS, reuse_venv=True)
 @nox.parametrize("engine", ENGINES)
 def test_ci(session, engine):
     """Primary CI session - backward compatible with existing GitHub Actions.
+
+    NOTE: This session is kept for backward compatibility but the optimized
+    test_matrix session is recommended for new workflows.
 
     Examples:
         nox -s test_ci(python="3.11", engine="local")
@@ -181,7 +193,7 @@ def test_ci(session, engine):
 
 
 # Comprehensive Testing Sessions
-@nox.session(python="3.11")
+@nox.session(python="3.11", reuse_venv=True)
 @nox.parametrize("engine", ENGINES)
 def test_full(session, engine):
     """Run comprehensive tests including slow tests with specified engine."""
@@ -199,7 +211,7 @@ def test_full(session, engine):
     )
 
 
-@nox.session(python="3.11")
+@nox.session(python="3.11", reuse_venv=True)
 @nox.parametrize("engine", ENGINES)
 def integration(session, engine):
     """Run integration tests with specified engine (backward compatible).
@@ -227,7 +239,7 @@ def integration(session, engine):
 
 
 # Advanced Features
-@nox.session(python="3.11")
+@nox.session(python="3.11", reuse_venv=True)
 def coverage(session):
     """Combine coverage reports from CI runs and generate final report."""
     install_deps(session, extra_deps=["coverage[toml]>=7.0"])
@@ -245,7 +257,7 @@ def coverage(session):
     session.log("Coverage reports generated: coverage_html/, coverage.xml")
 
 
-@nox.session(python="3.11")
+@nox.session(python="3.11", reuse_venv=True)
 def docs(session):
     """Generate API documentation using lazydocs."""
     install_deps(session, extra_deps=["lazydocs>=0.4.8"])
@@ -258,7 +270,7 @@ def docs(session):
     session.log("API documentation generated in docs/api/ directory")
 
 
-@nox.session(python="3.11")
+@nox.session(python="3.11", reuse_venv=True)
 def security(session):
     """Run comprehensive security checks."""
     install_deps(session, extra_deps=["bandit[toml]>=1.7.0", "safety>=2.3.0"])
@@ -275,7 +287,7 @@ def security(session):
 
 
 # Binary Testing
-@nox.session(python="3.11", name="test_binary")
+@nox.session(python="3.11", name="test_binary", reuse_venv=True)
 def test_binary(session):
     """Test binary build process with PyInstaller."""
     import os
@@ -409,8 +421,8 @@ exe = EXE(
     session.log("Binary build test completed")
 
 
-# Legacy/Backward Compatibility Sessions
-@nox.session(python=PYTHON_VERSIONS)
+# Legacy/Backward Compatibility Sessions - Reduced to essential only
+@nox.session(python=PYTHON_VERSIONS, reuse_venv=True)
 @nox.parametrize("engine", ENGINES)
 def tests(session, engine):
     """Legacy session name for backward compatibility with existing workflows."""
@@ -418,23 +430,162 @@ def tests(session, engine):
     test_ci(session, engine)
 
 
-@nox.session(python="3.11", name="test-fast")
-def test_fast(session):
-    """Legacy session name for backward compatibility."""
-    # Delegate to the new test_local session
-    test_local(session)
+# Environment Management Sessions
+@nox.session(python=False)
+def clean(session):
+    """Clean up nox environments to free disk space.
+
+    This session removes old and unused nox virtual environments.
+    Use with caution as this will delete all existing environments.
+
+    Examples:
+        nox -s clean                    # Interactive cleanup
+        nox -s clean -- --all           # Clean all environments
+        nox -s clean -- --older-than 7  # Clean environments older than 7 days
+    """
+    import shutil
+    import time
+    from pathlib import Path
+
+    nox_dir = Path(".nox")
+    if not nox_dir.exists():
+        session.log("No .nox directory found - nothing to clean")
+        return
+
+    # Parse arguments
+    clean_all = "--all" in session.posargs
+    older_than_days = None
+
+    for i, arg in enumerate(session.posargs):
+        if arg == "--older-than" and i + 1 < len(session.posargs):
+            try:
+                older_than_days = int(session.posargs[i + 1])
+            except ValueError:
+                session.error("Invalid --older-than value. Must be a number.")
+
+    current_time = time.time()
+    total_size_before = 0
+    total_size_after = 0
+
+    # Calculate initial size
+    for env_dir in nox_dir.iterdir():
+        if env_dir.is_dir():
+            size = sum(f.stat().st_size for f in env_dir.rglob("*") if f.is_file())
+            total_size_before += size
+
+    session.log(f"Current .nox directory size: {total_size_before / (1024**3):.2f} GB")
+
+    environments_to_remove = []
+
+    for env_dir in nox_dir.iterdir():
+        if not env_dir.is_dir():
+            continue
+
+        env_age_days = (current_time - env_dir.stat().st_mtime) / (24 * 3600)
+        size = sum(f.stat().st_size for f in env_dir.rglob("*") if f.is_file())
+        size_mb = size / (1024**2)
+
+        should_remove = False
+        reason = ""
+
+        if clean_all:
+            should_remove = True
+            reason = "cleaning all environments"
+        elif older_than_days and env_age_days > older_than_days:
+            should_remove = True
+            reason = f"older than {older_than_days} days (age: {env_age_days:.1f} days)"
+
+        if should_remove:
+            environments_to_remove.append((env_dir, size, reason))
+            session.log(f"Will remove: {env_dir.name} ({size_mb:.1f} MB) - {reason}")
+
+    if not environments_to_remove:
+        session.log("No environments to remove based on criteria")
+        return
+
+    # Confirm removal unless --all is specified
+    if not clean_all:
+        response = input(f"\nRemove {len(environments_to_remove)} environment(s)? [y/N]: ")
+        if response.lower() not in ["y", "yes"]:
+            session.log("Cleanup cancelled")
+            return
+
+    # Remove environments
+    removed_size = 0
+    for env_dir, size, _reason in environments_to_remove:
+        try:
+            shutil.rmtree(env_dir)
+            removed_size += size
+            session.log(f"✅ Removed: {env_dir.name}")
+        except Exception as e:
+            session.log(f"❌ Failed to remove {env_dir.name}: {e}")
+
+    total_size_after = total_size_before - removed_size
+
+    session.log("\n📊 Cleanup Summary:")
+    session.log(f"  • Removed: {len(environments_to_remove)} environments")
+    session.log(f"  • Freed space: {removed_size / (1024**3):.2f} GB")
+    session.log(f"  • New .nox size: {total_size_after / (1024**3):.2f} GB")
+    session.log(f"  • Space reduction: {(removed_size / total_size_before) * 100:.1f}%")
 
 
-@nox.session(python="3.11", name="test-quick")
-def test_quick(session):
-    """Legacy session name for backward compatibility."""
-    # Delegate to the new test_local session
-    test_local(session)
+@nox.session(python=False)
+def clean_all(session):
+    """Clean all nox environments - equivalent to 'nox -s clean -- --all'."""
+    import shutil
+    from pathlib import Path
+
+    nox_dir = Path(".nox")
+    if not nox_dir.exists():
+        session.log("No .nox directory found - nothing to clean")
+        return
+
+    total_size_before = 0
+
+    # Calculate initial size
+    for env_dir in nox_dir.iterdir():
+        if env_dir.is_dir():
+            size = sum(f.stat().st_size for f in env_dir.rglob("*") if f.is_file())
+            total_size_before += size
+
+    session.log(f"Current .nox directory size: {total_size_before / (1024**3):.2f} GB")
+
+    environments_to_remove = []
+
+    for env_dir in nox_dir.iterdir():
+        if not env_dir.is_dir():
+            continue
+
+        size = sum(f.stat().st_size for f in env_dir.rglob("*") if f.is_file())
+        size_mb = size / (1024**2)
+        environments_to_remove.append((env_dir, size, "cleaning all environments"))
+        session.log(f"Will remove: {env_dir.name} ({size_mb:.1f} MB)")
+
+    if not environments_to_remove:
+        session.log("No environments to remove")
+        return
+
+    # Remove environments
+    removed_size = 0
+    for env_dir, size, _reason in environments_to_remove:
+        try:
+            shutil.rmtree(env_dir)
+            removed_size += size
+            session.log(f"✅ Removed: {env_dir.name}")
+        except Exception as e:
+            session.log(f"❌ Failed to remove {env_dir.name}: {e}")
+
+    total_size_after = total_size_before - removed_size
+
+    session.log("\n📊 Cleanup Summary:")
+    session.log(f"  • Removed: {len(environments_to_remove)} environments")
+    session.log(f"  • Freed space: {removed_size / (1024**3):.2f} GB")
+    session.log(f"  • New .nox size: {total_size_after / (1024**3):.2f} GB")
+    session.log(f"  • Space reduction: {(removed_size / total_size_before) * 100:.1f}%")
 
 
-@nox.session(python="3.11", name="test-all")
-@nox.parametrize("engine", ENGINES)
-def test_all(session, engine):
-    """Legacy session name for backward compatibility."""
-    # Delegate to the new test_full session
-    test_full(session, engine)
+# Removed redundant legacy sessions: test-fast, test-quick, test-all
+# These created separate environments but offered no unique functionality.
+# Use these alternatives:
+# - Instead of test-fast or test-quick: use 'nox -s test_local'
+# - Instead of test-all: use 'nox -s test_full'
