@@ -328,7 +328,7 @@ class LinuxInstaller:
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=1800,  # 30 minutes timeout
+                timeout=900,  # 15 minutes timeout - reduced from 30 minutes
             )
 
             if result.returncode == 0:

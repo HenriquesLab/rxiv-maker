@@ -10,10 +10,13 @@ import pytest
 import yaml
 
 
+@pytest.mark.package_manager
+@pytest.mark.homebrew
+@pytest.mark.pypi
 class TestHomebrewFormula:
     """Test Homebrew formula structure and validity."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def formula_path(self):
         """Get path to Homebrew formula."""
         return (
@@ -42,53 +45,54 @@ class TestHomebrewFormula:
         assert "def install" in content
         assert "test do" in content
 
-    def test_formula_binary_urls(self, formula_path):
-        """Test that formula uses binary URLs, not Python source."""
+    def test_formula_pypi_urls(self, formula_path):
+        """Test that formula uses PyPI source URLs."""
         content = formula_path.read_text()
 
-        # Should point to GitHub releases, not PyPI
-        assert "github.com/henriqueslab/rxiv-maker/releases" in content
-        assert "files.pythonhosted.org" not in content  # No PyPI source
+        # Should point to PyPI, not GitHub releases
+        assert "files.pythonhosted.org" in content  # PyPI source
 
-        # Should have platform-specific binaries
-        assert "macos-arm64" in content or "macos-x64" in content
-        assert "linux-x64" in content
+        # Should have proper PyPI package structure
+        assert "rxiv_maker-" in content
+        assert ".tar.gz" in content
 
-    def test_formula_no_python_dependencies(self, formula_path):
-        """Test that formula doesn't include Python dependencies."""
+    def test_formula_python_dependencies(self, formula_path):
+        """Test that formula includes Python dependencies."""
         content = formula_path.read_text()
 
-        # Should not depend on Python
-        assert 'depends_on "python' not in content
+        # Should depend on Python
+        assert 'depends_on "python' in content
 
-        # Should not have resource blocks for Python packages
-        assert "resource " not in content
-        assert "virtualenv_install_with_resources" not in content
+        # Should have resource blocks for Python packages
+        assert "resource " in content
+        assert "virtualenv_install_with_resources" in content
 
     def test_formula_install_method(self, formula_path):
-        """Test that install method is binary-focused."""
+        """Test that install method uses virtualenv for Python packages."""
         content = formula_path.read_text()
 
-        # Should install binary directly
-        assert 'bin.install "rxiv"' in content
-        assert "chmod 0755" in content  # Should set executable permissions
+        # Should use virtualenv installation
+        assert "virtualenv_install_with_resources" in content
+        assert "def install" in content
 
     def test_formula_test_section(self, formula_path):
         """Test that formula has proper test section."""
         content = formula_path.read_text()
 
-        # Should test binary functionality
-        assert 'shell_output("#{bin}/rxiv --version")' in content
+        # Should test CLI functionality
+        assert (
+            'shell_output("#{bin}/rxiv --version")' in content
+            or 'assert_match "version"' in content
+        )
         assert 'system bin/"rxiv", "--help"' in content
 
     def test_formula_architecture_support(self, formula_path):
         """Test that formula supports multiple architectures."""
         content = formula_path.read_text()
 
-        # Should have platform-specific sections
-        assert "on_macos do" in content
+        # Should have platform-specific dependency sections
         assert "on_linux do" in content
-        assert "Hardware::CPU.arm?" in content or "Hardware::CPU.intel?" in content
+        # May have additional dependencies like libyaml on Linux
 
     @pytest.mark.slow
     def test_formula_syntax_validation(self, formula_path):
@@ -110,10 +114,13 @@ class TestHomebrewFormula:
             pytest.skip("Ruby not available")
 
 
+@pytest.mark.package_manager
+@pytest.mark.scoop
+@pytest.mark.pypi
 class TestScoopManifest:
     """Test Scoop manifest structure and validity."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def manifest_path(self):
         """Get path to Scoop manifest."""
         return (
@@ -156,52 +163,52 @@ class TestScoopManifest:
         for field in required_fields:
             assert field in manifest, f"Required field '{field}' missing from manifest"
 
-    def test_manifest_binary_url(self, manifest_path):
-        """Test that manifest uses binary URL, not Python source."""
+    def test_manifest_pypi_url(self, manifest_path):
+        """Test that manifest uses PyPI source URL."""
         with open(manifest_path) as f:
             manifest = json.load(f)
 
         url = manifest["url"]
 
-        # Should point to GitHub releases
-        assert "github.com/henriqueslab/rxiv-maker/releases" in url
+        # Should point to PyPI source distribution
+        assert "files.pythonhosted.org" in url
 
-        # Should be Windows binary
-        assert "windows-x64.zip" in url
+        # Should be source distribution
+        assert "rxiv_maker-" in url
+        assert ".tar.gz" in url
 
-        # Should not be PyPI source
-        assert "files.pythonhosted.org" not in url
-
-    def test_manifest_no_python_dependencies(self, manifest_path):
-        """Test that manifest doesn't depend on Python."""
+    def test_manifest_python_dependencies(self, manifest_path):
+        """Test that manifest correctly depends on Python."""
         with open(manifest_path) as f:
             manifest = json.load(f)
 
-        # Should not depend on Python
+        # Should depend on Python
         depends = manifest.get("depends", [])
-        assert "python" not in depends
+        assert "python" in depends
 
-        # Should not have Python installation commands (documentation mentions are OK)
+        # Should have Python installation commands
         post_install = manifest.get("post_install", [])
         post_install_str = " ".join(post_install) if post_install else ""
 
-        # Check for actual Python installation commands (not just documentation)
-        # These would indicate the package actually installs Python dependencies
-        assert "pip install rxiv-maker" not in post_install_str.replace(
-            "use: pip install rxiv-maker", ""
-        )  # Allow documentation mention
-        assert "python -m pip install" not in post_install_str
-        assert "python.exe -m pip" not in post_install_str
+        # Should use pip to install the package
+        assert "pip install" in post_install_str
+        assert "rxiv-maker" in post_install_str
 
-    def test_manifest_binary_executable(self, manifest_path):
-        """Test that manifest specifies correct binary executable."""
+    def test_manifest_python_executable(self, manifest_path):
+        """Test that manifest specifies correct Python module executable."""
         with open(manifest_path) as f:
             manifest = json.load(f)
 
         bin_entry = manifest["bin"]
 
-        # Should be simple executable name
-        assert bin_entry == "rxiv.exe", f"Expected 'rxiv.exe', got '{bin_entry}'"
+        # Should be Python module runner configuration
+        assert isinstance(bin_entry, list), (
+            "Expected bin to be a list for Python module execution"
+        )
+        assert len(bin_entry) == 3, "Expected [python, command, module] format"
+        assert bin_entry[0] == "python"
+        assert bin_entry[1] == "rxiv"
+        assert bin_entry[2] == "-m rxiv_maker.cli"
 
     def test_manifest_checkver_configuration(self, manifest_path):
         """Test that manifest has proper version checking configuration."""
@@ -211,9 +218,10 @@ class TestScoopManifest:
         assert "checkver" in manifest
         checkver = manifest["checkver"]
 
-        # Should check GitHub releases
-        assert "github.com" in checkver["url"]
-        assert "releases/latest" in checkver["url"]
+        # Should check PyPI for version updates
+        assert "pypi.org" in checkver["url"]
+        assert "rxiv-maker" in checkver["url"]
+        assert "jsonpath" in checkver
 
     def test_manifest_autoupdate_configuration(self, manifest_path):
         """Test that manifest has proper auto-update configuration."""
@@ -223,12 +231,15 @@ class TestScoopManifest:
         assert "autoupdate" in manifest
         autoupdate = manifest["autoupdate"]
 
-        # Should auto-update from GitHub releases
-        assert "github.com" in autoupdate["url"]
-        assert "windows-x64.zip" in autoupdate["url"]
+        # Should auto-update from PyPI source distribution
+        assert "files.pythonhosted.org" in autoupdate["url"]
+        assert "rxiv_maker-" in autoupdate["url"]
         assert "$version" in autoupdate["url"]
+        assert ".tar.gz" in autoupdate["url"]
 
 
+@pytest.mark.package_manager
+@pytest.mark.integration
 class TestPackageManagerWorkflows:
     """Test package manager update workflows."""
 
@@ -313,6 +324,9 @@ class TestPackageManagerWorkflows:
         assert "update-manifest" in workflow["jobs"]
 
 
+@pytest.mark.package_manager
+@pytest.mark.integration
+@pytest.mark.slow
 class TestPackageManagerIntegration:
     """Integration tests for package manager functionality."""
 

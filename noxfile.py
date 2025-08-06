@@ -3,7 +3,11 @@
 import nox
 
 ENGINES = ["local", "docker"]  # Add "podman" here when ready
-PYTHON_VERSIONS = ["3.9", "3.10", "3.11", "3.12"]
+PYTHON_VERSIONS = [
+    "3.11",
+    "3.12",
+    "3.13",
+]  # Updated to match pyproject.toml requires-python >= 3.11
 
 # Set default sessions
 nox.options.sessions = ["lint", "tests"]
@@ -305,7 +309,7 @@ a = Analysis(
     [r'{entry_script}'],
     pathex=[src_path],
     binaries=[],
-    datas=[],
+    data=[],
     hiddenimports=[
         'rxiv_maker',
         'rxiv_maker.cli',

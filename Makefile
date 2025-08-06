@@ -267,6 +267,27 @@ test:
 	@echo "🧪 Running all tests..."
 	@$(PYTHON_CMD) -m pytest tests/ -v
 
+# Repository integrity and safeguard validation
+.PHONY: validate-repo
+validate-repo:
+	@echo "🛡️  Validating repository integrity and submodule boundaries..."
+	@scripts/safeguards/validate-submodules.sh
+	@$(PYTHON_CMD) scripts/safeguards/check-repo-boundaries.py
+
+.PHONY: test-safeguards
+test-safeguards:
+	@echo "🧪 Testing safeguards with simulated corruption scenarios..."
+	@scripts/safeguards/test-safeguards.sh
+
+.PHONY: test-submodule-guardrails
+test-submodule-guardrails:
+	@echo "🛡️  Testing submodule guardrails..."
+	@scripts/test-submodule-guardrails.sh
+
+.PHONY: validate-all
+validate-all: validate validate-repo
+	@echo "✅ All validation checks completed successfully!"
+
 # Run unit tests only
 .PHONY: test-unit
 test-unit:
@@ -415,6 +436,10 @@ help:
 	echo "  make install-deps - Install system dependencies (LaTeX, etc.)"; \
 	echo "  make pdf        - Generate PDF with validation"; \
 	echo "  make validate   - Check manuscript for issues"; \
+	echo "  make validate-repo - Check repository integrity"; \
+	echo "  make validate-all  - Run all validation checks"; \
+	echo "  make test-safeguards - Test repository safeguards"; \
+	echo "  make test-submodule-guardrails - Test submodule guardrails"; \
 	echo "  make clean      - Remove output files"; \
 	echo "  make arxiv      - Prepare arXiv submission"; \
 	echo ""; \

@@ -1,0 +1,276 @@
+name: Repository Integrity Validation
+
+on:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - '.gitmodules'
+      - 'submodules/**'
+      - 'scripts/safeguards/**'
+      - '.github/workflows/repository-integrity.yml'
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - '.gitmodules'
+      - 'submodules/**'
+      - 'scripts/safeguards/**'
+      - '.github/workflows/repository-integrity.yml'
+  schedule:
+    # Run daily at 2 AM UTC to catch any drift
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      deep_validation:
+        description: 'Run deep validation (slower but more thorough)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  validate-repository-integrity:
+    name: Validate Repository Integrity
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        # Fetch full history to enable submodule validation
+        fetch-depth: 0
+        # Initialize submodules for validation
+        submodules: 'recursive'
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y jq
+
+    - name: Make safeguard scripts executable
+      run: |
+        chmod +x scripts/safeguards/*.sh
+        chmod +x scripts/safeguards/*.py
+
+    - name: Validate submodule URLs and configuration
+      run: |
+        echo "::group::Validating .gitmodules configuration"
+
+        # Check that .gitmodules exists and is valid
+        if [[ ! -f .gitmodules ]]; then
+          echo "::error::.gitmodules file not found!"
+          exit 1
+        fi
+
+        echo "✅ .gitmodules file exists"
+
+        # Validate expected submodule URLs
+        expected_repos=(
+          "submodules/homebrew-rxiv-maker:https://github.com/henriqueslab/homebrew-rxiv-maker.git"
+          "submodules/scoop-rxiv-maker:https://github.com/henriqueslab/scoop-rxiv-maker.git"
+          "submodules/vscode-rxiv-maker:https://github.com/HenriquesLab/vscode-rxiv-maker.git"
+        )
+
+        for repo_info in "${expected_repos[@]}"; do
+          path="${repo_info%%:*}"
+          expected_url="${repo_info##*:}"
+
+          actual_url=$(git config -f .gitmodules --get "submodule.${path}.url" || echo "")
+
+          if [[ "$actual_url" != "$expected_url" ]]; then
+            echo "::error::Submodule ${path} has incorrect URL: '${actual_url}' (expected: '${expected_url}')"
+            exit 1
+          else
+            echo "✅ Submodule ${path} URL is correct"
+          fi
+        done
+
+        echo "::endgroup::"
+
+    - name: Run submodule integrity validation
+      run: |
+        echo "::group::Running submodule integrity validation"
+        scripts/safeguards/validate-submodules.sh
+        echo "::endgroup::"
+
+    - name: Run repository boundary validation
+      run: |
+        echo "::group::Running repository boundary validation"
+        python scripts/safeguards/check-repo-boundaries.py
+        echo "::endgroup::"
+
+    - name: Validate submodule content signatures
+      run: |
+        echo "::group::Validating content signatures"
+
+        # Check homebrew submodule
+        if [[ -d "submodules/homebrew-rxiv-maker" ]]; then
+          echo "Validating Homebrew submodule..."
+
+          if [[ ! -f "submodules/homebrew-rxiv-maker/Formula/rxiv-maker.rb" ]]; then
+            echo "::error::Homebrew submodule missing Formula/rxiv-maker.rb"
+            exit 1
+          fi
+
+          # Check for contamination
+          if find submodules/homebrew-rxiv-maker -name "*.py" -type f | grep -q .; then
+            echo "::error::Homebrew submodule contaminated with Python files"
+            find submodules/homebrew-rxiv-maker -name "*.py" -type f
+            exit 1
+          fi
+
+          echo "✅ Homebrew submodule is clean"
+        fi
+
+        # Check scoop submodule
+        if [[ -d "submodules/scoop-rxiv-maker" ]]; then
+          echo "Validating Scoop submodule..."
+
+          if [[ ! -f "submodules/scoop-rxiv-maker/bucket/rxiv-maker.json" ]]; then
+            echo "::error::Scoop submodule missing bucket/rxiv-maker.json"
+            exit 1
+          fi
+
+          # Validate JSON syntax
+          if ! jq empty submodules/scoop-rxiv-maker/bucket/rxiv-maker.json; then
+            echo "::error::Scoop manifest JSON is invalid"
+            exit 1
+          fi
+
+          # Check for contamination
+          if find submodules/scoop-rxiv-maker -name "*.py" -type f | grep -q .; then
+            echo "::error::Scoop submodule contaminated with Python files"
+            find submodules/scoop-rxiv-maker -name "*.py" -type f
+            exit 1
+          fi
+
+          echo "✅ Scoop submodule is clean"
+        fi
+
+        # Check VSCode submodule
+        if [[ -d "submodules/vscode-rxiv-maker" ]]; then
+          echo "Validating VSCode submodule..."
+
+          if [[ ! -f "submodules/vscode-rxiv-maker/package.json" ]]; then
+            echo "::error::VSCode submodule missing package.json"
+            exit 1
+          fi
+
+          if [[ ! -f "submodules/vscode-rxiv-maker/src/extension.ts" ]]; then
+            echo "::error::VSCode submodule missing src/extension.ts"
+            exit 1
+          fi
+
+          # Validate package.json is a VSCode extension
+          if ! jq -e '.engines.vscode' submodules/vscode-rxiv-maker/package.json > /dev/null; then
+            echo "::error::VSCode package.json missing vscode engine requirement"
+            exit 1
+          fi
+
+          # Check for main repo contamination
+          contamination_files=(
+            "submodules/vscode-rxiv-maker/pyproject.toml"
+            "submodules/vscode-rxiv-maker/Makefile"
+            "submodules/vscode-rxiv-maker/src/rxiv_maker"
+          )
+
+          for file in "${contamination_files[@]}"; do
+            if [[ -e "$file" ]]; then
+              echo "::error::VSCode submodule contaminated with main repo files: $file"
+              exit 1
+            fi
+          done
+
+          echo "✅ VSCode submodule is clean"
+        fi
+
+        echo "::endgroup::"
+
+    - name: Check for reverse contamination
+      run: |
+        echo "::group::Checking for reverse contamination"
+
+        # Main repo shouldn't have submodule-specific files
+        contamination_patterns=(
+          "Formula/*.rb:Homebrew"
+          "bucket/*.json:Scoop"
+          "src/extension.ts:VSCode"
+          "*.tmLanguage.json:VSCode"
+          ".vscodeignore:VSCode"
+        )
+
+        found_contamination=false
+
+        for pattern_info in "${contamination_patterns[@]}"; do
+          pattern="${pattern_info%%:*}"
+          source="${pattern_info##*:}"
+
+          # Find files matching pattern, excluding submodules directory
+          if find . -path "./submodules" -prune -o -name "${pattern##*/}" -type f -print | grep -q .; then
+            echo "::error::Main repository contaminated with ${source} files: ${pattern}"
+            find . -path "./submodules" -prune -o -name "${pattern##*/}" -type f -print | head -5
+            found_contamination=true
+          fi
+        done
+
+        if [[ "$found_contamination" == "true" ]]; then
+          exit 1
+        fi
+
+        echo "✅ No reverse contamination detected"
+        echo "::endgroup::"
+
+    - name: Deep validation (if requested)
+      if: github.event.inputs.deep_validation == 'true' || github.event_name == 'schedule'
+      run: |
+        echo "::group::Running deep validation"
+
+        # Check commit history for any signs of corruption
+        echo "Checking recent commits for repository integrity..."
+
+        # Look for commits that might indicate corruption
+        suspicious_patterns=(
+          "pyproject.toml.*submodules"
+          "src/rxiv_maker.*submodules"
+          "package.json.*submodules"
+          "Formula.*src/"
+        )
+
+        for pattern in "${suspicious_patterns[@]}"; do
+          if git log --oneline --since="30 days ago" | grep -i "$pattern"; then
+            echo "::warning::Found potentially suspicious commit pattern: $pattern"
+          fi
+        done
+
+        # Validate submodule commit consistency
+        echo "Validating submodule commit consistency..."
+        git submodule status
+
+        echo "::endgroup::"
+
+    - name: Generate integrity report
+      if: always()
+      run: |
+        echo "::group::Repository Integrity Report"
+        echo "Generated at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+        echo ""
+        echo "Submodule Status:"
+        git submodule status || echo "No submodules or submodule command failed"
+        echo ""
+        echo "Repository Structure:"
+        find submodules -type f -name "package.json" -o -name "*.rb" -o -name "*.json" | head -20
+        echo ""
+        echo "Recent .gitmodules changes:"
+        git log --oneline -n 5 -- .gitmodules || echo "No recent .gitmodules changes"
+        echo "::endgroup::"
+
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "::error::❌ Repository integrity validation FAILED!"
+        echo "::error::This indicates potential repository contamination or configuration issues."
+        echo "::error::Please review the validation errors above and fix any issues."
+        echo "::error::Contact the maintainers if you need help resolving these issues."

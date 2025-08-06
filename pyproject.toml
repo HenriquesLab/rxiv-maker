@@ -266,6 +266,7 @@ markers = [
     "package_manager: Package manager integration tests",
     "homebrew: Homebrew-specific tests",
     "scoop: Scoop-specific tests",
+    "pypi: PyPI distribution and integration tests",
     "end_to_end: End-to-end binary workflow tests",
     "platform_specific: Tests that only run on specific platforms",
     "performance: Performance benchmark tests",

@@ -90,5 +90,21 @@ repos:
         exclude: ^git_submodules/.*$
         pass_filenames: false
 
+  # Repository integrity and contamination prevention safeguards
+  - repo: local
+    hooks:
+      - id: validate-submodules
+        name: Validate submodule integrity
+        entry: scripts/safeguards/validate-submodules.sh
+        language: system
+        files: ^(\.gitmodules|submodules/.*)$
+        pass_filenames: false
+      - id: check-repo-boundaries
+        name: Check repository boundaries
+        entry: python scripts/safeguards/check-repo-boundaries.py
+        language: system
+        files: ^(\.gitmodules|submodules/.*|src/.*|pyproject\.toml|Makefile)$
+        pass_filenames: false
+
 default_language_version:
   python: python3

@@ -12,14 +12,14 @@ import pytest
 class TestCITestingMatrix:
     """Test CI testing matrix configuration for binary compatibility."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def test_workflow_path(self):
         """Get path to main test workflow."""
         return (
             Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
         )
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def release_workflow_path(self):
         """Get path to release workflow."""
         return (
