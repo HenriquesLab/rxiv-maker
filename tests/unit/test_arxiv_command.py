@@ -44,12 +44,12 @@ class TestArxivCommand:
                 # Manuscript directory exists
                 path_mock.exists.return_value = True
                 path_mock.name = "test_manuscript"
-            elif "output" in path_str and ".pdf" in path_str:
-                # PDF file doesn't exist
+            elif path_str.endswith("test_manuscript.pdf") or (path_str.endswith(".pdf") and "output" in path_str):
+                # PDF file doesn't exist - this will trigger BuildManager call
                 path_mock.exists.return_value = False
                 path_mock.name = "test_manuscript.pdf"
             else:
-                # Default mock for other Path calls (like os.path.join results)
+                # Default mock for other Path calls (like directory paths)
                 path_mock.exists.return_value = True
                 path_mock.name = "test_manuscript"
             return path_mock
@@ -89,12 +89,12 @@ class TestArxivCommand:
                 # Manuscript directory exists
                 path_mock.exists.return_value = True
                 path_mock.name = "test_manuscript"
-            elif "output" in path_str and ".pdf" in path_str:
-                # PDF file doesn't exist
+            elif path_str.endswith("test_manuscript.pdf") or (path_str.endswith(".pdf") and "output" in path_str):
+                # PDF file doesn't exist - this will trigger BuildManager call
                 path_mock.exists.return_value = False
                 path_mock.name = "test_manuscript.pdf"
             else:
-                # Default mock for other Path calls
+                # Default mock for other Path calls (like directory paths)
                 path_mock.exists.return_value = True
                 path_mock.name = "test_manuscript"
             return path_mock
@@ -301,12 +301,12 @@ class TestArxivCommand:
                 # Manuscript directory exists
                 path_mock.exists.return_value = True
                 path_mock.name = "test_manuscript"
-            elif "output" in path_str and ".pdf" in path_str:
-                # PDF file doesn't exist
+            elif path_str.endswith("test_manuscript.pdf") or (path_str.endswith(".pdf") and "output" in path_str):
+                # PDF file doesn't exist - this will trigger BuildManager call
                 path_mock.exists.return_value = False
                 path_mock.name = "test_manuscript.pdf"
             else:
-                # Default mock for other Path calls
+                # Default mock for other Path calls (like directory paths)
                 path_mock.exists.return_value = True
                 path_mock.name = "test_manuscript"
             return path_mock

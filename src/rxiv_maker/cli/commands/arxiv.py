@@ -59,11 +59,12 @@ def arxiv(
         )
         sys.exit(1)
 
-    # Set defaults
+    # Set defaults - make paths relative to manuscript directory
+    manuscript_output_dir = str(Path(manuscript_path) / output_dir)
     if arxiv_dir is None:
-        arxiv_dir = str(Path(output_dir) / "arxiv_submission")
+        arxiv_dir = str(Path(manuscript_output_dir) / "arxiv_submission")
     if zip_filename is None:
-        zip_filename = str(Path(output_dir) / "for_arxiv.zip")
+        zip_filename = str(Path(manuscript_output_dir) / "for_arxiv.zip")
 
     try:
         with Progress(
@@ -76,14 +77,14 @@ def arxiv(
             task = progress.add_task("Checking PDF exists...", total=None)
             # Build full PDF path string so Path() mock can be intercepted correctly
             pdf_filename = f"{Path(manuscript_path).name}.pdf"
-            pdf_path = Path(os.path.join(output_dir, pdf_filename))
+            pdf_path = Path(os.path.join(manuscript_output_dir, pdf_filename))
 
             if not pdf_path.exists():
                 progress.update(task, description="Building PDF first...")
                 # Use BuildManager imported at module level
                 build_manager = BuildManager(
                     manuscript_path=manuscript_path,
-                    output_dir=output_dir,
+                    output_dir=output_dir,  # BuildManager handles making this relative to manuscript_path
                     verbose=verbose,
                 )
                 success = build_manager.run()
@@ -100,7 +101,7 @@ def arxiv(
             # Prepare arguments
             args = [
                 "--output-dir",
-                output_dir,
+                manuscript_output_dir,
                 "--arxiv-dir",
                 arxiv_dir,
                 "--manuscript-path",
