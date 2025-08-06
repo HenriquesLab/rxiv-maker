@@ -9,7 +9,6 @@ import os
 import threading
 from datetime import datetime, timedelta
 from pathlib import Path
-from types import ModuleType
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
