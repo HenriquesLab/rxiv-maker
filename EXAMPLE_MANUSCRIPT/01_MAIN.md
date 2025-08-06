@@ -1,4 +1,4 @@
-# Rxiv-Maker: An Automated Template Engine for Streamlined Scientific Publications
+# Rxiv-Maker: an automated template engine for streamlined scientific publications
 <!-- note that this title is not rendered in the PDF, instead the one in the YAML metadata is used -->
 
 ## Abstract

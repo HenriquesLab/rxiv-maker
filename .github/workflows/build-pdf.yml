@@ -565,6 +565,51 @@ jobs:
 
         echo "=================================================="
 
+    - name: Generate track changes PDF
+      id: track-changes
+      run: |
+        echo "=================================================="
+        echo "📄 Generating Track Changes PDF"
+        echo "=================================================="
+        
+        MANUSCRIPT_DIR="${{ needs.prepare.outputs.manuscript_path }}"
+        
+        # Only generate track changes for EXAMPLE_MANUSCRIPT and tag-triggered builds
+        if [ "$MANUSCRIPT_DIR" = "EXAMPLE_MANUSCRIPT" ] && [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref_type }}" = "tag" ]; then
+          echo "✅ Generating track changes for EXAMPLE_MANUSCRIPT on tag release"
+          
+          # Make script executable and run it
+          chmod +x scripts/generate-track-changes.sh
+          
+          # Generate track changes PDF
+          if ./scripts/generate-track-changes.sh "$MANUSCRIPT_DIR" "output"; then
+            # Find the generated track changes PDF
+            TRACK_CHANGES_PDF=$(find output -name "*changes_vs_*.pdf" | head -1)
+            
+            if [ -n "$TRACK_CHANGES_PDF" ]; then
+              echo "track_changes_generated=true" >> $GITHUB_OUTPUT
+              echo "track_changes_pdf=${TRACK_CHANGES_PDF}" >> $GITHUB_OUTPUT
+              echo "✅ Track changes PDF generated: $TRACK_CHANGES_PDF"
+              
+              # Show file details
+              ls -la "$TRACK_CHANGES_PDF"
+              echo "📊 Track changes PDF size: $(du -h "$TRACK_CHANGES_PDF" | cut -f1)"
+            else
+              echo "track_changes_generated=false" >> $GITHUB_OUTPUT
+              echo "⚠️ Track changes PDF generation completed but file not found"
+            fi
+          else
+            echo "track_changes_generated=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Track changes PDF generation failed, continuing with regular release"
+          fi
+        else
+          echo "track_changes_generated=false" >> $GITHUB_OUTPUT
+          echo "ℹ️ Skipping track changes PDF generation"
+          echo "  - Manuscript: $MANUSCRIPT_DIR (need: EXAMPLE_MANUSCRIPT)"
+          echo "  - Event: ${{ github.event_name }} (need: push)" 
+          echo "  - Ref type: ${{ github.ref_type }} (need: tag)"
+        fi
+
     - name: Prepare release assets
       id: prepare-release
       run: |
@@ -593,9 +638,22 @@ jobs:
           fi
         fi
 
+        # Copy track changes PDF if generated
+        TRACK_CHANGES_NAME=""
+        if [ "${{ steps.track-changes.outputs.track_changes_generated }}" = "true" ]; then
+          TRACK_CHANGES_PDF="${{ steps.track-changes.outputs.track_changes_pdf }}"
+          if [ -f "$TRACK_CHANGES_PDF" ]; then
+            TRACK_CHANGES_NAME=$(basename "$TRACK_CHANGES_PDF")
+            cp "$TRACK_CHANGES_PDF" "release/${TRACK_CHANGES_NAME}"
+            echo "✅ Track changes PDF added to release: ${TRACK_CHANGES_NAME}"
+          fi
+        fi
+
         # Set output for later steps
         echo "PDF_NAME=${PDF_NAME}" >> $GITHUB_OUTPUT
         echo "PDF_FILENAME=${PDF_NAME}" >> $GITHUB_ENV
+        echo "TRACK_CHANGES_NAME=${TRACK_CHANGES_NAME}" >> $GITHUB_OUTPUT
+        echo "TRACK_CHANGES_FILENAME=${TRACK_CHANGES_NAME}" >> $GITHUB_ENV
 
         # Set build date for use in release description and build info
         echo "BUILD_DATE=$(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_ENV
@@ -610,6 +668,7 @@ jobs:
         - Build Date: ${{ env.BUILD_DATE }}
         - Workflow: ${{ github.workflow }}
         - Run ID: ${{ github.run_id }}
+        - Track Changes PDF: ${{ steps.track-changes.outputs.track_changes_generated == 'true' && 'Generated' || 'Not generated' }}
         EOF
 
     - name: Upload PDF as artifact
@@ -729,12 +788,15 @@ jobs:
 
           ### 📥 Download Links
           - **PDF:** [${{ steps.prepare-release.outputs.PDF_NAME }}](https://github.com/${{ github.repository }}/releases/download/${{ env.MOST_RECENT_TAG }}/${{ steps.prepare-release.outputs.PDF_NAME }})
+          ${{ steps.track-changes.outputs.track_changes_generated == 'true' && format('- **Track Changes PDF:** [{0}](https://github.com/{1}/releases/download/{2}/{0})', steps.prepare-release.outputs.TRACK_CHANGES_NAME, github.repository, env.MOST_RECENT_TAG) || '' }}
           - **Build Info:** [build_info.txt](https://github.com/${{ github.repository }}/releases/download/${{ env.MOST_RECENT_TAG }}/build_info.txt)
 
+          ${{ steps.track-changes.outputs.track_changes_generated == 'true' && '### 📊 Track Changes\nThis release includes a track changes PDF showing changes since the last major version. Added text appears in blue with underlines, while deleted text appears in red with strikethrough formatting.\n' || '' }}
           ### 🔗 Direct Download URL
           ```
           https://github.com/${{ github.repository }}/releases/latest/download/${{ steps.prepare-release.outputs.PDF_NAME }}
           ```
+          ${{ steps.track-changes.outputs.track_changes_generated == 'true' && format('\n```\nhttps://github.com/{0}/releases/latest/download/{1}\n```', github.repository, steps.prepare-release.outputs.TRACK_CHANGES_NAME) || '' }}
 
           ---
           *This release is automatically updated when a tagged commit is pushed or when the action is manually triggered.*

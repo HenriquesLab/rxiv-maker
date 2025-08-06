@@ -502,7 +502,7 @@ If you use Rxiv-Maker in your research, please cite our work:
 **BibTeX:**
 ```bibtex
 @misc{saraiva_2025_rxivmaker,
-      title={Rxiv-Maker: An Automated Template Engine for Streamlined Scientific Publications}, 
+      title={Rxiv-Maker: an automated template engine for streamlined scientific publications}, 
       author={Bruno M. Saraiva and Guillaume Jaquemet and Ricardo Henriques},
       year={2025},
       eprint={2508.00836},
