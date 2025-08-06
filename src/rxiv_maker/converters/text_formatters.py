@@ -24,33 +24,40 @@ def convert_subscript_superscript_to_latex(text: LatexContent) -> LatexContent:
     # Helper function to avoid replacing inside LaTeX commands
     def replace_outside_commands(pattern, replacement, text):
         """Replace pattern with replacement, but not inside LaTeX commands or math mode."""
-        # Protect various LaTeX commands and math environments
-        protected_patterns = [
-            r"\\texttt\{[^}]*\}",  # \texttt{...}
-            r"\\text\{[^}]*\}",  # \text{...}
-            r"\$[^$]*\$",  # Inline math $...$
-            r"\$\$.*?\$\$",  # Display math $$...$$
-            r"\\begin\{equation\}.*?\\end\{equation\}",  # equation environments
-        ]
+        # Combine all protection patterns into a single regex to avoid
+        # sequential processing issues where one pattern affects another
+        combined_pattern = (
+            r"(\\texttt\{[^}]*\})|"  # \texttt{...}
+            r"(\\text\{[^}]*\})|"  # \text{...}
+            r"(\$[^$]*\$)|"  # Inline math $...$
+            r"(\$\$.*?\$\$)|"  # Display math $$...$$
+            r"(\\begin\{equation\}.*?\\end\{equation\})"  # equation environments
+        )
 
-        # Process each pattern separately to avoid complex group issues
-        for protect_pattern in protected_patterns:
-            # Split by this pattern and only process non-matching parts
-            parts = re.split(f"({protect_pattern})", text, flags=re.DOTALL)
-            result = []
+        # Split by the combined pattern - protected parts will be in groups
+        parts = re.split(combined_pattern, text, flags=re.DOTALL)
+        result = []
 
-            for i, part in enumerate(parts):
-                if part is None:
-                    continue
+        for part in parts:
+            if part is None or part == "":
+                continue
 
-                # Odd indices are the matched patterns (protected)
-                if i % 2 == 0:  # Not protected
-                    part = re.sub(pattern, replacement, part)
-                result.append(part)
+            # Check if this part matches any of our protection patterns
+            is_protected = (
+                part.startswith("\\texttt{")
+                or part.startswith("\\text{")
+                or (part.startswith("$") and not part.startswith("$$"))
+                or part.startswith("$$")
+                or part.startswith("\\begin{equation}")
+            )
 
-            text = "".join(result)
+            if not is_protected:
+                # Only apply replacement to unprotected parts
+                part = re.sub(pattern, replacement, part)
 
-        return text
+            result.append(part)
+
+        return "".join(result)
 
     # Convert simple subscript and superscript using markdown-style syntax
     # H~2~O becomes H\textsubscript{2}O
