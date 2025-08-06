@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.4.16] - 2025-08-06
+
+### Fixed
+- **PDF Generation Pipeline**: Resolve critical script path resolution issues
+  - Fix style directory not found by using absolute paths relative to project root
+  - Fix copy_pdf.py script path resolution for proper PDF copying
+  - Fix analyze_word_count.py script path for word count analysis 
+  - Fix pdf_validator.py script path for PDF validation
+  - Improve path resolution in pdf_utils.py to avoid nested directory issues
+  - Resolves "file not found" errors when running PDF generation from VSCode extension or different working directories
+
 ### Changed
 - **Citation**: Migrate from Zenodo to arXiv citation (2508.00836)
   - Update `acknowledge_rxiv_maker` feature to use arXiv preprint citation instead of outdated Zenodo reference
