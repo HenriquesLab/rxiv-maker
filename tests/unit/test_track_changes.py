@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, call, patch
 
-from rxiv_maker.commands.track_changes import TrackChangesManager
+from rxiv_maker.engine.track_changes import TrackChangesManager
 
 
 class TestTrackChangesManager(unittest.TestCase):

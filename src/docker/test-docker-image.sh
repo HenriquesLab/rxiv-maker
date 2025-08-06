@@ -224,7 +224,7 @@ EOF
         python3 -c '
 import sys
 sys.path.insert(0, \"/workspace/src\")
-from rxiv_maker.commands.validate import validate_manuscript
+from rxiv_maker.engine.validate import validate_manuscript
 
 # Basic validation test
 try:

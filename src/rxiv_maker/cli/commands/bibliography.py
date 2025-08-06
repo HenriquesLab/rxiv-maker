@@ -56,7 +56,7 @@ def fix(ctx: click.Context, manuscript_path: str | None, dry_run: bool) -> None:
             task = progress.add_task("Fixing bibliography...", total=None)
 
             # Import bibliography fixing command
-            from ...commands.fix_bibliography import main as fix_bibliography_main
+            from ...engine.fix_bibliography import main as fix_bibliography_main
 
             # Prepare arguments
             args = [manuscript_path]
@@ -161,7 +161,7 @@ def add(
             )
 
             # Import bibliography adding command
-            from ...commands.add_bibliography import main as add_bibliography_main
+            from ...engine.add_bibliography import main as add_bibliography_main
 
             # Prepare arguments
             args = [manuscript_path] + list(dois)
@@ -246,7 +246,7 @@ def validate(ctx: click.Context, manuscript_path: str | None, no_doi: bool) -> N
             task = progress.add_task("Validating bibliography...", total=None)
 
             # Import validation command (we'll use the main validate command)
-            from ...commands.validate import main as validate_main
+            from ...engine.validate import main as validate_main
 
             # Prepare arguments
             args = [manuscript_path]

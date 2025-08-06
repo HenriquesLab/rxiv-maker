@@ -7,8 +7,8 @@ from pathlib import Path
 import rich_click as click
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from ...commands.build_manager import BuildManager
 from ...core.logging_config import get_logger, set_debug, set_log_directory, set_quiet
+from ...engine.build_manager import BuildManager
 
 logger = get_logger()
 

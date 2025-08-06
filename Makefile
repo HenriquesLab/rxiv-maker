@@ -9,7 +9,11 @@
 # ======================================================================
 # Automated Scientific Article Generation and Publishing System
 #
-# 🚀 QUICK START:
+# 🆕 RECOMMENDED: Use the modern rxiv CLI for the best experience:
+#   pip install rxiv-maker
+#   rxiv init my-paper && cd my-paper && rxiv build
+#
+# 🚀 LEGACY MAKEFILE INTERFACE (maintained for backward compatibility):
 #   make setup        # Install Python dependencies
 #   make pdf          # Generate PDF (requires LaTeX)
 #   make help         # Show all available commands

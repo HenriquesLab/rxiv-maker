@@ -130,7 +130,7 @@ This work demonstrates successful custom manuscript directory handling.
             "sys.argv", ["generate_preprint.py", "--output-dir", str(output_dir)]
         ):
             try:
-                from rxiv_maker.commands.generate_preprint import main
+                from rxiv_maker.engine.generate_preprint import main
 
                 result = main()
 

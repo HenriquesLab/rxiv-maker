@@ -34,7 +34,7 @@ def setup(ctx: click.Context, reinstall: bool, check_deps_only: bool) -> None:
 
     try:
         # Import setup environment command
-        from ...commands.setup_environment import main as setup_environment_main
+        from ...engine.setup_environment import main as setup_environment_main
 
         # Prepare arguments
         args = []

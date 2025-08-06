@@ -75,7 +75,7 @@ def validate(
             task = progress.add_task("Running validation...", total=None)
 
             # Import and run validation
-            from ...commands.validate import main as validate_main
+            from ...engine.validate import main as validate_main
 
             # Prepare arguments
             args = [manuscript_path]

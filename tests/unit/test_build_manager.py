@@ -25,7 +25,7 @@ except ImportError:
     pytest = MockPytest()
 
 try:
-    from rxiv_maker.commands.build_manager import BuildManager
+    from rxiv_maker.engine.build_manager import BuildManager
 
     BUILD_MANAGER_AVAILABLE = True
 except ImportError:

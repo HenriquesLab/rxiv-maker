@@ -60,7 +60,7 @@ def clean(
             task = progress.add_task("Cleaning files...", total=None)
 
             # Import cleanup command
-            from ...commands.cleanup import main as cleanup_main
+            from ...engine.cleanup import main as cleanup_main
 
             # Prepare arguments
             args = []

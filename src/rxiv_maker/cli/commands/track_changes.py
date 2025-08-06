@@ -8,7 +8,7 @@ import click
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from ...commands.build_manager import BuildManager
+from ...engine.build_manager import BuildManager
 
 console = Console()
 

@@ -97,7 +97,7 @@ def figures(
             # Import figure generation class directly
             if verbose:
                 console.print("📦 Importing FigureGenerator class...", style="blue")
-            from ...commands.generate_figures import FigureGenerator
+            from ...engine.generate_figures import FigureGenerator
 
             if verbose:
                 console.print(
