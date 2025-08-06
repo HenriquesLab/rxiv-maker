@@ -178,11 +178,7 @@ def parse_yaml_simple(yaml_content):
                         j += 1
                         continue
 
-                    if (
-                        next_indent > indent
-                        and ":" in next_stripped
-                        and not next_stripped.startswith("-")
-                    ):
+                    if next_indent > indent and ":" in next_stripped and not next_stripped.startswith("-"):
                         prop_key, prop_value = next_stripped.split(":", 1)
                         prop_key = prop_key.strip()
                         prop_value = prop_value.strip().strip("\"'")

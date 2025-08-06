@@ -23,12 +23,8 @@ class TestTrackChangesManager(unittest.TestCase):
 
         # Create manuscript directory and files
         self.manuscript_path.mkdir()
-        (self.manuscript_path / "01_MAIN.md").write_text(
-            "# Test Manuscript\n\nTest content"
-        )
-        (self.manuscript_path / "02_SUPPLEMENTARY_INFO.md").write_text(
-            "# Supplementary Info"
-        )
+        (self.manuscript_path / "01_MAIN.md").write_text("# Test Manuscript\n\nTest content")
+        (self.manuscript_path / "02_SUPPLEMENTARY_INFO.md").write_text("# Supplementary Info")
         (self.manuscript_path / "00_CONFIG.yml").write_text("title: Test")
         (self.manuscript_path / "03_REFERENCES.bib").write_text("@article{test,}")
 
@@ -88,9 +84,7 @@ class TestTrackChangesManager(unittest.TestCase):
         result = self.track_changes.validate_git_tag()
 
         self.assertTrue(result)
-        mock_run.assert_called_once_with(
-            ["git", "tag", "-l", "test-tag"], capture_output=True, text=True, check=True
-        )
+        mock_run.assert_called_once_with(["git", "tag", "-l", "test-tag"], capture_output=True, text=True, check=True)
 
     @patch("subprocess.run")
     def test_validate_git_tag_not_exists(self, mock_run):
@@ -167,9 +161,7 @@ class TestTrackChangesManager(unittest.TestCase):
         test_manuscript_dir = Path(self.temp_dir) / "test_ms"
         test_manuscript_dir.mkdir()
 
-        result = self.track_changes.generate_latex_files(
-            test_manuscript_dir, "test_output"
-        )
+        result = self.track_changes.generate_latex_files(test_manuscript_dir, "test_output")
 
         self.assertTrue(result)
         mock_run.assert_called_once()
@@ -186,16 +178,12 @@ class TestTrackChangesManager(unittest.TestCase):
     @patch("subprocess.run")
     def test_generate_latex_files_failure(self, mock_run):
         """Test LaTeX generation failure."""
-        mock_run.side_effect = subprocess.CalledProcessError(
-            1, "python", stderr="Error message"
-        )
+        mock_run.side_effect = subprocess.CalledProcessError(1, "python", stderr="Error message")
 
         test_manuscript_dir = Path(self.temp_dir) / "test_ms"
         test_manuscript_dir.mkdir()
 
-        result = self.track_changes.generate_latex_files(
-            test_manuscript_dir, "test_output"
-        )
+        result = self.track_changes.generate_latex_files(test_manuscript_dir, "test_output")
 
         self.assertFalse(result)
 
@@ -209,12 +197,8 @@ class TestTrackChangesManager(unittest.TestCase):
         new_tex = Path(self.temp_dir) / "new.tex"
         diff_tex = Path(self.temp_dir) / "diff.tex"
 
-        old_tex.write_text(
-            "\\documentclass{article}\n\\begin{document}\nOld content\n\\end{document}"
-        )
-        new_tex.write_text(
-            "\\documentclass{article}\n\\begin{document}\nNew content\n\\end{document}"
-        )
+        old_tex.write_text("\\documentclass{article}\n\\begin{document}\nOld content\n\\end{document}")
+        new_tex.write_text("\\documentclass{article}\n\\begin{document}\nNew content\n\\end{document}")
 
         result = self.track_changes.run_latexdiff(old_tex, new_tex, diff_tex)
 
@@ -256,9 +240,7 @@ class TestTrackChangesManager(unittest.TestCase):
     @patch("subprocess.run")
     def test_run_latexdiff_command_failure(self, mock_run):
         """Test latexdiff command failure."""
-        mock_run.side_effect = subprocess.CalledProcessError(
-            1, "latexdiff", stderr="Error"
-        )
+        mock_run.side_effect = subprocess.CalledProcessError(1, "latexdiff", stderr="Error")
 
         old_tex = Path(self.temp_dir) / "old.tex"
         new_tex = Path(self.temp_dir) / "new.tex"
@@ -275,15 +257,11 @@ class TestTrackChangesManager(unittest.TestCase):
     @patch("subprocess.run")
     def test_compile_diff_pdf_success(self, mock_run, mock_chdir):
         """Test successful PDF compilation."""
-        mock_run.return_value = MagicMock(
-            returncode=0, stdout="LaTeX output", stderr=""
-        )
+        mock_run.return_value = MagicMock(returncode=0, stdout="LaTeX output", stderr="")
 
         diff_tex = Path(self.temp_dir) / "test.tex"
         diff_pdf = Path(self.temp_dir) / "test.pdf"
-        diff_tex.write_text(
-            "\\documentclass{article}\\begin{document}test\\end{document}"
-        )
+        diff_tex.write_text("\\documentclass{article}\\begin{document}test\\end{document}")
 
         # Create the PDF file that pdflatex would create
         diff_pdf.touch()
@@ -387,9 +365,7 @@ class TestTrackChangesManager(unittest.TestCase):
 
     @patch.object(TrackChangesManager, "validate_git_tag")
     @patch.object(TrackChangesManager, "extract_files_from_tag")
-    def test_generate_change_tracked_pdf_extract_failure(
-        self, mock_extract, mock_validate
-    ):
+    def test_generate_change_tracked_pdf_extract_failure(self, mock_extract, mock_validate):
         """Test change-tracked PDF generation when file extraction fails."""
         mock_validate.return_value = True
         mock_extract.return_value = False
@@ -401,9 +377,7 @@ class TestTrackChangesManager(unittest.TestCase):
     @patch.object(TrackChangesManager, "validate_git_tag")
     @patch.object(TrackChangesManager, "extract_files_from_tag")
     @patch.object(TrackChangesManager, "generate_latex_files")
-    def test_generate_change_tracked_pdf_latex_failure(
-        self, mock_generate, mock_extract, mock_validate
-    ):
+    def test_generate_change_tracked_pdf_latex_failure(self, mock_generate, mock_extract, mock_validate):
         """Test change-tracked PDF generation when LaTeX generation fails."""
         mock_validate.return_value = True
         mock_extract.return_value = True
@@ -521,15 +495,11 @@ affiliations:
 
         # Create test LaTeX file
         diff_tex = self.output_dir / "test_diff.tex"
-        diff_tex.write_text(
-            "\\documentclass{article}\\begin{document}Test\\end{document}"
-        )
+        diff_tex.write_text("\\documentclass{article}\\begin{document}Test\\end{document}")
 
         # Create bibliography file - needs to be in current directory for bibtex
         bib_file = Path(self.temp_dir) / "03_REFERENCES.bib"
-        bib_file.write_text(
-            "@article{test2023, title={Test}, author={Author}, year={2023}}"
-        )
+        bib_file.write_text("@article{test2023, title={Test}, author={Author}, year={2023}}")
 
         # Mock subprocess calls
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
@@ -557,9 +527,7 @@ affiliations:
             # If bibtex wasn't called, check if the file exists in the mock environment
             bib_path = Path(self.temp_dir) / "03_REFERENCES.bib"
             if bib_path.exists():
-                print(
-                    f"Bibliography file exists at {bib_path} but bibtex wasn't called"
-                )
+                print(f"Bibliography file exists at {bib_path} but bibtex wasn't called")
                 print(f"All calls: {[str(call) for call in calls]}")
 
         # For now, just check that compilation was successful
@@ -577,9 +545,7 @@ affiliations:
 
         # Create test LaTeX file (no bibliography file)
         diff_tex = self.output_dir / "test_diff.tex"
-        diff_tex.write_text(
-            "\\documentclass{article}\\begin{document}Test\\end{document}"
-        )
+        diff_tex.write_text("\\documentclass{article}\\begin{document}Test\\end{document}")
 
         # Mock subprocess calls
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
@@ -651,14 +617,10 @@ affiliations:
 
         # Create test LaTeX file and bibliography
         diff_tex = self.output_dir / "test_diff.tex"
-        diff_tex.write_text(
-            "\\documentclass{article}\\begin{document}Test\\end{document}"
-        )
+        diff_tex.write_text("\\documentclass{article}\\begin{document}Test\\end{document}")
 
         bib_file = Path(self.temp_dir) / "03_REFERENCES.bib"
-        bib_file.write_text(
-            "@article{test2023, title={Test}, author={Author}, year={2023}}"
-        )
+        bib_file.write_text("@article{test2023, title={Test}, author={Author}, year={2023}}")
 
         # Mock pdflatex success but bibtex failure
         def mock_subprocess(*args, **kwargs):
@@ -695,9 +657,7 @@ class TestExpandedChangeTracking(unittest.TestCase):
             ["git", "config", "user.email", "test@example.com"],
             cwd=self.manuscript_path,
         )
-        subprocess.run(
-            ["git", "config", "user.name", "Test User"], cwd=self.manuscript_path
-        )
+        subprocess.run(["git", "config", "user.name", "Test User"], cwd=self.manuscript_path)
 
     def tearDown(self):
         """Clean up test fixtures."""
@@ -718,9 +678,7 @@ class TestExpandedChangeTracking(unittest.TestCase):
 
         # Initial commit
         subprocess.run(["git", "add", "."], cwd=self.manuscript_path)
-        subprocess.run(
-            ["git", "commit", "-m", "Initial commit"], cwd=self.manuscript_path
-        )
+        subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=self.manuscript_path)
         subprocess.run(["git", "tag", "v1.0"], cwd=self.manuscript_path)
 
         # Make changes

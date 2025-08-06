@@ -18,9 +18,7 @@ import requests
 
 # Add the parent directory to the path to allow imports when run as a script
 if __name__ == "__main__":
-    sys.path.insert(
-        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    )
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 try:
     from crossref_commons.retrieval import get_publication_as_json
@@ -75,9 +73,7 @@ class BibliographyFixer:
         entries = self._parse_bibliography(bib_content)
 
         # Identify entries that need fixing
-        problematic_entries = self._identify_problematic_entries(
-            validation_result, entries
-        )
+        problematic_entries = self._identify_problematic_entries(validation_result, entries)
 
         if not problematic_entries:
             logger.info("No bibliography issues found that can be automatically fixed")
@@ -128,9 +124,7 @@ class BibliographyFixer:
         entries = []
 
         # Pattern to match BibTeX entries
-        entry_pattern = re.compile(
-            r"@(\w+)\s*\{\s*([^,\s}]+)\s*,\s*(.*?)\n\}", re.DOTALL | re.IGNORECASE
-        )
+        entry_pattern = re.compile(r"@(\w+)\s*\{\s*([^,\s}]+)\s*,\s*(.*?)\n\}", re.DOTALL | re.IGNORECASE)
 
         for match in entry_pattern.finditer(bib_content):
             entry_type = match.group(1).lower()
@@ -159,9 +153,7 @@ class BibliographyFixer:
         fields = {}
 
         # Pattern to match field = {value} or field = value
-        field_pattern = re.compile(
-            r"(\w+)\s*=\s*(?:\{([^}]*)\}|([^,\n]+))", re.IGNORECASE
-        )
+        field_pattern = re.compile(r"(\w+)\s*=\s*(?:\{([^}]*)\}|([^,\n]+))", re.IGNORECASE)
 
         for match in field_pattern.finditer(fields_text):
             field_name = match.group(1).lower()
@@ -171,9 +163,7 @@ class BibliographyFixer:
 
         return fields
 
-    def _identify_problematic_entries(
-        self, validation_result, entries: list[dict[str, Any]]
-    ) -> list[dict[str, Any]]:
+    def _identify_problematic_entries(self, validation_result, entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Identify entries that have issues and might be fixable."""
         problematic = []
 
@@ -254,9 +244,7 @@ class BibliographyFixer:
                 candidates = self._search_crossref(simplified_title, author, year)
 
         if not candidates:
-            logger.warning(
-                f"No candidates found for {entry['key']} after trying multiple search strategies"
-            )
+            logger.warning(f"No candidates found for {entry['key']} after trying multiple search strategies")
             return None
 
         # Find the best match
@@ -276,9 +264,7 @@ class BibliographyFixer:
             "confidence": self._calculate_confidence(entry, best_match),
         }
 
-    def _search_crossref(
-        self, title: str, author: str = "", year: str = ""
-    ) -> list[dict[str, Any]]:
+    def _search_crossref(self, title: str, author: str = "", year: str = "") -> list[dict[str, Any]]:
         """Search CrossRef for publications matching the given criteria."""
         candidates = []
 
@@ -309,9 +295,7 @@ class BibliographyFixer:
 
             headers = {"User-Agent": "Rxiv-Maker/1.0 (mailto:contact@example.com)"}
 
-            response = requests.get(
-                base_url, params=params, headers=headers, timeout=30
-            )
+            response = requests.get(base_url, params=params, headers=headers, timeout=30)
             response.raise_for_status()
 
             data = response.json()
@@ -333,14 +317,10 @@ class BibliographyFixer:
                     "authors": self._extract_authors(item.get("author", [])),
                     "year": str(
                         item.get("published-print", {}).get("date-parts", [[""]])[0][0]
-                        or item.get("published-online", {}).get("date-parts", [[""]])[
-                            0
-                        ][0]
+                        or item.get("published-online", {}).get("date-parts", [[""]])[0][0]
                         or ""
                     ),
-                    "journal": item.get("container-title", [""])[0]
-                    if item.get("container-title")
-                    else "",
+                    "journal": item.get("container-title", [""])[0] if item.get("container-title") else "",
                     "doi": doi,
                     "volume": str(item.get("volume", "")),
                     "number": str(item.get("issue", "")),
@@ -423,9 +403,7 @@ class BibliographyFixer:
 
         return " and ".join(authors)
 
-    def _find_best_match(
-        self, entry: dict[str, Any], candidates: list[dict[str, Any]]
-    ) -> dict[str, Any] | None:
+    def _find_best_match(self, entry: dict[str, Any], candidates: list[dict[str, Any]]) -> dict[str, Any] | None:
         """Find the best matching candidate for the entry."""
         if not candidates:
             return None
@@ -442,9 +420,7 @@ class BibliographyFixer:
             # Title similarity (most important)
             candidate_title = candidate.get("title", "").lower().strip()
             if candidate_title and entry_title:
-                title_similarity = SequenceMatcher(
-                    None, entry_title, candidate_title
-                ).ratio()
+                title_similarity = SequenceMatcher(None, entry_title, candidate_title).ratio()
                 score += title_similarity * 0.7
 
             # Year match
@@ -456,9 +432,7 @@ class BibliographyFixer:
             entry_author = entry.get("author", "").lower()
             candidate_author = candidate.get("authors", "").lower()
             if entry_author and candidate_author:
-                author_similarity = SequenceMatcher(
-                    None, entry_author, candidate_author
-                ).ratio()
+                author_similarity = SequenceMatcher(None, entry_author, candidate_author).ratio()
                 score += author_similarity * 0.1
 
             if score > best_score and score >= self.similarity_threshold:
@@ -467,9 +441,7 @@ class BibliographyFixer:
 
         return best_match
 
-    def _calculate_confidence(
-        self, entry: dict[str, Any], crossref_data: dict[str, Any]
-    ) -> float:
+    def _calculate_confidence(self, entry: dict[str, Any], crossref_data: dict[str, Any]) -> float:
         """Calculate confidence score for the match."""
         entry_title = entry.get("title", "").lower().strip()
         candidate_title = crossref_data.get("title", "").lower().strip()
@@ -479,9 +451,7 @@ class BibliographyFixer:
 
         return SequenceMatcher(None, entry_title, candidate_title).ratio()
 
-    def _generate_fixed_entry(
-        self, original: dict[str, Any], crossref_data: dict[str, Any]
-    ) -> str:
+    def _generate_fixed_entry(self, original: dict[str, Any], crossref_data: dict[str, Any]) -> str:
         """Generate a fixed BibTeX entry from CrossRef data."""
         entry_type = original.get("type", "article")
         entry_key = original["key"]
@@ -551,17 +521,13 @@ class BibliographyFixer:
         backup_file.write_text(bib_file.read_text(encoding="utf-8"), encoding="utf-8")
         logger.info(f"Created backup: {backup_file}")
 
-    def _apply_fixes(
-        self, bib_file: Path, bib_content: str, fixes: list[dict[str, Any]]
-    ) -> int:
+    def _apply_fixes(self, bib_file: Path, bib_content: str, fixes: list[dict[str, Any]]) -> int:
         """Apply the fixes to the bibliography file."""
         success_count = 0
         modified_content = bib_content
 
         # Apply fixes in reverse order to preserve positions
-        fixes_sorted = sorted(
-            fixes, key=lambda x: x["original_entry"]["match_start"], reverse=True
-        )
+        fixes_sorted = sorted(fixes, key=lambda x: x["original_entry"]["match_start"], reverse=True)
 
         for fix in fixes_sorted:
             original = fix["original_entry"]
@@ -572,14 +538,10 @@ class BibliographyFixer:
                 start = original["match_start"]
                 end = original["match_end"]
 
-                modified_content = (
-                    modified_content[:start] + fixed_entry + modified_content[end:]
-                )
+                modified_content = modified_content[:start] + fixed_entry + modified_content[end:]
 
                 success_count += 1
-                logger.info(
-                    f"Fixed entry: {original['key']} (confidence: {confidence:.1%})"
-                )
+                logger.info(f"Fixed entry: {original['key']} (confidence: {confidence:.1%})")
             else:
                 logger.warning(f"Skipped low-confidence fix for {original['key']}")
 
@@ -598,9 +560,7 @@ def main() -> int:
     """
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Fix bibliography issues automatically"
-    )
+    parser = argparse.ArgumentParser(description="Fix bibliography issues automatically")
     parser.add_argument(
         "manuscript_path",
         help="Path to the manuscript directory",
@@ -612,12 +572,8 @@ def main() -> int:
         action="store_true",
         help="Show what would be fixed without making changes",
     )
-    parser.add_argument(
-        "--no-backup", action="store_true", help="Don't create backup files"
-    )
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Enable verbose logging"
-    )
+    parser.add_argument("--no-backup", action="store_true", help="Don't create backup files")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
 
     args = parser.parse_args()
 
@@ -626,9 +582,7 @@ def main() -> int:
     logging.basicConfig(level=log_level, format="%(levelname)s: %(message)s")
 
     try:
-        fixer = BibliographyFixer(
-            manuscript_path=args.manuscript_path, backup=not args.no_backup
-        )
+        fixer = BibliographyFixer(manuscript_path=args.manuscript_path, backup=not args.no_backup)
 
         results = fixer.fix_bibliography(dry_run=args.dry_run)
 
@@ -640,9 +594,7 @@ def main() -> int:
                 print("✅ No fixes were needed")
             return 0
         else:
-            print(
-                f"❌ Failed to fix bibliography: {results.get('error', 'Unknown error')}"
-            )
+            print(f"❌ Failed to fix bibliography: {results.get('error', 'Unknown error')}")
             return 1
 
     except Exception as e:

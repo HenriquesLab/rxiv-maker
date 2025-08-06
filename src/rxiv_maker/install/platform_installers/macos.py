@@ -29,9 +29,7 @@ class MacOSInstaller:
     def _is_apple_silicon(self) -> bool:
         """Check if running on Apple Silicon."""
         try:
-            result = subprocess.run(
-                ["uname", "-m"], capture_output=True, text=True, timeout=5
-            )
+            result = subprocess.run(["uname", "-m"], capture_output=True, text=True, timeout=5)
             return result.stdout.strip() == "arm64"
         except:
             return False
@@ -182,9 +180,7 @@ class MacOSInstaller:
     def _is_homebrew_installed(self) -> bool:
         """Check if Homebrew is installed."""
         try:
-            result = subprocess.run(
-                ["brew", "--version"], capture_output=True, timeout=10
-            )
+            result = subprocess.run(["brew", "--version"], capture_output=True, timeout=10)
             return result.returncode == 0
         except:
             return False
@@ -195,9 +191,7 @@ class MacOSInstaller:
 
         try:
             # Check if already installed
-            result = subprocess.run(
-                ["xcode-select", "-p"], capture_output=True, timeout=10
-            )
+            result = subprocess.run(["xcode-select", "-p"], capture_output=True, timeout=10)
 
             if result.returncode == 0:
                 self.logger.success("Xcode command line tools already installed")
@@ -432,9 +426,7 @@ class MacOSInstaller:
 
         try:
             # Install R
-            result = subprocess.run(
-                ["brew", "install", "r"], capture_output=True, text=True, timeout=600
-            )
+            result = subprocess.run(["brew", "install", "r"], capture_output=True, text=True, timeout=600)
 
             if result.returncode == 0:
                 self.logger.success("R installed using Homebrew")

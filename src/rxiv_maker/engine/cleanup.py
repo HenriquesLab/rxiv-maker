@@ -29,9 +29,7 @@ class CleanupManager:
             output_dir: Output directory to clean
             verbose: Enable verbose output
         """
-        self.manuscript_path: str = (
-            manuscript_path or os.getenv("MANUSCRIPT_PATH") or "MANUSCRIPT"
-        )
+        self.manuscript_path: str = manuscript_path or os.getenv("MANUSCRIPT_PATH") or "MANUSCRIPT"
         self.output_dir = Path(output_dir)
         self.verbose = verbose
         self.platform = platform_detector
@@ -284,9 +282,7 @@ class CleanupManager:
                         if self.verbose:
                             self.log(f"Removed cache directory: {cache_dir}")
             except Exception as e:
-                self.log(
-                    f"Failed to remove cache directory {cache_dir}: {e}", "WARNING"
-                )
+                self.log(f"Failed to remove cache directory {cache_dir}: {e}", "WARNING")
 
         if cleaned_dirs:
             self.log(f"Cleaned {len(cleaned_dirs)} cache directories")
@@ -297,9 +293,7 @@ class CleanupManager:
 
     def run_full_cleanup(self) -> bool:
         """Run the complete cleanup process."""
-        self.log(
-            f"Starting cleanup process for manuscript: {self.manuscript_path}", "STEP"
-        )
+        self.log(f"Starting cleanup process for manuscript: {self.manuscript_path}", "STEP")
 
         all_success = True
 
@@ -335,28 +329,14 @@ def main():
     """Main entry point for cleanup command."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Clean up generated files and directories"
-    )
-    parser.add_argument(
-        "--manuscript-path", default="MANUSCRIPT", help="Path to manuscript directory"
-    )
+    parser = argparse.ArgumentParser(description="Clean up generated files and directories")
+    parser.add_argument("--manuscript-path", default="MANUSCRIPT", help="Path to manuscript directory")
     parser.add_argument("--output-dir", default="output", help="Output directory")
-    parser.add_argument(
-        "--figures-only", action="store_true", help="Clean only generated figures"
-    )
-    parser.add_argument(
-        "--output-only", action="store_true", help="Clean only output directory"
-    )
-    parser.add_argument(
-        "--arxiv-only", action="store_true", help="Clean only arXiv files"
-    )
-    parser.add_argument(
-        "--temp-only", action="store_true", help="Clean only temporary files"
-    )
-    parser.add_argument(
-        "--cache-only", action="store_true", help="Clean only cache files"
-    )
+    parser.add_argument("--figures-only", action="store_true", help="Clean only generated figures")
+    parser.add_argument("--output-only", action="store_true", help="Clean only output directory")
+    parser.add_argument("--arxiv-only", action="store_true", help="Clean only arXiv files")
+    parser.add_argument("--temp-only", action="store_true", help="Clean only temporary files")
+    parser.add_argument("--cache-only", action="store_true", help="Clean only cache files")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
 
     args = parser.parse_args()

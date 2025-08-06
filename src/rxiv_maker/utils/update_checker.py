@@ -195,9 +195,7 @@ class UpdateChecker:
         }
 
         if latest_version and self.current_version != "unknown":
-            cache_data["update_available"] = self._compare_versions(
-                self.current_version, latest_version
-            )
+            cache_data["update_available"] = self._compare_versions(self.current_version, latest_version)
 
         self._save_cache(cache_data)
 

@@ -223,9 +223,7 @@ Reference to undefined figure @fig:nonexistent.
             )
 
         # Invalid manuscript should fail validation
-        assert result.returncode != 0, (
-            "Expected validation to fail for invalid manuscript"
-        )
+        assert result.returncode != 0, "Expected validation to fail for invalid manuscript"
 
     def test_validation_script_detailed_mode(self):
         """Test detailed validation script with comprehensive feedback."""
@@ -351,9 +349,7 @@ Reference to undefined figure @fig:nonexistent.
             )
 
             # All scenarios should fail validation
-            assert result.returncode != 0, (
-                f"Scenario '{scenario_name}' should fail validation"
-            )
+            assert result.returncode != 0, f"Scenario '{scenario_name}' should fail validation"
 
     def _create_missing_config_scenario(self):
         """Create scenario with missing config file."""

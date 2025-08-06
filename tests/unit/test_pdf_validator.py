@@ -53,9 +53,7 @@ class TestPDFValidator(unittest.TestCase):
 
         # Mock PDF text with a very long malformed equation
         long_equation = "x" * 200  # Very long equation
-        validator.pdf_text = (
-            f"Some text with malformed equation: ${long_equation}$ and more text"
-        )
+        validator.pdf_text = f"Some text with malformed equation: ${long_equation}$ and more text"
 
         # Mock the regex to find the long equation
         with patch.object(validator, "malformed_equation_pattern") as mock_pattern:
@@ -142,17 +140,13 @@ class TestPDFValidator(unittest.TestCase):
                 mock_find.return_value = Mock()
                 mock_extract.return_value = ("Some normal text", ["page1"])
 
-                with patch.object(
-                    validator, "_get_validation_statistics"
-                ) as mock_stats:
+                with patch.object(validator, "_get_validation_statistics") as mock_stats:
                     mock_stats.return_value = {"total_pages": 1, "total_words": 3}
 
                     result = validator.validate()
 
                     # Should not have any SUCCESS level messages
-                    success_messages = [
-                        e for e in result.errors if e.level == ValidationLevel.SUCCESS
-                    ]
+                    success_messages = [e for e in result.errors if e.level == ValidationLevel.SUCCESS]
                     self.assertEqual(len(success_messages), 0)
 
     def test_pdf_file_not_found_error(self):
@@ -193,9 +187,7 @@ class TestPDFValidator(unittest.TestCase):
 
             # Context should only show first 2 equations (samples)
             self.assertIn("eq1_short", error.context)
-            self.assertIn(
-                "eq2_very_long_equation_", error.context
-            )  # Should be truncated
+            self.assertIn("eq2_very_long_equation_", error.context)  # Should be truncated
             self.assertIn("...", error.context)  # Should show truncation
 
             # Should not show all equations
@@ -233,9 +225,7 @@ class TestPDFValidatorIntegration(unittest.TestCase):
         with patch("src.rxiv_maker.validators.pdf_validator.pypdf") as mock_pypdf:
             mock_reader = Mock()
             mock_page = Mock()
-            mock_page.extract_text.return_value = (
-                "This is test text with some equations $E=mc^2$"
-            )
+            mock_page.extract_text.return_value = "This is test text with some equations $E=mc^2$"
             mock_reader.pages = [mock_page]
             mock_pypdf.PdfReader.return_value = mock_reader
 

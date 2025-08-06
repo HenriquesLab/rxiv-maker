@@ -12,9 +12,7 @@ console = Console()
 
 
 @click.command()
-@click.argument(
-    "manuscript_path", type=click.Path(exists=True, file_okay=False), required=False
-)
+@click.argument("manuscript_path", type=click.Path(exists=True, file_okay=False), required=False)
 @click.option("--force", "-f", is_flag=True, help="Force regeneration of all figures")
 @click.option("--figures-dir", "-d", help="Custom figures directory path")
 @click.pass_context
@@ -46,9 +44,7 @@ def figures(
 
         try:
             if verbose:
-                console.print(
-                    "🔧 Getting Docker manager in figures command...", style="blue"
-                )
+                console.print("🔧 Getting Docker manager in figures command...", style="blue")
             # Use current working directory as workspace for consistency
             workspace_dir = Path.cwd().resolve()
             docker_manager = get_docker_manager(workspace_dir=workspace_dir)
@@ -100,9 +96,7 @@ def figures(
             from ...engine.generate_figures import FigureGenerator
 
             if verbose:
-                console.print(
-                    "📦 Successfully imported FigureGenerator!", style="green"
-                )
+                console.print("📦 Successfully imported FigureGenerator!", style="green")
 
             try:
                 if verbose:

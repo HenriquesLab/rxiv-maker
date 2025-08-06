@@ -19,13 +19,7 @@ class TestHomebrewFormula:
     @pytest.fixture(scope="class")
     def formula_path(self):
         """Get path to Homebrew formula."""
-        return (
-            Path(__file__).parent.parent.parent
-            / "submodules"
-            / "homebrew-rxiv-maker"
-            / "Formula"
-            / "rxiv-maker.rb"
-        )
+        return Path(__file__).parent.parent.parent / "submodules" / "homebrew-rxiv-maker" / "Formula" / "rxiv-maker.rb"
 
     def test_formula_file_exists(self, formula_path):
         """Test that the Homebrew formula file exists."""
@@ -80,10 +74,7 @@ class TestHomebrewFormula:
         content = formula_path.read_text()
 
         # Should test CLI functionality
-        assert (
-            'shell_output("#{bin}/rxiv --version")' in content
-            or 'assert_match "version"' in content
-        )
+        assert 'shell_output("#{bin}/rxiv --version")' in content or 'assert_match "version"' in content
         assert 'system bin/"rxiv", "--help"' in content
 
     def test_formula_architecture_support(self, formula_path):
@@ -123,13 +114,7 @@ class TestScoopManifest:
     @pytest.fixture(scope="class")
     def manifest_path(self):
         """Get path to Scoop manifest."""
-        return (
-            Path(__file__).parent.parent.parent
-            / "submodules"
-            / "scoop-rxiv-maker"
-            / "bucket"
-            / "rxiv-maker.json"
-        )
+        return Path(__file__).parent.parent.parent / "submodules" / "scoop-rxiv-maker" / "bucket" / "rxiv-maker.json"
 
     def test_manifest_file_exists(self, manifest_path):
         """Test that the Scoop manifest file exists."""
@@ -202,9 +187,7 @@ class TestScoopManifest:
         bin_entry = manifest["bin"]
 
         # Should be Python module runner configuration
-        assert isinstance(bin_entry, list), (
-            "Expected bin to be a list for Python module execution"
-        )
+        assert isinstance(bin_entry, list), "Expected bin to be a list for Python module execution"
         assert len(bin_entry) == 3, "Expected [python, command, module] format"
         assert bin_entry[0] == "python"
         assert bin_entry[1] == "rxiv"
@@ -331,9 +314,7 @@ class TestPackageManagerIntegration:
     """Integration tests for package manager functionality."""
 
     @pytest.mark.slow
-    @pytest.mark.skipif(
-        platform.system() != "Darwin", reason="Homebrew tests require macOS"
-    )
+    @pytest.mark.skipif(platform.system() != "Darwin", reason="Homebrew tests require macOS")
     def test_homebrew_tap_structure(self):
         """Test Homebrew tap repository structure."""
         if not shutil.which("brew"):
@@ -341,11 +322,7 @@ class TestPackageManagerIntegration:
 
         # Test that we can validate the formula structure
         formula_path = (
-            Path(__file__).parent.parent.parent
-            / "submodules"
-            / "homebrew-rxiv-maker"
-            / "Formula"
-            / "rxiv-maker.rb"
+            Path(__file__).parent.parent.parent / "submodules" / "homebrew-rxiv-maker" / "Formula" / "rxiv-maker.rb"
         )
 
         if not formula_path.exists():
@@ -371,20 +348,14 @@ class TestPackageManagerIntegration:
             pytest.skip("Homebrew validation not available")
 
     @pytest.mark.slow
-    @pytest.mark.skipif(
-        platform.system() != "Windows", reason="Scoop tests require Windows"
-    )
+    @pytest.mark.skipif(platform.system() != "Windows", reason="Scoop tests require Windows")
     def test_scoop_bucket_structure(self):
         """Test Scoop bucket repository structure."""
         if not shutil.which("scoop"):
             pytest.skip("Scoop not available")
 
         manifest_path = (
-            Path(__file__).parent.parent.parent
-            / "submodules"
-            / "scoop-rxiv-maker"
-            / "bucket"
-            / "rxiv-maker.json"
+            Path(__file__).parent.parent.parent / "submodules" / "scoop-rxiv-maker" / "bucket" / "rxiv-maker.json"
         )
 
         if not manifest_path.exists():
@@ -409,12 +380,7 @@ class TestPackageManagerIntegration:
     def test_package_manager_version_consistency(self):
         """Test that package managers reference consistent versions."""
         # Get version from main package
-        version_file = (
-            Path(__file__).parent.parent.parent
-            / "src"
-            / "rxiv_maker"
-            / "__version__.py"
-        )
+        version_file = Path(__file__).parent.parent.parent / "src" / "rxiv_maker" / "__version__.py"
 
         if not version_file.exists():
             pytest.skip("Version file not found")
@@ -423,9 +389,7 @@ class TestPackageManagerIntegration:
         version_content = version_file.read_text()
         import re
 
-        version_match = re.search(
-            r'__version__\s*=\s*["\']([^"\']+)["\']', version_content
-        )
+        version_match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', version_content)
 
         if not version_match:
             pytest.skip("Could not extract version")
@@ -434,11 +398,7 @@ class TestPackageManagerIntegration:
 
         # Check Scoop manifest version
         scoop_manifest = (
-            Path(__file__).parent.parent.parent
-            / "submodules"
-            / "scoop-rxiv-maker"
-            / "bucket"
-            / "rxiv-maker.json"
+            Path(__file__).parent.parent.parent / "submodules" / "scoop-rxiv-maker" / "bucket" / "rxiv-maker.json"
         )
         if scoop_manifest.exists():
             with open(scoop_manifest) as f:
@@ -466,9 +426,7 @@ class TestPackageManagerIntegration:
                         if scoop_ver < main_ver:
                             major_diff = main_ver.major - scoop_ver.major
                             minor_diff = (
-                                main_ver.minor - scoop_ver.minor
-                                if main_ver.major == scoop_ver.major
-                                else float("inf")
+                                main_ver.minor - scoop_ver.minor if main_ver.major == scoop_ver.major else float("inf")
                             )
 
                             if major_diff > 0 or minor_diff > 1:

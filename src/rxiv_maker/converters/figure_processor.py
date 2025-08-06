@@ -18,9 +18,7 @@ from .types import (
 )
 
 
-def convert_figures_to_latex(
-    text: MarkdownContent, is_supplementary: bool = False
-) -> LatexContent:
+def convert_figures_to_latex(text: MarkdownContent, is_supplementary: bool = False) -> LatexContent:
     r"""Convert markdown figures to LaTeX figure environments.
 
     Args:
@@ -149,9 +147,7 @@ def create_latex_figure_environment(
     latex_path = path.replace("FIGURES/", "Figures/")
 
     # Handle new subdirectory structure: Figure__name.svg -> Figure__name/Figure__name.png
-    if (
-        "/" not in latex_path.split("Figures/")[-1]
-    ):  # Only if not already in subdirectory
+    if "/" not in latex_path.split("Figures/")[-1]:  # Only if not already in subdirectory
         # Extract figure name from path like "Figures/Figure__name.svg"
         import os
 
@@ -185,8 +181,7 @@ def create_latex_figure_environment(
         attributes.get("span") == "2col"
         or attributes.get("twocolumn") == "true"
         or attributes.get("twocolumn") is True
-        or width
-        == "\\textwidth"  # Auto-detect: \textwidth in 2-col docs means span both
+        or width == "\\textwidth"  # Auto-detect: \textwidth in 2-col docs means span both
     )
 
     # Process caption text to remove markdown formatting
@@ -243,9 +238,7 @@ def _process_figure_with_attributes(text: MarkdownContent) -> LatexContent:
         return create_latex_figure_environment(path, caption, attributes)
 
     # Handle figures with attributes (old format)
-    return re.sub(
-        r"!\[([^\]]*)\]\(([^)]+)\)\{([^}]+)\}", process_figure_with_attributes, text
-    )
+    return re.sub(r"!\[([^\]]*)\]\(([^)]+)\)\{([^}]+)\}", process_figure_with_attributes, text)
 
 
 def _process_figure_without_attributes(text: MarkdownContent) -> LatexContent:
@@ -288,9 +281,7 @@ def extract_figure_ids_from_text(text: MarkdownContent) -> list[FigureId]:
     # Find figure attribute blocks
     attr_matches = re.findall(r"\{#([a-zA-Z0-9_:-]+)[^}]*\}", text)
     for match in attr_matches:
-        if (
-            match.startswith("fig:") or match.startswith("sfig:")
-        ) and match not in figure_ids:
+        if (match.startswith("fig:") or match.startswith("sfig:")) and match not in figure_ids:
             figure_ids.append(match)
 
     return figure_ids

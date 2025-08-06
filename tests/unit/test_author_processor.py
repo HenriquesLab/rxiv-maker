@@ -20,9 +20,7 @@ class TestAuthorProcessor:
         """Test formatting single author with affiliation."""
         yaml_metadata = {
             "authors": [{"name": "John Doe", "affiliations": ["University A"]}],
-            "affiliations": [
-                {"shortname": "University A", "full_name": "University A"}
-            ],
+            "affiliations": [{"shortname": "University A", "full_name": "University A"}],
         }
         result = generate_authors_and_affiliations(yaml_metadata)
         assert "John Doe" in result
@@ -35,9 +33,7 @@ class TestAuthorProcessor:
                 {"name": "John Doe", "affiliations": ["University A"]},
                 {"name": "Jane Smith", "affiliations": ["University A"]},
             ],
-            "affiliations": [
-                {"shortname": "University A", "full_name": "University A"}
-            ],
+            "affiliations": [{"shortname": "University A", "full_name": "University A"}],
         }
         result = generate_authors_and_affiliations(yaml_metadata)
         assert "John Doe" in result
@@ -79,11 +75,7 @@ class TestAuthorProcessor:
 
     def test_extended_author_info(self):
         """Test extended author information generation."""
-        yaml_metadata = {
-            "authors": [
-                {"name": "John Doe", "orcid": "0000-0000-0000-0000", "x": "@johndoe"}
-            ]
-        }
+        yaml_metadata = {"authors": [{"name": "John Doe", "orcid": "0000-0000-0000-0000", "x": "@johndoe"}]}
         result = generate_extended_author_info(yaml_metadata)
         assert "0000-0000-0000-0000" in result
 

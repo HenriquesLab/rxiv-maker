@@ -155,9 +155,7 @@ class TestDOIValidator(unittest.TestCase):
         ]
 
         for doi in invalid_dois:
-            self.assertFalse(
-                validator.DOI_REGEX.match(doi), f"Invalid DOI passed: {doi}"
-            )
+            self.assertFalse(validator.DOI_REGEX.match(doi), f"Invalid DOI passed: {doi}")
 
     def test_bib_entry_extraction(self):
         """Test BibTeX entry extraction."""
@@ -218,14 +216,8 @@ class TestDOIValidator(unittest.TestCase):
 
         # Should have warning about missing bib file
         self.assertTrue(result.has_warnings)
-        warning_messages = [
-            error.message
-            for error in result.errors
-            if error.level == ValidationLevel.WARNING
-        ]
-        self.assertTrue(
-            any("bibliography file" in msg.lower() for msg in warning_messages)
-        )
+        warning_messages = [error.message for error in result.errors if error.level == ValidationLevel.WARNING]
+        self.assertTrue(any("bibliography file" in msg.lower() for msg in warning_messages))
 
     def test_validation_offline_mode(self):
         """Test validation in offline mode."""
@@ -258,11 +250,7 @@ class TestDOIValidator(unittest.TestCase):
 
         # Should have error for invalid DOI format
         self.assertTrue(result.has_errors)
-        error_messages = [
-            error.message
-            for error in result.errors
-            if error.level == ValidationLevel.ERROR
-        ]
+        error_messages = [error.message for error in result.errors if error.level == ValidationLevel.ERROR]
         self.assertTrue(any("Invalid DOI format" in msg for msg in error_messages))
 
         # Should not perform online validation
@@ -318,9 +306,7 @@ class TestDOIValidator(unittest.TestCase):
         with open(os.path.join(self.manuscript_dir, "03_REFERENCES.bib"), "w") as f:
             f.write(bib_content)
 
-        validator = DOIValidator(
-            self.manuscript_dir, enable_online_validation=True, cache_dir=self.cache_dir
-        )
+        validator = DOIValidator(self.manuscript_dir, enable_online_validation=True, cache_dir=self.cache_dir)
         result = validator.validate()
 
         # Should call our mocked method
@@ -352,21 +338,13 @@ class TestDOIValidator(unittest.TestCase):
         with open(os.path.join(self.manuscript_dir, "03_REFERENCES.bib"), "w") as f:
             f.write(bib_content)
 
-        validator = DOIValidator(
-            self.manuscript_dir, enable_online_validation=True, cache_dir=self.cache_dir
-        )
+        validator = DOIValidator(self.manuscript_dir, enable_online_validation=True, cache_dir=self.cache_dir)
         result = validator.validate()
 
         # Should have warning about DOI not found in either API
         self.assertTrue(result.has_warnings)
-        warning_messages = [
-            error.message
-            for error in result.errors
-            if error.level == ValidationLevel.WARNING
-        ]
-        self.assertTrue(
-            any("not found in available registrars" in msg for msg in warning_messages)
-        )
+        warning_messages = [error.message for error in result.errors if error.level == ValidationLevel.WARNING]
+        self.assertTrue(any("not found in available registrars" in msg for msg in warning_messages))
 
     @pytest.mark.fast
     @patch("requests.get")
@@ -403,15 +381,11 @@ class TestDOIValidator(unittest.TestCase):
         with open(os.path.join(self.manuscript_dir, "03_REFERENCES.bib"), "w") as f:
             f.write(bib_content)
 
-        validator = DOIValidator(
-            self.manuscript_dir, enable_online_validation=True, cache_dir=self.cache_dir
-        )
+        validator = DOIValidator(self.manuscript_dir, enable_online_validation=True, cache_dir=self.cache_dir)
         result = validator.validate()
 
         # Should have success message for DataCite validation
-        success_messages = [
-            error.message for error in result.errors if error.level.value == "success"
-        ]
+        success_messages = [error.message for error in result.errors if error.level.value == "success"]
         self.assertTrue(any("DataCite" in msg for msg in success_messages))
 
         # Should call DataCite API after CrossRef fails
@@ -484,18 +458,14 @@ class TestDOIValidator(unittest.TestCase):
         with open(os.path.join(self.manuscript_dir, "03_REFERENCES.bib"), "w") as f:
             f.write(bib_content)
 
-        validator1 = DOIValidator(
-            self.manuscript_dir, enable_online_validation=True, cache_dir=self.cache_dir
-        )
+        validator1 = DOIValidator(self.manuscript_dir, enable_online_validation=True, cache_dir=self.cache_dir)
         result1 = validator1.validate()
 
         # Should call our mocked method once
         self.assertEqual(mock_fetch.call_count, 1)
 
         # Create second validator (should use cache)
-        validator2 = DOIValidator(
-            self.manuscript_dir, enable_online_validation=True, cache_dir=self.cache_dir
-        )
+        validator2 = DOIValidator(self.manuscript_dir, enable_online_validation=True, cache_dir=self.cache_dir)
         result2 = validator2.validate()
 
         # Should not call API again (cached)
@@ -518,17 +488,13 @@ class TestDOIValidator(unittest.TestCase):
 
         from difflib import SequenceMatcher
 
-        similarity = SequenceMatcher(
-            None, validator._clean_title(title1), validator._clean_title(title2)
-        ).ratio()
+        similarity = SequenceMatcher(None, validator._clean_title(title1), validator._clean_title(title2)).ratio()
 
         self.assertGreater(similarity, validator.similarity_threshold)
 
         # Test very different titles (should fail)
         title3 = "Completely Different Research Topic"
-        similarity2 = SequenceMatcher(
-            None, validator._clean_title(title1), validator._clean_title(title3)
-        ).ratio()
+        similarity2 = SequenceMatcher(None, validator._clean_title(title1), validator._clean_title(title3)).ratio()
 
         self.assertLess(similarity2, validator.similarity_threshold)
 
@@ -600,9 +566,7 @@ This cites @integrated_test and other references.
         self.assertEqual(doi_metadata["validated_dois"], 1)
 
         # Test with DOI validation disabled
-        validator_no_doi = CitationValidator(
-            self.manuscript_dir, enable_doi_validation=False
-        )
+        validator_no_doi = CitationValidator(self.manuscript_dir, enable_doi_validation=False)
         result_no_doi = validator_no_doi.validate()
 
         # Should not include DOI validation metadata
@@ -630,13 +594,9 @@ class TestNetworkOperationTimeouts(unittest.TestCase):
         )
 
         # Patch at the point of use in the module
-        with patch(
-            "rxiv_maker.validators.doi_validator.get_publication_as_json"
-        ) as mock_get_publication:
+        with patch("rxiv_maker.validators.doi_validator.get_publication_as_json") as mock_get_publication:
             # Simulate timeout
-            mock_get_publication.side_effect = requests.exceptions.Timeout(
-                "Connection timed out"
-            )
+            mock_get_publication.side_effect = requests.exceptions.Timeout("Connection timed out")
 
             # Should raise the exception since _fetch_crossref_metadata re-raises
             with self.assertRaises(requests.exceptions.Timeout):

@@ -10,9 +10,7 @@ import sys
 
 # Add the parent directory to the path to allow imports when run as a script
 if __name__ == "__main__":
-    sys.path.insert(
-        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    )
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from rxiv_maker.utils.unicode_safe import (
     get_safe_icon,
@@ -56,12 +54,8 @@ def validate_pdf_output(
 
         # Count issues by level
         error_count = sum(1 for e in result.errors if e.level == ValidationLevel.ERROR)
-        warning_count = sum(
-            1 for e in result.errors if e.level == ValidationLevel.WARNING
-        )
-        success_count = sum(
-            1 for e in result.errors if e.level == ValidationLevel.SUCCESS
-        )
+        warning_count = sum(1 for e in result.errors if e.level == ValidationLevel.WARNING)
+        success_count = sum(1 for e in result.errors if e.level == ValidationLevel.SUCCESS)
 
         # Print errors and warnings
         if result.errors:
@@ -116,15 +110,9 @@ def validate_pdf_output(
                 elif key == "section_references":
                     sections_icon = get_safe_icon("📖", "[SECTIONS]")
                     safe_print(f"{sections_icon} Section References: {value}")
-                elif (
-                    key.startswith("avg_")
-                    or key.startswith("min_")
-                    or key.startswith("max_")
-                ):
+                elif key.startswith("avg_") or key.startswith("min_") or key.startswith("max_"):
                     measure_icon = get_safe_icon("📏", "[MEASURE]")
-                    safe_print(
-                        f"{measure_icon} {key.replace('_', ' ').title()}: {value:.0f}"
-                    )
+                    safe_print(f"{measure_icon} {key.replace('_', ' ').title()}: {value:.0f}")
 
         # Summary
         if detailed:

@@ -2,11 +2,10 @@
 
 import os
 import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, mock_open, patch
 
 from click.testing import CliRunner
 
-# Import the arXiv command
 from rxiv_maker.cli.commands.arxiv import arxiv
 
 
@@ -27,36 +26,35 @@ class TestArxivCommand:
         result = self.runner.invoke(arxiv, ["nonexistent"])
 
         assert result.exit_code == 1
-        assert (
-            "❌ Error: Manuscript directory 'nonexistent' does not exist"
-            in result.output
-        )
-        assert (
-            "💡 Run 'rxiv init nonexistent' to create a new manuscript" in result.output
-        )
+        assert "❌ Error: Manuscript directory 'nonexistent' does not exist" in result.output
+        assert "💡 Run 'rxiv init nonexistent' to create a new manuscript" in result.output
 
     @patch("rxiv_maker.cli.commands.arxiv.Path")
     @patch("rxiv_maker.cli.commands.arxiv.Progress")
     @patch("rxiv_maker.cli.commands.arxiv.BuildManager")
-    def test_pdf_building_when_missing(
-        self, mock_build_manager, mock_progress, mock_path
-    ):
+    def test_pdf_building_when_missing(self, mock_build_manager, mock_progress, mock_path):
         """Test PDF building when PDF doesn't exist."""
-        # Mock manuscript directory exists
-        mock_path.return_value.exists.side_effect = lambda: True
-        mock_path.return_value.name = "test_manuscript"
 
-        # Mock PDF doesn't exist initially
-        def pdf_exists_side_effect():
-            return False
+        # Mock different Path objects based on the path argument
+        def path_side_effect(path_arg):
+            path_mock = MagicMock()
+            path_str = str(path_arg)
 
-        pdf_path_mock = MagicMock()
-        pdf_path_mock.exists.side_effect = pdf_exists_side_effect
-        mock_path.side_effect = (
-            lambda x: pdf_path_mock
-            if "output/test_manuscript.pdf" in str(x)
-            else MagicMock()
-        )
+            if path_str == "test_manuscript":
+                # Manuscript directory exists
+                path_mock.exists.return_value = True
+                path_mock.name = "test_manuscript"
+            elif "output" in path_str and ".pdf" in path_str:
+                # PDF file doesn't exist
+                path_mock.exists.return_value = False
+                path_mock.name = "test_manuscript.pdf"
+            else:
+                # Default mock for other Path calls (like os.path.join results)
+                path_mock.exists.return_value = True
+                path_mock.name = "test_manuscript"
+            return path_mock
+
+        mock_path.side_effect = path_side_effect
 
         # Mock BuildManager successful run
         mock_manager_instance = MagicMock()
@@ -65,14 +63,12 @@ class TestArxivCommand:
 
         # Mock Progress context manager
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__ = MagicMock(
-            return_value=mock_progress_instance
-        )
+        mock_progress.return_value.__enter__ = MagicMock(return_value=mock_progress_instance)
         mock_progress.return_value.__exit__ = MagicMock(return_value=None)
 
         # Mock prepare_arxiv_main to avoid actual execution
         with patch("rxiv_maker.cli.commands.arxiv.prepare_arxiv_main"):
-            result = self.runner.invoke(arxiv, ["test_manuscript", "--no-zip"])
+            result = self.runner.invoke(arxiv, ["test_manuscript", "--no-zip"], obj={"verbose": False})
 
         assert result.exit_code == 0
         mock_build_manager.assert_called_once()
@@ -83,18 +79,27 @@ class TestArxivCommand:
     @patch("rxiv_maker.cli.commands.arxiv.BuildManager")
     def test_build_manager_failure(self, mock_build_manager, mock_progress, mock_path):
         """Test handling of BuildManager failure."""
-        # Mock manuscript directory exists
-        mock_path.return_value.exists.side_effect = lambda: True
-        mock_path.return_value.name = "test_manuscript"
 
-        # Mock PDF doesn't exist
-        pdf_path_mock = MagicMock()
-        pdf_path_mock.exists.return_value = False
-        mock_path.side_effect = (
-            lambda x: pdf_path_mock
-            if "output/test_manuscript.pdf" in str(x)
-            else MagicMock()
-        )
+        # Mock different Path objects based on the path argument
+        def path_side_effect(path_arg):
+            path_mock = MagicMock()
+            path_str = str(path_arg)
+
+            if path_str == "test_manuscript":
+                # Manuscript directory exists
+                path_mock.exists.return_value = True
+                path_mock.name = "test_manuscript"
+            elif "output" in path_str and ".pdf" in path_str:
+                # PDF file doesn't exist
+                path_mock.exists.return_value = False
+                path_mock.name = "test_manuscript.pdf"
+            else:
+                # Default mock for other Path calls
+                path_mock.exists.return_value = True
+                path_mock.name = "test_manuscript"
+            return path_mock
+
+        mock_path.side_effect = path_side_effect
 
         # Mock BuildManager failure
         mock_manager_instance = MagicMock()
@@ -103,12 +108,10 @@ class TestArxivCommand:
 
         # Mock Progress context manager
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__ = MagicMock(
-            return_value=mock_progress_instance
-        )
+        mock_progress.return_value.__enter__ = MagicMock(return_value=mock_progress_instance)
         mock_progress.return_value.__exit__ = MagicMock(return_value=None)
 
-        result = self.runner.invoke(arxiv, ["test_manuscript"])
+        result = self.runner.invoke(arxiv, ["test_manuscript"], obj={"verbose": False})
 
         assert result.exit_code == 1
         assert "❌ PDF build failed. Cannot prepare arXiv package." in result.output
@@ -118,33 +121,58 @@ class TestArxivCommand:
     @patch("rxiv_maker.cli.commands.arxiv.prepare_arxiv_main")
     def test_custom_options(self, mock_prepare, mock_progress, mock_path):
         """Test arXiv command with custom options."""
-        # Mock manuscript directory and PDF exist
-        mock_path.return_value.exists.return_value = True
-        mock_path.return_value.name = "test_manuscript"
+
+        # Mock different Path objects based on the path argument
+        def path_side_effect(path_arg):
+            path_mock = MagicMock()
+            path_str = str(path_arg)
+
+            if path_str == "test_manuscript":
+                # Manuscript directory exists
+                path_mock.exists.return_value = True
+                path_mock.name = "test_manuscript"
+            elif "custom_output" in path_str and ".pdf" in path_str:
+                # PDF file exists (so BuildManager won't be called)
+                path_mock.exists.return_value = True
+                path_mock.name = "test_manuscript.pdf"
+            else:
+                # Default mock for other Path calls
+                path_mock.exists.return_value = True
+                path_mock.name = str(path_arg)
+            return path_mock
+
+        mock_path.side_effect = path_side_effect
 
         # Mock Progress context manager
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__ = MagicMock(
-            return_value=mock_progress_instance
-        )
+        mock_progress.return_value.__enter__ = MagicMock(return_value=mock_progress_instance)
         mock_progress.return_value.__exit__ = MagicMock(return_value=None)
 
         # Mock sys.argv manipulation
         original_argv = sys.argv.copy()
 
-        result = self.runner.invoke(
-            arxiv,
-            [
-                "test_manuscript",
-                "--output-dir",
-                "custom_output",
-                "--arxiv-dir",
-                "custom_arxiv",
-                "--zip-filename",
-                "custom.zip",
-            ],
-        )
+        # Mock prepare_arxiv_main to raise SystemExit(0) to trigger successful completion
+        mock_prepare.side_effect = SystemExit(0)
 
+        with patch("yaml.safe_load") as mock_yaml, patch("builtins.open", mock_open()):
+            # Mock YAML config
+            mock_yaml.return_value = {"date": "2024-01-01", "authors": [{"name": "Test Author"}]}
+
+            result = self.runner.invoke(
+                arxiv,
+                [
+                    "test_manuscript",
+                    "--output-dir",
+                    "custom_output",
+                    "--arxiv-dir",
+                    "custom_arxiv",
+                    "--zip-filename",
+                    "custom.zip",
+                ],
+                obj={"verbose": False},  # Provide proper context object
+            )
+
+        # Remove debug output
         assert result.exit_code == 0
         mock_prepare.assert_called_once()
 
@@ -174,9 +202,7 @@ class TestArxivCommand:
 
         # Mock Progress context manager
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__ = MagicMock(
-            return_value=mock_progress_instance
-        )
+        mock_progress.return_value.__enter__ = MagicMock(return_value=mock_progress_instance)
         mock_progress.return_value.__exit__ = MagicMock(return_value=None)
 
         result = self.runner.invoke(arxiv, ["test_manuscript", "--no-zip"])
@@ -187,33 +213,56 @@ class TestArxivCommand:
     @patch("rxiv_maker.cli.commands.arxiv.Path")
     @patch("rxiv_maker.cli.commands.arxiv.Progress")
     @patch("rxiv_maker.cli.commands.arxiv.prepare_arxiv_main")
-    @patch("rxiv_maker.cli.commands.arxiv.yaml")
-    @patch("rxiv_maker.cli.commands.arxiv.shutil")
-    def test_pdf_copying_to_manuscript(
-        self, mock_shutil, mock_yaml, mock_prepare, mock_progress, mock_path
-    ):
+    def test_pdf_copying_to_manuscript(self, mock_prepare, mock_progress, mock_path):
         """Test copying PDF to manuscript directory with proper naming."""
-        # Mock manuscript directory and PDF exist
-        mock_path.return_value.exists.return_value = True
-        mock_path.return_value.name = "test_manuscript"
+
+        # Mock different Path objects based on the path argument
+        def path_side_effect(path_arg):
+            path_mock = MagicMock()
+            path_str = str(path_arg)
+
+            if path_str == "test_manuscript":
+                # Manuscript directory exists
+                path_mock.exists.return_value = True
+                path_mock.name = "test_manuscript"
+            elif "output" in path_str and ".pdf" in path_str:
+                # PDF file exists
+                path_mock.exists.return_value = True
+                path_mock.name = "test_manuscript.pdf"
+            elif "00_CONFIG.yml" in path_str:
+                # Config file exists
+                path_mock.exists.return_value = True
+            else:
+                # Default mock for other Path calls
+                path_mock.exists.return_value = True
+                path_mock.name = str(path_arg)
+            return path_mock
+
+        mock_path.side_effect = path_side_effect
 
         # Mock Progress context manager
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__ = MagicMock(
-            return_value=mock_progress_instance
-        )
+        mock_progress.return_value.__enter__ = MagicMock(return_value=mock_progress_instance)
         mock_progress.return_value.__exit__ = MagicMock(return_value=None)
 
-        # Mock YAML config
-        mock_yaml.safe_load.return_value = {
-            "date": "2024-01-15",
-            "authors": [{"name": "John Doe"}],
-        }
+        # Mock prepare_arxiv_main to complete successfully without raising SystemExit
+        mock_prepare.return_value = None
 
-        result = self.runner.invoke(arxiv, ["test_manuscript"])
+        with (
+            patch("yaml.safe_load") as mock_yaml,
+            patch("builtins.open", mock_open()),
+            patch("shutil.copy2") as mock_copy,
+        ):
+            # Mock YAML config
+            mock_yaml.return_value = {
+                "date": "2024-01-15",
+                "authors": [{"name": "John Doe"}],
+            }
+
+            result = self.runner.invoke(arxiv, ["test_manuscript"], obj={"verbose": False})
 
         assert result.exit_code == 0
-        mock_shutil.copy2.assert_called_once()
+        mock_copy.assert_called_once()
 
     @patch("rxiv_maker.cli.commands.arxiv.Path")
     @patch("rxiv_maker.cli.commands.arxiv.Progress")
@@ -229,9 +278,7 @@ class TestArxivCommand:
 
         # Mock Progress context manager
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__ = MagicMock(
-            return_value=mock_progress_instance
-        )
+        mock_progress.return_value.__enter__ = MagicMock(return_value=mock_progress_instance)
         mock_progress.return_value.__exit__ = MagicMock(return_value=None)
 
         result = self.runner.invoke(arxiv, ["test_manuscript"])
@@ -242,28 +289,33 @@ class TestArxivCommand:
     @patch("rxiv_maker.cli.commands.arxiv.Path")
     @patch("rxiv_maker.cli.commands.arxiv.Progress")
     @patch("rxiv_maker.cli.commands.arxiv.prepare_arxiv_main")
-    def test_regression_build_manager_method_call(
-        self, mock_prepare, mock_progress, mock_path
-    ):
+    def test_regression_build_manager_method_call(self, mock_prepare, mock_progress, mock_path):
         """Regression test: Ensure BuildManager.run() is called, not build()."""
-        # Mock manuscript directory exists but PDF doesn't
-        mock_path.return_value.exists.side_effect = lambda: True
-        mock_path.return_value.name = "test_manuscript"
 
-        # Mock PDF doesn't exist
-        pdf_path_mock = MagicMock()
-        pdf_path_mock.exists.return_value = False
-        mock_path.side_effect = (
-            lambda x: pdf_path_mock
-            if "output/test_manuscript.pdf" in str(x)
-            else MagicMock()
-        )
+        # Mock different Path objects based on the path argument
+        def path_side_effect(path_arg):
+            path_mock = MagicMock()
+            path_str = str(path_arg)
+
+            if path_str == "test_manuscript":
+                # Manuscript directory exists
+                path_mock.exists.return_value = True
+                path_mock.name = "test_manuscript"
+            elif "output" in path_str and ".pdf" in path_str:
+                # PDF file doesn't exist
+                path_mock.exists.return_value = False
+                path_mock.name = "test_manuscript.pdf"
+            else:
+                # Default mock for other Path calls
+                path_mock.exists.return_value = True
+                path_mock.name = "test_manuscript"
+            return path_mock
+
+        mock_path.side_effect = path_side_effect
 
         # Mock Progress context manager
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__ = MagicMock(
-            return_value=mock_progress_instance
-        )
+        mock_progress.return_value.__enter__ = MagicMock(return_value=mock_progress_instance)
         mock_progress.return_value.__exit__ = MagicMock(return_value=None)
 
         with patch("rxiv_maker.cli.commands.arxiv.BuildManager") as mock_build_manager:
@@ -273,7 +325,7 @@ class TestArxivCommand:
             del mock_manager_instance.build
             mock_build_manager.return_value = mock_manager_instance
 
-            result = self.runner.invoke(arxiv, ["test_manuscript", "--no-zip"])
+            result = self.runner.invoke(arxiv, ["test_manuscript", "--no-zip"], obj={"verbose": False})
 
         assert result.exit_code == 0
         # Verify run() method was called, not build()
@@ -284,32 +336,46 @@ class TestArxivCommand:
     @patch("rxiv_maker.cli.commands.arxiv.prepare_arxiv_main")
     def test_create_zip_flag_regression(self, mock_prepare, mock_progress, mock_path):
         """Regression test: Ensure --create-zip flag is used, not --zip."""
-        # Mock manuscript directory and PDF exist
-        mock_path.return_value.exists.return_value = True
-        mock_path.return_value.name = "test_manuscript"
+
+        # Mock different Path objects based on the path argument
+        def path_side_effect(path_arg):
+            path_mock = MagicMock()
+            path_str = str(path_arg)
+
+            if path_str == "test_manuscript":
+                # Manuscript directory exists
+                path_mock.exists.return_value = True
+                path_mock.name = "test_manuscript"
+            elif "output" in path_str and ".pdf" in path_str:
+                # PDF file exists (so BuildManager won't be called)
+                path_mock.exists.return_value = True
+                path_mock.name = "test_manuscript.pdf"
+            else:
+                # Default mock for other Path calls
+                path_mock.exists.return_value = True
+                path_mock.name = str(path_arg)
+            return path_mock
+
+        mock_path.side_effect = path_side_effect
 
         # Mock Progress context manager
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__ = MagicMock(
-            return_value=mock_progress_instance
-        )
+        mock_progress.return_value.__enter__ = MagicMock(return_value=mock_progress_instance)
         mock_progress.return_value.__exit__ = MagicMock(return_value=None)
 
         # Capture sys.argv to verify correct flag is used
         captured_argv = []
-        original_main = mock_prepare
 
         def capture_argv(*args, **kwargs):
             captured_argv.extend(sys.argv)
-            return original_main(*args, **kwargs)
+            # Use SystemExit(0) to trigger successful completion
+            raise SystemExit(0)
 
         mock_prepare.side_effect = capture_argv
 
-        result = self.runner.invoke(arxiv, ["test_manuscript"])
+        result = self.runner.invoke(arxiv, ["test_manuscript"], obj={"verbose": False})
 
         assert result.exit_code == 0
         # Verify --create-zip is in the arguments, not --zip
         assert "--create-zip" in captured_argv
-        assert "--zip" not in captured_argv or captured_argv.count(
-            "--zip"
-        ) <= captured_argv.count("--create-zip")
+        assert "--zip" not in captured_argv or captured_argv.count("--zip") <= captured_argv.count("--create-zip")

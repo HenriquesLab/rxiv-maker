@@ -10,9 +10,7 @@ from pathlib import Path
 
 # Add the parent directory to the path to allow imports when run as a script
 if __name__ == "__main__":
-    sys.path.insert(
-        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    )
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     from rxiv_maker.converters.md2tex import extract_content_sections
     from rxiv_maker.utils import find_manuscript_md
 else:
@@ -62,9 +60,7 @@ def analyze_section_word_counts(content_sections):
 
             # Get guidelines for this section
             guidelines = section_guidelines.get(section_key, {})
-            section_name = guidelines.get(
-                "description", section_key.replace("_", " ").title()
-            )
+            section_name = guidelines.get("description", section_key.replace("_", " ").title())
             ideal = guidelines.get("ideal")
             max_warning = guidelines.get("max_warning")
 
@@ -86,10 +82,7 @@ def analyze_section_word_counts(content_sections):
 
     # Overall article length guidance
     if total_words > 8000:
-        print(
-            "⚠️  Article is quite long (>8000 words) - consider condensing "
-            "for most journals"
-        )
+        print("⚠️  Article is quite long (>8000 words) - consider condensing for most journals")
     elif total_words > 5000:
         print("ℹ️  Article length is substantial - check target journal word limits")
     elif total_words < 2000:

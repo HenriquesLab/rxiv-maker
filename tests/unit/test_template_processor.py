@@ -45,9 +45,7 @@ class TestTemplateProcessor:
         yaml_metadata = {"title": {"long": "Test Article Title"}}
         article_md = "# Test Content"
 
-        result = process_template_replacements(
-            template_content, yaml_metadata, article_md
-        )
+        result = process_template_replacements(template_content, yaml_metadata, article_md)
         assert "Test Article Title" in result
 
     def test_process_template_replacements_with_authors(self):
@@ -55,15 +53,11 @@ class TestTemplateProcessor:
         template_content = "<PY-RPL:AUTHORS-AND-AFFILIATIONS>"
         yaml_metadata = {
             "authors": [{"name": "John Doe", "affiliations": ["University A"]}],
-            "affiliations": [
-                {"shortname": "University A", "full_name": "University A"}
-            ],
+            "affiliations": [{"shortname": "University A", "full_name": "University A"}],
         }
         article_md = "# Test Content"
 
-        result = process_template_replacements(
-            template_content, yaml_metadata, article_md
-        )
+        result = process_template_replacements(template_content, yaml_metadata, article_md)
         assert "John Doe" in result
 
     def test_process_template_replacements_with_keywords(self):
@@ -72,9 +66,7 @@ class TestTemplateProcessor:
         yaml_metadata = {"keywords": ["test", "article", "template"]}
         article_md = "# Test Content"
 
-        result = process_template_replacements(
-            template_content, yaml_metadata, article_md
-        )
+        result = process_template_replacements(template_content, yaml_metadata, article_md)
         assert "test" in result
 
     def test_process_template_replacements_comprehensive(self):
@@ -92,9 +84,7 @@ class TestTemplateProcessor:
         }
         article_md = "# Main content here"
 
-        result = process_template_replacements(
-            template_content, yaml_metadata, article_md
-        )
+        result = process_template_replacements(template_content, yaml_metadata, article_md)
         assert "Comprehensive Test" in result
         assert "Jane Doe" in result
         assert "comprehensive" in result

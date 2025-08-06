@@ -153,9 +153,7 @@ def normalize_urls(text: MarkdownContent) -> MarkdownContent:
 
         # Ensure URL has protocol
         if not url.startswith(("http://", "https://")) and (
-            url.startswith("www.")
-            or "." in url
-            and not url.startswith(("mailto:", "ftp:"))
+            url.startswith("www.") or "." in url and not url.startswith(("mailto:", "ftp:"))
         ):
             url = "https://" + url
 

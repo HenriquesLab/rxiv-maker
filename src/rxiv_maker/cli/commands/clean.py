@@ -11,9 +11,7 @@ console = Console()
 
 
 @click.command()
-@click.argument(
-    "manuscript_path", type=click.Path(exists=True, file_okay=False), required=False
-)
+@click.argument("manuscript_path", type=click.Path(exists=True, file_okay=False), required=False)
 @click.option("--output-dir", "-o", default="output", help="Output directory to clean")
 @click.option("--figures-only", "-f", is_flag=True, help="Clean only generated figures")
 @click.option("--output-only", "-O", is_flag=True, help="Clean only output directory")

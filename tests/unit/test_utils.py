@@ -591,9 +591,7 @@ This research presents breakthrough findings.
         assert copied_pdf.resolve() == expected_pdf_path.resolve()
         assert expected_pdf_path.exists()
 
-    def test_manuscript_directory_permissions_and_error_handling(
-        self, temp_dir, monkeypatch
-    ):
+    def test_manuscript_directory_permissions_and_error_handling(self, temp_dir, monkeypatch):
         """Test error handling for various manuscript directory issues."""
         monkeypatch.chdir(temp_dir)
 
@@ -682,9 +680,7 @@ class TestMultiLanguageUnicode:
             assert icon == "✅"
 
         # Test without Unicode support
-        with patch(
-            "rxiv_maker.utils.unicode_safe.supports_unicode", return_value=False
-        ):
+        with patch("rxiv_maker.utils.unicode_safe.supports_unicode", return_value=False):
             icon = get_safe_icon("✅", "[OK]")
             assert icon == "[OK]"
 

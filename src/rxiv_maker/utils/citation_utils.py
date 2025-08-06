@@ -28,9 +28,7 @@ def inject_rxiv_citation(yaml_metadata: dict[str, Any]) -> None:
     bib_file_path = current_dir / manuscript_path / bib_filename
 
     if not bib_file_path.exists():
-        print(
-            f"Warning: Bibliography file {bib_file_path} not found. Creating new file."
-        )
+        print(f"Warning: Bibliography file {bib_file_path} not found. Creating new file.")
         bib_file_path.parent.mkdir(parents=True, exist_ok=True)
         bib_file_path.touch()
 

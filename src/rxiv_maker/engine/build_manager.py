@@ -51,9 +51,7 @@ class BuildManager:
             track_changes_tag: Git tag to track changes against
             engine: Execution engine ("local" or "docker")
         """
-        self.manuscript_path: str = manuscript_path or os.getenv(
-            "MANUSCRIPT_PATH", "MANUSCRIPT"
-        )
+        self.manuscript_path: str = manuscript_path or os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
         # Make output_dir absolute relative to manuscript directory
         self.manuscript_dir_path = Path(self.manuscript_path)
         if Path(output_dir).is_absolute():
@@ -186,14 +184,7 @@ class BuildManager:
             self.manuscript_path != "MANUSCRIPT"
             or (
                 self.manuscript_path == "MANUSCRIPT"
-                and len(
-                    [
-                        f
-                        for f in self.manuscript_dir.iterdir()
-                        if f.suffix in [".md", ".yml", ".bib"]
-                    ]
-                )
-                > 2
+                and len([f for f in self.manuscript_dir.iterdir() if f.suffix in [".md", ".yml", ".bib"]]) > 2
             )
         )
 
@@ -202,10 +193,7 @@ class BuildManager:
             try:
                 self.figures_dir.mkdir(parents=True, exist_ok=True)
                 self.log(f"Created FIGURES directory: {self.figures_dir}")
-                self.log(
-                    "💡 Add figure generation scripts (.py) or Mermaid diagrams "
-                    "(.mmd) to this directory"
-                )
+                self.log("💡 Add figure generation scripts (.py) or Mermaid diagrams (.mmd) to this directory")
             except Exception as e:
                 self.log(f"Failed to create FIGURES directory: {e}", "ERROR")
                 return False
@@ -252,9 +240,7 @@ class BuildManager:
             if self.verbose:
                 validation_cmd.append("--verbose")
 
-            result = self.docker_manager.run_command(
-                command=validation_cmd, session_key="validation"
-            )
+            result = self.docker_manager.run_command(command=validation_cmd, session_key="validation")
 
             if result.returncode == 0:
                 self.log("Validation completed successfully")
@@ -460,9 +446,7 @@ class BuildManager:
         self.log("Copying style files...", "STEP")
 
         if not self.style_dir.exists():
-            self.log(
-                "Style directory not found, skipping style file copying", "WARNING"
-            )
+            self.log("Style directory not found, skipping style file copying", "WARNING")
             return True
 
         # Copy style files
@@ -663,9 +647,7 @@ class BuildManager:
                 elif "warning" in bibtex_result.stdout.lower():
                     # Count warnings but don't spam the output
                     warning_count = bibtex_result.stdout.lower().count("warning")
-                    self.log(
-                        f"BibTeX completed with {warning_count} warning(s)", "WARNING"
-                    )
+                    self.log(f"BibTeX completed with {warning_count} warning(s)", "WARNING")
 
                 # Check for serious bibtex errors that would prevent citation resolution
                 if bibtex_result.returncode != 0:
@@ -677,8 +659,7 @@ class BuildManager:
                     bbl_file = Path(f"{self.manuscript_name}.bbl")
                     if not bbl_file.exists():
                         self.log(
-                            "BibTeX failed to create .bbl file - citations will "
-                            "appear as ?",
+                            "BibTeX failed to create .bbl file - citations will appear as ?",
                             "ERROR",
                         )
                         return False
@@ -688,9 +669,7 @@ class BuildManager:
                     try:
                         self._log_bibtex_warnings()
                     except Exception as e:
-                        self.log(
-                            f"Debug: BibTeX warning logging failed: {e}", "WARNING"
-                        )
+                        self.log(f"Debug: BibTeX warning logging failed: {e}", "WARNING")
 
             # Second pass
             subprocess.run(
@@ -722,9 +701,7 @@ class BuildManager:
                     self.log("LaTeX completed with warnings:", "WARNING")
                     if result3.stdout:
                         print("LaTeX output:")
-                        print(
-                            result3.stdout[-2000:]
-                        )  # Show last 2000 chars to avoid spam
+                        print(result3.stdout[-2000:])  # Show last 2000 chars to avoid spam
                 return True
             else:
                 self.log("PDF compilation failed", "ERROR")
@@ -750,7 +727,7 @@ class BuildManager:
             python_parts = self.platform.python_cmd.split()
             cmd = [
                 python_parts[0] if python_parts else "python",
-                "src/rxiv_maker/commands/copy_pdf.py",
+                "src/rxiv_maker/engine/copy_pdf.py",
                 "--output-dir",
                 str(self.output_dir),
             ]
@@ -789,7 +766,7 @@ class BuildManager:
             python_parts = self.platform.python_cmd.split()
             cmd = [
                 python_parts[0] if python_parts else "python",
-                "src/rxiv_maker/commands/analyze_word_count.py",
+                "src/rxiv_maker/engine/analyze_word_count.py",
             ]
 
             if "uv run" in self.platform.python_cmd:
@@ -865,9 +842,7 @@ class BuildManager:
                 f"/workspace/{pdf_rel}",
             ]
 
-            result = self.docker_manager.run_command(
-                command=pdf_validation_cmd, session_key="pdf_validation"
-            )
+            result = self.docker_manager.run_command(command=pdf_validation_cmd, session_key="pdf_validation")
 
             if result.returncode == 0:
                 self.log("PDF validation completed successfully")
@@ -902,9 +877,7 @@ class BuildManager:
             if "uv run" in self.platform.python_cmd:
                 cmd = ["uv", "run", "python"] + cmd[1:]
 
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, encoding="utf-8", errors="replace"
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
 
             if result.returncode == 0:
                 self.log("PDF validation completed successfully")
@@ -928,13 +901,10 @@ class BuildManager:
     def run_full_build(self) -> bool:
         """Run the complete build process."""
         # Create operation context for the entire build
-        with create_operation(
-            "pdf_build", manuscript=self.manuscript_path, engine=self.engine
-        ) as op:
+        with create_operation("pdf_build", manuscript=self.manuscript_path, engine=self.engine) as op:
             op.log(f"Starting build process for manuscript: {self.manuscript_path}")
             self.log(
-                f"Starting build process for manuscript: {self.manuscript_path} "
-                f"(Operation ID: {op.operation_id})",
+                f"Starting build process for manuscript: {self.manuscript_path} (Operation ID: {op.operation_id})",
                 "STEP",
             )
 
@@ -1013,17 +983,13 @@ class BuildManager:
 
             # Success!
             op.log(f"Build completed successfully: {self.output_pdf}")
-            self.log(
-                f"Build completed successfully: {self.output_pdf} "
-                f"(Operation ID: {op.operation_id})"
-            )
+            self.log(f"Build completed successfully: {self.output_pdf} (Operation ID: {op.operation_id})")
 
             # Generate performance report
             perf_report = perf_tracker.get_performance_report()
             if perf_report["summary"]["regressions"] > 0:
                 self.log(
-                    f"Performance regressions detected: "
-                    f"{perf_report['summary']['regressions']} operations",
+                    f"Performance regressions detected: {perf_report['summary']['regressions']} operations",
                     "WARNING",
                 )
 
@@ -1042,22 +1008,12 @@ def main():
     """Main entry point for build manager command."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Build manager for Rxiv-Maker manuscript compilation"
-    )
-    parser.add_argument(
-        "--manuscript-path", default="MANUSCRIPT", help="Path to manuscript directory"
-    )
+    parser = argparse.ArgumentParser(description="Build manager for Rxiv-Maker manuscript compilation")
+    parser.add_argument("--manuscript-path", default="MANUSCRIPT", help="Path to manuscript directory")
     parser.add_argument("--output-dir", default="output", help="Output directory")
-    parser.add_argument(
-        "--force-figures", action="store_true", help="Force regeneration of all figures"
-    )
-    parser.add_argument(
-        "--skip-validation", action="store_true", help="Skip manuscript validation"
-    )
-    parser.add_argument(
-        "--skip-pdf-validation", action="store_true", help="Skip PDF validation"
-    )
+    parser.add_argument("--force-figures", action="store_true", help="Force regeneration of all figures")
+    parser.add_argument("--skip-validation", action="store_true", help="Skip manuscript validation")
+    parser.add_argument("--skip-pdf-validation", action="store_true", help="Skip PDF validation")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     parser.add_argument("--track-changes", help="Git tag to track changes against")
 

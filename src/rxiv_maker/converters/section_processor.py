@@ -56,9 +56,7 @@ def extract_content_sections(article_md: MarkdownContent) -> SectionDict:
     if main_content:
         # Check if main content is supplementary
         is_main_supplementary = "supplementary" in main_content.lower()
-        sections["main"] = convert_markdown_to_latex(
-            main_content, is_main_supplementary
-        )
+        sections["main"] = convert_markdown_to_latex(main_content, is_main_supplementary)
 
     # Extract each section
     for i, match in enumerate(section_matches):
@@ -74,14 +72,9 @@ def extract_content_sections(article_md: MarkdownContent) -> SectionDict:
         section_content = content[section_start:section_end].strip()
 
         # Check if this is supplementary content (check both title and content)
-        is_supplementary = (
-            "supplementary" in section_title.lower()
-            or "supplementary" in section_content.lower()
-        )
+        is_supplementary = "supplementary" in section_title.lower() or "supplementary" in section_content.lower()
 
-        section_content_latex = convert_markdown_to_latex(
-            section_content, is_supplementary
-        )
+        section_content_latex = convert_markdown_to_latex(section_content, is_supplementary)
 
         # Map section titles to our standard keys
         section_key = map_section_title_to_key(section_title)
@@ -126,11 +119,7 @@ def map_section_title_to_key(title: SectionTitle) -> SectionKey:
         return "author_contributions"
     elif "acknowledgement" in title_lower or "acknowledge" in title_lower:
         return "acknowledgements"
-    elif (
-        "funding" in title_lower
-        or "financial support" in title_lower
-        or "grant" in title_lower
-    ):
+    elif "funding" in title_lower or "financial support" in title_lower or "grant" in title_lower:
         return "funding"
     else:
         # For other sections, return as lowercase with spaces replaced by underscores

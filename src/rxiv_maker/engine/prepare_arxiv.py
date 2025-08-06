@@ -42,13 +42,8 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None, manuscript_path
     # Try multiple possible locations for the style file
     style_candidates = [
         Path("src/tex/style/rxiv_maker_style.cls"),  # From repository root
-        (
-            Path(__file__).parent.parent.parent / "tex/style/rxiv_maker_style.cls"
-        ),  # Relative to script
-        (
-            Path(__file__).parent.parent.parent.parent
-            / "src/tex/style/rxiv_maker_style.cls"
-        ),  # Alternative relative
+        (Path(__file__).parent.parent.parent / "tex/style/rxiv_maker_style.cls"),  # Relative to script
+        (Path(__file__).parent.parent.parent.parent / "src/tex/style/rxiv_maker_style.cls"),  # Alternative relative
         output_path / "rxiv_maker_style.cls",  # Already in output directory
     ]
 
@@ -215,19 +210,13 @@ def verify_package(arxiv_path, manuscript_path=None):
 
                 if png_files:
                     # Use first PNG file found
-                    required_figures.append(
-                        f"Figures/{figure_dir.name}/{png_files[0].name}"
-                    )
+                    required_figures.append(f"Figures/{figure_dir.name}/{png_files[0].name}")
                 elif pdf_files:
                     # Fallback to PDF if no PNG
-                    required_figures.append(
-                        f"Figures/{figure_dir.name}/{pdf_files[0].name}"
-                    )
+                    required_figures.append(f"Figures/{figure_dir.name}/{pdf_files[0].name}")
                 else:
                     # Directory exists but no suitable figure files
-                    required_figures.append(
-                        f"Figures/{figure_dir.name}/<missing figure files>"
-                    )
+                    required_figures.append(f"Figures/{figure_dir.name}/<missing figure files>")
 
     missing_files = []
 
@@ -250,10 +239,7 @@ def verify_package(arxiv_path, manuscript_path=None):
             missing_files.append(figure_path)
 
     if missing_files:
-        print(
-            f"\n⚠ Warning: {len(missing_files)} files are missing from "
-            f"'{manuscript_name}' package!"
-        )
+        print(f"\n⚠ Warning: {len(missing_files)} files are missing from '{manuscript_name}' package!")
         print("The package may not compile correctly on arXiv.")
         print("Missing files:")
         for missing in missing_files:
@@ -422,9 +408,7 @@ def main() -> int:
         default="./output",
         help="Path to the Rxiv-Maker output directory (default: ./output)",
     )
-    parser.add_argument(
-        "--arxiv-dir", help="Path where arXiv submission files will be created"
-    )
+    parser.add_argument("--arxiv-dir", help="Path where arXiv submission files will be created")
     parser.add_argument(
         "--manuscript-path",
         default=".",
@@ -435,9 +419,7 @@ def main() -> int:
         action="store_true",
         help="Test LaTeX compilation after preparing package",
     )
-    parser.add_argument(
-        "--create-zip", action="store_true", help="Create ZIP package for submission"
-    )
+    parser.add_argument("--create-zip", action="store_true", help="Create ZIP package for submission")
     parser.add_argument(
         "--zip-filename",
         default="for_arxiv.zip",
@@ -469,9 +451,7 @@ def main() -> int:
 
         # Create ZIP package if requested
         if args.create_zip:
-            zip_path = create_zip_package(
-                arxiv_path, args.zip_filename, args.manuscript_path
-            )
+            zip_path = create_zip_package(arxiv_path, args.zip_filename, args.manuscript_path)
             print(f"✅ arXiv package ready: {zip_path}")
         else:
             print(f"✅ arXiv package ready: {arxiv_path}")

@@ -12,9 +12,7 @@ import requests
 
 # Add the parent directory to the path to allow imports when run as a script
 if __name__ == "__main__":
-    sys.path.insert(
-        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    )
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from crossref_commons.retrieval import get_publication_as_json
 
@@ -82,9 +80,7 @@ class BibliographyAdder:
                 # Generate bibliography entry
                 entry = self._generate_bib_entry(doi, metadata)
                 if not entry:
-                    print(
-                        f"ERROR: Could not generate bibliography entry for DOI: {doi}"
-                    )
+                    print(f"ERROR: Could not generate bibliography entry for DOI: {doi}")
                     success = False
                     continue
 
@@ -272,9 +268,7 @@ class BibliographyAdder:
             logger.error(f"Error generating bibliography entry: {e}")
             return None
 
-    def _generate_entry_key(
-        self, metadata: dict[str, Any], source: str = "CrossRef"
-    ) -> str:
+    def _generate_entry_key(self, metadata: dict[str, Any], source: str = "CrossRef") -> str:
         """Generate entry key from metadata.
 
         Args:
@@ -316,9 +310,7 @@ class BibliographyAdder:
 
         return f"{first_author}{year}"
 
-    def _get_entry_type(
-        self, metadata: dict[str, Any], source: str = "CrossRef"
-    ) -> str:
+    def _get_entry_type(self, metadata: dict[str, Any], source: str = "CrossRef") -> str:
         """Get BibTeX entry type from metadata.
 
         Args:
@@ -363,9 +355,7 @@ class BibliographyAdder:
 
             return crossref_mapping.get(entry_type, "article")
 
-    def _extract_fields(
-        self, metadata: dict[str, Any], doi: str, source: str = "CrossRef"
-    ) -> dict[str, str]:
+    def _extract_fields(self, metadata: dict[str, Any], doi: str, source: str = "CrossRef") -> dict[str, str]:
         """Extract fields from metadata.
 
         Args:
@@ -389,9 +379,7 @@ class BibliographyAdder:
                 authors = []
                 for creator in metadata["creators"]:
                     if "familyName" in creator and "givenName" in creator:
-                        authors.append(
-                            f"{creator['familyName']}, {creator['givenName']}"
-                        )
+                        authors.append(f"{creator['familyName']}, {creator['givenName']}")
                     elif "familyName" in creator:
                         authors.append(creator["familyName"])
                     elif "name" in creator:
@@ -414,11 +402,7 @@ class BibliographyAdder:
         else:  # CrossRef
             # Title
             if "title" in metadata and metadata["title"]:
-                title = (
-                    metadata["title"][0]
-                    if isinstance(metadata["title"], list)
-                    else metadata["title"]
-                )
+                title = metadata["title"][0] if isinstance(metadata["title"], list) else metadata["title"]
                 fields["title"] = self._clean_text(title)
 
             # Authors
@@ -524,9 +508,7 @@ def main():
     parser = argparse.ArgumentParser(description="Add bibliography entries from DOIs")
     parser.add_argument("manuscript_path", help="Path to manuscript directory")
     parser.add_argument("dois", nargs="+", help="DOI strings to add")
-    parser.add_argument(
-        "--overwrite", action="store_true", help="Overwrite existing entries"
-    )
+    parser.add_argument("--overwrite", action="store_true", help="Overwrite existing entries")
 
     args = parser.parse_args()
 

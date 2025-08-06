@@ -103,9 +103,7 @@ def process_code_spans(text: MarkdownContent) -> LatexContent:
         if has_dollar_paren or has_math_delimiters:
             # For code spans with mathematical content, use \detokenize for robust
             # protection. This prevents LaTeX from interpreting $ as math delimiters
-            return (
-                f"PROTECTED_DETOKENIZE_START{{{code_content}}}PROTECTED_DETOKENIZE_END"
-            )
+            return f"PROTECTED_DETOKENIZE_START{{{code_content}}}PROTECTED_DETOKENIZE_END"
         else:
             # Handle special LaTeX characters inside code spans using standard escaping
             escaped_content = code_content
@@ -119,10 +117,7 @@ def process_code_spans(text: MarkdownContent) -> LatexContent:
             # BUT only if no LaTeX commands (indicated by backslashes)
             if len(code_content) > 20 and "\\" not in code_content:
                 # Use protected placeholder to prevent escaping of \seqsplit command
-                return (
-                    f"PROTECTED_TEXTTT_SEQSPLIT_START{{{escaped_content}}}"
-                    "PROTECTED_TEXTTT_SEQSPLIT_END"
-                )
+                return f"PROTECTED_TEXTTT_SEQSPLIT_START{{{escaped_content}}}PROTECTED_TEXTTT_SEQSPLIT_END"
             else:
                 return f"\\texttt{{{escaped_content}}}"
 
@@ -319,10 +314,7 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
                     if d not in full_content:
                         delimiter = d
                         break
-                print(
-                    f"DEBUG: Converting texttt with listings to verb: "
-                    f"{full_content[:50]}..."
-                )
+                print(f"DEBUG: Converting texttt with listings to verb: {full_content[:50]}...")
                 return f"\\verb{delimiter}{full_content}{delimiter}"
             else:
                 # Return unchanged

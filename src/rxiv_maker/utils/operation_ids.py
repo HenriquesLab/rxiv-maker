@@ -27,9 +27,7 @@ class OperationContext:
         """Generate unique operation ID."""
         # Format: TYPE_TIMESTAMP_RANDOM
         timestamp = int(time.time() * 1000) % 1000000  # Last 6 digits of timestamp
-        random_suffix = "".join(
-            random.choices(string.ascii_uppercase + string.digits, k=4)
-        )
+        random_suffix = "".join(random.choices(string.ascii_uppercase + string.digits, k=4))
         return f"{self.operation_type.upper()}_{timestamp}_{random_suffix}"
 
     def log(self, message: str) -> None:

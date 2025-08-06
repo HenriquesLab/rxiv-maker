@@ -49,9 +49,7 @@ class NodeJSHandler:
     def get_version(self) -> str | None:
         """Get Node.js version."""
         try:
-            result = subprocess.run(
-                ["node", "--version"], capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(["node", "--version"], capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 return result.stdout.strip()
@@ -67,9 +65,7 @@ class NodeJSHandler:
     def get_npm_version(self) -> str | None:
         """Get npm version."""
         try:
-            result = subprocess.run(
-                ["npm", "--version"], capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(["npm", "--version"], capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 return result.stdout.strip()
@@ -82,9 +78,7 @@ class NodeJSHandler:
         ):
             return None
 
-    def install_packages(
-        self, packages: list[str], global_install: bool = True
-    ) -> bool:
+    def install_packages(self, packages: list[str], global_install: bool = True) -> bool:
         """Install npm packages."""
         if not packages:
             return True
@@ -99,9 +93,7 @@ class NodeJSHandler:
                     cmd.append("-g")
                 cmd.append(package)
 
-                result = subprocess.run(
-                    cmd, capture_output=True, text=True, timeout=300
-                )
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
 
                 if result.returncode != 0:
                     self.logger.debug(f"Failed to install {package}: {result.stderr}")

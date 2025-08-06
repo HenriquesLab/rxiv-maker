@@ -51,9 +51,7 @@ class LaTeXHandler:
     def get_version(self) -> str | None:
         """Get LaTeX version."""
         try:
-            result = subprocess.run(
-                ["pdflatex", "--version"], capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(["pdflatex", "--version"], capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 lines = result.stdout.split("\n")

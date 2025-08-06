@@ -357,14 +357,8 @@ This concludes our test manuscript.
         self.assertTrue(citation_result.has_warnings)
 
         # Check for mismatch warnings
-        warning_messages = [
-            error.message
-            for error in citation_result.errors
-            if error.level.value == "warning"
-        ]
-        mismatch_warnings = [
-            msg for msg in warning_messages if "mismatch" in msg.lower()
-        ]
+        warning_messages = [error.message for error in citation_result.errors if error.level.value == "warning"]
+        mismatch_warnings = [msg for msg in warning_messages if "mismatch" in msg.lower()]
         self.assertGreater(len(mismatch_warnings), 0)
 
     @patch("crossref_commons.retrieval.get_publication_as_json")
@@ -432,9 +426,7 @@ This concludes our test manuscript.
 
     def test_cache_persistence_across_validations(self):
         """Test that DOI cache persists across multiple validations."""
-        with patch(
-            "crossref_commons.retrieval.get_publication_as_json"
-        ) as mock_crossref:
+        with patch("crossref_commons.retrieval.get_publication_as_json") as mock_crossref:
             # Mock successful response
             mock_crossref.return_value = {
                 "message": {
@@ -447,9 +439,7 @@ This concludes our test manuscript.
             self._create_complete_manuscript(with_valid_dois=True)
 
             # First validation - should call API
-            validator1 = UnifiedValidator(
-                manuscript_path=self.manuscript_dir, enable_doi_validation=True
-            )
+            validator1 = UnifiedValidator(manuscript_path=self.manuscript_dir, enable_doi_validation=True)
             validator1.validate_all()
 
             api_calls_first = mock_crossref.call_count
@@ -457,9 +447,7 @@ This concludes our test manuscript.
             self.assertGreaterEqual(api_calls_first, 0)
 
             # Second validation - should use cache
-            validator2 = UnifiedValidator(
-                manuscript_path=self.manuscript_dir, enable_doi_validation=True
-            )
+            validator2 = UnifiedValidator(manuscript_path=self.manuscript_dir, enable_doi_validation=True)
             validator2.validate_all()
 
             # Should not make additional API calls
@@ -519,17 +507,13 @@ This concludes our test manuscript.
             f.write("# Test\n\nCitations: @valid_doi and @invalid_format and @no_doi")
 
         # Test DOI validator
-        doi_validator = DOIValidator(
-            manuscript_path=self.manuscript_dir, enable_online_validation=False
-        )
+        doi_validator = DOIValidator(manuscript_path=self.manuscript_dir, enable_online_validation=False)
 
         result = doi_validator.validate()
 
         # Should have some errors (invalid format) but not fail completely
         self.assertTrue(result.has_errors)
-        self.assertEqual(
-            result.metadata["total_dois"], 2
-        )  # Two entries with DOI fields
+        self.assertEqual(result.metadata["total_dois"], 2)  # Two entries with DOI fields
         self.assertEqual(result.metadata["invalid_format"], 1)  # One invalid format
 
 

@@ -158,16 +158,11 @@ class TrackChangesManager:
                 )
 
                 # Write extracted content to temp directory
-                (tag_manuscript_dir / file_name).write_text(
-                    result.stdout, encoding="utf-8"
-                )
+                (tag_manuscript_dir / file_name).write_text(result.stdout, encoding="utf-8")
                 self.log(f"Extracted {file_name} from tag {self.git_tag}")
 
             except subprocess.CalledProcessError as e:
-                self.log(
-                    f"Warning: Could not extract {file_name} from tag "
-                    f"{self.git_tag}: {e}"
-                )
+                self.log(f"Warning: Could not extract {file_name} from tag {self.git_tag}: {e}")
                 continue
 
         return True
@@ -200,9 +195,7 @@ class TrackChangesManager:
             env = os.environ.copy()
             env["MANUSCRIPT_PATH"] = str(manuscript_dir)
 
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, env=env, check=True
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, env=env, check=True)
 
             if self.verbose:
                 self.log(f"LaTeX generation output: {result.stdout}")
@@ -306,10 +299,7 @@ class TrackChangesManager:
             )
 
             if result1.returncode != 0:
-                self.log(
-                    f"LaTeX pass 1 completed with warnings/errors "
-                    f"(return code: {result1.returncode})"
-                )
+                self.log(f"LaTeX pass 1 completed with warnings/errors (return code: {result1.returncode})")
                 if self.verbose:
                     self.log(f"LaTeX output: {result1.stdout}")
                     self.log(f"LaTeX errors: {result1.stderr}")
@@ -342,8 +332,7 @@ class TrackChangesManager:
                     bbl_file = Path(f"{tex_basename}.bbl")
                     if not bbl_file.exists():
                         self.log(
-                            "BibTeX failed to create .bbl file - citations will "
-                            "appear as ?",
+                            "BibTeX failed to create .bbl file - citations will appear as ?",
                             force=True,
                         )
                         # Don't fail the build, just warn
@@ -365,10 +354,7 @@ class TrackChangesManager:
             )
 
             if result2.returncode != 0:
-                self.log(
-                    f"LaTeX pass 2 completed with warnings/errors "
-                    f"(return code: {result2.returncode})"
-                )
+                self.log(f"LaTeX pass 2 completed with warnings/errors (return code: {result2.returncode})")
                 if self.verbose:
                     self.log(f"LaTeX output: {result2.stdout}")
                     self.log(f"LaTeX errors: {result2.stderr}")
@@ -384,10 +370,7 @@ class TrackChangesManager:
             )
 
             if result3.returncode != 0:
-                self.log(
-                    f"LaTeX pass 3 completed with warnings/errors "
-                    f"(return code: {result3.returncode})"
-                )
+                self.log(f"LaTeX pass 3 completed with warnings/errors (return code: {result3.returncode})")
                 if self.verbose:
                     self.log(f"LaTeX output: {result3.stdout}")
                     self.log(f"LaTeX errors: {result3.stderr}")
@@ -428,9 +411,7 @@ class TrackChangesManager:
                 yaml_metadata = extract_yaml_metadata_local(str(config_file))
                 base_filename = get_custom_pdf_filename_local(yaml_metadata)
                 # Replace the __rxiv.pdf suffix with __changes_vs_TAG.pdf
-                custom_filename = base_filename.replace(
-                    "__rxiv.pdf", f"__changes_vs_{self.git_tag}.pdf"
-                )
+                custom_filename = base_filename.replace("__rxiv.pdf", f"__changes_vs_{self.git_tag}.pdf")
                 return custom_filename
             else:
                 self.log("Warning: 00_CONFIG.yml not found, using fallback naming")
@@ -447,9 +428,7 @@ class TrackChangesManager:
         Returns:
             True if successful, False otherwise
         """
-        self.log(
-            f"Starting change tracking against git tag: {self.git_tag}", force=True
-        )
+        self.log(f"Starting change tracking against git tag: {self.git_tag}", force=True)
 
         # Validate git tag
         if not self.validate_git_tag():
@@ -476,9 +455,7 @@ class TrackChangesManager:
                 return False
 
             # Find the main LaTeX files
-            current_tex = (
-                self.output_dir / "current" / f"{self.manuscript_path.name}.tex"
-            )
+            current_tex = self.output_dir / "current" / f"{self.manuscript_path.name}.tex"
             tag_tex = self.output_dir / "tag" / f"{tag_manuscript_dir.name}.tex"
 
             # Generate custom filename using the same convention as regular PDF

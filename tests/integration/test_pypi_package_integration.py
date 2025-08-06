@@ -60,34 +60,22 @@ class TestPyPIPackageIntegration:
 
                 # Verify files have content within the context manager
                 for tex_file in tex_files:
-                    assert tex_file.stat().st_size > 0, (
-                        f"LaTeX template is empty: {tex_file}"
-                    )
+                    assert tex_file.stat().st_size > 0, f"LaTeX template is empty: {tex_file}"
 
                 for cls_file in cls_files:
-                    assert cls_file.stat().st_size > 0, (
-                        f"LaTeX style file is empty: {cls_file}"
-                    )
+                    assert cls_file.stat().st_size > 0, f"LaTeX style file is empty: {cls_file}"
 
         else:
             # Verify files have content (for installed package)
             for tex_file in tex_files:
-                assert tex_file.stat().st_size > 0, (
-                    f"LaTeX template is empty: {tex_file}"
-                )
+                assert tex_file.stat().st_size > 0, f"LaTeX template is empty: {tex_file}"
 
             for cls_file in cls_files:
-                assert cls_file.stat().st_size > 0, (
-                    f"LaTeX style file is empty: {cls_file}"
-                )
+                assert cls_file.stat().st_size > 0, f"LaTeX style file is empty: {cls_file}"
 
         # Final assertions (these are already checked above, but for clarity)
-        assert len(tex_files) > 0, (
-            f"No .tex template files found. Package path: {package_path}"
-        )
-        assert len(cls_files) > 0, (
-            f"No .cls style files found. Package path: {package_path}"
-        )
+        assert len(tex_files) > 0, f"No .tex template files found. Package path: {package_path}"
+        assert len(cls_files) > 0, f"No .cls style files found. Package path: {package_path}"
 
     @requires_latex
     def test_cli_init_and_build_workflow(self, execution_engine):
@@ -161,9 +149,7 @@ class TestPyPIPackageIntegration:
                 for filename in required_files:
                     file_path = manuscript_dir / filename
                     assert file_path.exists(), f"Required file not created: {filename}"
-                    assert file_path.stat().st_size > 0, (
-                        f"Required file is empty: {filename}"
-                    )
+                    assert file_path.stat().st_size > 0, f"Required file is empty: {filename}"
 
                 # Test 2: Validate manuscript
                 try:
@@ -201,9 +187,7 @@ class TestPyPIPackageIntegration:
                 print("Validate STDERR:", validate_result.stderr)
 
                 # Validation might fail due to example references, but should run
-                assert validate_result.returncode in [0, 1], (
-                    f"Validate command failed to run: {validate_result.stderr}"
-                )
+                assert validate_result.returncode in [0, 1], f"Validate command failed to run: {validate_result.stderr}"
 
                 # Test 3: Attempt PDF build (this is the critical test)
                 # Use --skip-validation to avoid validation failures stopping the build
@@ -274,13 +258,8 @@ class TestPyPIPackageIntegration:
                         "FileNotFoundError.*cls",
                     ]
 
-                    has_template_error = any(
-                        indicator in error_output
-                        for indicator in template_error_indicators
-                    )
-                    assert not has_template_error, (
-                        f"LaTeX template files are missing from package: {error_output}"
-                    )
+                    has_template_error = any(indicator in error_output for indicator in template_error_indicators)
+                    assert not has_template_error, f"LaTeX template files are missing from package: {error_output}"
 
             finally:
                 os.chdir(original_cwd)
@@ -306,9 +285,7 @@ class TestPyPIPackageIntegration:
                         "init",
                         str(manuscript_dir),
                     ],
-                    input=(
-                        "CI Test Paper\n\nCI Test Author\nci@test.com\nCI University\n"
-                    ),
+                    input=("CI Test Paper\n\nCI Test Author\nci@test.com\nCI University\n"),
                     text=True,
                     capture_output=True,
                     timeout=30,
@@ -339,10 +316,9 @@ class TestPyPIPackageIntegration:
                 else:
                     # At minimum, check that template files were accessible
                     error_output = pdf_result.stderr + pdf_result.stdout
-                    assert (
-                        "template.tex" not in error_output
-                        or "not found" not in error_output.lower()
-                    ), f"LaTeX template files missing: {error_output}"
+                    assert "template.tex" not in error_output or "not found" not in error_output.lower(), (
+                        f"LaTeX template files missing: {error_output}"
+                    )
 
             finally:
                 os.chdir(original_cwd)
@@ -371,10 +347,7 @@ class TestPyPIPackageIntegration:
 
             if not package_dir.exists():
                 available_dirs = [p for p in temp_path.iterdir() if p.is_dir()]
-                raise AssertionError(
-                    f"rxiv_maker package directory not found in wheel. "
-                    f"Available: {available_dirs}"
-                )
+                raise AssertionError(f"rxiv_maker package directory not found in wheel. Available: {available_dirs}")
 
             # Check for LaTeX template files
             tex_files = list(package_dir.rglob("*.tex"))
@@ -383,37 +356,23 @@ class TestPyPIPackageIntegration:
             print(f"Found {len(tex_files)} .tex files: {tex_files}")
             print(f"Found {len(cls_files)} .cls files: {cls_files}")
 
-            assert len(tex_files) > 0, (
-                f"No .tex files found in wheel. "
-                f"Package contents: {list(package_dir.rglob('*'))}"
-            )
-            assert len(cls_files) > 0, (
-                f"No .cls files found in wheel. "
-                f"Package contents: {list(package_dir.rglob('*'))}"
-            )
+            assert len(tex_files) > 0, f"No .tex files found in wheel. Package contents: {list(package_dir.rglob('*'))}"
+            assert len(cls_files) > 0, f"No .cls files found in wheel. Package contents: {list(package_dir.rglob('*'))}"
 
             # Specifically check for expected files
             template_files = [f for f in tex_files if "template" in f.name.lower()]
             style_files = [f for f in cls_files if "style" in f.name.lower()]
 
-            assert len(template_files) > 0, (
-                f"No template.tex file found. Available tex files: {tex_files}"
-            )
-            assert len(style_files) > 0, (
-                f"No style .cls file found. Available cls files: {cls_files}"
-            )
+            assert len(template_files) > 0, f"No template.tex file found. Available tex files: {tex_files}"
+            assert len(style_files) > 0, f"No style .cls file found. Available cls files: {cls_files}"
 
             # Verify files are not empty and contain expected content
             for tex_file in template_files:
                 content = tex_file.read_text()
                 assert len(content) > 0, f"Template file is empty: {tex_file}"
-                assert "documentclass" in content.lower(), (
-                    f"Template file doesn't look like LaTeX: {tex_file}"
-                )
+                assert "documentclass" in content.lower(), f"Template file doesn't look like LaTeX: {tex_file}"
 
             for cls_file in style_files:
                 content = cls_file.read_text()
                 assert len(content) > 0, f"Style file is empty: {cls_file}"
-                assert "providesclass" in content.lower(), (
-                    f"Style file doesn't look like LaTeX class: {cls_file}"
-                )
+                assert "providesclass" in content.lower(), f"Style file doesn't look like LaTeX class: {cls_file}"

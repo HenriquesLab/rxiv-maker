@@ -38,9 +38,7 @@ class RLanguageHandler:
     def get_version(self) -> str | None:
         """Get R version."""
         try:
-            result = subprocess.run(
-                ["R", "--version"], capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(["R", "--version"], capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 lines = result.stdout.split("\n")
@@ -65,9 +63,7 @@ class RLanguageHandler:
 
         # Create R command to install packages
         packages_str = "', '".join(packages)
-        r_command = (
-            f"install.packages(c('{packages_str}'), repos='https://cran.rstudio.com/')"
-        )
+        r_command = f"install.packages(c('{packages_str}'), repos='https://cran.rstudio.com/')"
 
         try:
             result = subprocess.run(

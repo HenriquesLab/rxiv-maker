@@ -55,9 +55,7 @@ class TestCLIIntegration:
                 mock_validate.assert_called_once()
 
             # Test build command (mocked)
-            with patch(
-                "rxiv_maker.cli.commands.build.BuildManager"
-            ) as mock_build_manager:
+            with patch("rxiv_maker.cli.commands.build.BuildManager") as mock_build_manager:
                 mock_build_manager.return_value.run_full_build.return_value = True
 
                 self.runner.invoke(
@@ -73,15 +71,11 @@ class TestCLIIntegration:
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("pathlib.Path.home", return_value=Path(tmpdir)):
                 # Set configuration
-                result = self.runner.invoke(
-                    main, ["config", "set", "general.default_engine", "docker"]
-                )
+                result = self.runner.invoke(main, ["config", "set", "general.default_engine", "docker"])
                 assert result.exit_code == 0
 
                 # Get configuration
-                result = self.runner.invoke(
-                    main, ["config", "get", "general.default_engine"]
-                )
+                result = self.runner.invoke(main, ["config", "get", "general.default_engine"])
                 assert result.exit_code == 0
                 assert "docker" in result.output
 
@@ -103,9 +97,7 @@ authors:
   - name: "Test Author"
     email: "test@example.com"
 """)
-            (manuscript_dir / "01_MAIN.md").write_text(
-                "# Test\n\nContent with @test2024"
-            )
+            (manuscript_dir / "01_MAIN.md").write_text("# Test\n\nContent with @test2024")
             (manuscript_dir / "03_REFERENCES.bib").write_text("")
 
             # Test bibliography add command
@@ -212,9 +204,7 @@ authors:
             (manuscript_dir / "03_REFERENCES.bib").write_text("")
 
             # Test figures command
-            with patch(
-                "rxiv_maker.engine.generate_figures.FigureGenerator"
-            ) as mock_generator_class:
+            with patch("rxiv_maker.engine.generate_figures.FigureGenerator") as mock_generator_class:
                 mock_generator = Mock()
                 mock_generator.generate_all_figures.return_value = None
                 mock_generator_class.return_value = mock_generator
@@ -266,9 +256,7 @@ authors:
         with patch("rxiv_maker.engine.setup_environment.main") as mock_setup:
             mock_setup.return_value = None
 
-            self.runner.invoke(
-                main, ["setup"], obj={"verbose": False, "engine": "local"}
-            )
+            self.runner.invoke(main, ["setup"], obj={"verbose": False, "engine": "local"})
 
             mock_setup.assert_called_once()
 

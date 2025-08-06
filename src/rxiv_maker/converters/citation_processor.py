@@ -70,9 +70,7 @@ def process_citations_outside_tables(
                 split_parts = part.split(placeholder)
                 for i, split_part in enumerate(split_parts):
                     new_parts.append(split_part)
-                    if (
-                        i < len(split_parts) - 1
-                    ):  # Don't add placeholder after last part
+                    if i < len(split_parts) - 1:  # Don't add placeholder after last part
                         new_parts.append(placeholder)
             else:
                 new_parts.append(part)

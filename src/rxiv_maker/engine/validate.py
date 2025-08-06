@@ -292,12 +292,8 @@ class UnifiedValidator:
             print("✅ Validation passed!")
             return
 
-        error_count = sum(
-            1 for e in self.all_errors if e.level == ValidationLevel.ERROR
-        )
-        warning_count = sum(
-            1 for e in self.all_errors if e.level == ValidationLevel.WARNING
-        )
+        error_count = sum(1 for e in self.all_errors if e.level == ValidationLevel.ERROR)
+        warning_count = sum(1 for e in self.all_errors if e.level == ValidationLevel.WARNING)
         info_count = sum(1 for e in self.all_errors if e.level == ValidationLevel.INFO)
 
         # Print status
@@ -327,9 +323,7 @@ class UnifiedValidator:
         # Show warnings
         if warning_count > 0:
             print("\n⚠️  WARNINGS:")
-            warnings = [
-                e for e in self.all_errors if e.level == ValidationLevel.WARNING
-            ]
+            warnings = [e for e in self.all_errors if e.level == ValidationLevel.WARNING]
             for i, warning in enumerate(warnings, 1):
                 location = ""
                 if warning.file_path:
@@ -342,9 +336,7 @@ class UnifiedValidator:
         # Show info messages only in verbose or include-info mode
         if info_count > 0 and self.include_info:
             print(f"\n💡 INFO ({info_count}):")
-            info_messages = [
-                e for e in self.all_errors if e.level == ValidationLevel.INFO
-            ]
+            info_messages = [e for e in self.all_errors if e.level == ValidationLevel.INFO]
             for i, info in enumerate(info_messages, 1):
                 location = ""
                 if info.file_path:
@@ -399,25 +391,17 @@ def main():
     """Main entry point for validate command."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Validate rxiv-maker manuscript structure and content"
-    )
+    parser = argparse.ArgumentParser(description="Validate rxiv-maker manuscript structure and content")
     parser.add_argument(
         "manuscript_path",
         nargs="?",
         default="MANUSCRIPT",
         help="Path to manuscript directory",
     )
-    parser.add_argument(
-        "--detailed", action="store_true", help="Show detailed validation report"
-    )
+    parser.add_argument("--detailed", action="store_true", help="Show detailed validation report")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
-    parser.add_argument(
-        "--include-info", action="store_true", help="Include informational messages"
-    )
-    parser.add_argument(
-        "--check-latex", action="store_true", help="Check LaTeX compilation"
-    )
+    parser.add_argument("--include-info", action="store_true", help="Include informational messages")
+    parser.add_argument("--check-latex", action="store_true", help="Check LaTeX compilation")
     parser.add_argument("--no-doi", action="store_true", help="Disable DOI validation")
 
     args = parser.parse_args()

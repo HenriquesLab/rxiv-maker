@@ -9,9 +9,7 @@ from ...install.utils.verification import diagnose_installation, verify_installa
 
 
 @click.command()
-@click.option(
-    "--detailed", "-d", is_flag=True, help="Show detailed diagnostic information"
-)
+@click.option("--detailed", "-d", is_flag=True, help="Show detailed diagnostic information")
 @click.option("--fix", is_flag=True, help="Attempt to fix missing dependencies")
 @click.option("--json", is_flag=True, help="Output results in JSON format")
 def check_installation(detailed: bool, fix: bool, json: bool):
@@ -44,9 +42,7 @@ def check_installation(detailed: bool, fix: bool, json: bool):
             missing_critical.append(component)
 
     if missing_critical:
-        console.print(
-            f"\n⚠️  {len(missing_critical)} critical components missing", style="yellow"
-        )
+        console.print(f"\n⚠️  {len(missing_critical)} critical components missing", style="yellow")
 
         if fix:
             console.print("\n🔧 Attempting to fix missing dependencies...")
@@ -144,9 +140,7 @@ def _fix_missing_dependencies(console: Console, missing: list):
 
         console.print("🔧 Starting repair process...")
 
-        manager = InstallManager(
-            mode=InstallMode.FULL, verbose=True, force=True, interactive=False
-        )
+        manager = InstallManager(mode=InstallMode.FULL, verbose=True, force=True, interactive=False)
 
         success = manager.repair()
 

@@ -8,16 +8,15 @@ import click
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
+from rxiv_maker.engine.build_manager import BuildManager
+from rxiv_maker.engine.prepare_arxiv import main as prepare_arxiv_main
+
 console = Console()
 
 
 @click.command()
-@click.argument(
-    "manuscript_path", type=click.Path(exists=True, file_okay=False), required=False
-)
-@click.option(
-    "--output-dir", "-o", default="output", help="Output directory for generated files"
-)
+@click.argument("manuscript_path", type=click.Path(file_okay=False), required=False)
+@click.option("--output-dir", "-o", default="output", help="Output directory for generated files")
 @click.option("--arxiv-dir", "-a", help="Custom arXiv directory path")
 @click.option("--zip-filename", "-z", help="Custom zip filename")
 @click.option("--no-zip", is_flag=True, help="Don't create zip file")
@@ -40,7 +39,8 @@ def arxiv(
     3. Creates a zip package for upload
     4. Copies the package to the manuscript directory
     """
-    verbose = ctx.obj.get("verbose", False)
+    # Determine verbosity from context object
+    verbose = ctx.obj.get("verbose", False) if ctx.obj else False
 
     # Default to MANUSCRIPT if not specified
     if manuscript_path is None:
@@ -48,13 +48,14 @@ def arxiv(
 
     # Validate manuscript path exists
     if not Path(manuscript_path).exists():
-        console.print(
+        # Print errors via click so that runner.invoke captures output
+        click.secho(
             f"❌ Error: Manuscript directory '{manuscript_path}' does not exist",
-            style="red",
+            fg="red",
         )
-        console.print(
+        click.secho(
             f"💡 Run 'rxiv init {manuscript_path}' to create a new manuscript",
-            style="yellow",
+            fg="yellow",
         )
         sys.exit(1)
 
@@ -73,12 +74,13 @@ def arxiv(
         ) as progress:
             # First, ensure PDF is built
             task = progress.add_task("Checking PDF exists...", total=None)
-            pdf_path = Path(output_dir) / f"{Path(manuscript_path).name}.pdf"
+            # Build full PDF path string so Path() mock can be intercepted correctly
+            pdf_filename = f"{Path(manuscript_path).name}.pdf"
+            pdf_path = Path(os.path.join(output_dir, pdf_filename))
 
             if not pdf_path.exists():
                 progress.update(task, description="Building PDF first...")
-                from rxiv_maker.engine.build_manager import BuildManager
-
+                # Use BuildManager imported at module level
                 build_manager = BuildManager(
                     manuscript_path=manuscript_path,
                     output_dir=output_dir,
@@ -95,9 +97,6 @@ def arxiv(
             # Prepare arXiv package
             progress.update(task, description="Preparing arXiv package...")
 
-            # Import arXiv preparation command
-            from rxiv_maker.engine.prepare_arxiv import main as prepare_arxiv_main
-
             # Prepare arguments
             args = [
                 "--output-dir",
@@ -111,8 +110,7 @@ def arxiv(
             if not no_zip:
                 args.extend(["--zip-filename", zip_filename, "--create-zip"])
 
-            if verbose:
-                args.append("--verbose")
+            # Note: prepare_arxiv doesn't support --verbose flag
 
             # Save original argv and replace
             original_argv = sys.argv
@@ -135,17 +133,11 @@ def arxiv(
                             config = yaml.safe_load(f)
 
                         # Extract year and first author
-                        year = (
-                            config.get("date", "").split("-")[0]
-                            if config.get("date")
-                            else "2024"
-                        )
+                        year = config.get("date", "").split("-")[0] if config.get("date") else "2024"
                         authors = config.get("authors", [])
                         if authors:
                             first_author = (
-                                authors[0]["name"].split()[-1]
-                                if " " in authors[0]["name"]
-                                else authors[0]["name"]
+                                authors[0]["name"].split()[-1] if " " in authors[0]["name"] else authors[0]["name"]
                             )
                         else:
                             first_author = "Unknown"
@@ -160,16 +152,12 @@ def arxiv(
                         shutil.copy2(zip_filename, final_path)
                         console.print(f"📋 Copied to: {final_path}", style="green")
 
-                console.print(
-                    "📤 Upload the package to arXiv for submission", style="yellow"
-                )
+                console.print("📤 Upload the package to arXiv for submission", style="yellow")
 
             except SystemExit as e:
                 progress.update(task, description="❌ arXiv preparation failed")
                 if e.code != 0:
-                    console.print(
-                        "❌ arXiv preparation failed. See details above.", style="red"
-                    )
+                    console.print("❌ arXiv preparation failed. See details above.", style="red")
                     sys.exit(1)
 
             finally:

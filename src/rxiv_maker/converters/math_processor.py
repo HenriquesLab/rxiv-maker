@@ -39,9 +39,7 @@ def protect_math_expressions(
     return content, protected_math
 
 
-def restore_math_expressions(
-    content: LatexContent, protected_math: dict[str, str]
-) -> LatexContent:
+def restore_math_expressions(content: LatexContent, protected_math: dict[str, str]) -> LatexContent:
     """Restore protected mathematical expressions.
 
     Args:
@@ -94,9 +92,7 @@ def process_latex_math_blocks(content: MarkdownContent) -> LatexContent:
     def protect_env(match: re.Match[str]) -> str:
         """Replace LaTeX environment with placeholder."""
         env_content = match.group(0)
-        placeholder = (
-            f"XXPROTECTEDLATEXMATHXX{len(protected_envs)}XXPROTECTEDLATEXMATHXX"
-        )
+        placeholder = f"XXPROTECTEDLATEXMATHXX{len(protected_envs)}XXPROTECTEDLATEXMATHXX"
         protected_envs[placeholder] = env_content
         return placeholder
 
@@ -204,16 +200,10 @@ def convert_attributed_math_blocks(content: MarkdownContent) -> LatexContent:
             return f"\\begin{{equation*}}\n{math_content}\n\\end{{equation*}}"
         elif environment in ["equation", "align", "gather", "multiline"]:
             # Standard numbered environments
-            return (
-                f"\\begin{{{environment}}}\n{math_content}\n"
-                f"\\label{{{equation_id}}}\n\\end{{{environment}}}"
-            )
+            return f"\\begin{{{environment}}}\n{math_content}\n\\label{{{equation_id}}}\n\\end{{{environment}}}"
         else:
             # Default to equation for unknown environments
-            return (
-                f"\\begin{{equation}}\n{math_content}\n"
-                f"\\label{{{equation_id}}}\n\\end{{equation}}"
-            )
+            return f"\\begin{{equation}}\n{math_content}\n\\label{{{equation_id}}}\n\\end{{equation}}"
 
     # Pattern to match ONLY $$...$$ followed by attributes containing #
     # This ensures we only process attributed math blocks, not regular ones

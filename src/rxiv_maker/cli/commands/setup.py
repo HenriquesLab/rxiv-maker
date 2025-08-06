@@ -15,9 +15,7 @@ console = Console()
     is_flag=True,
     help="Reinstall Python dependencies (removes .venv and creates new one)",
 )
-@click.option(
-    "--check-deps-only", "-c", is_flag=True, help="Only check system dependencies"
-)
+@click.option("--check-deps-only", "-c", is_flag=True, help="Only check system dependencies")
 @click.pass_context
 def setup(ctx: click.Context, reinstall: bool, check_deps_only: bool) -> None:
     """Setup Python development environment.

@@ -23,12 +23,8 @@ class CitationValidator(BaseValidator):
     # Citation patterns from the codebase analysis
     CITATION_PATTERNS = {
         "bracketed_multiple": re.compile(r"\[(@[^]]+)\]"),  # [@citation1;@citation2]
-        "single_citation": re.compile(
-            r"@(?!fig:|eq:|table:|tbl:|sfig:|stable:|snote:)([a-zA-Z0-9_-]+)"
-        ),  # @key
-        "protected_citation": re.compile(
-            r"XXPROTECTEDTABLEXX\d+XXPROTECTEDTABLEXX"
-        ),  # Skip protected content
+        "single_citation": re.compile(r"@(?!fig:|eq:|table:|tbl:|sfig:|stable:|snote:)([a-zA-Z0-9_-]+)"),  # @key
+        "protected_citation": re.compile(r"XXPROTECTEDTABLEXX\d+XXPROTECTEDTABLEXX"),  # Skip protected content
     }
 
     # Valid citation key pattern
@@ -55,18 +51,14 @@ class CitationValidator(BaseValidator):
         # Load bibliography keys
         bib_file_path = os.path.join(self.manuscript_path, "03_REFERENCES.bib")
         if os.path.exists(bib_file_path):
-            self.bib_keys, self.bib_key_lines = self._parse_bibliography_keys(
-                bib_file_path
-            )
+            self.bib_keys, self.bib_key_lines = self._parse_bibliography_keys(bib_file_path)
             metadata["bibliography_keys"] = len(self.bib_keys)
         else:
             errors.append(
                 self._create_error(
                     ValidationLevel.WARNING,
                     "Bibliography file 03_REFERENCES.bib not found",
-                    suggestion=(
-                        "Create bibliography file to validate citation references"
-                    ),
+                    suggestion=("Create bibliography file to validate citation references"),
                 )
             )
 
@@ -114,23 +106,13 @@ class CitationValidator(BaseValidator):
         # Add citation statistics to metadata
         metadata.update(
             {
-                "total_citations": sum(
-                    len(lines) for lines in self.citations_found.values()
-                ),
+                "total_citations": sum(len(lines) for lines in self.citations_found.values()),
                 "unique_citations": len(self.citations_found),
-                "unused_entries": len(
-                    self.bib_keys
-                    - set(self.citations_found.keys())
-                    - {"saraiva_2025_rxivmaker"}
-                )
+                "unused_entries": len(self.bib_keys - set(self.citations_found.keys()) - {"saraiva_2025_rxivmaker"})
                 if self.bib_keys
                 else 0,
                 "undefined_citations": len(
-                    [
-                        key
-                        for key in self.citations_found
-                        if key not in self.bib_keys and self.bib_keys
-                    ]
+                    [key for key in self.citations_found if key not in self.bib_keys and self.bib_keys]
                 ),
             }
         )
@@ -149,9 +131,7 @@ class CitationValidator(BaseValidator):
 
         return ValidationResult("CitationValidator", errors, metadata)
 
-    def _parse_bibliography_keys(
-        self, bib_file_path: str
-    ) -> tuple[set[str], dict[str, int]]:
+    def _parse_bibliography_keys(self, bib_file_path: str) -> tuple[set[str], dict[str, int]]:
         """Parse bibliography file to extract citation keys and their line numbers."""
         keys: set[str] = set()
         key_lines: dict[str, int] = {}
@@ -213,9 +193,7 @@ class CitationValidator(BaseValidator):
 
         return errors
 
-    def _validate_line_citations(
-        self, line: str, file_path: str, line_num: int
-    ) -> list:
+    def _validate_line_citations(self, line: str, file_path: str, line_num: int) -> list:
         """Validate citations in a single line."""
         errors = []
 
@@ -231,9 +209,7 @@ class CitationValidator(BaseValidator):
             for citation in citations:
                 if citation.startswith("@"):
                     key = citation[1:]  # Remove @ prefix
-                    cite_errors = self._validate_citation_key(
-                        key, file_path, line_num, match.start(), line
-                    )
+                    cite_errors = self._validate_citation_key(key, file_path, line_num, match.start(), line)
                     errors.extend(cite_errors)
 
         # Check single citations: @key (but not @fig:, @eq:, etc.)
@@ -243,9 +219,7 @@ class CitationValidator(BaseValidator):
                 continue
 
             key = match.group(1)
-            cite_errors = self._validate_citation_key(
-                key, file_path, line_num, match.start(), line
-            )
+            cite_errors = self._validate_citation_key(key, file_path, line_num, match.start(), line)
             errors.extend(cite_errors)
 
         return errors
@@ -270,9 +244,7 @@ class CitationValidator(BaseValidator):
         # Check if position is inside any backtick range
         return any(start <= position <= end for start, end in backtick_ranges)
 
-    def _validate_citation_key(
-        self, key: str, file_path: str, line_num: int, column: int, context: str
-    ) -> list:
+    def _validate_citation_key(self, key: str, file_path: str, line_num: int, column: int, context: str) -> list:
         """Validate a single citation key."""
         errors = []
 
@@ -291,10 +263,7 @@ class CitationValidator(BaseValidator):
                     line_number=line_num,
                     column=column,
                     context=context,
-                    suggestion=(
-                        "Citation keys should contain only letters, numbers, "
-                        "underscores, and hyphens"
-                    ),
+                    suggestion=("Citation keys should contain only letters, numbers, underscores, and hyphens"),
                     error_code="invalid_citation_key",
                 )
             )
@@ -309,10 +278,7 @@ class CitationValidator(BaseValidator):
                     line_number=line_num,
                     column=column,
                     context=context,
-                    suggestion=(
-                        f"Add citation key '{key}' to 03_REFERENCES.bib "
-                        "or check spelling"
-                    ),
+                    suggestion=(f"Add citation key '{key}' to 03_REFERENCES.bib or check spelling"),
                     error_code="undefined_citation",
                 )
             )
@@ -327,10 +293,7 @@ class CitationValidator(BaseValidator):
                     line_number=line_num,
                     column=column,
                     context=context,
-                    suggestion=(
-                        "Use @fig:label for figures, @table:label for tables, "
-                        "@eq:label for equations"
-                    ),
+                    suggestion=("Use @fig:label for figures, @table:label for tables, @eq:label for equations"),
                     error_code="possible_reference_error",
                 )
             )
@@ -348,17 +311,13 @@ class CitationValidator(BaseValidator):
             r"^equation\d+$",  # equation1, equation2
         ]
 
-        return any(
-            re.match(pattern, key, re.IGNORECASE) for pattern in reference_patterns
-        )
+        return any(re.match(pattern, key, re.IGNORECASE) for pattern in reference_patterns)
 
     def get_citation_statistics(self) -> dict[str, Any]:
         """Get statistics about citations found."""
         stats: dict[str, Any] = {
             "total_unique_citations": len(self.citations_found),
-            "total_citation_instances": sum(
-                len(lines) for lines in self.citations_found.values()
-            ),
+            "total_citation_instances": sum(len(lines) for lines in self.citations_found.values()),
             "most_cited": None,
             "unused_bib_entries": [],
             "citation_frequency": {},
@@ -366,9 +325,7 @@ class CitationValidator(BaseValidator):
 
         if self.citations_found:
             # Find most cited reference
-            most_cited_key = max(
-                self.citations_found.keys(), key=lambda k: len(self.citations_found[k])
-            )
+            most_cited_key = max(self.citations_found.keys(), key=lambda k: len(self.citations_found[k]))
             stats["most_cited"] = {
                 "key": most_cited_key,
                 "count": len(self.citations_found[most_cited_key]),
@@ -384,8 +341,6 @@ class CitationValidator(BaseValidator):
 
         # Find unused bibliography entries
         if self.bib_keys:
-            stats["unused_bib_entries"] = list(
-                self.bib_keys - set(self.citations_found.keys())
-            )
+            stats["unused_bib_entries"] = list(self.bib_keys - set(self.citations_found.keys()))
 
         return stats

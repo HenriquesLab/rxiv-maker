@@ -100,16 +100,11 @@ class DOIValidator(BaseValidator):
 
         # Check if validation is needed using checksum manager
         # Skip checksum optimization for temporary directories (e.g., in tests)
-        is_temp_dir = (
-            "/tmp" in str(self.manuscript_path)
-            or "temp" in str(self.manuscript_path).lower()
-        )
+        is_temp_dir = "/tmp" in str(self.manuscript_path) or "temp" in str(self.manuscript_path).lower()
 
         try:
             if not is_temp_dir:
-                checksum_manager = get_bibliography_checksum_manager(
-                    self.manuscript_path
-                )
+                checksum_manager = get_bibliography_checksum_manager(self.manuscript_path)
 
                 if self.force_validation:
                     logger.info("Forcing DOI validation (ignoring checksum)")
@@ -119,28 +114,20 @@ class DOIValidator(BaseValidator):
                     needs_validation = checksum_manager.needs_validation()
 
                 if not needs_validation:
-                    logger.info(
-                        "Bibliography DOI validation is up to date (checksum unchanged)"
-                    )
+                    logger.info("Bibliography DOI validation is up to date (checksum unchanged)")
                     metadata["checksum_cache_used"] = True
                     # Still return basic metadata about the file
                     bib_content = self._read_file_safely(str(bib_file))
                     if bib_content:
                         entries = self._extract_bib_entries(bib_content)
-                        metadata["total_dois"] = sum(
-                            1 for entry in entries if "doi" in entry
-                        )
-                        metadata["validated_dois"] = metadata[
-                            "total_dois"
-                        ]  # Assume previously validated
+                        metadata["total_dois"] = sum(1 for entry in entries if "doi" in entry)
+                        metadata["validated_dois"] = metadata["total_dois"]  # Assume previously validated
 
                     return ValidationResult(self.name, errors, metadata)
 
                 logger.info("Bibliography has changed, performing DOI validation")
             else:
-                logger.info(
-                    "Temporary directory detected, skipping checksum optimization"
-                )
+                logger.info("Temporary directory detected, skipping checksum optimization")
 
         except Exception as e:
             logger.warning(f"Failed to use checksum manager for DOI validation: {e}")
@@ -171,9 +158,7 @@ class DOIValidator(BaseValidator):
                     errors.extend(validation_errors)
                 except Exception as e:
                     # If validation fails due to an exception, create an error
-                    logger.error(
-                        f"Exception validating DOI {entry.get('doi', 'unknown')}: {e}"
-                    )
+                    logger.error(f"Exception validating DOI {entry.get('doi', 'unknown')}: {e}")
                     validation_errors = [
                         self._create_error(
                             ValidationLevel.WARNING,
@@ -190,15 +175,9 @@ class DOIValidator(BaseValidator):
                 # Update metadata based on validation results
                 if any(e.error_code == "DOI_INVALID_FORMAT" for e in validation_errors):
                     metadata["invalid_format"] += 1
-                elif any(
-                    e.error_code and e.error_code.startswith("DOI_API")
-                    for e in validation_errors
-                ):
+                elif any(e.error_code and e.error_code.startswith("DOI_API") for e in validation_errors):
                     metadata["api_failures"] += 1
-                elif any(
-                    e.error_code and e.error_code.startswith("DOI_MISMATCH")
-                    for e in validation_errors
-                ):
+                elif any(e.error_code and e.error_code.startswith("DOI_MISMATCH") for e in validation_errors):
                     metadata["mismatched_metadata"] += 1
                 else:
                     metadata["validated_dois"] += 1
@@ -225,30 +204,17 @@ class DOIValidator(BaseValidator):
                 )
 
         # Update checksum after successful validation (skip for temp directories)
-        is_temp_dir = (
-            "/tmp" in str(self.manuscript_path)
-            or "temp" in str(self.manuscript_path).lower()
-        )
+        is_temp_dir = "/tmp" in str(self.manuscript_path) or "temp" in str(self.manuscript_path).lower()
         if not is_temp_dir:
             try:
-                checksum_manager = get_bibliography_checksum_manager(
-                    self.manuscript_path
-                )
+                checksum_manager = get_bibliography_checksum_manager(self.manuscript_path)
                 # Consider validation successful if we didn't encounter major errors
-                validation_successful = not any(
-                    e.level == ValidationLevel.ERROR for e in errors
-                )
-                checksum_manager.update_checksum(
-                    validation_completed=validation_successful
-                )
+                validation_successful = not any(e.level == ValidationLevel.ERROR for e in errors)
+                checksum_manager.update_checksum(validation_completed=validation_successful)
                 if validation_successful:
-                    logger.info(
-                        "Updated bibliography checksum after successful DOI validation"
-                    )
+                    logger.info("Updated bibliography checksum after successful DOI validation")
                 else:
-                    logger.warning(
-                        "DOI validation had errors, but checksum updated anyway"
-                    )
+                    logger.warning("DOI validation had errors, but checksum updated anyway")
             except Exception as e:
                 logger.warning(f"Failed to update bibliography checksum: {e}")
 
@@ -266,9 +232,7 @@ class DOIValidator(BaseValidator):
         entries = []
 
         # Pattern to match BibTeX entries
-        entry_pattern = re.compile(
-            r"@(\w+)\s*\{\s*([^,\s}]+)\s*,\s*(.*?)\n\}", re.DOTALL | re.IGNORECASE
-        )
+        entry_pattern = re.compile(r"@(\w+)\s*\{\s*([^,\s}]+)\s*,\s*(.*?)\n\}", re.DOTALL | re.IGNORECASE)
 
         for match in entry_pattern.finditer(bib_content):
             entry_type = match.group(1).lower()
@@ -301,9 +265,7 @@ class DOIValidator(BaseValidator):
         fields = {}
 
         # Pattern to match field = {value} or field = value
-        field_pattern = re.compile(
-            r"(\w+)\s*=\s*(?:\{([^}]*)\}|([^,\n]+))", re.IGNORECASE
-        )
+        field_pattern = re.compile(r"(\w+)\s*=\s*(?:\{([^}]*)\}|([^,\n]+))", re.IGNORECASE)
 
         for match in field_pattern.finditer(fields_text):
             field_name = match.group(1).lower()
@@ -313,9 +275,7 @@ class DOIValidator(BaseValidator):
 
         return fields
 
-    def _validate_doi_entry(
-        self, entry: dict[str, Any], bib_file: str
-    ) -> list[ValidationError]:
+    def _validate_doi_entry(self, entry: dict[str, Any], bib_file: str) -> list[ValidationError]:
         """Validate a single bibliography entry with DOI.
 
         Args:
@@ -368,8 +328,7 @@ class DOIValidator(BaseValidator):
                         file_path=bib_file,
                         line_number=line_number,
                         context=f"Entry: {entry_key}",
-                        suggestion=registrar_info
-                        + " You can disable DOI validation with --no-doi flag.",
+                        suggestion=registrar_info + " You can disable DOI validation with --no-doi flag.",
                         error_code="DOI_NOT_FOUND",
                     )
                 )
@@ -402,8 +361,7 @@ class DOIValidator(BaseValidator):
                         file_path=bib_file,
                         line_number=line_number,
                         context=f"Entry: {entry_key}",
-                        suggestion=registrar_info
-                        + " You can disable DOI validation with --no-doi flag.",
+                        suggestion=registrar_info + " You can disable DOI validation with --no-doi flag.",
                         error_code="DOI_NOT_FOUND",
                     )
                 )
@@ -411,24 +369,16 @@ class DOIValidator(BaseValidator):
 
         # Compare metadata (handle different formats from different sources)
         if metadata_source == "DataCite":
-            metadata_errors = self._compare_datacite_metadata(
-                entry, metadata, bib_file, line_number
-            )
+            metadata_errors = self._compare_datacite_metadata(entry, metadata, bib_file, line_number)
         elif metadata_source == "JOSS":
-            metadata_errors = self._compare_joss_metadata(
-                entry, metadata, bib_file, line_number
-            )
+            metadata_errors = self._compare_joss_metadata(entry, metadata, bib_file, line_number)
         else:
-            metadata_errors = self._compare_metadata(
-                entry, metadata, bib_file, line_number
-            )
+            metadata_errors = self._compare_metadata(entry, metadata, bib_file, line_number)
         errors.extend(metadata_errors)
 
         return errors
 
-    def _fetch_metadata_parallel(
-        self, doi: str
-    ) -> tuple[dict[str, Any] | None, str | None]:
+    def _fetch_metadata_parallel(self, doi: str) -> tuple[dict[str, Any] | None, str | None]:
         """Fetch metadata from CrossRef and DataCite APIs in parallel.
 
         Args:
@@ -447,9 +397,7 @@ class DOIValidator(BaseValidator):
             datacite_future = executor.submit(self._fetch_datacite_metadata, doi)
 
             # Wait for first successful result
-            for future in concurrent.futures.as_completed(
-                [crossref_future, datacite_future]
-            ):
+            for future in concurrent.futures.as_completed([crossref_future, datacite_future]):
                 try:
                     result = future.result()
                     if result:
@@ -487,22 +435,16 @@ class DOIValidator(BaseValidator):
         try:
             # Make a HEAD request to check if DOI resolves
             url = f"https://doi.org/{doi}"
-            headers = {
-                "User-Agent": "rxiv-maker/1.0 (https://github.com/paxcalpt/rxiv-maker)"
-            }
+            headers = {"User-Agent": "rxiv-maker/1.0 (https://github.com/paxcalpt/rxiv-maker)"}
 
-            response = requests.head(
-                url, headers=headers, timeout=15, allow_redirects=True
-            )
+            response = requests.head(url, headers=headers, timeout=15, allow_redirects=True)
 
             # Consider 2xx and 3xx status codes as successful resolution
             if response.status_code < 400:
                 return True
 
             # If HEAD fails, try GET request as some servers don't support HEAD
-            response = requests.get(
-                url, headers=headers, timeout=15, allow_redirects=True, stream=True
-            )
+            response = requests.get(url, headers=headers, timeout=15, allow_redirects=True, stream=True)
 
             # Close the connection immediately since we only care about status
             response.close()
@@ -600,12 +542,8 @@ class DOIValidator(BaseValidator):
                 # Parse JOSS date format
                 from datetime import datetime
 
-                pub_date = datetime.fromisoformat(
-                    joss_data["published_at"].replace("Z", "+00:00")
-                )
-                normalized["published-online"] = {
-                    "date-parts": [[pub_date.year, pub_date.month, pub_date.day]]
-                }
+                pub_date = datetime.fromisoformat(joss_data["published_at"].replace("Z", "+00:00"))
+                normalized["published-online"] = {"date-parts": [[pub_date.year, pub_date.month, pub_date.day]]}
             except Exception as e:
                 logger.debug(f"Error parsing JOSS publication date: {e}")
 
@@ -669,10 +607,7 @@ class DOIValidator(BaseValidator):
                 first_author = joss_authors[0]
                 first_author_family = first_author.get("family", "")
 
-                if (
-                    first_author_family
-                    and first_author_family.lower() not in bib_entry["author"].lower()
-                ):
+                if first_author_family and first_author_family.lower() not in bib_entry["author"].lower():
                     errors.append(
                         self._create_error(
                             ValidationLevel.INFO,
@@ -762,9 +697,7 @@ class DOIValidator(BaseValidator):
             logger.debug(f"Error fetching DataCite metadata for {doi}: {e}")
             raise
 
-    def _normalize_datacite_metadata(
-        self, attributes: dict[str, Any]
-    ) -> dict[str, Any]:
+    def _normalize_datacite_metadata(self, attributes: dict[str, Any]) -> dict[str, Any]:
         """Normalize DataCite API response to a consistent format.
 
         Args:
@@ -896,15 +829,9 @@ class DOIValidator(BaseValidator):
             if datacite_titles:
                 # Extract the first title from DataCite format
                 first_title = datacite_titles[0]
-                title_text = (
-                    first_title.get("title", "")
-                    if isinstance(first_title, dict)
-                    else str(first_title)
-                )
+                title_text = first_title.get("title", "") if isinstance(first_title, dict) else str(first_title)
 
-                title_errors = self._compare_titles(
-                    bib_entry["title"], [title_text], entry_key, bib_file, line_number
-                )
+                title_errors = self._compare_titles(bib_entry["title"], [title_text], entry_key, bib_file, line_number)
                 errors.extend(title_errors)
 
         # Compare year
@@ -936,17 +863,12 @@ class DOIValidator(BaseValidator):
                 if isinstance(first_creator, dict):
                     # Handle different creator formats
                     first_author_family = (
-                        first_creator.get("familyName")
-                        or first_creator.get("family")
-                        or first_creator.get("name")
+                        first_creator.get("familyName") or first_creator.get("family") or first_creator.get("name")
                     )
                 else:
                     first_author_family = str(first_creator)
 
-                if (
-                    first_author_family
-                    and first_author_family.lower() not in bib_entry["author"].lower()
-                ):
+                if first_author_family and first_author_family.lower() not in bib_entry["author"].lower():
                     errors.append(
                         self._create_error(
                             ValidationLevel.INFO,
@@ -1015,11 +937,7 @@ class DOIValidator(BaseValidator):
             return errors
 
         # Get first title from CrossRef
-        crossref_title_str = (
-            crossref_title[0]
-            if isinstance(crossref_title, list)
-            else str(crossref_title)
-        )
+        crossref_title_str = crossref_title[0] if isinstance(crossref_title, list) else str(crossref_title)
 
         # Clean titles for comparison
         bib_clean = self._clean_title(bib_title)
@@ -1069,11 +987,7 @@ class DOIValidator(BaseValidator):
             return errors
 
         # Get first journal from CrossRef
-        crossref_journal_str = (
-            crossref_journal[0]
-            if isinstance(crossref_journal, list)
-            else str(crossref_journal)
-        )
+        crossref_journal_str = crossref_journal[0] if isinstance(crossref_journal, list) else str(crossref_journal)
 
         # Clean journal names for comparison
         bib_clean = self._clean_journal(bib_journal)
@@ -1181,10 +1095,7 @@ class DOIValidator(BaseValidator):
         # Simple check: see if first author family name is in bibliography
         if crossref_names:
             first_author_family = crossref_authors[0].get("family", "")
-            if (
-                first_author_family
-                and first_author_family.lower() not in bib_author.lower()
-            ):
+            if first_author_family and first_author_family.lower() not in bib_author.lower():
                 errors.append(
                     self._create_error(
                         ValidationLevel.INFO,
@@ -1249,10 +1160,7 @@ class DOIValidator(BaseValidator):
                 "Check internet connection or verify the DOI is correct."
             )
         elif doi.startswith("10.5281/zenodo"):
-            return (
-                "This is a Zenodo DOI (DataCite registrar). "
-                "Verify the DOI resolves at https://doi.org/" + doi
-            )
+            return "This is a Zenodo DOI (DataCite registrar). Verify the DOI resolves at https://doi.org/" + doi
         elif doi.startswith("10.1101/"):
             return (
                 "This is a bioRxiv/medRxiv preprint DOI. These may not be indexed in CrossRef depending on publication status. "
@@ -1264,10 +1172,7 @@ class DOIValidator(BaseValidator):
                 "Verify the paper exists on arXiv.org."
             )
         elif doi.startswith("10.6084/m9.figshare"):
-            return (
-                "This is a Figshare DOI (DataCite registrar). "
-                "Verify the DOI resolves at https://doi.org/" + doi
-            )
+            return "This is a Figshare DOI (DataCite registrar). Verify the DOI resolves at https://doi.org/" + doi
         elif doi.startswith("10.5194/"):
             return (
                 "This is a Copernicus Publications DOI. Some may not be in CrossRef depending on the journal. "
@@ -1288,10 +1193,7 @@ class DOIValidator(BaseValidator):
                 "This is an F1000Research DOI. These should be indexed by CrossRef. "
                 "Check internet connection or verify the DOI is correct."
             )
-        elif any(
-            prefix in doi
-            for prefix in ["10.1016/", "10.1371/", "10.1126/", "10.1073/", "10.1109/"]
-        ):
+        elif any(prefix in doi for prefix in ["10.1016/", "10.1371/", "10.1126/", "10.1073/", "10.1109/"]):
             return (
                 "This is from a major publisher and should be in CrossRef if published. "
                 "Check internet connection, verify the DOI is correct, or try again later."

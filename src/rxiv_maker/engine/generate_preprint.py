@@ -7,9 +7,7 @@ import yaml
 
 # Add the parent directory to the path to allow imports when run as a script
 if __name__ == "__main__":
-    sys.path.insert(
-        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    )
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from rxiv_maker.processors.template_processor import (
     generate_supplementary_tex,
@@ -36,9 +34,7 @@ def generate_preprint(output_dir, yaml_metadata):
     manuscript_md = find_manuscript_md()
 
     # Process all template replacements
-    template_content = process_template_replacements(
-        template_content, yaml_metadata, str(manuscript_md)
-    )
+    template_content = process_template_replacements(template_content, yaml_metadata, str(manuscript_md))
 
     # Write the generated manuscript to the output directory
     manuscript_output = write_manuscript_output(output_dir, template_content)
@@ -55,9 +51,7 @@ def main():
     import argparse
     from pathlib import Path
 
-    parser = argparse.ArgumentParser(
-        description="Generate LaTeX preprint from markdown"
-    )
+    parser = argparse.ArgumentParser(description="Generate LaTeX preprint from markdown")
     parser.add_argument("--output-dir", help="Output directory for generated files")
     parser.add_argument("--config", help="YAML config file path")
 

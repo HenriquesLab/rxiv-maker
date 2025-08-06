@@ -72,9 +72,7 @@ class RxivLogger:
         self._log_file_path = log_dir / "rxiv_maker.log"
         self._file_handler = logging.FileHandler(self._log_file_path)
         self._file_handler.setLevel(logging.DEBUG)
-        file_formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
+        file_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         self._file_handler.setFormatter(file_formatter)
         self.logger.addHandler(self._file_handler)
 

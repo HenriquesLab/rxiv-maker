@@ -37,9 +37,7 @@ class SyntaxValidator(BaseValidator):
 
     # Code block patterns
     CODE_PATTERNS = {
-        "fenced_code": re.compile(
-            r"^```(\w+)?\s*$.*?^```\s*$", re.MULTILINE | re.DOTALL
-        ),
+        "fenced_code": re.compile(r"^```(\w+)?\s*$.*?^```\s*$", re.MULTILINE | re.DOTALL),
         "indented_code": re.compile(r"^(    .+)$", re.MULTILINE),
         "html_code": re.compile(r"<code>(.*?)</code>", re.DOTALL),
     }
@@ -206,9 +204,7 @@ class SyntaxValidator(BaseValidator):
                                 file_path=file_path,
                                 line_number=line_num,
                                 context=line_content,
-                                suggestion=(
-                                    "Place page markers on their own lines for clarity"
-                                ),
+                                suggestion=("Place page markers on their own lines for clarity"),
                                 error_code="inline_page_marker",
                             )
                         )
@@ -281,10 +277,7 @@ class SyntaxValidator(BaseValidator):
             )
 
         # Check for very long inline code
-        if (
-            format_type in ["inline_code", "double_backtick_code"]
-            and len(content) > 100
-        ):
+        if format_type in ["inline_code", "double_backtick_code"] and len(content) > 100:
             errors.append(
                 self._create_error(
                     ValidationLevel.INFO,
@@ -411,9 +404,7 @@ class SyntaxValidator(BaseValidator):
                         "Code block without language specification",
                         file_path=file_path,
                         line_number=line_num,
-                        suggestion=(
-                            "Specify language for syntax highlighting (e.g., ```python)"
-                        ),
+                        suggestion=("Specify language for syntax highlighting (e.g., ```python)"),
                         error_code="no_code_language",
                     )
                 )
@@ -448,16 +439,10 @@ class SyntaxValidator(BaseValidator):
                 errors.append(
                     self._create_error(
                         ValidationLevel.INFO,
-                        (
-                            f"Indented code block "
-                            f"(lines {code_block_start}-{line_num - 1})"
-                        ),
+                        (f"Indented code block (lines {code_block_start}-{line_num - 1})"),
                         file_path=file_path,
                         line_number=code_block_start,
-                        suggestion=(
-                            "Consider using fenced code blocks (```) for better "
-                            "syntax highlighting"
-                        ),
+                        suggestion=("Consider using fenced code blocks (```) for better syntax highlighting"),
                         error_code="indented_code_block",
                     )
                 )
@@ -497,10 +482,7 @@ class SyntaxValidator(BaseValidator):
                             file_path=file_path,
                             line_number=line_num,
                             context=match.group(0),
-                            suggestion=(
-                                f"Consider using Markdown syntax: "
-                                f"{markdown_equivalent[html_type]}"
-                            ),
+                            suggestion=(f"Consider using Markdown syntax: {markdown_equivalent[html_type]}"),
                             error_code="html_instead_of_markdown",
                         )
                     )
@@ -573,9 +555,7 @@ class SyntaxValidator(BaseValidator):
 
             # Look for markdown link patterns that might contain this URL
             is_part_of_markdown_link = False
-            for link_match in self.LINK_PATTERNS["markdown_link"].finditer(
-                protected_content
-            ):
+            for link_match in self.LINK_PATTERNS["markdown_link"].finditer(protected_content):
                 link_start = link_match.start()
                 link_end = link_match.end()
 
@@ -607,9 +587,7 @@ class SyntaxValidator(BaseValidator):
                     file_path=file_path,
                     line_number=line_num,
                     context=match.group(0),
-                    suggestion=(
-                        "Consider using markdown link format: [description](URL)"
-                    ),
+                    suggestion=("Consider using markdown link format: [description](URL)"),
                     error_code="bare_url",
                 )
             )
@@ -637,9 +615,7 @@ class SyntaxValidator(BaseValidator):
                     separator_found = is_separator
 
                     # Store found table
-                    self.found_elements["tables"].append(
-                        {"line": line_num, "file": os.path.basename(file_path)}
-                    )
+                    self.found_elements["tables"].append({"line": line_num, "file": os.path.basename(file_path)})
                 elif is_separator:
                     separator_found = True
 
@@ -655,9 +631,7 @@ class SyntaxValidator(BaseValidator):
                             f"Table missing separator row (line {table_start})",
                             file_path=file_path,
                             line_number=table_start,
-                            suggestion=(
-                                "Add separator row with | --- | after table header"
-                            ),
+                            suggestion=("Add separator row with | --- | after table header"),
                             error_code="missing_table_separator",
                         )
                     )
@@ -693,10 +667,7 @@ class SyntaxValidator(BaseValidator):
                         f"Unicode arrow character used: {match.group(0)}",
                         file_path=file_path,
                         line_number=line_num,
-                        suggestion=(
-                            "Consider using LaTeX math arrows "
-                            "(\\rightarrow, \\leftarrow) for consistency"
-                        ),
+                        suggestion=("Consider using LaTeX math arrows (\\rightarrow, \\leftarrow) for consistency"),
                         error_code="unicode_arrow",
                     )
                 )
@@ -706,9 +677,7 @@ class SyntaxValidator(BaseValidator):
     def _generate_syntax_statistics(self) -> dict[str, Any]:
         """Generate statistics about syntax elements."""
         stats: dict[str, Any] = {
-            "total_elements": sum(
-                len(elements) for elements in self.found_elements.values()
-            ),
+            "total_elements": sum(len(elements) for elements in self.found_elements.values()),
             "elements_by_type": {k: len(v) for k, v in self.found_elements.items()},
             "formatting_breakdown": {},
             "code_block_languages": {},

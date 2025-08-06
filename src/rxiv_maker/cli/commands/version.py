@@ -15,9 +15,7 @@ console = Console()
 
 
 @click.command()
-@click.option(
-    "--detailed", "-d", is_flag=True, help="Show detailed version information"
-)
+@click.option("--detailed", "-d", is_flag=True, help="Show detailed version information")
 @click.option("--check-updates", "-u", is_flag=True, help="Check for available updates")
 @click.pass_context
 def version(ctx: click.Context, detailed: bool, check_updates: bool) -> None:
@@ -42,17 +40,14 @@ def version(ctx: click.Context, detailed: bool, check_updates: bool) -> None:
                 except UnicodeEncodeError:
                     try:
                         console.print(
-                            f"[UPDATE] Update available: {__version__} → "
-                            f"{latest_version}",
+                            f"[UPDATE] Update available: {__version__} → {latest_version}",
                             style="green",
                         )
                     except UnicodeEncodeError:
                         print(f"Update available: {__version__} → {latest_version}")
 
                 try:
-                    console.print(
-                        "   Run: pip install --upgrade rxiv-maker", style="blue"
-                    )
+                    console.print("   Run: pip install --upgrade rxiv-maker", style="blue")
                     console.print(
                         f"   Release notes: https://github.com/henriqueslab/rxiv-maker/releases/tag/v{latest_version}",
                         style="blue",
@@ -64,9 +59,7 @@ def version(ctx: click.Context, detailed: bool, check_updates: bool) -> None:
                     )
             else:
                 try:
-                    console.print(
-                        f"✅ You have the latest version ({__version__})", style="green"
-                    )
+                    console.print(f"✅ You have the latest version ({__version__})", style="green")
                 except UnicodeEncodeError:
                     try:
                         console.print(
@@ -80,9 +73,7 @@ def version(ctx: click.Context, detailed: bool, check_updates: bool) -> None:
                 console.print(f"❌ Could not check for updates: {e}", style="red")
             except UnicodeEncodeError:
                 try:
-                    console.print(
-                        f"[ERROR] Could not check for updates: {e}", style="red"
-                    )
+                    console.print(f"[ERROR] Could not check for updates: {e}", style="red")
                 except UnicodeEncodeError:
                     print(f"Could not check for updates: {e}")
 
@@ -150,9 +141,7 @@ def version(ctx: click.Context, detailed: bool, check_updates: bool) -> None:
                     f"\n[PATH] Installation path: {install_path}",
                     style="blue",
                 )
-                console.print(
-                    f"[PYTHON] Python executable: {sys.executable}", style="blue"
-                )
+                console.print(f"[PYTHON] Python executable: {sys.executable}", style="blue")
             except UnicodeEncodeError:
                 # Final fallback - use plain print
                 print("\nRxiv-Maker Version Information")

@@ -84,9 +84,7 @@ class InstallManager:
         try:
             # Check if running in virtual environment
             if self._is_in_docker():
-                self.logger.info(
-                    "Docker container detected - skipping system dependencies"
-                )
+                self.logger.info("Docker container detected - skipping system dependencies")
                 return True
 
             # Pre-installation checks
@@ -124,9 +122,7 @@ class InstallManager:
 
         # Check for admin privileges if needed
         if self.platform_name == "Windows" and not self._has_admin_privileges():
-            self.logger.warning(
-                "Administrator privileges may be required for system installations"
-            )
+            self.logger.warning("Administrator privileges may be required for system installations")
 
         # Check available disk space
         if not self._check_disk_space():
@@ -246,9 +242,7 @@ class InstallManager:
 
         # Return True if critical components are working
         critical_components = ["python", "latex"]
-        return all(
-            verification_results.get(comp, False) for comp in critical_components
-        )
+        return all(verification_results.get(comp, False) for comp in critical_components)
 
     def _generate_report(self):
         """Generate installation report."""
@@ -272,9 +266,7 @@ class InstallManager:
         self.logger.info("Next steps:")
         self.logger.info("  1. Run 'rxiv --check-installation' to verify setup")
         self.logger.info("  2. Try 'rxiv init my-paper' to create a test manuscript")
-        self.logger.info(
-            "  3. Check the documentation at https://github.com/henriqueslab/rxiv-maker"
-        )
+        self.logger.info("  3. Check the documentation at https://github.com/henriqueslab/rxiv-maker")
 
         self.logger.info("=" * 60)
 
@@ -287,9 +279,7 @@ class InstallManager:
 
         # Check what's broken
         verification_results = verify_installation(verbose=self.verbose)
-        broken_components = [
-            comp for comp, result in verification_results.items() if not result
-        ]
+        broken_components = [comp for comp, result in verification_results.items() if not result]
 
         if not broken_components:
             self.logger.info("No broken components found")
@@ -318,30 +308,22 @@ class InstallManager:
 
 def main():
     """Main entry point for the installation manager."""
-    parser = argparse.ArgumentParser(
-        description="Install rxiv-maker system dependencies"
-    )
+    parser = argparse.ArgumentParser(description="Install rxiv-maker system dependencies")
     parser.add_argument(
         "--mode",
         choices=[mode.value for mode in InstallMode],
         default=InstallMode.FULL.value,
         help="Installation mode (default: full)",
     )
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Enable verbose output"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
     parser.add_argument(
         "--force",
         "-f",
         action="store_true",
         help="Force reinstallation of existing dependencies",
     )
-    parser.add_argument(
-        "--non-interactive", action="store_true", help="Run in non-interactive mode"
-    )
-    parser.add_argument(
-        "--repair", action="store_true", help="Repair broken installation"
-    )
+    parser.add_argument("--non-interactive", action="store_true", help="Run in non-interactive mode")
+    parser.add_argument("--repair", action="store_true", help="Repair broken installation")
     parser.add_argument("--log-file", type=Path, help="Path to log file")
 
     args = parser.parse_args()

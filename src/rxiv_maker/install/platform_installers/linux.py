@@ -174,9 +174,7 @@ class LinuxInstaller:
         }
 
         if self.package_manager not in latex_packages:
-            self.logger.warning(
-                f"LaTeX packages not defined for {self.package_manager}"
-            )
+            self.logger.warning(f"LaTeX packages not defined for {self.package_manager}")
             return False
 
         success = self._install_packages(latex_packages[self.package_manager])
@@ -206,9 +204,7 @@ class LinuxInstaller:
         }
 
         if self.package_manager not in nodejs_packages:
-            self.logger.warning(
-                f"Node.js packages not defined for {self.package_manager}"
-            )
+            self.logger.warning(f"Node.js packages not defined for {self.package_manager}")
             return False
 
         success = self._install_packages(nodejs_packages[self.package_manager])

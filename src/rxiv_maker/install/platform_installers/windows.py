@@ -251,7 +251,9 @@ class WindowsInstaller:
 
         try:
             # Download MiKTeX installer
-            installer_url = "https://miktex.org/download/ctan/systems/win32/miktex/setup/windows-x64/basic-miktex-22.1-x64.exe"
+            installer_url = (
+                "https://miktex.org/download/ctan/systems/win32/miktex/setup/windows-x64/basic-miktex-22.1-x64.exe"
+            )
             installer_path = self.temp_dir / "miktex-installer.exe"
 
             self.logger.info("Downloading MiKTeX installer...")
@@ -421,9 +423,7 @@ class WindowsInstaller:
 
         try:
             # Download R installer
-            installer_url = (
-                "https://cran.r-project.org/bin/windows/base/R-4.3.1-win.exe"
-            )
+            installer_url = "https://cran.r-project.org/bin/windows/base/R-4.3.1-win.exe"
             installer_path = self.temp_dir / "r-installer.exe"
 
             self.logger.info("Downloading R installer...")

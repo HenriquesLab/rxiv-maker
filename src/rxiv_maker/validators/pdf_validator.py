@@ -18,9 +18,7 @@ from pathlib import Path
 
 # Add the parent directory to the path to allow imports when run as a script
 if __name__ == "__main__":
-    sys.path.insert(
-        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    )
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 try:
     import pypdf
@@ -64,21 +62,13 @@ class PDFValidator(BaseValidator):
         self.citation_pattern = re.compile(r"\[([^\]]+)\]")
         self.figure_ref_pattern = re.compile(r"Fig(?:ure)?\.?\s*(\d+)", re.IGNORECASE)
         self.table_ref_pattern = re.compile(r"Table\.?\s*(\d+)", re.IGNORECASE)
-        self.equation_ref_pattern = re.compile(
-            r"Eq(?:uation)?\.?\s*(\d+)", re.IGNORECASE
-        )
-        self.section_ref_pattern = re.compile(
-            r"Section\.?\s*(\d+(?:\.\d+)*)", re.IGNORECASE
-        )
+        self.equation_ref_pattern = re.compile(r"Eq(?:uation)?\.?\s*(\d+)", re.IGNORECASE)
+        self.section_ref_pattern = re.compile(r"Section\.?\s*(\d+(?:\.\d+)*)", re.IGNORECASE)
 
         # Problem patterns
         self.unresolved_citation_pattern = re.compile(r"\[\?\]|\[cite\]")
-        self.malformed_equation_pattern = re.compile(
-            r"\\[a-zA-Z]+\{[^}]*$|\\[a-zA-Z]+$|\$[^$]*$"
-        )
-        self.missing_figure_pattern = re.compile(
-            r"Figure\s*\?\?|\?\?\s*Figure", re.IGNORECASE
-        )
+        self.malformed_equation_pattern = re.compile(r"\\[a-zA-Z]+\{[^}]*$|\\[a-zA-Z]+$|\$[^$]*$")
+        self.missing_figure_pattern = re.compile(r"Figure\s*\?\?|\?\?\s*Figure", re.IGNORECASE)
 
     def _find_pdf_file(self) -> Path | None:
         """Find the PDF file to validate."""
@@ -134,9 +124,7 @@ class PDFValidator(BaseValidator):
                         pages_text.append(page_text)
                         full_text += page_text + "\n"
                     except Exception as e:
-                        logger.warning(
-                            f"Failed to extract text from page {page_num + 1}: {e}"
-                        )
+                        logger.warning(f"Failed to extract text from page {page_num + 1}: {e}")
                         pages_text.append("")
 
                 return full_text, pages_text
@@ -177,9 +165,7 @@ class PDFValidator(BaseValidator):
             )
         else:
             # Check for suspicious citation patterns
-            suspicious_citations = [
-                c for c in citations if c.strip() in ["?", "cite", ""]
-            ]
+            suspicious_citations = [c for c in citations if c.strip() in ["?", "cite", ""]]
             if suspicious_citations:
                 errors.append(
                     self._create_error(
@@ -201,10 +187,7 @@ class PDFValidator(BaseValidator):
         malformed_equations = self.malformed_equation_pattern.findall(self.pdf_text)
         if malformed_equations:
             # Truncate context to avoid overwhelming output
-            sample_equations = [
-                eq[:50] + "..." if len(eq) > 50 else eq
-                for eq in malformed_equations[:2]
-            ]
+            sample_equations = [eq[:50] + "..." if len(eq) > 50 else eq for eq in malformed_equations[:2]]
             errors.append(
                 self._create_error(
                     ValidationLevel.WARNING,
@@ -358,9 +341,7 @@ class PDFValidator(BaseValidator):
             return errors
 
         # Check for extremely short pages (possible extraction issues)
-        short_pages = [
-            i for i, page in enumerate(self.pdf_pages) if len(page.strip()) < 100
-        ]
+        short_pages = [i for i, page in enumerate(self.pdf_pages) if len(page.strip()) < 100]
         if short_pages:
             errors.append(
                 self._create_error(
@@ -383,9 +364,7 @@ class PDFValidator(BaseValidator):
             "citations_found": len(self.citation_pattern.findall(self.pdf_text)),
             "figure_references": len(self.figure_ref_pattern.findall(self.pdf_text)),
             "table_references": len(self.table_ref_pattern.findall(self.pdf_text)),
-            "equation_references": len(
-                self.equation_ref_pattern.findall(self.pdf_text)
-            ),
+            "equation_references": len(self.equation_ref_pattern.findall(self.pdf_text)),
             "section_references": len(self.section_ref_pattern.findall(self.pdf_text)),
         }
 
@@ -525,9 +504,7 @@ if __name__ == "__main__":
             f"📄 {total_pages} pages, {total_words} words, {citations_found} citations, {figure_references} figure references"
         )
         if result.errors:
-            print(
-                "💡 Check the generated PDF visually to confirm all content appears correctly"
-            )
+            print("💡 Check the generated PDF visually to confirm all content appears correctly")
 
     print()
 

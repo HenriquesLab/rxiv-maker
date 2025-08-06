@@ -42,10 +42,7 @@ def generate_authors_and_affiliations(yaml_metadata):
         # Find full affiliation details
         full_affil = affil_short  # fallback to shortname
         for affil_detail in affiliations:
-            if (
-                isinstance(affil_detail, dict)
-                and affil_detail.get("shortname") == affil_short
-            ):
+            if isinstance(affil_detail, dict) and affil_detail.get("shortname") == affil_short:
                 full_name = affil_detail.get("full_name", affil_short)
                 location = affil_detail.get("location", "")
                 full_affil = f"{full_name}, {location}" if location else full_name
@@ -74,9 +71,7 @@ def generate_authors_and_affiliations(yaml_metadata):
             affil_numbers.sort()
 
             # Format affiliations for author
-            affil_str = (
-                ",".join(map(str, affil_numbers)) if affil_numbers else "1"
-            )  # Default to first affiliation
+            affil_str = ",".join(map(str, affil_numbers)) if affil_numbers else "1"  # Default to first affiliation
 
             # Add special markers
             special_markers = []
@@ -206,27 +201,19 @@ def generate_extended_author_info(yaml_metadata):
             # Add ORCID if available
             if orcid:
                 # Remove any https://orcid.org/ prefix if present
-                orcid_clean = orcid.replace("https://orcid.org/", "").replace(
-                    "http://orcid.org/", ""
-                )
+                orcid_clean = orcid.replace("https://orcid.org/", "").replace("http://orcid.org/", "")
                 social_icons.append(f"\\orcidicon{{{orcid_clean}}}")
 
             # Prefer X over Twitter if both are present
             if x:
                 # Clean X handle (remove @ if present)
-                x_clean = (
-                    x.replace("@", "")
-                    .replace("https://x.com/", "")
-                    .replace("http://x.com/", "")
-                )
+                x_clean = x.replace("@", "").replace("https://x.com/", "").replace("http://x.com/", "")
                 x_clean = escape_latex_special_chars(x_clean)
                 social_icons.append(f"\\xicon{{{x_clean}}}")
             elif twitter:
                 # Clean Twitter handle (remove @ if present)
                 twitter_clean = (
-                    twitter.replace("@", "")
-                    .replace("https://twitter.com/", "")
-                    .replace("http://twitter.com/", "")
+                    twitter.replace("@", "").replace("https://twitter.com/", "").replace("http://twitter.com/", "")
                 )
                 twitter_clean = escape_latex_special_chars(twitter_clean)
                 social_icons.append(f"\\twittericon{{{twitter_clean}}}")
@@ -243,9 +230,7 @@ def generate_extended_author_info(yaml_metadata):
 
             if linkedin:
                 # Clean LinkedIn handle
-                linkedin_clean = linkedin.replace(
-                    "https://linkedin.com/in/", ""
-                ).replace("http://linkedin.com/in/", "")
+                linkedin_clean = linkedin.replace("https://linkedin.com/in/", "").replace("http://linkedin.com/in/", "")
                 linkedin_clean = escape_latex_special_chars(linkedin_clean)
                 social_icons.append(f"\\linkedinicon{{{linkedin_clean}}}")
 

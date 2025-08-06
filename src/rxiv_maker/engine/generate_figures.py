@@ -20,9 +20,7 @@ except ImportError:
 
 # Add the parent directory to the path to allow imports when run as a script
 if __name__ == "__main__":
-    sys.path.insert(
-        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    )
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 # Import platform utilities and Docker manager
 try:
@@ -73,10 +71,7 @@ class FigureGenerator:
             self.docker_manager = get_docker_manager(workspace_dir=workspace_dir)
 
         if self.output_format not in self.supported_formats:
-            raise ValueError(
-                f"Unsupported format: {self.output_format}. "
-                f"Supported: {self.supported_formats}"
-            )
+            raise ValueError(f"Unsupported format: {self.output_format}. Supported: {self.supported_formats}")
 
         # Ensure output directory exists
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -121,9 +116,7 @@ class FigureGenerator:
 
             # Process figures with optional parallelization
             if parallel and (len(mermaid_files) + len(python_files) + len(r_files)) > 1:
-                self._generate_figures_parallel(
-                    mermaid_files, python_files, r_files, max_workers
-                )
+                self._generate_figures_parallel(mermaid_files, python_files, r_files, max_workers)
             else:
                 self._generate_figures_sequential(mermaid_files, python_files, r_files)
 
@@ -171,9 +164,7 @@ class FigureGenerator:
                 except Exception as e:
                     print(f"  ✗ Failed: {r_file.name} - {e}")
 
-    def _generate_figures_parallel(
-        self, mermaid_files, python_files, r_files, max_workers
-    ):
+    def _generate_figures_parallel(self, mermaid_files, python_files, r_files, max_workers):
         """Generate figures in parallel using ThreadPoolExecutor."""
         import concurrent.futures
         import threading
@@ -227,9 +218,7 @@ class FigureGenerator:
         # Process figures in parallel
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             # Submit all tasks
-            future_to_file = {
-                executor.submit(process_figure, item): item[0] for item in work_items
-            }
+            future_to_file = {executor.submit(process_figure, item): item[0] for item in work_items}
 
             # Collect results
             completed = 0
@@ -247,10 +236,7 @@ class FigureGenerator:
                     safe_print(f"  [Parallel] ✗ Exception for {file_path.name}: {exc}")
                     failed += 1
 
-            safe_print(
-                f"Parallel processing completed: {completed} successful, "
-                f"{failed} failed"
-            )
+            safe_print(f"Parallel processing completed: {completed} successful, {failed} failed")
 
     def generate_mermaid_figure(self, mmd_file):
         """Generate figure from Mermaid diagram file using mermaid.ink API."""
@@ -261,10 +247,7 @@ class FigureGenerator:
 
             # --- Step 1: Generate SVG using mermaid.ink API ---
             svg_output_file = figure_dir / f"{mmd_file.stem}.svg"
-            print(
-                f"  🎨 Generating SVG using mermaid.ink API: "
-                f"{figure_dir.name}/{svg_output_file.name}..."
-            )
+            print(f"  🎨 Generating SVG using mermaid.ink API: {figure_dir.name}/{svg_output_file.name}...")
 
             # Read the mermaid diagram content
             mermaid_content = mmd_file.read_text(encoding="utf-8")
@@ -283,15 +266,11 @@ class FigureGenerator:
 
                     # Generate a placeholder SVG to prevent build failures
                     print(f"  🔄 Creating placeholder SVG for {mmd_file.name}...")
-                    self._create_placeholder_svg(
-                        svg_output_file, mmd_file.name, result.stderr
-                    )
+                    self._create_placeholder_svg(svg_output_file, mmd_file.name, result.stderr)
                     return
             else:
                 # Use mermaid.ink API approach
-                success = self._generate_mermaid_with_api(
-                    mermaid_content, svg_output_file, mmd_file.name
-                )
+                success = self._generate_mermaid_with_api(mermaid_content, svg_output_file, mmd_file.name)
 
                 if not success:
                     print(f"  🔄 Creating placeholder SVG for {mmd_file.name}...")
@@ -340,9 +319,7 @@ class FigureGenerator:
                     height = float(viewbox[3])
 
                     # Replace width="100%" with explicit dimensions
-                    svg_content = re.sub(
-                        r'width="100%"', f'width="{width}px"', svg_content
-                    )
+                    svg_content = re.sub(r'width="100%"', f'width="{width}px"', svg_content)
 
                     # Add height if missing
                     if "height=" not in svg_content:
@@ -358,9 +335,7 @@ class FigureGenerator:
             print(f"     Warning: Could not fix SVG dimensions: {e}")
             return svg_content
 
-    def _generate_mermaid_with_api(
-        self, mermaid_content, svg_output_file, diagram_name
-    ):
+    def _generate_mermaid_with_api(self, mermaid_content, svg_output_file, diagram_name):
         """Generate mermaid diagram in all formats using mermaid.ink API."""
         try:
             if requests is None:
@@ -430,16 +405,12 @@ class FigureGenerator:
             else:
                 print(f"  ❌ Failed to generate any formats for {diagram_name}")
                 # Create placeholder SVG as fallback
-                self._create_placeholder_svg(
-                    svg_output_file, diagram_name, "All mermaid.ink API requests failed"
-                )
+                self._create_placeholder_svg(svg_output_file, diagram_name, "All mermaid.ink API requests failed")
                 return False
 
         except Exception as e:
             print(f"  ❌ Error in mermaid.ink API generation: {e}")
-            self._create_placeholder_svg(
-                svg_output_file, diagram_name, f"Error generating mermaid diagram: {e}"
-            )
+            self._create_placeholder_svg(svg_output_file, diagram_name, f"Error generating mermaid diagram: {e}")
             return False
 
     def generate_python_figure(self, py_file):
@@ -782,13 +753,9 @@ def main():
     import os
 
     parser = argparse.ArgumentParser(description="Generate figures from source files")
-    parser.add_argument(
-        "--figures-dir", default="FIGURES", help="Directory with source figures"
-    )
+    parser.add_argument("--figures-dir", default="FIGURES", help="Directory with source figures")
     parser.add_argument("--output-dir", default="FIGURES", help="Output directory")
-    parser.add_argument(
-        "--format", default="png", help="Output format (png, svg, pdf, eps)"
-    )
+    parser.add_argument("--format", default="png", help="Output format (png, svg, pdf, eps)")
     parser.add_argument("--r-only", action="store_true", help="Process only R files")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     parser.add_argument(
@@ -797,9 +764,7 @@ def main():
         default=True,
         help="Enable parallel processing (default: True)",
     )
-    parser.add_argument(
-        "--no-parallel", action="store_true", help="Disable parallel processing"
-    )
+    parser.add_argument("--no-parallel", action="store_true", help="Disable parallel processing")
     parser.add_argument(
         "--max-workers",
         type=int,

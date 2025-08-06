@@ -67,14 +67,10 @@ class DockerSession:
 
         try:
             # Stop the container
-            subprocess.run(
-                ["docker", "stop", self.container_id], capture_output=True, timeout=10
-            )
+            subprocess.run(["docker", "stop", self.container_id], capture_output=True, timeout=10)
 
             # Remove the container
-            subprocess.run(
-                ["docker", "rm", self.container_id], capture_output=True, timeout=10
-            )
+            subprocess.run(["docker", "rm", self.container_id], capture_output=True, timeout=10)
 
             self._active = False
             return True
@@ -223,9 +219,7 @@ class DockerManager:
 
         return docker_cmd
 
-    def _get_or_create_session(
-        self, session_key: str, image: str
-    ) -> DockerSession | None:
+    def _get_or_create_session(self, session_key: str, image: str) -> DockerSession | None:
         """Get an existing session or create a new one if session reuse is enabled."""
         if not self.enable_session_reuse:
             return None
@@ -251,9 +245,7 @@ class DockerManager:
                 remove=False,
             )
 
-            result = subprocess.run(
-                docker_cmd, capture_output=True, text=True, timeout=30
-            )
+            result = subprocess.run(docker_cmd, capture_output=True, text=True, timeout=30)
 
             if result.returncode == 0:
                 container_id = result.stdout.strip()
@@ -282,9 +274,7 @@ class DockerManager:
                 "echo",
                 "container_ready",
             ]
-            result = subprocess.run(
-                exec_cmd, capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(exec_cmd, capture_output=True, text=True, timeout=10)
             if result.returncode != 0:
                 return False
 
@@ -297,9 +287,7 @@ class DockerManager:
                 "-c",
                 "import sys; print(f'Python {sys.version_info.major}.{sys.version_info.minor}')",
             ]
-            result = subprocess.run(
-                python_test, capture_output=True, text=True, timeout=15
-            )
+            result = subprocess.run(python_test, capture_output=True, text=True, timeout=15)
             if result.returncode != 0:
                 return False
 
@@ -319,9 +307,7 @@ except ImportError as e:
     exit(1)
 """,
             ]
-            result = subprocess.run(
-                deps_test, capture_output=True, text=True, timeout=20
-            )
+            result = subprocess.run(deps_test, capture_output=True, text=True, timeout=20)
             if result.returncode != 0:
                 return False
 
@@ -358,9 +344,7 @@ except ImportError as e:
                 "-c",
                 "chmod -R 755 /workspace && mkdir -p /workspace/output",
             ]
-            result = subprocess.run(
-                workspace_setup, capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(workspace_setup, capture_output=True, text=True, timeout=10)
             return result.returncode == 0
 
         except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
@@ -378,10 +362,7 @@ except ImportError as e:
         expired_keys = []
 
         for key, session in self._active_sessions.items():
-            if (
-                current_time - session.created_at > self._session_timeout
-                or not session.is_active()
-            ):
+            if current_time - session.created_at > self._session_timeout or not session.is_active():
                 session.cleanup()
                 expired_keys.append(key)
 
@@ -390,9 +371,7 @@ except ImportError as e:
 
         # If we have too many sessions, cleanup the oldest ones
         if len(self._active_sessions) > self._max_sessions:
-            sorted_sessions = sorted(
-                self._active_sessions.items(), key=lambda x: x[1].created_at
-            )
+            sorted_sessions = sorted(self._active_sessions.items(), key=lambda x: x[1].created_at)
             excess_count = len(self._active_sessions) - self._max_sessions
             for key, session in sorted_sessions[:excess_count]:
                 session.cleanup()
@@ -714,9 +693,7 @@ if __name__ == "__main__":
     def check_docker_available(self) -> bool:
         """Check if Docker is available and running."""
         try:
-            result = subprocess.run(
-                ["docker", "--version"], capture_output=True, text=True, timeout=5
-            )
+            result = subprocess.run(["docker", "--version"], capture_output=True, text=True, timeout=5)
             return result.returncode == 0
         except (
             subprocess.TimeoutExpired,
@@ -765,9 +742,7 @@ if __name__ == "__main__":
         """Get statistics about active Docker sessions."""
         stats: dict[str, Any] = {
             "total_sessions": len(self._active_sessions),
-            "active_sessions": sum(
-                1 for s in self._active_sessions.values() if s.is_active()
-            ),
+            "active_sessions": sum(1 for s in self._active_sessions.values() if s.is_active()),
             "session_details": [],
         }
 
@@ -783,9 +758,7 @@ if __name__ == "__main__":
 
         return stats
 
-    def warmup_session(
-        self, session_key: str, image: str | None = None, force_pull: bool = False
-    ) -> bool:
+    def warmup_session(self, session_key: str, image: str | None = None, force_pull: bool = False) -> bool:
         """Pre-warm a Docker session for faster subsequent operations."""
         target_image = image or self.default_image
 
@@ -799,9 +772,7 @@ if __name__ == "__main__":
         if session and session.is_active():
             # Run a simple health check to warm up the container
             try:
-                result = self.run_command(
-                    command=["echo", "warmup"], session_key=session_key, timeout=10
-                )
+                result = self.run_command(command=["echo", "warmup"], session_key=session_key, timeout=10)
                 return result.returncode == 0
             except Exception:
                 return False
@@ -818,9 +789,7 @@ if __name__ == "__main__":
             return False
 
         try:
-            result = self.run_command(
-                command=["echo", "health_check"], session_key=session_key, timeout=5
-            )
+            result = self.run_command(command=["echo", "health_check"], session_key=session_key, timeout=5)
             return result.returncode == 0
         except Exception:
             return False
@@ -852,9 +821,7 @@ if __name__ == "__main__":
                 "--format",
                 "{{json .}}",
             ]
-            result = subprocess.run(
-                inspect_cmd, capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(inspect_cmd, capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 import json
@@ -951,9 +918,7 @@ if __name__ == "__main__":
         # Auto-cleanup if too many warnings
         if self._resource_warnings > 5:
             self.enable_aggressive_cleanup(True)
-            stats["warnings"].append(
-                "Enabled aggressive cleanup due to resource pressure"
-            )
+            stats["warnings"].append("Enabled aggressive cleanup due to resource pressure")
 
         return stats
 

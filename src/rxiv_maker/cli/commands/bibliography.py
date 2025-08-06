@@ -18,12 +18,8 @@ def bibliography():
 
 
 @bibliography.command()
-@click.argument(
-    "manuscript_path", type=click.Path(exists=True, file_okay=False), required=False
-)
-@click.option(
-    "--dry-run", "-d", is_flag=True, help="Preview fixes without applying them"
-)
+@click.argument("manuscript_path", type=click.Path(exists=True, file_okay=False), required=False)
+@click.option("--dry-run", "-d", is_flag=True, help="Preview fixes without applying them")
 @click.pass_context
 def fix(ctx: click.Context, manuscript_path: str | None, dry_run: bool) -> None:
     """Fix bibliography issues automatically.
@@ -73,20 +69,14 @@ def fix(ctx: click.Context, manuscript_path: str | None, dry_run: bool) -> None:
                 fix_bibliography_main()
                 progress.update(task, description="✅ Bibliography fixes completed")
                 if dry_run:
-                    console.print(
-                        "✅ Bibliography fixes preview completed!", style="green"
-                    )
+                    console.print("✅ Bibliography fixes preview completed!", style="green")
                 else:
-                    console.print(
-                        "✅ Bibliography fixes applied successfully!", style="green"
-                    )
+                    console.print("✅ Bibliography fixes applied successfully!", style="green")
 
             except SystemExit as e:
                 progress.update(task, description="❌ Bibliography fixing failed")
                 if e.code != 0:
-                    console.print(
-                        "❌ Bibliography fixing failed. See details above.", style="red"
-                    )
+                    console.print("❌ Bibliography fixing failed. See details above.", style="red")
                     sys.exit(1)
 
             finally:
@@ -96,18 +86,14 @@ def fix(ctx: click.Context, manuscript_path: str | None, dry_run: bool) -> None:
         console.print("\\n⏹️  Bibliography fixing interrupted by user", style="yellow")
         sys.exit(1)
     except Exception as e:
-        console.print(
-            f"❌ Unexpected error during bibliography fixing: {e}", style="red"
-        )
+        console.print(f"❌ Unexpected error during bibliography fixing: {e}", style="red")
         if verbose:
             console.print_exception()
         sys.exit(1)
 
 
 @bibliography.command()
-@click.argument(
-    "manuscript_path", type=click.Path(exists=True, file_okay=False), required=False
-)
+@click.argument("manuscript_path", type=click.Path(exists=True, file_okay=False), required=False)
 @click.argument("dois", nargs=-1, required=True)
 @click.option("--overwrite", "-o", is_flag=True, help="Overwrite existing entries")
 @click.pass_context
@@ -156,9 +142,7 @@ def add(
             console=console,
             transient=True,
         ) as progress:
-            task = progress.add_task(
-                f"Adding {len(dois)} bibliography entries...", total=None
-            )
+            task = progress.add_task(f"Adding {len(dois)} bibliography entries...", total=None)
 
             # Import bibliography adding command
             from ...engine.add_bibliography import main as add_bibliography_main
@@ -186,9 +170,7 @@ def add(
             except SystemExit as e:
                 progress.update(task, description="❌ Bibliography adding failed")
                 if e.code != 0:
-                    console.print(
-                        "❌ Bibliography adding failed. See details above.", style="red"
-                    )
+                    console.print("❌ Bibliography adding failed. See details above.", style="red")
                     sys.exit(1)
 
             finally:
@@ -198,18 +180,14 @@ def add(
         console.print("\\n⏹️  Bibliography adding interrupted by user", style="yellow")
         sys.exit(1)
     except Exception as e:
-        console.print(
-            f"❌ Unexpected error during bibliography adding: {e}", style="red"
-        )
+        console.print(f"❌ Unexpected error during bibliography adding: {e}", style="red")
         if verbose:
             console.print_exception()
         sys.exit(1)
 
 
 @bibliography.command()
-@click.argument(
-    "manuscript_path", type=click.Path(exists=True, file_okay=False), required=False
-)
+@click.argument("manuscript_path", type=click.Path(exists=True, file_okay=False), required=False)
 @click.option("--no-doi", is_flag=True, help="Skip DOI validation")
 @click.pass_context
 def validate(ctx: click.Context, manuscript_path: str | None, no_doi: bool) -> None:
@@ -261,9 +239,7 @@ def validate(ctx: click.Context, manuscript_path: str | None, no_doi: bool) -> N
 
             try:
                 validate_main()
-                progress.update(
-                    task, description="✅ Bibliography validation completed"
-                )
+                progress.update(task, description="✅ Bibliography validation completed")
                 console.print("✅ Bibliography validation passed!", style="green")
 
             except SystemExit as e:
@@ -279,14 +255,10 @@ def validate(ctx: click.Context, manuscript_path: str | None, no_doi: bool) -> N
                 sys.argv = original_argv
 
     except KeyboardInterrupt:
-        console.print(
-            "\\n⏹️  Bibliography validation interrupted by user", style="yellow"
-        )
+        console.print("\\n⏹️  Bibliography validation interrupted by user", style="yellow")
         sys.exit(1)
     except Exception as e:
-        console.print(
-            f"❌ Unexpected error during bibliography validation: {e}", style="red"
-        )
+        console.print(f"❌ Unexpected error during bibliography validation: {e}", style="red")
         if verbose:
             console.print_exception()
         sys.exit(1)

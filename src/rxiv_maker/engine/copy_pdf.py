@@ -7,9 +7,7 @@ import os
 import sys
 
 # Add the parent directory to the path to allow imports when run as a script
-sys.path.insert(
-    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from rxiv_maker.processors.yaml_processor import extract_yaml_metadata
 from rxiv_maker.utils import copy_pdf_to_manuscript_folder, find_manuscript_md

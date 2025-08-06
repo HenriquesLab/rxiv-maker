@@ -17,9 +17,7 @@ class PerformanceTracker:
         Args:
             cache_dir: Directory for storing performance baselines
         """
-        self.cache_dir = (
-            cache_dir or Path.home() / ".cache" / "rxiv-maker" / "performance"
-        )
+        self.cache_dir = cache_dir or Path.home() / ".cache" / "rxiv-maker" / "performance"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.baseline_file = self.cache_dir / "baselines.json"
         self.current_version = __version__
@@ -62,9 +60,7 @@ class PerformanceTracker:
         self.operation_timings[operation_id] = start_time
         return start_time
 
-    def end_operation(
-        self, operation_id: str, metadata: dict[str, Any] | None = None
-    ) -> float:
+    def end_operation(self, operation_id: str, metadata: dict[str, Any] | None = None) -> float:
         """End timing an operation and record the metric.
 
         Args:
@@ -89,9 +85,7 @@ class PerformanceTracker:
 
         return duration
 
-    def get_baseline(
-        self, operation_id: str, version: str | None = None
-    ) -> dict[str, float] | None:
+    def get_baseline(self, operation_id: str, version: str | None = None) -> dict[str, float] | None:
         """Get performance baseline for an operation.
 
         Args:
@@ -110,9 +104,7 @@ class PerformanceTracker:
 
         return None
 
-    def compare_to_baseline(
-        self, operation_id: str, current_time: float
-    ) -> dict[str, Any]:
+    def compare_to_baseline(self, operation_id: str, current_time: float) -> dict[str, Any]:
         """Compare current performance to baseline.
 
         Args:
@@ -210,9 +202,7 @@ class PerformanceTracker:
             return
 
         # Sort by timestamp and keep most recent
-        sorted_versions = sorted(
-            self.baselines.items(), key=lambda x: x[1].get("timestamp", 0), reverse=True
-        )
+        sorted_versions = sorted(self.baselines.items(), key=lambda x: x[1].get("timestamp", 0), reverse=True)
 
         self.baselines = dict(sorted_versions[:keep_versions])
         self._save_baselines()

@@ -72,12 +72,7 @@ def _process_fenced_code_blocks(text: MarkdownContent) -> LatexContent:
             )
         else:
             # Fallback to verbatim for unknown languages or no language specified
-            return (
-                f"{{\\footnotesize\n"
-                f"\\begin{{verbatim}}\n"
-                f"{code_content}\n"
-                f"\\end{{verbatim}}\n}}"
-            )
+            return f"{{\\footnotesize\n\\begin{{verbatim}}\n{code_content}\n\\end{{verbatim}}\n}}"
 
     # Convert fenced code blocks first to protect them from further processing
     return re.sub(
@@ -182,9 +177,7 @@ def protect_code_content(text: MarkdownContent) -> tuple[LatexContent, dict[str,
 
     def protect_verbatim_content(match: re.Match[str]) -> str:
         verbatim_content = match.group(0)
-        placeholder = (
-            f"XXPROTECTEDVERBATIMXX{len(protected_content)}XXPROTECTEDVERBATIMXX"
-        )
+        placeholder = f"XXPROTECTEDVERBATIMXX{len(protected_content)}XXPROTECTEDVERBATIMXX"
         protected_content[placeholder] = verbatim_content
         return placeholder
 
@@ -207,9 +200,7 @@ def protect_code_content(text: MarkdownContent) -> tuple[LatexContent, dict[str,
     return text, protected_content
 
 
-def restore_protected_code(
-    text: LatexContent, protected_content: dict[str, str]
-) -> LatexContent:
+def restore_protected_code(text: LatexContent, protected_content: dict[str, str]) -> LatexContent:
     """Restore protected code content.
 
     Args:
@@ -273,9 +264,7 @@ def extract_code_blocks_from_text(text: MarkdownContent) -> list[tuple[str, str]
         if re.match(r"^    ", lines[i]) and lines[i].strip():
             # Start of indented code block
             code_lines: list[str] = []
-            while i < len(lines) and (
-                re.match(r"^    ", lines[i]) or not lines[i].strip()
-            ):
+            while i < len(lines) and (re.match(r"^    ", lines[i]) or not lines[i].strip()):
                 if lines[i].startswith("    "):
                     code_lines.append(lines[i][4:])
                 else:

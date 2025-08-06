@@ -130,9 +130,7 @@ class TestPlatformDetector(unittest.TestCase):
     def test_python_command_fallback_windows(self, mock_which):
         """Test Python command fallback on Windows."""
         with patch.object(PlatformDetector, "is_windows", return_value=True):
-            with patch.object(
-                PlatformDetector, "get_venv_python_path", return_value=None
-            ):
+            with patch.object(PlatformDetector, "get_venv_python_path", return_value=None):
                 detector = PlatformDetector()
                 self.assertEqual(detector.python_cmd, "python")
 
@@ -140,9 +138,7 @@ class TestPlatformDetector(unittest.TestCase):
     def test_python_command_fallback_unix(self, mock_which):
         """Test Python command fallback on Unix."""
         with patch.object(PlatformDetector, "is_windows", return_value=False):
-            with patch.object(
-                PlatformDetector, "get_venv_python_path", return_value=None
-            ):
+            with patch.object(PlatformDetector, "get_venv_python_path", return_value=None):
                 detector = PlatformDetector()
                 self.assertEqual(detector.python_cmd, "python3")
 
@@ -504,9 +500,7 @@ class TestPlatformDetectorEdgeCases(unittest.TestCase):
 
         detector.run_command("test command", capture_output=True, text=True, timeout=30)
 
-        mock_run.assert_called_once_with(
-            "test command", shell=True, capture_output=True, text=True, timeout=30
-        )
+        mock_run.assert_called_once_with("test command", shell=True, capture_output=True, text=True, timeout=30)
 
 
 class TestUnicodeEncoding(unittest.TestCase):
@@ -551,9 +545,7 @@ class TestUnicodeEncoding(unittest.TestCase):
             mock_stdout.encoding = "utf-8"
 
             with patch("builtins.print") as mock_print:
-                safe_print(
-                    "Test message", success_symbol="🎉", fallback_symbol="[SUCCESS]"
-                )
+                safe_print("Test message", success_symbol="🎉", fallback_symbol="[SUCCESS]")
 
                 # Should print with custom Unicode symbol
                 mock_print.assert_called_once_with("🎉 Test message")
@@ -585,9 +577,7 @@ class TestUnicodeEncoding(unittest.TestCase):
     def test_safe_console_print_double_fallback(self):
         """Test safe_console_print when both Rich attempts fail."""
         mock_console = Mock()
-        mock_console.print.side_effect = UnicodeEncodeError(
-            "charmap", "✅", 0, 1, "undefined"
-        )
+        mock_console.print.side_effect = UnicodeEncodeError("charmap", "✅", 0, 1, "undefined")
 
         with patch("builtins.print") as mock_print:
             safe_console_print(mock_console, "✅ Test message", style="green")
@@ -658,9 +648,7 @@ class TestUnicodeEncoding(unittest.TestCase):
 
             with patch("builtins.print") as mock_print:
                 # Test with ASCII-only content - should work normally
-                safe_print(
-                    "Test message", success_symbol="[OK]", fallback_symbol="[OK]"
-                )
+                safe_print("Test message", success_symbol="[OK]", fallback_symbol="[OK]")
 
                 # Should use the success symbol since it's ASCII
                 mock_print.assert_called_once_with("[OK] Test message")
@@ -679,13 +667,9 @@ class TestUnicodeEncoding(unittest.TestCase):
         """Test safe_console_print with additional keyword arguments."""
         mock_console = Mock()
 
-        safe_console_print(
-            mock_console, "Test message", style="green", highlight=True, markup=False
-        )
+        safe_console_print(mock_console, "Test message", style="green", highlight=True, markup=False)
 
-        mock_console.print.assert_called_once_with(
-            "Test message", style="green", highlight=True, markup=False
-        )
+        mock_console.print.assert_called_once_with("Test message", style="green", highlight=True, markup=False)
 
 
 if __name__ == "__main__":

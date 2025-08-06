@@ -104,9 +104,7 @@ def process_author_emails(authors):
 
             except ValueError as e:
                 author_name = processed_author.get("name", "Unknown")
-                print(
-                    f"Warning: Failed to decode email64 for author {author_name}: {e}"
-                )
+                print(f"Warning: Failed to decode email64 for author {author_name}: {e}")
                 # If decoding fails, remove the email64 field but don't add email
                 del processed_author["email64"]
 

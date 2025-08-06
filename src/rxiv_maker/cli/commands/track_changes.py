@@ -14,16 +14,10 @@ console = Console()
 
 
 @click.command()
-@click.argument(
-    "manuscript_path", type=click.Path(exists=True, file_okay=False), required=False
-)
+@click.argument("manuscript_path", type=click.Path(exists=True, file_okay=False), required=False)
 @click.argument("tag", required=True)
-@click.option(
-    "--output-dir", "-o", default="output", help="Output directory for generated files"
-)
-@click.option(
-    "--force-figures", "-f", is_flag=True, help="Force regeneration of all figures"
-)
+@click.option("--output-dir", "-o", default="output", help="Output directory for generated files")
+@click.option("--force-figures", "-f", is_flag=True, help="Force regeneration of all figures")
 @click.option("--skip-validation", "-s", is_flag=True, help="Skip validation step")
 @click.pass_context
 def track_changes(
@@ -65,9 +59,7 @@ def track_changes(
             transient=True,
         ) as progress:
             # Create build manager with track changes enabled
-            task = progress.add_task(
-                "Initializing change tracking build...", total=None
-            )
+            task = progress.add_task("Initializing change tracking build...", total=None)
             build_manager = BuildManager(
                 manuscript_path=manuscript_path,
                 output_dir=output_dir,
@@ -85,12 +77,9 @@ def track_changes(
             success = build_manager.run_full_build()
 
             if success:
-                progress.update(
-                    task, description="✅ Change-tracked PDF generated successfully!"
-                )
+                progress.update(task, description="✅ Change-tracked PDF generated successfully!")
                 console.print(
-                    f"📄 PDF with change tracking generated: "
-                    f"{output_dir}/{Path(manuscript_path).name}.pdf",
+                    f"📄 PDF with change tracking generated: {output_dir}/{Path(manuscript_path).name}.pdf",
                     style="green",
                 )
                 console.print(
@@ -98,12 +87,8 @@ def track_changes(
                     style="blue",
                 )
             else:
-                progress.update(
-                    task, description="❌ Failed to generate PDF with change tracking"
-                )
-                console.print(
-                    "❌ PDF generation with change tracking failed", style="red"
-                )
+                progress.update(task, description="❌ Failed to generate PDF with change tracking")
+                console.print("❌ PDF generation with change tracking failed", style="red")
                 sys.exit(1)
 
     except Exception as e:
