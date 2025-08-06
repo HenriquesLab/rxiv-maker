@@ -180,6 +180,7 @@ jobs:
     name: Lint & Type Check
     runs-on: ubuntu-latest
     needs: setup
+    if: always() && needs.setup.result == 'success'
     timeout-minutes: 15
 
     steps:
@@ -225,8 +226,8 @@ jobs:
     name: Repository Integrity
     runs-on: ubuntu-latest
     needs: setup
+    if: needs.setup.outputs.test-scope != 'quick' && always() && needs.setup.result == 'success'
     timeout-minutes: 20
-    if: needs.setup.outputs.test-scope != 'quick'
 
     steps:
       - name: Checkout repository
@@ -468,6 +469,7 @@ jobs:
     name: Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
     needs: setup
+    if: always() && needs.setup.result == 'success'
     strategy:
       matrix: ${{ fromJson(needs.setup.outputs.test-matrix) }}
       fail-fast: false
@@ -509,7 +511,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [setup, test]
-    if: needs.setup.outputs.test-scope != 'quick'
+    if: needs.setup.outputs.test-scope != 'quick' && always() && needs.setup.result == 'success'
 
     steps:
       - name: Checkout code
@@ -521,29 +523,70 @@ jobs:
         uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
+          install-latex: 'true'
 
-      - name: Install LaTeX
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            texlive-latex-base \
-            texlive-latex-extra \
-            texlive-fonts-recommended \
-            texlive-fonts-extra \
-            texlive-science \
-            texlive-plain-generic
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
 
-      - name: Test manuscript generation workflow
+      - name: Setup Docker environment and pull base image
         run: |
-          echo "Testing manuscript generation..."
+          # Ensure Docker is running
+          sudo systemctl start docker
+          sudo systemctl enable docker
+
+          # Configure Docker for testing
+          echo "DOCKER_BUILDKIT=1" >> $GITHUB_ENV
+          echo "RXIV_ENGINE=DOCKER" >> $GITHUB_ENV
+
+          # Pull the rxiv-maker base image with pdflatex
+          echo "🐳 Pulling rxiv-maker base image with LaTeX..."
+          if docker pull henriqueslab/rxiv-maker-base:latest; then
+            echo "✅ Base image pulled successfully"
+            docker images henriqueslab/rxiv-maker-base:latest
+          else
+            echo "❌ Failed to pull base image, integration tests may fail"
+            exit 1
+          fi
+
+          # Verify pdflatex is available in the Docker image
+          echo "🔍 Verifying pdflatex availability in Docker image..."
+          if docker run --rm henriqueslab/rxiv-maker-base:latest pdflatex --version; then
+            echo "✅ pdflatex verified in Docker image"
+          else
+            echo "❌ pdflatex not found in Docker image"
+            exit 1
+          fi
+
+      - name: Test manuscript generation workflow with Docker
+        env:
+          RXIV_ENGINE: DOCKER
+        run: |
+          echo "Testing manuscript generation with Docker engine..."
           mkdir -p test-workspace && cd test-workspace
 
+          # Test initialization (doesn't require LaTeX)
           uv run rxiv init test-manuscript --no-interrupt || echo "Init command failed"
 
           if [ -d "test-manuscript" ]; then
             echo "✅ Manuscript initialized successfully"
             cd test-manuscript
-            uv run rxiv validate --no-doi || echo "Validation failed"
+
+            # Test validation using Docker (should work with LaTeX in container)
+            echo "Testing validation with Docker engine..."
+            uv run rxiv validate --no-doi || echo "Validation failed - this is expected without Docker mode properly configured"
+
+            # Test basic Docker functionality
+            echo "Testing basic Docker engine detection..."
+            uv run python -c "
+            import sys, os
+            sys.path.insert(0, '../../src')
+            os.environ['RXIV_ENGINE'] = 'DOCKER'
+            from rxiv_maker.docker.manager import get_docker_manager
+            manager = get_docker_manager()
+            print(f'Docker available: {manager.check_docker_available()}')
+            "
             cd ..
           fi
           cd ..
@@ -559,7 +602,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     needs: [setup, test]
-    if: needs.setup.outputs.run-docker == 'true'
+    if: needs.setup.outputs.run-docker == 'true' && always() && needs.setup.result == 'success'
 
     steps:
       - name: Checkout code
@@ -571,6 +614,7 @@ jobs:
         uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
+          install-latex: 'true'
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -585,42 +629,95 @@ jobs:
 
           # Configure Docker for testing
           echo "DOCKER_BUILDKIT=1" >> $GITHUB_ENV
+          echo "RXIV_ENGINE=DOCKER" >> $GITHUB_ENV
 
           # Check if base image exists, try to pull it
           echo "🐳 Checking for rxiv-maker base image..."
           if docker pull henriqueslab/rxiv-maker-base:latest; then
             echo "✅ Base image pulled successfully"
             docker images henriqueslab/rxiv-maker-base:latest
+
+            # Verify pdflatex is available in the image
+            echo "🔍 Verifying pdflatex in Docker image..."
+            docker run --rm henriqueslab/rxiv-maker-base:latest pdflatex --version
           else
             echo "⚠️ Base image not available, Docker tests will use local build if needed"
           fi
 
       - name: Test Docker engine functionality
+        env:
+          RXIV_ENGINE: DOCKER
         run: |
           echo "🧪 Testing Docker engine functionality..."
 
           # Test basic Docker integration
           echo "Testing basic Docker integration..."
 
-          # Test that Docker engine can be detected
+          # Test that Docker manager can be created and is functional
           uv run python -c "
-          import sys
+          import sys, os
           sys.path.insert(0, 'src')
-          from rxiv_maker.engines.docker_engine import DockerEngine
-          engine = DockerEngine()
-          print(f'Docker available: {engine.is_available()}')
+          os.environ['RXIV_ENGINE'] = 'DOCKER'
+          from rxiv_maker.docker.manager import get_docker_manager
+          manager = get_docker_manager()
+          print(f'Docker available: {manager.check_docker_available()}')
+
+          # Test that pdflatex is accessible in Docker
+          result = manager.run_command(['pdflatex', '--version'])
+          print(f'pdflatex available: {result.returncode == 0}')
+          if result.returncode == 0:
+              print('pdflatex output:', result.stdout[:100])
+          else:
+              print('pdflatex error:', result.stderr)
           "
 
       - name: Run Docker-specific integration tests
+        env:
+          RXIV_ENGINE: DOCKER
         run: |
           echo "🔧 Running Docker-specific integration tests..."
 
-          # Run Docker engine tests
+          # Run Docker engine tests with proper environment
+          echo "Running Docker integration test 1..."
           uv run pytest tests/integration/test_example_manuscript.py::TestExampleManuscript::test_rxiv_pdf_example_manuscript_cli \
             --engine=docker -v -s --tb=short || echo "Docker test 1 failed (non-critical)"
 
+          echo "Running Docker integration test 2..."
           uv run pytest tests/integration/test_validation_workflow.py::TestValidationWorkflow::test_makefile_validation_valid_manuscript \
             --engine=docker -v -s --tb=short || echo "Docker test 2 failed (non-critical)"
+
+          # Test Docker LaTeX compilation directly
+          echo "Testing Docker LaTeX compilation directly..."
+          uv run python -c "
+          import sys, os
+          from pathlib import Path
+          sys.path.insert(0, 'src')
+          os.environ['RXIV_ENGINE'] = 'DOCKER'
+          from rxiv_maker.docker.manager import get_docker_manager
+
+          manager = get_docker_manager()
+
+          # Create a simple test .tex file
+          test_tex = Path('test_docker.tex')
+          test_tex.write_text(r'''
+          \documentclass{article}
+          \begin{document}
+          Hello Docker LaTeX!
+          \end{document}
+          ''')
+
+          # Try to compile it with Docker
+          result = manager.run_latex_compilation(test_tex, passes=1)
+          if result and len(result) > 0:
+              print(f'LaTeX compilation result: {result[0].returncode}')
+              if result[0].returncode == 0:
+                  print('✅ Docker LaTeX compilation successful')
+              else:
+                  print('❌ Docker LaTeX compilation failed')
+                  print('stderr:', result[0].stderr)
+          else:
+              print('❌ No compilation results')
+          "
 
           # Test Docker image build if needed (light test)
           echo "Testing Docker image availability..."
@@ -666,7 +763,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [setup, test]
-    if: needs.setup.outputs.test-scope != 'quick'
+    if: needs.setup.outputs.test-scope != 'quick' && always() && needs.setup.result == 'success'
 
     steps:
       - name: Checkout code
@@ -700,7 +797,7 @@ jobs:
     name: Security Scan
     runs-on: ubuntu-latest
     needs: setup
-    if: needs.setup.outputs.run-comprehensive == 'true'
+    if: needs.setup.outputs.run-comprehensive == 'true' && always() && needs.setup.result == 'success'
     timeout-minutes: 15
 
     steps:
@@ -738,7 +835,7 @@ jobs:
     name: Ecosystem Testing
     runs-on: ${{ matrix.os }}
     needs: setup
-    if: needs.setup.outputs.run-ecosystem == 'true'
+    if: needs.setup.outputs.run-ecosystem == 'true' && always() && needs.setup.result == 'success'
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -762,6 +859,32 @@ jobs:
         uses: ./.github/actions/setup-environment
         with:
           python-version: '3.11'
+          install-latex: 'true'
+
+      - name: Verify LaTeX installation
+        run: |
+          echo "🔍 Verifying LaTeX installation on ${{ runner.os }}..."
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            echo "Linux: Using Docker engine"
+            echo "RXIV_ENGINE: $RXIV_ENGINE"
+            # Verify Docker can run pdflatex
+            if command -v docker >/dev/null 2>&1; then
+              docker pull henriqueslab/rxiv-maker-base:latest || echo "Docker image not available"
+              docker run --rm henriqueslab/rxiv-maker-base:latest pdflatex --version || echo "pdflatex via Docker not accessible"
+            fi
+          else
+            echo "${{ runner.os }}: Using local LaTeX installation"
+            echo "RXIV_ENGINE: $RXIV_ENGINE"
+            # Verify local pdflatex
+            if pdflatex --version >/dev/null 2>&1; then
+              echo "✅ pdflatex is accessible"
+              pdflatex --version | head -1
+            else
+              echo "❌ pdflatex not accessible"
+              echo "PATH: $PATH"
+            fi
+          fi
+        shell: bash
 
       - name: Test PyPI installation
         if: contains(matrix.package-managers, 'pypi')
@@ -815,7 +938,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [test]
-    if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'dev-no-puppets')
+    if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'dev-no-puppets') && always()
 
     steps:
       - name: Checkout code

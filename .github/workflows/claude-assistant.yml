@@ -18,11 +18,11 @@ on:
 jobs:
   # Job 1: Automated code review on PR events
   automated-review:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: write  # Changed from read to write for posting comments
       issues: read
       id-token: write
 
@@ -36,7 +36,7 @@ jobs:
         id: claude-review
         uses: anthropics/claude-code-action@beta
         with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}  # Explicitly use GITHUB_TOKEN
 
           # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
           # model: "claude-opus-4-20250514"
@@ -61,15 +61,15 @@ jobs:
   # Job 2: Interactive assistant responding to @claude mentions
   interactive-assistant:
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude') && github.actor != 'dependabot[bot]') ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') && github.actor != 'dependabot[bot]') ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude') && github.actor != 'dependabot[bot]') ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')) && github.actor != 'dependabot[bot]')
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
-      issues: read
+      pull-requests: write  # Changed from read to write for posting comments
+      issues: write         # Changed from read to write for posting comments
       id-token: write
       actions: read # Required for Claude to read CI results on PRs
 
@@ -83,7 +83,7 @@ jobs:
         id: claude
         uses: anthropics/claude-code-action@beta
         with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}  # Explicitly use GITHUB_TOKEN
 
           # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
@@ -110,3 +110,34 @@ jobs:
           # Optional: Custom environment variables for Claude
           # claude_env: |
           #   NODE_ENV: test
+
+  # Job 3: Limited review for Dependabot PRs (no write permissions needed)
+  dependabot-review:
+    if: github.event_name == 'pull_request' && github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Dependabot PR Analysis
+        run: |
+          echo "::notice::Dependabot PR detected - automated security review"
+          echo "PR Title: ${{ github.event.pull_request.title }}"
+          echo "PR Author: ${{ github.actor }}"
+          echo "Changed files:"
+          gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files --jq '.[] | .filename' || echo "Could not fetch file list"
+
+          # Basic validation for Dependabot PRs
+          if [[ "${{ github.event.pull_request.title }}" == *"security"* ]]; then
+            echo "::warning::This appears to be a security update - review recommended"
+          fi
+
+          echo "::notice::Dependabot PRs are automatically reviewed for basic safety"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

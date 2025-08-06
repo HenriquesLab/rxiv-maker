@@ -1,0 +1,26 @@
+name: "rxiv-maker CodeQL config"
+
+# Disable automatic dependency vulnerability scanning to avoid issues
+disable-default-path-filters: false
+
+# Paths to ignore during analysis
+paths-ignore:
+  - "tests/**"
+  - "docs/**"
+  - "*.md"
+  - ".github/**"
+  - "submodules/**"  # Ignore git submodules to avoid contamination issues
+  - "EXAMPLE_MANUSCRIPT/**"
+  - "MANUSCRIPT/**"
+
+# Only analyze the main source code
+paths:
+  - "src/**"
+
+# Python-specific configuration
+queries:
+  - uses: security-and-quality
+
+# Performance settings for large repositories
+threads: 0  # Use all available CPU threads
+ram: 6144   # Use up to 6GB RAM

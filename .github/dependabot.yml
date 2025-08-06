@@ -1,0 +1,27 @@
+version: 2
+updates:
+  # Python dependencies for main repository
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    ignore:
+      # Ignore submodule directories entirely
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    # Explicitly exclude submodule paths
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    # Ignore paths that are submodules
+    ignore-paths:
+      - "submodules/**"
+      - "submodules/homebrew-rxiv-maker/**"
+      - "submodules/scoop-rxiv-maker/**"
+      - "submodules/vscode-rxiv-maker/**"
