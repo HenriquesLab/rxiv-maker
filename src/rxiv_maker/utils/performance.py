@@ -164,7 +164,7 @@ class PerformanceTracker:
         Returns:
             Performance report with comparisons
         """
-        report = {
+        report: dict[str, Any] = {
             "version": self.current_version,
             "operations": {},
             "summary": {

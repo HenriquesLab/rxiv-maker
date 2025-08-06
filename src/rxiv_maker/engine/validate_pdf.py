@@ -25,7 +25,7 @@ from rxiv_maker.validators.pdf_validator import PDFValidator, ValidationLevel
 
 def validate_pdf_output(
     manuscript_path: str,
-    pdf_path: str = None,
+    pdf_path: str | None = None,
     verbose: bool = False,
     detailed: bool = False,
 ) -> int:

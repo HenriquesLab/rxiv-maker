@@ -25,7 +25,7 @@ class DependencyInfo:
     found: bool
     version: str | None = None
     path: str | None = None
-    install_commands: dict[str, str] = None
+    install_commands: dict[str, str] | None = None
     description: str = ""
     alternative: str | None = None
 

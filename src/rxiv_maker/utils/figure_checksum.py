@@ -10,6 +10,7 @@ import hashlib
 import json
 import logging
 from pathlib import Path
+from typing import Any
 
 from .cache_utils import get_cache_dir, get_legacy_cache_dir, migrate_cache_file
 
@@ -113,7 +114,7 @@ class FigureChecksumManager:
         if not self.figures_dir.exists():
             return []
 
-        source_files = []
+        source_files: list[Path] = []
         for pattern in ["*.mmd", "*.py", "*.R"]:
             source_files.extend(self.figures_dir.glob(pattern))
 
@@ -216,7 +217,7 @@ class FigureChecksumManager:
             self._save_checksums()
             logger.info(f"Cleaned up {len(orphaned_files)} orphaned checksums")
 
-    def get_cache_stats(self) -> dict[str, any]:
+    def get_cache_stats(self) -> dict[str, Any]:
         """Get statistics about the checksum cache.
 
         Returns:

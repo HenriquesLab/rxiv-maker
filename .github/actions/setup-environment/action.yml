@@ -100,25 +100,28 @@ runs:
         }
         Write-Host "Windows system dependencies configured"
 
-    - name: Install Python dependencies
+    - name: Install Python dependencies with retry
       if: inputs.install-python-deps == 'true'
-      shell: bash
-      run: |
-        # Install Python dependencies and package in development mode
-        # Try sync first, fallback to manual install on persistent failures
-        if uv sync; then
-          echo "✅ Dependencies synced successfully"
-        else
-          echo "⚠️ Sync failed, attempting manual installation..."
-          # Fallback to manual dependency installation
-          uv pip install -e . || {
-            echo "❌ Manual installation failed, trying with --force-reinstall"
-            uv pip install -e . --force-reinstall
-          }
-        fi
+      uses: ./.github/actions/retry
+      with:
+        command: |
+          # Install Python dependencies and package in development mode
+          # Try sync first, fallback to manual install on persistent failures
+          if uv sync; then
+            echo "✅ Dependencies synced successfully"
+          else
+            echo "⚠️ Sync failed, attempting manual installation..."
+            # Fallback to manual dependency installation
+            uv pip install -e . || {
+              echo "❌ Manual installation failed, trying with --force-reinstall"
+              uv pip install -e . --force-reinstall
+            }
+          fi
 
-        # Also install in system Python for subprocess calls in integration tests
-        python -m pip install -e . || echo "⚠️ System Python installation failed (might be expected)"
+          # Also install in system Python for subprocess calls in integration tests
+          python -m pip install -e . || echo "⚠️ System Python installation failed (might be expected)"
+        max-attempts: 3
+        retry-delay: 10
 
     - name: Verify CLI installation
       if: inputs.install-python-deps == 'true'

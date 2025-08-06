@@ -107,7 +107,7 @@ class OperationHistory:
 
     def generate_debug_report(self) -> dict[str, Any]:
         """Generate debug report with operation history."""
-        report = {
+        report: dict[str, Any] = {
             "total_operations": len(self.operations),
             "failed_operations": len(self.get_failed_operations()),
             "operation_types": {},

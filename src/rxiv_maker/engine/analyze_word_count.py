@@ -91,7 +91,7 @@ def analyze_section_word_counts(content_sections):
     print("=" * 50)
 
 
-def analyze_manuscript_word_count(manuscript_path: str = None) -> int:
+def analyze_manuscript_word_count(manuscript_path: str | None = None) -> int:
     """Analyze word counts from manuscript markdown.
 
     Args:

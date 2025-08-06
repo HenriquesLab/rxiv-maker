@@ -139,6 +139,8 @@ class RxivLogger:
     @property
     def console(self) -> Console:
         """Get the Rich console instance."""
+        if self._console is None:
+            self._console = Console()
         return self._console
 
     def cleanup(self) -> None:

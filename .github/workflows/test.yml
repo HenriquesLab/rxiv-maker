@@ -55,6 +55,11 @@ on:
         default: false
         type: boolean
 
+permissions:
+  contents: read
+  actions: write  # needed for workflow dispatch
+  checks: write   # needed for test reporting
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -567,7 +572,7 @@ jobs:
           python-version: '3.11'
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
         with:
           platforms: linux/amd64,linux/arm64
 
@@ -710,7 +715,7 @@ jobs:
 
       - name: Build package
         run: |
-          python -m build --wheel --outdir dist/
+          uv build --wheel --out-dir dist/
           python -m pip install dist/*.whl
 
       - name: Run security scans
@@ -863,20 +868,34 @@ jobs:
             console.log(`Triggering local Docker image build for version ${{ steps.check-version.outputs.version }}`);
 
             try {
-              const result = await github.rest.actions.createWorkflowDispatch({
+              // Check if Docker build workflow exists before triggering
+              const workflows = await github.rest.actions.listRepoWorkflows({
                 owner: context.repo.owner,
-                repo: context.repo.repo,
-                workflow_id: 'build-docker-base.yml',
-                ref: 'main',
-                inputs: {
-                  rxiv_version: '${{ steps.check-version.outputs.version }}',
-                  tag: 'v${{ steps.check-version.outputs.version }}',
-                  platforms: 'linux/amd64,linux/arm64'
-                }
+                repo: context.repo.repo
               });
-
-              console.log('✅ Successfully triggered local Docker image build');
-              console.log(`Workflow dispatch ID: ${result.data.id || 'N/A'}`);
+              
+              const dockerWorkflow = workflows.data.workflows.find(w => 
+                w.name.includes('Docker') || w.path.includes('docker')
+              );
+              
+              if (dockerWorkflow) {
+                console.log(`Found Docker workflow: ${dockerWorkflow.name}`);
+                const result = await github.rest.actions.createWorkflowDispatch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: dockerWorkflow.id,
+                  ref: 'main',
+                  inputs: {
+                    rxiv_version: '${{ steps.check-version.outputs.version }}',
+                    tag: 'v${{ steps.check-version.outputs.version }}',
+                    platforms: 'linux/amd64,linux/arm64'
+                  }
+                });
+                console.log('✅ Successfully triggered Docker image build');
+                console.log(`Workflow dispatch ID: ${result.data.id || 'N/A'}`);
+              } else {
+                console.log('ℹ️ No Docker build workflow found, skipping Docker image build trigger');
+              }
             } catch (error) {
               console.log('⚠️ Docker sync error:', error.message);
               console.log('Continuing with CI pipeline...');

@@ -10,6 +10,7 @@ import json
 import logging
 import time
 from pathlib import Path
+from typing import Any
 
 from .cache_utils import get_cache_dir, get_legacy_cache_dir, migrate_cache_file
 
@@ -45,7 +46,7 @@ class BibliographyChecksumManager:
         self._migrate_legacy_cache()
 
         # Load existing checksum
-        self._checksum_data: dict[str, any] = self._load_checksum()
+        self._checksum_data: dict[str, Any] = self._load_checksum()
 
     def _migrate_legacy_cache(self) -> None:
         """Migrate cache file from legacy location if it exists."""
@@ -61,7 +62,7 @@ class BibliographyChecksumManager:
                 except Exception as e:
                     logger.warning(f"Failed to migrate bibliography checksum: {e}")
 
-    def _load_checksum(self) -> dict[str, any]:
+    def _load_checksum(self) -> dict[str, Any]:
         """Load existing checksum from cache file."""
         if not self.checksum_file.exists():
             logger.debug(f"No existing bibliography checksum file found at {self.checksum_file}")
@@ -250,7 +251,7 @@ class BibliographyChecksumManager:
         self._checksum_data.clear()
         self._save_checksum()
 
-    def get_cache_stats(self) -> dict[str, any]:
+    def get_cache_stats(self) -> dict[str, Any]:
         """Get statistics about the bibliography checksum cache.
 
         Returns:
