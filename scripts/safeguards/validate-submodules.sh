@@ -26,6 +26,9 @@ log_warning() {
 
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1" >&2
+    if [[ -n "$2" ]]; then
+        echo -e "${YELLOW}[FIX]${NC} $2" >&2
+    fi
     ((ERRORS++))
 }
 
@@ -51,12 +54,14 @@ validate_submodule_urls() {
             local actual_url=$(git config -f "${REPO_ROOT}/.gitmodules" --get "submodule.${path}.url" 2>/dev/null || echo "")
 
             if [[ "$actual_url" != "$expected_url" ]]; then
-                log_error "Submodule ${path} has incorrect URL: '${actual_url}' (expected: '${expected_url}')"
+                log_error "Submodule ${path} has incorrect URL: '${actual_url}' (expected: '${expected_url}')" \
+                         "Run 'git submodule sync -- ${path}' to fix the URL, then 'git submodule update --init --recursive'"
             else
                 log_success "Submodule ${path} URL is correct"
             fi
         else
-            log_error ".gitmodules file not found"
+            log_error ".gitmodules file not found" \
+                     "Initialize submodules with 'git submodule init' or restore .gitmodules from git history"
         fi
     done
 }
@@ -71,12 +76,14 @@ validate_content_signatures() {
            [[ -f "${REPO_ROOT}/submodules/homebrew-rxiv-maker/Formula/rxiv-maker.rb" ]]; then
             log_success "Homebrew submodule has correct structure"
         else
-            log_error "Homebrew submodule missing expected Formula directory or .rb file"
+            log_error "Homebrew submodule missing expected Formula directory or .rb file" \
+                     "Run 'git submodule update --init --recursive' to restore proper content, or check if submodule URL is correct"
         fi
 
         # Check for contamination - shouldn't have Python files
         if find "${REPO_ROOT}/submodules/homebrew-rxiv-maker" -name "*.py" -type f | grep -q .; then
-            log_error "Homebrew submodule contaminated with Python files"
+            log_error "Homebrew submodule contaminated with Python files" \
+                     "Remove Python files from homebrew submodule: cd submodules/homebrew-rxiv-maker && git rm *.py && git commit -m 'Remove contamination'"
         fi
     fi
 
@@ -86,12 +93,14 @@ validate_content_signatures() {
            [[ -f "${REPO_ROOT}/submodules/scoop-rxiv-maker/bucket/rxiv-maker.json" ]]; then
             log_success "Scoop submodule has correct structure"
         else
-            log_error "Scoop submodule missing expected bucket directory or .json file"
+            log_error "Scoop submodule missing expected bucket directory or .json file" \
+                     "Run 'git submodule update --init --recursive' to restore proper content, or check if submodule URL is correct"
         fi
 
         # Check for contamination - shouldn't have Python files
         if find "${REPO_ROOT}/submodules/scoop-rxiv-maker" -name "*.py" -type f | grep -q .; then
-            log_error "Scoop submodule contaminated with Python files"
+            log_error "Scoop submodule contaminated with Python files" \
+                     "Remove Python files from scoop submodule: cd submodules/scoop-rxiv-maker && git rm *.py && git commit -m 'Remove contamination'"
         fi
     fi
 
@@ -106,17 +115,20 @@ validate_content_signatures() {
                grep -q '"engines"' "${REPO_ROOT}/submodules/vscode-rxiv-maker/package.json"; then
                 log_success "VSCode submodule package.json is valid extension manifest"
             else
-                log_error "VSCode submodule package.json doesn't look like a VSCode extension"
+                log_error "VSCode submodule package.json doesn't look like a VSCode extension" \
+                         "Ensure package.json has 'engines.vscode' field and VSCode-specific configuration"
             fi
         else
-            log_error "VSCode submodule missing expected package.json or extension.ts"
+            log_error "VSCode submodule missing expected package.json or extension.ts" \
+                     "Run 'git submodule update --init --recursive' to restore proper content, or check if submodule URL is correct"
         fi
 
         # Check for contamination - shouldn't have main rxiv-maker files
         if [[ -f "${REPO_ROOT}/submodules/vscode-rxiv-maker/pyproject.toml" ]] || \
            [[ -f "${REPO_ROOT}/submodules/vscode-rxiv-maker/Makefile" ]] || \
            [[ -d "${REPO_ROOT}/submodules/vscode-rxiv-maker/src/rxiv_maker" ]]; then
-            log_error "VSCode submodule contaminated with main rxiv-maker project files"
+            log_error "VSCode submodule contaminated with main rxiv-maker project files" \
+                     "Remove contaminating files: cd submodules/vscode-rxiv-maker && git rm -r pyproject.toml Makefile src/rxiv_maker && git commit -m 'Remove contamination'"
         fi
     fi
 }
@@ -127,20 +139,23 @@ validate_no_reverse_contamination() {
 
     # Main repo shouldn't have Homebrew Formula files outside submodules
     if find "${REPO_ROOT}" -path "*/submodules" -prune -o -name "Formula" -type d -print | grep -q .; then
-        log_error "Found Formula directory outside of submodules (reverse contamination)"
+        log_error "Found Formula directory outside of submodules (reverse contamination)" \
+                 "Remove Formula directory from main repo: git rm -r Formula && git commit -m 'Remove reverse contamination'"
     fi
 
     # Main repo shouldn't have Scoop bucket files outside submodules
     if find "${REPO_ROOT}" -path "*/submodules" -prune -o -name "bucket" -type d -print | grep -q . && \
        find "${REPO_ROOT}" -path "*/submodules" -prune -o -name "rxiv-maker.json" -type f -print | grep -q .; then
-        log_error "Found Scoop bucket files outside of submodules (reverse contamination)"
+        log_error "Found Scoop bucket files outside of submodules (reverse contamination)" \
+                 "Remove bucket directory from main repo: git rm -r bucket && git commit -m 'Remove reverse contamination'"
     fi
 
     # Check for VSCode extension files in wrong places
     local vscode_files=("language-configuration.json" ".vscodeignore" "*.tmLanguage.json")
     for pattern in "${vscode_files[@]}"; do
         if find "${REPO_ROOT}" -path "*/submodules" -prune -o -name "$pattern" -type f -print | grep -q .; then
-            log_error "Found VSCode extension file '$pattern' outside of submodules (reverse contamination)"
+            log_error "Found VSCode extension file '$pattern' outside of submodules (reverse contamination)" \
+                     "Remove VSCode files from main repo: find . -path './submodules' -prune -o -name '$pattern' -type f -delete && git add -A && git commit -m 'Remove VSCode reverse contamination'"
         fi
     done
 }
@@ -161,10 +176,12 @@ validate_submodule_git_config() {
                 if [[ -d "$full_gitdir" ]]; then
                     log_success "Submodule ${submodule_name} has correct git configuration"
                 else
-                    log_error "Submodule ${submodule_name} gitdir points to non-existent directory: ${full_gitdir}"
+                    log_error "Submodule ${submodule_name} gitdir points to non-existent directory: ${full_gitdir}" \
+                             "Run 'git submodule deinit ${submodule_name} && git submodule update --init --recursive' to rebuild git configuration"
                 fi
             else
-                log_error "Submodule ${submodule_name} missing .git file"
+                log_error "Submodule ${submodule_name} missing .git file" \
+                         "Run 'git submodule update --init --recursive' to restore submodule git configuration"
             fi
         fi
     done

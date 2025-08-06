@@ -8,9 +8,9 @@ from pathlib import Path
 from ..core.logging_config import get_logger, set_log_directory
 from ..docker.manager import get_docker_manager
 from ..utils.figure_checksum import get_figure_checksum_manager
-from ..utils.platform import platform_detector
 from ..utils.operation_ids import create_operation
-from ..utils.performance import get_performance_tracker, track_operation
+from ..utils.performance import get_performance_tracker
+from ..utils.platform import platform_detector
 
 logger = get_logger()
 
@@ -928,16 +928,19 @@ class BuildManager:
     def run_full_build(self) -> bool:
         """Run the complete build process."""
         # Create operation context for the entire build
-        with create_operation("pdf_build", manuscript=self.manuscript_path, 
-                            engine=self.engine) as op:
+        with create_operation(
+            "pdf_build", manuscript=self.manuscript_path, engine=self.engine
+        ) as op:
             op.log(f"Starting build process for manuscript: {self.manuscript_path}")
             self.log(
-                f"Starting build process for manuscript: {self.manuscript_path} (Operation ID: {op.operation_id})", "STEP"
+                f"Starting build process for manuscript: {self.manuscript_path} "
+                f"(Operation ID: {op.operation_id})",
+                "STEP",
             )
 
             # Track performance
             perf_tracker = get_performance_tracker()
-            
+
             # Step 1: Check manuscript structure
             perf_tracker.start_operation("check_structure")
             if not self.check_manuscript_structure():
@@ -1010,19 +1013,26 @@ class BuildManager:
 
             # Success!
             op.log(f"Build completed successfully: {self.output_pdf}")
-            self.log(f"Build completed successfully: {self.output_pdf} (Operation ID: {op.operation_id})")
+            self.log(
+                f"Build completed successfully: {self.output_pdf} "
+                f"(Operation ID: {op.operation_id})"
+            )
 
             # Generate performance report
             perf_report = perf_tracker.get_performance_report()
             if perf_report["summary"]["regressions"] > 0:
-                self.log(f"Performance regressions detected: {perf_report['summary']['regressions']} operations", "WARNING")
+                self.log(
+                    f"Performance regressions detected: "
+                    f"{perf_report['summary']['regressions']} operations",
+                    "WARNING",
+                )
 
             # Inform user about warning logs if they exist
             if self.warnings_log.exists():
                 self.log(f"Build warnings logged to {self.warnings_log.name}", "INFO")
 
             return True
-    
+
     def run(self) -> bool:
         """Run the build process (alias for run_full_build)."""
         return self.run_full_build()

@@ -63,19 +63,23 @@ class RepositoryBoundaryValidator:
             },
         }
 
-    def add_error(self, message: str, details: str | None = None):
+    def add_error(self, message: str, details: str | None = None, fix_suggestion: str | None = None):
         """Add a validation error"""
         self.errors.append(ValidationResult(False, message, details))
         logger.error(message)
         if details:
             logger.error(f"  Details: {details}")
+        if fix_suggestion:
+            logger.error(f"  Fix: {fix_suggestion}")
 
-    def add_warning(self, message: str, details: str | None = None):
+    def add_warning(self, message: str, details: str | None = None, fix_suggestion: str | None = None):
         """Add a validation warning"""
         self.warnings.append(ValidationResult(False, message, details))
         logger.warning(message)
         if details:
             logger.warning(f"  Details: {details}")
+        if fix_suggestion:
+            logger.warning(f"  Suggestion: {fix_suggestion}")
 
     def validate_vscode_package_json(self, package_json_path: Path) -> bool:
         """Validate that package.json is actually a VSCode extension"""
@@ -91,6 +95,7 @@ class RepositoryBoundaryValidator:
                 self.add_error(
                     f"VSCode package.json missing required fields: {missing_fields}",
                     f"File: {package_json_path}",
+                    f"Add missing fields to package.json: {', '.join(missing_fields)}"
                 )
                 return False
 
@@ -100,6 +105,7 @@ class RepositoryBoundaryValidator:
                 self.add_error(
                     "VSCode package.json missing 'vscode' engine requirement",
                     f"File: {package_json_path}",
+                    'Add "engines": {"vscode": "^1.x.x"} to package.json'
                 )
                 return False
 
@@ -109,23 +115,35 @@ class RepositoryBoundaryValidator:
                 self.add_error(
                     "VSCode package.json missing VSCode-specific configuration",
                     f"File: {package_json_path}, Expected one of: {vscode_fields}",
+                    f"Add at least one of these fields: {', '.join(vscode_fields)}"
                 )
                 return False
 
             return True
 
         except json.JSONDecodeError as e:
-            self.add_error(f"Invalid JSON in package.json: {e}", str(package_json_path))
+            self.add_error(
+                f"Invalid JSON in package.json: {e}", 
+                str(package_json_path),
+                "Fix JSON syntax errors using a JSON validator or linter"
+            )
             return False
         except Exception as e:
-            self.add_error(f"Error reading package.json: {e}", str(package_json_path))
+            self.add_error(
+                f"Error reading package.json: {e}", 
+                str(package_json_path),
+                "Ensure package.json file exists and is readable"
+            )
             return False
 
     def validate_submodule_content(self, submodule_path: Path, repo_type: str) -> bool:
         """Validate content of a specific submodule"""
         signature = self.repository_signatures.get(repo_type)
         if not signature:
-            self.add_error(f"Unknown repository type: {repo_type}")
+            self.add_error(
+                f"Unknown repository type: {repo_type}",
+                fix_suggestion="Check repository type configuration in validation script"
+            )
             return False
 
         logger.info(f"Validating {repo_type} submodule: {submodule_path.name}")
@@ -137,6 +155,7 @@ class RepositoryBoundaryValidator:
                 self.add_error(
                     f"{repo_type.title()} submodule missing required file/directory: {required}",
                     f"Path: {required_path}",
+                    f"Run 'git submodule update --init --recursive' to restore proper content for {submodule_path.name}"
                 )
                 return False
 
@@ -147,6 +166,7 @@ class RepositoryBoundaryValidator:
                 self.add_error(
                     f"{repo_type.title()} submodule contains forbidden file/directory: {forbidden}",
                     f"Path: {forbidden_path} (indicates content contamination)",
+                    f"Remove contamination: cd {submodule_path.name} && git rm -r {forbidden} && git commit -m 'Remove contamination'"
                 )
                 return False
 
@@ -199,6 +219,7 @@ class RepositoryBoundaryValidator:
                 self.add_error(
                     f"Main repository missing required file/directory: {required}",
                     f"Path: {required_path}",
+                    f"Restore missing file/directory: {required}. Check if you're in the correct repository root."
                 )
                 return False
 
@@ -219,9 +240,11 @@ class RepositoryBoundaryValidator:
             ]
 
             if matches:
+                files_list = [str(m.relative_to(self.repo_root)) for m in matches[:3]]
                 self.add_error(
                     f"Main repository contaminated with {source} files: {pattern}",
-                    f"Files: {[str(m.relative_to(self.repo_root)) for m in matches[:3]]}",
+                    f"Files: {files_list}",
+                    f"Remove {source} files: git rm {' '.join(files_list)} && git commit -m 'Remove {source} contamination'"
                 )
 
         return len(self.errors) == 0
@@ -229,7 +252,10 @@ class RepositoryBoundaryValidator:
     def validate_submodules(self) -> bool:
         """Validate all submodules"""
         if not self.submodules_dir.exists():
-            self.add_error("Submodules directory doesn't exist")
+            self.add_error(
+                "Submodules directory doesn't exist",
+                fix_suggestion="Initialize submodules with 'git submodule init && git submodule update'"
+            )
             return False
 
         # Define expected submodules and their types
@@ -243,7 +269,10 @@ class RepositoryBoundaryValidator:
             submodule_path = self.submodules_dir / submodule_name
 
             if not submodule_path.exists():
-                self.add_warning(f"Expected submodule not found: {submodule_name}")
+                self.add_warning(
+                    f"Expected submodule not found: {submodule_name}",
+                    fix_suggestion=f"Initialize submodule: git submodule update --init {submodule_path}"
+                )
                 continue
 
             if not self.validate_submodule_content(submodule_path, repo_type):
@@ -256,7 +285,10 @@ class RepositoryBoundaryValidator:
         unexpected = actual_submodules - set(expected_submodules.keys())
 
         if unexpected:
-            self.add_warning(f"Unexpected submodules found: {list(unexpected)}")
+            self.add_warning(
+                f"Unexpected submodules found: {list(unexpected)}",
+                fix_suggestion="Review if these submodules are needed or should be removed"
+            )
 
         return True
 
@@ -265,7 +297,10 @@ class RepositoryBoundaryValidator:
         gitmodules_path = self.repo_root / ".gitmodules"
 
         if not gitmodules_path.exists():
-            self.add_error(".gitmodules file not found")
+            self.add_error(
+                ".gitmodules file not found",
+                fix_suggestion="Restore .gitmodules from git history or initialize submodules properly"
+            )
             return False
 
         # Expected URLs - note the case differences
@@ -281,17 +316,24 @@ class RepositoryBoundaryValidator:
 
             for path, expected_url in expected_urls.items():
                 if f"path = {path}" not in content:
-                    self.add_error(f"Missing submodule path in .gitmodules: {path}")
+                    self.add_error(
+                        f"Missing submodule path in .gitmodules: {path}",
+                        fix_suggestion=f"Add submodule: git submodule add {expected_url} {path}"
+                    )
                     continue
 
                 if f"url = {expected_url}" not in content:
                     self.add_error(
                         f"Incorrect URL in .gitmodules for {path}",
                         f"Expected: {expected_url}",
+                        f"Fix URL: git config -f .gitmodules submodule.{path}.url {expected_url} && git submodule sync -- {path}"
                     )
 
         except Exception as e:
-            self.add_error(f"Error reading .gitmodules: {e}")
+            self.add_error(
+                f"Error reading .gitmodules: {e}",
+                fix_suggestion="Ensure .gitmodules file exists and is readable"
+            )
             return False
 
         return len(self.errors) == 0

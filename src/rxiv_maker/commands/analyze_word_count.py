@@ -102,7 +102,8 @@ def analyze_manuscript_word_count(manuscript_path: str = None) -> int:
     """Analyze word counts from manuscript markdown.
 
     Args:
-        manuscript_path: Path to manuscript markdown file (auto-detected if not provided)
+        manuscript_path: Path to manuscript markdown file (auto-detected if
+            not provided)
 
     Returns:
         0 if successful, 1 if error
