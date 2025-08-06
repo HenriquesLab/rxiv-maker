@@ -137,7 +137,12 @@ class WindowsInstaller:
                 timeout=10,
             )
             return result.returncode == 0
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return False
 
     def _is_nodejs_installed(self) -> bool:
@@ -158,7 +163,12 @@ class WindowsInstaller:
                 timeout=10,
             )
             return node_result.returncode == 0 and npm_result.returncode == 0
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return False
 
     def _is_r_installed(self) -> bool:
@@ -172,7 +182,12 @@ class WindowsInstaller:
                 timeout=10,
             )
             return result.returncode == 0
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return False
 
     def _install_latex_winget(self) -> bool:

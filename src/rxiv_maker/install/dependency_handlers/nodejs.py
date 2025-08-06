@@ -38,7 +38,12 @@ class NodeJSHandler:
             )
 
             return node_result.returncode == 0 and npm_result.returncode == 0
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return False
 
     def get_version(self) -> str | None:
@@ -51,7 +56,12 @@ class NodeJSHandler:
             if result.returncode == 0:
                 return result.stdout.strip()
             return None
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return None
 
     def get_npm_version(self) -> str | None:
@@ -64,7 +74,12 @@ class NodeJSHandler:
             if result.returncode == 0:
                 return result.stdout.strip()
             return None
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return None
 
     def install_packages(
@@ -106,7 +121,7 @@ class NodeJSHandler:
     def verify_mermaid(self) -> bool:
         """Verify Mermaid CLI installation.
 
-        Note: Mermaid CLI dependency has been removed in favor of Python-based solutions.
+        Note: Mermaid CLI dependency removed in favor of Python-based solutions.
         This always returns False to indicate mermaid CLI is not required.
         """
         return False  # No longer using mermaid CLI (puppeteer dependency removed)

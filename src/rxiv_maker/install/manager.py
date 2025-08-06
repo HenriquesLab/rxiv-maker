@@ -145,7 +145,7 @@ class InstallManager:
             import ctypes
 
             return ctypes.windll.shell32.IsUserAnAdmin()
-        except:
+        except (ImportError, OSError, Exception):
             return False
 
     def _check_disk_space(self, required_gb: float = 2.0) -> bool:
@@ -156,7 +156,7 @@ class InstallManager:
             free_bytes = shutil.disk_usage(".").free
             free_gb = free_bytes / (1024**3)
             return free_gb >= required_gb
-        except:
+        except (ImportError, OSError, Exception):
             return True  # Assume sufficient space if check fails
 
     def _check_internet(self) -> bool:
@@ -166,7 +166,7 @@ class InstallManager:
 
             urllib.request.urlopen("https://www.google.com", timeout=5)
             return True
-        except:
+        except (ImportError, OSError, Exception):
             return False
 
     def _run_platform_installation(self) -> bool:

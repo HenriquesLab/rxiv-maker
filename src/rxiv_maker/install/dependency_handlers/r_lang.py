@@ -27,7 +27,12 @@ class RLanguageHandler:
                 timeout=10,
             )
             return result.returncode == 0
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return False
 
     def get_version(self) -> str | None:
@@ -43,7 +48,12 @@ class RLanguageHandler:
                     if "R version" in line:
                         return line.strip()
             return None
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return None
 
     def install_packages(self, packages: list[str]) -> bool:
@@ -106,5 +116,10 @@ class RLanguageHandler:
             )
 
             return result.returncode == 0 and "TRUE" in result.stdout
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return False

@@ -1,4 +1,4 @@
-name: Automated Release Pipeline
+name: Release and Binary Distribution
 
 on:
   push:

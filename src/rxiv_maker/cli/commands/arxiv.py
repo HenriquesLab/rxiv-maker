@@ -77,7 +77,7 @@ def arxiv(
 
             if not pdf_path.exists():
                 progress.update(task, description="Building PDF first...")
-                from ...commands.build_manager import BuildManager
+                from rxiv_maker.commands.build_manager import BuildManager
 
                 build_manager = BuildManager(
                     manuscript_path=manuscript_path,
@@ -96,7 +96,7 @@ def arxiv(
             progress.update(task, description="Preparing arXiv package...")
 
             # Import arXiv preparation command
-            from ...commands.prepare_arxiv import main as prepare_arxiv_main
+            from rxiv_maker.commands.prepare_arxiv import main as prepare_arxiv_main
 
             # Prepare arguments
             args = [

@@ -41,9 +41,8 @@ class LinuxInstaller:
             elif self._command_exists("yum"):
                 return "rhel", "yum"
 
-        if Path("/etc/arch-release").exists():
-            if self._command_exists("pacman"):
-                return "arch", "pacman"
+        if Path("/etc/arch-release").exists() and self._command_exists("pacman"):
+            return "arch", "pacman"
 
         if Path("/etc/alpine-release").exists() and self._command_exists("apk"):
             return "alpine", "apk"
@@ -255,7 +254,12 @@ class LinuxInstaller:
                 timeout=10,
             )
             return result.returncode == 0
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return False
 
     def _is_nodejs_installed(self) -> bool:
@@ -276,7 +280,12 @@ class LinuxInstaller:
                 timeout=10,
             )
             return node_result.returncode == 0 and npm_result.returncode == 0
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return False
 
     def _is_r_installed(self) -> bool:
@@ -290,7 +299,12 @@ class LinuxInstaller:
                 timeout=10,
             )
             return result.returncode == 0
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return False
 
     def _install_packages(self, packages: list[str]) -> bool:
