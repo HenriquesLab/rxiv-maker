@@ -41,14 +41,14 @@ validate_submodule_urls() {
     log_info "Validating submodule URLs..."
 
     local expected_urls=(
-        "submodules/homebrew-rxiv-maker:https://github.com/henriqueslab/homebrew-rxiv-maker.git"
-        "submodules/scoop-rxiv-maker:https://github.com/henriqueslab/scoop-rxiv-maker.git"
-        "submodules/vscode-rxiv-maker:https://github.com/HenriquesLab/vscode-rxiv-maker.git"
+        "submodules/homebrew-rxiv-maker|https://github.com/henriqueslab/homebrew-rxiv-maker.git"
+        "submodules/scoop-rxiv-maker|https://github.com/henriqueslab/scoop-rxiv-maker.git"
+        "submodules/vscode-rxiv-maker|https://github.com/HenriquesLab/vscode-rxiv-maker.git"
     )
 
     for entry in "${expected_urls[@]}"; do
-        local path="${entry%%:*}"
-        local expected_url="${entry#*:}"
+        local path="${entry%%|*}"
+        local expected_url="${entry##*|}"
 
         if [[ -f "${REPO_ROOT}/.gitmodules" ]]; then
             local actual_url=$(git config -f "${REPO_ROOT}/.gitmodules" --get "submodule.${path}.url" 2>/dev/null || echo "")

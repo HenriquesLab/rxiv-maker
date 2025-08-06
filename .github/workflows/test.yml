@@ -266,14 +266,14 @@ jobs:
 
           # Validate expected submodule URLs
           expected_repos=(
-            "submodules/homebrew-rxiv-maker:https://github.com/henriqueslab/homebrew-rxiv-maker.git"
-            "submodules/scoop-rxiv-maker:https://github.com/henriqueslab/scoop-rxiv-maker.git"
-            "submodules/vscode-rxiv-maker:https://github.com/HenriquesLab/vscode-rxiv-maker.git"
+            "submodules/homebrew-rxiv-maker|https://github.com/henriqueslab/homebrew-rxiv-maker.git"
+            "submodules/scoop-rxiv-maker|https://github.com/henriqueslab/scoop-rxiv-maker.git"
+            "submodules/vscode-rxiv-maker|https://github.com/HenriquesLab/vscode-rxiv-maker.git"
           )
 
           for repo_info in "${expected_repos[@]}"; do
-            path="${repo_info%%:*}"
-            expected_url="${repo_info##*:}"
+            path="${repo_info%%|*}"
+            expected_url="${repo_info##*|}"
 
             actual_url=$(git config -f .gitmodules --get "submodule.${path}.url" || echo "")
 
