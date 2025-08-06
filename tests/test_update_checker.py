@@ -172,7 +172,7 @@ class TestUpdateChecker:
         """Test version comparison fallback."""
         checker = UpdateChecker(self.package_name, self.current_version)
 
-        with patch("src.rxiv_maker.utils.update_checker.version", None):
+        with patch("src.rxiv_maker.utils.update_checker.pkg_version", None):
             # Should fall back to string comparison
             assert checker._compare_versions("1.0.0", "1.1.0")  # Different = newer
             assert not checker._compare_versions("1.0.0", "1.0.0")  # Same = not newer
