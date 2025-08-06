@@ -103,14 +103,15 @@ def add(
     dois: tuple[str, ...],
     overwrite: bool,
 ) -> None:
-    """Add bibliography entries from DOIs.
+    """Add bibliography entries from DOIs or URLs.
 
     MANUSCRIPT_PATH: Path to manuscript directory (default: MANUSCRIPT)
-    DOIS: One or more DOIs to add
+    DOIS: One or more DOIs or URLs containing DOIs to add
 
     Examples:
     rxiv bibliography add 10.1000/example.doi
-    rxiv bibliography add 10.1000/ex1 10.1000/ex2
+    rxiv bibliography add https://www.nature.com/articles/d41586-022-00563-z
+    rxiv bibliography add 10.1000/ex1 https://doi.org/10.1000/ex2
     """
     verbose = ctx.obj.get("verbose", False)
 
@@ -126,15 +127,6 @@ def add(
         )
         sys.exit(1)
 
-    # Validate DOIs
-    for doi in dois:
-        if not doi.startswith("10."):
-            console.print(
-                f"❌ Error: Invalid DOI format '{doi}'. DOIs should start with '10.'",
-                style="red",
-            )
-            sys.exit(1)
-
     try:
         with Progress(
             SpinnerColumn(),
@@ -147,7 +139,7 @@ def add(
             # Import bibliography adding command
             from ...engine.add_bibliography import main as add_bibliography_main
 
-            # Prepare arguments
+            # Prepare arguments with original inputs (URLs or DOIs)
             args = [manuscript_path] + list(dois)
             if overwrite:
                 args.append("--overwrite")
@@ -165,7 +157,7 @@ def add(
                     f"✅ Added {len(dois)} bibliography entries successfully!",
                     style="green",
                 )
-                console.print(f"📚 DOIs added: {', '.join(dois)}", style="blue")
+                console.print(f"📚 Inputs processed: {', '.join(dois)}", style="blue")
 
             except SystemExit as e:
                 progress.update(task, description="❌ Bibliography adding failed")

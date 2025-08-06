@@ -66,22 +66,15 @@ class TemplateUpdater:
         """Update Homebrew formula from template."""
         print(f"🍺 Updating Homebrew formula for version {version}")
 
-        template_path = (
-            self.repo_root
-            / "submodules/homebrew-rxiv-maker/Formula/rxiv-maker.rb.template"
-        )
-        output_path = (
-            self.repo_root / "submodules/homebrew-rxiv-maker/Formula/rxiv-maker.rb"
-        )
+        template_path = self.repo_root / "submodules/homebrew-rxiv-maker/Formula/rxiv-maker.rb.template"
+        output_path = self.repo_root / "submodules/homebrew-rxiv-maker/Formula/rxiv-maker.rb"
 
         if not template_path.exists():
             print(f"❌ Template not found: {template_path}")
             return False
 
         # Download and hash binaries
-        base_url = (
-            f"https://github.com/henriqueslab/rxiv-maker/releases/download/{version}"
-        )
+        base_url = f"https://github.com/henriqueslab/rxiv-maker/releases/download/{version}"
         binaries = {
             "MACOS_ARM64_SHA256": f"{base_url}/rxiv-maker-macos-arm64.tar.gz",
             "MACOS_X64_SHA256": f"{base_url}/rxiv-maker-macos-x64-intel.tar.gz",
@@ -100,9 +93,7 @@ class TemplateUpdater:
         except Exception as e:
             print(f"❌ Failed to download binaries: {e}")
             if self.dry_run:
-                print(
-                    "🔍 DRY RUN: Would have downloaded binaries and calculated checksums"
-                )
+                print("🔍 DRY RUN: Would have downloaded binaries and calculated checksums")
                 # For dry run with test versions, use dummy hashes
                 for placeholder in binaries:
                     hashes[placeholder] = "a" * 64
@@ -168,13 +159,8 @@ class TemplateUpdater:
         """Update Scoop manifest from template."""
         print(f"🪣 Updating Scoop manifest for version {version}")
 
-        template_path = (
-            self.repo_root
-            / "submodules/scoop-rxiv-maker/bucket/rxiv-maker.json.template"
-        )
-        output_path = (
-            self.repo_root / "submodules/scoop-rxiv-maker/bucket/rxiv-maker.json"
-        )
+        template_path = self.repo_root / "submodules/scoop-rxiv-maker/bucket/rxiv-maker.json.template"
+        output_path = self.repo_root / "submodules/scoop-rxiv-maker/bucket/rxiv-maker.json"
 
         if not template_path.exists():
             print(f"❌ Template not found: {template_path}")
@@ -188,9 +174,7 @@ class TemplateUpdater:
         except Exception as e:
             print(f"❌ Failed to download Windows binary: {e}")
             if self.dry_run:
-                print(
-                    "🔍 DRY RUN: Would have downloaded binary and calculated checksum"
-                )
+                print("🔍 DRY RUN: Would have downloaded binary and calculated checksum")
                 # For dry run with test versions, use dummy hash
                 hash_value = "a" * 64
             else:
@@ -258,9 +242,7 @@ class TemplateUpdater:
 def main():
     """Main function."""
     if len(sys.argv) < 3:
-        print(
-            "Usage: python update-package-templates.py <command> <version> [--dry-run]"
-        )
+        print("Usage: python update-package-templates.py <command> <version> [--dry-run]")
         print("Commands:")
         print("  homebrew <version> - Update Homebrew formula")
         print("  scoop <version> - Update Scoop manifest")

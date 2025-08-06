@@ -3,6 +3,7 @@
 import shutil
 import subprocess
 import sys
+from typing import Any
 
 from rxiv_maker.utils.unicode_safe import get_safe_icon
 
@@ -11,7 +12,7 @@ try:
     from ...utils.dependency_checker import DependencyChecker
 except ImportError:
     # Fallback for testing
-    DependencyChecker = None
+    DependencyChecker = None  # type: ignore[misc,assignment]
 
 
 def verify_installation(verbose: bool = False) -> dict[str, bool]:
@@ -127,7 +128,7 @@ def _check_rxiv_maker() -> bool:
     return importlib.util.find_spec("rxiv_maker") is not None
 
 
-def _print_verification_results(results: dict[str, bool]):
+def _print_verification_results(results: dict[str, bool]) -> None:
     """Print verification results in a formatted way."""
     print("\n" + "=" * 50)
     print("INSTALLATION VERIFICATION RESULTS")
@@ -147,10 +148,10 @@ def _print_verification_results(results: dict[str, bool]):
 
     # Summary
     total = len(results)
-    installed = sum(results.values())
-    missing = total - installed
+    installed_count: int = sum(results.values())
+    missing = total - installed_count
 
-    print(f"Summary: {installed}/{total} components installed")
+    print(f"Summary: {installed_count}/{total} components installed")
 
     if missing > 0:
         warning_icon = get_safe_icon("⚠️", "[WARNING]")
@@ -163,7 +164,7 @@ def _print_verification_results(results: dict[str, bool]):
     print("=" * 50)
 
 
-def diagnose_installation() -> dict[str, dict[str, any]]:
+def diagnose_installation() -> dict[str, dict[str, Any]]:
     """Perform detailed diagnosis of installation issues.
 
     Returns:
@@ -189,9 +190,9 @@ def diagnose_installation() -> dict[str, dict[str, any]]:
     return diagnosis
 
 
-def _diagnose_python() -> dict[str, any]:
+def _diagnose_python() -> dict[str, Any]:
     """Diagnose Python installation."""
-    info = {"installed": False, "version": None, "path": None, "issues": []}
+    info: dict[str, Any] = {"installed": False, "version": None, "path": None, "issues": []}
 
     try:
         info["installed"] = True
@@ -207,9 +208,9 @@ def _diagnose_python() -> dict[str, any]:
     return info
 
 
-def _diagnose_latex() -> dict[str, any]:
+def _diagnose_latex() -> dict[str, Any]:
     """Diagnose LaTeX installation."""
-    info = {"installed": False, "version": None, "path": None, "issues": []}
+    info: dict[str, Any] = {"installed": False, "version": None, "path": None, "issues": []}
 
     try:
         # Check pdflatex
@@ -236,9 +237,9 @@ def _diagnose_latex() -> dict[str, any]:
     return info
 
 
-def _diagnose_nodejs() -> dict[str, any]:
+def _diagnose_nodejs() -> dict[str, Any]:
     """Diagnose Node.js installation."""
-    info = {
+    info: dict[str, Any] = {
         "installed": False,
         "version": None,
         "path": None,
@@ -274,9 +275,9 @@ def _diagnose_nodejs() -> dict[str, any]:
     return info
 
 
-def _diagnose_r() -> dict[str, any]:
+def _diagnose_r() -> dict[str, Any]:
     """Diagnose R installation."""
-    info = {"installed": False, "version": None, "path": None, "issues": []}
+    info: dict[str, Any] = {"installed": False, "version": None, "path": None, "issues": []}
 
     try:
         # Check R
@@ -303,9 +304,9 @@ def _diagnose_r() -> dict[str, any]:
     return info
 
 
-def _diagnose_system_libs() -> dict[str, any]:
+def _diagnose_system_libs() -> dict[str, Any]:
     """Diagnose system libraries installation."""
-    info = {"installed": False, "missing_packages": [], "issues": []}
+    info: dict[str, Any] = {"installed": False, "missing_packages": [], "issues": []}
 
     # Check key Python packages
     packages_to_check = ["matplotlib", "PIL", "numpy", "pandas", "scipy"]

@@ -219,13 +219,13 @@ endif
 arxiv: pdf
 	@echo "Preparing arXiv submission package..."
 	@$(PYTHON_CMD) -m rxiv_maker.cli arxiv "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) || \
-	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.prepare_arxiv --output-dir $(OUTPUT_DIR) --arxiv-dir $(OUTPUT_DIR)/arxiv_submission --zip-filename $(OUTPUT_DIR)/for_arxiv.zip --manuscript-path "$(MANUSCRIPT_PATH)" --zip
-	@echo "✅ arXiv package ready: $(OUTPUT_DIR)/for_arxiv.zip"
+	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.engine.prepare_arxiv --output-dir $(MANUSCRIPT_PATH)/$(OUTPUT_DIR) --arxiv-dir $(MANUSCRIPT_PATH)/$(OUTPUT_DIR)/arxiv_submission --zip-filename $(MANUSCRIPT_PATH)/$(OUTPUT_DIR)/for_arxiv.zip --manuscript-path "$(MANUSCRIPT_PATH)" --create-zip
+	@echo "✅ arXiv package ready: $(MANUSCRIPT_PATH)/$(OUTPUT_DIR)/for_arxiv.zip"
 	@echo "Copying arXiv package to manuscript directory with naming convention..."
 	@YEAR=$$($(PYTHON_CMD) -c "import yaml; config = yaml.safe_load(open('$(MANUSCRIPT_CONFIG)', 'r')); print(config.get('date', '').split('-')[0] if config.get('date') else '$(shell date +%Y)')"); \
 	FIRST_AUTHOR=$$($(PYTHON_CMD) -c "import yaml; config = yaml.safe_load(open('$(MANUSCRIPT_CONFIG)', 'r')); authors = config.get('authors', []); name = authors[0]['name'] if authors and len(authors) > 0 else 'Unknown'; print(name.split()[-1] if ' ' in name else name)"); \
 	ARXIV_FILENAME="$${YEAR}__$${FIRST_AUTHOR}_et_al__for_arxiv.zip"; \
-	cp $(OUTPUT_DIR)/for_arxiv.zip $(MANUSCRIPT_PATH)/$${ARXIV_FILENAME}; \
+	cp $(MANUSCRIPT_PATH)/$(OUTPUT_DIR)/for_arxiv.zip $(MANUSCRIPT_PATH)/$${ARXIV_FILENAME}; \
 	echo "✅ arXiv package copied to: $(MANUSCRIPT_PATH)/$${ARXIV_FILENAME}"
 	@echo "📤 Upload the renamed file to arXiv for submission"
 

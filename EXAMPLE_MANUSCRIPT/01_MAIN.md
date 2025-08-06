@@ -64,7 +64,7 @@ $$\sigma = \sqrt{\frac{1}{N-1} \sum_{i=1}^{N} (x_i - \bar{x})^2}$${#eq:std_dev}
 
 Additionally, the system handles chemical equilibrium expressions, which are crucial in biochemical and chemical research:
 
-$$K_{eq} = \frac{[\text{Products}]}{[\text{Reactants}]} = \frac{[\text{Ca}^{2+}][\text{SO}_4^{2-}]}{[\text{CaSO}_4]}$${#eq:equilibrium}
+$$K_{eq} = \frac{[\text{Products}]}{[\text{Reactants}]} = \frac{[\text{Ca}^{\text{2+}}][\text{SO}_4^{\text{2-}}]}{[\text{CaSO}_4]}$${#eq:equilibrium}
 
 These numbered equations (@eq:einstein, @eq:std_dev, and @eq:equilibrium) demonstrate the framework's capability to handle diverse mathematical notation whilst maintaining proper cross-referencing throughout the manuscript. This functionality ensures that complex scientific concepts can be presented with the precision and clarity required for academic publication.
 
@@ -119,10 +119,10 @@ Rxiv-Maker includes a Visual Studio Code extension providing an integrated devel
 Framework reliability is ensured through multi-level validation protocols. Unit tests validate individual components, integration tests verify end-to-end pipelines, and platform tests validate deployment environment behaviour. Pre-commit pipelines enforce code formatting, linting, and type checking, ensuring code quality.
 
 ## Data availability
-arXiv monthly submission data used in this article is available at [https://arxiv.org/stats/monthly_submissions](https://arxiv.org/stats/monthly_submissions). Preprint submissions data across different hosting platforms is available at [https://github.com/esperr/pubmed-by-year](https://github.com/esperr/pubmed-by-year). The source code and data for the figures in this article are available at [https://github.com/henriques/rxiv-maker](https://github.com/henriques/rxiv-maker).
+arXiv monthly submission data used in this article is available at [https://arxiv.org/stats/monthly_submissions](https://arxiv.org/stats/monthly_submissions). Preprint submissions data across different hosting platforms is available at [https://github.com/esperr/pubmed-by-year](https://github.com/esperr/pubmed-by-year). The source code and data for the figures in this article are available at [https://github.com/HenriquesLab/rxiv-maker](https://github.com/HenriquesLab/rxiv-maker).
 
 ## Code availability
-The Rxiv-Maker computational framework is available at [https://github.com/henriques/rxiv-maker](https://github.com/henriques/rxiv-maker). The framework includes comprehensive documentation, example manuscripts, and automated testing suites to ensure reliability across different deployment environments. Additionally, the Visual Studio Code extension for Rxiv-Maker is available at [https://github.com/HenriquesLab/vscode-rxiv-maker](https://github.com/HenriquesLab/vscode-rxiv-maker), providing researchers with an integrated development environment that includes syntax highlighting, intelligent autocompletion for citations and cross-references, schema validation for configuration files, and seamless integration with the main framework's build processes. All source code is under an MIT License, enabling free use, modification, and distribution for both academic and commercial applications.
+The Rxiv-Maker computational framework is available at [https://github.com/HenriquesLab/rxiv-maker](https://github.com/HenriquesLab/rxiv-maker). The framework includes comprehensive documentation, example manuscripts, and automated testing suites to ensure reliability across different deployment environments. Additionally, the Visual Studio Code extension for Rxiv-Maker is available at [https://github.com/HenriquesLab/vscode-rxiv-maker](https://github.com/HenriquesLab/vscode-rxiv-maker), providing researchers with an integrated development environment that includes syntax highlighting, intelligent autocompletion for citations and cross-references, schema validation for configuration files, and seamless integration with the main framework's build processes. All source code is under an MIT License, enabling free use, modification, and distribution for both academic and commercial applications.
 
 ## Author contributions
 Both Bruno M. Saraiva, Guillaume Jacquemet, and Ricardo Henriques conceived the project and designed the framework. All authors contributed to writing and reviewing the manuscript.

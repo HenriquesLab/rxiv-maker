@@ -37,11 +37,11 @@ class BibliographyAdder:
         self.bib_file = self.manuscript_path / "03_REFERENCES.bib"
         self.cache = DOICache()
 
-    def add_entries(self, dois: list[str], overwrite: bool = False) -> bool:
-        """Add bibliography entries for the given DOIs.
+    def add_entries(self, doi_inputs: list[str], overwrite: bool = False) -> bool:
+        """Add bibliography entries for the given DOIs or URLs.
 
         Args:
-            dois: List of DOI strings to add
+            doi_inputs: List of DOI strings or URLs containing DOIs to add
             overwrite: Whether to overwrite existing entries
 
         Returns:
@@ -57,11 +57,24 @@ class BibliographyAdder:
         # Read existing bibliography
         existing_entries = self._get_existing_entries()
 
-        # Process each DOI
-        for doi in dois:
+        # Process each DOI input (could be DOI or URL)
+        for doi_input in doi_inputs:
             try:
+                # Normalize input to proper DOI format
+                try:
+                    from ..utils.url_to_doi import normalize_doi_input
+
+                    doi = normalize_doi_input(doi_input)
+                    if doi_input != doi:
+                        print(f"INFO: Converted URL to DOI: {doi_input} → {doi}")
+                except ValueError as e:
+                    print(f"ERROR: {e}")
+                    success = False
+                    continue
+
+                # Validate DOI format (should be valid after normalization)
                 if not self._validate_doi_format(doi):
-                    print(f"ERROR: Invalid DOI format: {doi}")
+                    print(f"ERROR: Invalid DOI format after normalization: {doi}")
                     success = False
                     continue
 
@@ -89,7 +102,7 @@ class BibliographyAdder:
                 print(f"SUCCESS: Added entry for DOI: {doi}")
 
             except Exception as e:
-                print(f"ERROR: Failed to process DOI {doi}: {e}")
+                print(f"ERROR: Failed to process input {doi_input}: {e}")
                 success = False
 
         return success
@@ -505,9 +518,9 @@ def main():
     """Main function for CLI integration."""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Add bibliography entries from DOIs")
+    parser = argparse.ArgumentParser(description="Add bibliography entries from DOIs or URLs")
     parser.add_argument("manuscript_path", help="Path to manuscript directory")
-    parser.add_argument("dois", nargs="+", help="DOI strings to add")
+    parser.add_argument("dois", nargs="+", help="DOI strings or URLs containing DOIs to add")
     parser.add_argument("--overwrite", action="store_true", help="Overwrite existing entries")
 
     args = parser.parse_args()

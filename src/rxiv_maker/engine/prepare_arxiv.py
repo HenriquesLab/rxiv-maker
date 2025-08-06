@@ -101,6 +101,34 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None, manuscript_path
             if filename == main_tex_file:
                 with open(source_file, encoding="utf-8") as f:
                     content = f.read()
+
+                # Fix arXiv-specific issues
+                # 1. Fix escaped underscores in \includegraphics paths
+                import re
+
+                # Replace all \_ with _ inside \includegraphics{...} commands
+                def fix_includegraphics_underscores(match):
+                    graphics_cmd = match.group(0)
+                    return graphics_cmd.replace("\\_", "_")
+
+                content = re.sub(r"\\includegraphics\[[^\]]*\]\{[^}]*\}", fix_includegraphics_underscores, content)
+
+                # 2. Fix malformed chemical equations with \textsuperscript in math mode
+                content = re.sub(
+                    r"\\text\{([^}]*)\}\\textsuperscript\{\{\\text\{([^}]*)\}\}([^\]]*?)\]",
+                    r"\\text{\1}^{\\text{\2}}\3]",
+                    content,
+                )
+
+                # Fix specific malformed equation patterns
+                content = content.replace(
+                    r"[\text{Ca}\textsuperscript{{\text{2+}}][\text{SO}_4}{\text{2-}}]",
+                    r"[\text{Ca}^{\text{2+}}][\text{SO}_4^{\text{2-}}]",
+                )
+
+                # Also fix the case where SO4 part is malformed
+                content = content.replace(r"[\text{SO}_4}{\text{2-}}]", r"[\text{SO}_4^{\text{2-}}]")
+
                 # No need to replace documentclass - unified style is arXiv-compatible
                 # Keep the original style file name since it's unified
                 # Write the modified content
@@ -136,6 +164,11 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None, manuscript_path
                 for pdf_file in figure_dir.glob("*.pdf"):
                     shutil.copy2(pdf_file, dest_dir / pdf_file.name)
                     print(f"✓ Copied {pdf_file.relative_to(output_path)}")
+
+                # Copy markdown files for tables (STable directories)
+                for md_file in figure_dir.glob("*.md"):
+                    shutil.copy2(md_file, dest_dir / md_file.name)
+                    print(f"✓ Copied {md_file.relative_to(output_path)}")
 
         # Copy data files if they exist
         data_dir = figures_source / "DATA"
@@ -207,6 +240,7 @@ def verify_package(arxiv_path, manuscript_path=None):
                 # Look for PNG files first (preferred by arXiv)
                 png_files = list(figure_dir.glob("*.png"))
                 pdf_files = list(figure_dir.glob("*.pdf"))
+                md_files = list(figure_dir.glob("*.md"))
 
                 if png_files:
                     # Use first PNG file found
@@ -214,6 +248,12 @@ def verify_package(arxiv_path, manuscript_path=None):
                 elif pdf_files:
                     # Fallback to PDF if no PNG
                     required_figures.append(f"Figures/{figure_dir.name}/{pdf_files[0].name}")
+                elif md_files:
+                    # Use markdown files for tables (STable directories)
+                    required_figures.append(f"Figures/{figure_dir.name}/{md_files[0].name}")
+                elif figure_dir.name == "DATA":
+                    # DATA directory may be empty or contain data files - don't flag as missing
+                    pass
                 else:
                     # Directory exists but no suitable figure files
                     required_figures.append(f"Figures/{figure_dir.name}/<missing figure files>")

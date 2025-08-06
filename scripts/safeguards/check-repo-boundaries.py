@@ -206,9 +206,7 @@ class RepositoryBoundaryValidator:
                         ".gitignore",
                     }
                     if suffix not in common_files:
-                        inappropriate_files.append(
-                            str(file_path.relative_to(submodule_path))
-                        )
+                        inappropriate_files.append(str(file_path.relative_to(submodule_path)))
 
         if inappropriate_files:
             self.add_warning(
@@ -246,9 +244,7 @@ class RepositoryBoundaryValidator:
         for pattern, source in contamination_patterns:
             matches = list(self.repo_root.glob(pattern))
             # Filter out matches in submodules directory
-            matches = [
-                m for m in matches if not str(m).startswith(str(self.submodules_dir))
-            ]
+            matches = [m for m in matches if not str(m).startswith(str(self.submodules_dir))]
 
             if matches:
                 files_list = [str(m.relative_to(self.repo_root)) for m in matches[:3]]
@@ -290,9 +286,7 @@ class RepositoryBoundaryValidator:
                 return False
 
         # Check for unexpected submodules
-        actual_submodules = {
-            p.name for p in self.submodules_dir.iterdir() if p.is_dir()
-        }
+        actual_submodules = {p.name for p in self.submodules_dir.iterdir() if p.is_dir()}
         unexpected = actual_submodules - set(expected_submodules.keys())
 
         if unexpected:

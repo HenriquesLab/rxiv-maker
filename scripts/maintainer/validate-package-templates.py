@@ -38,15 +38,11 @@ class PackageValidator:
         # Check for required placeholders
         for placeholder in required_placeholders:
             if placeholder not in content:
-                self.errors.append(
-                    f"Missing required placeholder in Homebrew template: {placeholder}"
-                )
+                self.errors.append(f"Missing required placeholder in Homebrew template: {placeholder}")
 
         # Check Ruby syntax basics
         if not content.strip().startswith("class RxivMaker < Formula"):
-            self.errors.append(
-                "Homebrew template must start with 'class RxivMaker < Formula'"
-            )
+            self.errors.append("Homebrew template must start with 'class RxivMaker < Formula'")
 
         if not content.strip().endswith("end"):
             self.errors.append("Homebrew template must end with 'end'")
@@ -55,9 +51,7 @@ class PackageValidator:
         required_sections = ["desc ", "homepage ", "license ", "def install", "test do"]
         for section in required_sections:
             if section not in content:
-                self.errors.append(
-                    f"Missing required section in Homebrew template: {section}"
-                )
+                self.errors.append(f"Missing required section in Homebrew template: {section}")
 
         return len(self.errors) == 0
 
@@ -97,9 +91,7 @@ class PackageValidator:
         # Check for required placeholders
         for placeholder in required_placeholders:
             if placeholder not in content:
-                self.errors.append(
-                    f"Missing required placeholder in Scoop template: {placeholder}"
-                )
+                self.errors.append(f"Missing required placeholder in Scoop template: {placeholder}")
 
         # Parse as JSON to validate structure
         temp_json = json.loads(test_content)
@@ -126,9 +118,7 @@ class PackageValidator:
 
         return len(self.errors) == 0
 
-    def validate_generated_homebrew(
-        self, formula_path: Path, version: str, checksums: dict[str, str]
-    ) -> bool:
+    def validate_generated_homebrew(self, formula_path: Path, version: str, checksums: dict[str, str]) -> bool:
         """Validate generated Homebrew formula."""
         if not formula_path.exists():
             self.errors.append(f"Generated Homebrew formula not found: {formula_path}")
@@ -139,9 +129,7 @@ class PackageValidator:
         # Check that placeholders have been replaced
         if "{{" in content and "}}" in content:
             placeholders_found = re.findall(r"\{\{[^}]+\}\}", content)
-            self.errors.append(
-                f"Unreplaced placeholders in generated formula: {placeholders_found}"
-            )
+            self.errors.append(f"Unreplaced placeholders in generated formula: {placeholders_found}")
 
         # Check version is present
         if version not in content:
@@ -150,19 +138,13 @@ class PackageValidator:
         # Check checksums are present and valid (64 char hex strings)
         for platform, checksum in checksums.items():
             if checksum not in content:
-                self.errors.append(
-                    f"Checksum for {platform} not found in generated formula"
-                )
+                self.errors.append(f"Checksum for {platform} not found in generated formula")
             elif not re.match(r"^[a-f0-9]{64}$", checksum):
-                self.errors.append(
-                    f"Invalid checksum format for {platform}: {checksum}"
-                )
+                self.errors.append(f"Invalid checksum format for {platform}: {checksum}")
 
         return len(self.errors) == 0
 
-    def validate_generated_scoop(
-        self, manifest_path: Path, version: str, checksum: str
-    ) -> bool:
+    def validate_generated_scoop(self, manifest_path: Path, version: str, checksum: str) -> bool:
         """Validate generated Scoop manifest."""
         if not manifest_path.exists():
             self.errors.append(f"Generated Scoop manifest not found: {manifest_path}")
@@ -179,22 +161,16 @@ class PackageValidator:
         content_str = json.dumps(manifest)
         if "{{" in content_str and "}}" in content_str:
             placeholders_found = re.findall(r"\{\{[^}]+\}\}", content_str)
-            self.errors.append(
-                f"Unreplaced placeholders in generated manifest: {placeholders_found}"
-            )
+            self.errors.append(f"Unreplaced placeholders in generated manifest: {placeholders_found}")
 
         # Check version
         expected_version = version.lstrip("v")
         if manifest.get("version") != expected_version:
-            self.errors.append(
-                f"Version mismatch: expected {expected_version}, got {manifest.get('version')}"
-            )
+            self.errors.append(f"Version mismatch: expected {expected_version}, got {manifest.get('version')}")
 
         # Check checksum
         if manifest.get("hash") != checksum:
-            self.errors.append(
-                f"Checksum mismatch: expected {checksum}, got {manifest.get('hash')}"
-            )
+            self.errors.append(f"Checksum mismatch: expected {checksum}, got {manifest.get('hash')}")
 
         # Validate checksum format
         if not re.match(r"^[a-f0-9]{64}$", checksum):
@@ -245,12 +221,8 @@ def main():
         script_dir = Path(__file__).parent
         repo_root = script_dir.parent
 
-        homebrew_template = (
-            repo_root / "submodules/homebrew-rxiv-maker/Formula/rxiv-maker.rb.template"
-        )
-        scoop_template = (
-            repo_root / "submodules/scoop-rxiv-maker/bucket/rxiv-maker.json.template"
-        )
+        homebrew_template = repo_root / "submodules/homebrew-rxiv-maker/Formula/rxiv-maker.rb.template"
+        scoop_template = repo_root / "submodules/scoop-rxiv-maker/bucket/rxiv-maker.json.template"
 
         print("🔍 Validating package templates...")
 

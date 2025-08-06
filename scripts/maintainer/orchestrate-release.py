@@ -82,9 +82,7 @@ class ReleaseOrchestrator:
 
         # Check if release exists
         try:
-            response = self.session.get(
-                f"https://api.github.com/repos/henriqueslab/rxiv-maker/releases/tags/{version}"
-            )
+            response = self.session.get(f"https://api.github.com/repos/henriqueslab/rxiv-maker/releases/tags/{version}")
             if response.status_code == 404:
                 errors.append(f"Release {version} not found")
                 return False, errors
@@ -122,9 +120,7 @@ class ReleaseOrchestrator:
                 try:
                     response = self.session.head(asset_url, timeout=10)
                     if response.status_code != 200:
-                        errors.append(
-                            f"Asset {asset_name} not accessible: {response.status_code}"
-                        )
+                        errors.append(f"Asset {asset_name} not accessible: {response.status_code}")
                 except requests.RequestException as e:
                     errors.append(f"Cannot access asset {asset_name}: {e}")
 
@@ -134,9 +130,7 @@ class ReleaseOrchestrator:
         print(f"✅ Release {version} is ready for package manager updates")
         return True, []
 
-    def trigger_package_manager_update(
-        self, pm_config: PackageManagerConfig, version: str
-    ) -> str | None:
+    def trigger_package_manager_update(self, pm_config: PackageManagerConfig, version: str) -> str | None:
         """Trigger package manager update workflow."""
         print(f"🚀 Triggering {pm_config.name} update for {version}")
 
@@ -158,13 +152,9 @@ class ReleaseOrchestrator:
             response = self.session.post(dispatch_url, json=payload, timeout=30)
             if response.status_code == 204:
                 print(f"✅ Successfully triggered {pm_config.name} update")
-                return (
-                    "triggered"  # Repository dispatch doesn't return run ID immediately
-                )
+                return "triggered"  # Repository dispatch doesn't return run ID immediately
             else:
-                print(
-                    f"❌ Failed to trigger {pm_config.name} update: {response.status_code}"
-                )
+                print(f"❌ Failed to trigger {pm_config.name} update: {response.status_code}")
                 if response.text:
                     print(f"Response: {response.text}")
                 return None
@@ -173,9 +163,7 @@ class ReleaseOrchestrator:
             print(f"❌ Network error triggering {pm_config.name} update: {e}")
             return None
 
-    def wait_for_workflow_completion(
-        self, pm_config: PackageManagerConfig, version: str
-    ) -> UpdateStatus:
+    def wait_for_workflow_completion(self, pm_config: PackageManagerConfig, version: str) -> UpdateStatus:
         """Wait for workflow to complete and return status."""
         print(f"⏳ Waiting for {pm_config.name} workflow to complete...")
 
@@ -192,7 +180,9 @@ class ReleaseOrchestrator:
         while time.time() - start_time < timeout_seconds:
             try:
                 # Get recent workflow runs
-                runs_url = f"https://api.github.com/repos/{pm_config.repo}/actions/workflows/{pm_config.workflow_file}/runs"
+                runs_url = (
+                    f"https://api.github.com/repos/{pm_config.repo}/actions/workflows/{pm_config.workflow_file}/runs"
+                )
                 response = self.session.get(runs_url, params={"per_page": 5})
 
                 if response.status_code != 200:
@@ -207,9 +197,7 @@ class ReleaseOrchestrator:
                 recent_runs = []
 
                 for run in runs_data.get("workflow_runs", []):
-                    run_time = time.mktime(
-                        time.strptime(run["created_at"], "%Y-%m-%dT%H:%M:%SZ")
-                    )
+                    run_time = time.mktime(time.strptime(run["created_at"], "%Y-%m-%dT%H:%M:%SZ"))
                     if run_time >= recent_time:
                         recent_runs.append(run)
 
@@ -217,14 +205,10 @@ class ReleaseOrchestrator:
                 for run in recent_runs:
                     if run["status"] == "completed":
                         if run["conclusion"] == "success":
-                            print(
-                                f"✅ {pm_config.name} workflow completed successfully"
-                            )
+                            print(f"✅ {pm_config.name} workflow completed successfully")
                             return UpdateStatus.SUCCESS
                         else:
-                            print(
-                                f"❌ {pm_config.name} workflow failed: {run['conclusion']}"
-                            )
+                            print(f"❌ {pm_config.name} workflow failed: {run['conclusion']}")
                             return UpdateStatus.FAILED
                     elif run["status"] == "in_progress":
                         print(f"⏳ {pm_config.name} workflow still running...")
@@ -238,9 +222,7 @@ class ReleaseOrchestrator:
         print(f"⏰ Timeout waiting for {pm_config.name} workflow")
         return UpdateStatus.FAILED
 
-    def update_package_manager(
-        self, pm_config: PackageManagerConfig, version: str
-    ) -> UpdateResult:
+    def update_package_manager(self, pm_config: PackageManagerConfig, version: str) -> UpdateResult:
         """Update a single package manager."""
         print(f"\n📦 Updating {pm_config.name} package manager")
 
@@ -256,9 +238,7 @@ class ReleaseOrchestrator:
         # Wait for completion
         status = self.wait_for_workflow_completion(pm_config, version)
 
-        return UpdateResult(
-            package_manager=pm_config.name, status=status, workflow_run_id=workflow_id
-        )
+        return UpdateResult(package_manager=pm_config.name, status=status, workflow_run_id=workflow_id)
 
     def orchestrate_release(self, version: str) -> dict[str, UpdateResult]:
         """Orchestrate updates for all package managers."""
@@ -279,16 +259,8 @@ class ReleaseOrchestrator:
             results[pm_config.name] = result
 
         # Summary
-        successful = [
-            name
-            for name, result in results.items()
-            if result.status == UpdateStatus.SUCCESS
-        ]
-        failed = [
-            name
-            for name, result in results.items()
-            if result.status == UpdateStatus.FAILED
-        ]
+        successful = [name for name, result in results.items() if result.status == UpdateStatus.SUCCESS]
+        failed = [name for name, result in results.items() if result.status == UpdateStatus.FAILED]
 
         print(f"\n📊 Release Orchestration Summary for {version}")
         print(f"✅ Successful updates: {len(successful)}")
@@ -305,9 +277,7 @@ class ReleaseOrchestrator:
         if len(successful) == len(self.package_managers):
             print(f"🎉 All package managers updated successfully for {version}")
         elif successful:
-            print(
-                f"⚠️  Partial success: {len(successful)}/{len(self.package_managers)} package managers updated"
-            )
+            print(f"⚠️  Partial success: {len(successful)}/{len(self.package_managers)} package managers updated")
         else:
             print(f"💥 All package manager updates failed for {version}")
 
@@ -339,9 +309,7 @@ class ReleaseOrchestrator:
                     print(f"✅ Repository {pm_config.repo} accessible")
                     results[pm_config.name] = True
                 else:
-                    print(
-                        f"❌ Repository {pm_config.repo} not accessible: {response.status_code}"
-                    )
+                    print(f"❌ Repository {pm_config.repo} not accessible: {response.status_code}")
                     results[pm_config.name] = False
             except requests.RequestException as e:
                 print(f"❌ Cannot access repository {pm_config.repo}: {e}")
@@ -382,9 +350,7 @@ def main():
         github_token = os.getenv("GITHUB_TOKEN")
 
     if not github_token:
-        print(
-            "❌ GitHub token required. Use --token <token> or set GITHUB_TOKEN environment variable"
-        )
+        print("❌ GitHub token required. Use --token <token> or set GITHUB_TOKEN environment variable")
         sys.exit(1)
 
     # Validate version format - allow test versions
@@ -400,9 +366,7 @@ def main():
     try:
         if command == "orchestrate":
             results = orchestrator.orchestrate_release(version)
-            failed_count = sum(
-                1 for result in results.values() if result.status == UpdateStatus.FAILED
-            )
+            failed_count = sum(1 for result in results.values() if result.status == UpdateStatus.FAILED)
             sys.exit(0 if failed_count == 0 else 1)
 
         elif command == "test":

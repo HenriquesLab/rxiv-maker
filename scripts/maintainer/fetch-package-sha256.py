@@ -37,9 +37,7 @@ def fetch_pypi_data(package_name: str, version: str) -> dict:
         sys.exit(1)
 
 
-def find_package_files(
-    data: dict, version: str, package_type: str | None = None
-) -> list[dict]:
+def find_package_files(data: dict, version: str, package_type: str | None = None) -> list[dict]:
     """Find package files of specified type."""
     releases = data.get("releases", {})
     version_files = releases.get(version, [])
@@ -51,13 +49,9 @@ def find_package_files(
     if package_type:
         # Handle wheel -> bdist_wheel mapping
         search_type = "bdist_wheel" if package_type == "wheel" else package_type
-        filtered_files = [
-            f for f in version_files if f.get("packagetype") == search_type
-        ]
+        filtered_files = [f for f in version_files if f.get("packagetype") == search_type]
         if not filtered_files:
-            available_types = list(
-                {f.get("packagetype", "unknown") for f in version_files}
-            )
+            available_types = list({f.get("packagetype", "unknown") for f in version_files})
             print(
                 f"Error: No {package_type} files found for version {version}",
                 file=sys.stderr,

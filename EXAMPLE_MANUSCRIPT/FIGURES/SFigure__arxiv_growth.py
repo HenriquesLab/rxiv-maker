@@ -56,12 +56,7 @@ plt.rcParams.update(
 def load_and_process_data():
     """Load and process the arXiv submission data."""
     # Define the path to the data file
-    data_path = (
-        Path(__file__).parent
-        / "DATA"
-        / "SFigure__arxiv_growth"
-        / "arxiv_monthly_submissions.csv"
-    )
+    data_path = Path(__file__).parent / "DATA" / "SFigure__arxiv_growth" / "arxiv_monthly_submissions.csv"
 
     # Load the data
     df = pd.read_csv(data_path)
@@ -99,16 +94,12 @@ def create_figure():
     )
 
     # Fill area under the curve with gradient-like effect
-    ax.fill_between(
-        df["date"], df["submissions"], alpha=0.3, color=secondary_color, zorder=1
-    )
+    ax.fill_between(df["date"], df["submissions"], alpha=0.3, color=secondary_color, zorder=1)
 
     # Customize axes with smaller fonts for column format
     ax.set_xlabel("Year", fontsize=9, fontweight="bold")
     ax.set_ylabel("Monthly Submissions", fontsize=9, fontweight="bold")
-    ax.set_title(
-        "arXiv Preprint Growth (1991-2025)", fontsize=10, fontweight="bold", pad=10
-    )
+    ax.set_title("arXiv Preprint Growth (1991-2025)", fontsize=10, fontweight="bold", pad=10)
 
     # Format x-axis with fewer ticks for compact format
     ax.xaxis.set_major_locator(mdates.YearLocator(10))  # Every 10 years
@@ -229,10 +220,7 @@ def main():
 
     except FileNotFoundError as e:
         print(f"Error: Could not find data file. {e}")
-        print(
-            "Please ensure arxiv_monthly_submissions.csv is in the "
-            "DATA/SFigure__arxiv_growth/ directory."
-        )
+        print("Please ensure arxiv_monthly_submissions.csv is in the DATA/SFigure__arxiv_growth/ directory.")
     except Exception as e:
         print(f"Error creating figure: {e}")
         raise

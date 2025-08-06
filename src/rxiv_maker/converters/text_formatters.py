@@ -23,17 +23,34 @@ def convert_subscript_superscript_to_latex(text: LatexContent) -> LatexContent:
 
     # Helper function to avoid replacing inside LaTeX commands
     def replace_outside_commands(pattern, replacement, text):
-        """Replace pattern with replacement, but not inside LaTeX commands."""
-        # Split text by LaTeX commands like \texttt{...}
-        parts = re.split(r"(\\texttt\{[^}]*\})", text)
-        result = []
+        """Replace pattern with replacement, but not inside LaTeX commands or math mode."""
+        # Protect various LaTeX commands and math environments
+        protected_patterns = [
+            r"\\texttt\{[^}]*\}",  # \texttt{...}
+            r"\\text\{[^}]*\}",  # \text{...}
+            r"\$[^$]*\$",  # Inline math $...$
+            r"\$\$.*?\$\$",  # Display math $$...$$
+            r"\\begin\{equation\}.*?\\end\{equation\}",  # equation environments
+        ]
 
-        for i, part in enumerate(parts):
-            if i % 2 == 0:  # Not inside a LaTeX command
-                part = re.sub(pattern, replacement, part)
-            result.append(part)
+        # Process each pattern separately to avoid complex group issues
+        for protect_pattern in protected_patterns:
+            # Split by this pattern and only process non-matching parts
+            parts = re.split(f"({protect_pattern})", text, flags=re.DOTALL)
+            result = []
 
-        return "".join(result)
+            for i, part in enumerate(parts):
+                if part is None:
+                    continue
+
+                # Odd indices are the matched patterns (protected)
+                if i % 2 == 0:  # Not protected
+                    part = re.sub(pattern, replacement, part)
+                result.append(part)
+
+            text = "".join(result)
+
+        return text
 
     # Convert simple subscript and superscript using markdown-style syntax
     # H~2~O becomes H\textsubscript{2}O
@@ -414,6 +431,19 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
 
     text = re.sub(r"\(([^)]+)\)", escape_file_paths_in_parens, text)
 
+    # Protect LaTeX commands (like \includegraphics{}) from underscore escaping
+    protected_latex_commands: dict[str, str] = {}
+
+    def protect_latex_command(match: re.Match[str]) -> str:
+        """Replace LaTeX command with placeholder."""
+        command = match.group(0)
+        placeholder = f"XXPROTECTEDLATEXCOMMANDXX{len(protected_latex_commands)}XXPROTECTEDLATEXCOMMANDXX"
+        protected_latex_commands[placeholder] = command
+        return placeholder
+
+    # Protect \includegraphics{} commands
+    text = re.sub(r"\\includegraphics\[[^\]]*\]\{[^}]*\}", protect_latex_command, text)
+
     # Handle remaining underscores in file names and paths
     # Match common filename patterns: WORD_WORD.ext, word_word.ext, etc.
     def escape_filenames(match: re.Match[str]) -> str:
@@ -433,6 +463,10 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
 
     # Final step: replace all placeholders with properly escaped underscores
     text = text.replace("XUNDERSCOREX", "\\_")
+
+    # Restore protected LaTeX commands after escaping
+    for placeholder, original_command in protected_latex_commands.items():
+        text = text.replace(placeholder, original_command)
 
     # Handle Unicode arrows that can cause LaTeX math mode issues
     # These need to be converted to proper LaTeX math commands

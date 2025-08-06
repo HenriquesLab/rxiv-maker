@@ -194,7 +194,7 @@ class MacOSInstaller:
 
         try:
             # Check if already installed
-            result = subprocess.run(["xcode-select", "-p"], capture_output=True, timeout=10)
+            result = subprocess.run(["xcode-select", "-p"], capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 self.logger.success("Xcode command line tools already installed")

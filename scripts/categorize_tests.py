@@ -53,9 +53,7 @@ def extract_test_info(test_path: str) -> tuple[str, str]:
     return file_path, test_name
 
 
-def generate_marker_recommendations(
-    fast_tests: list[str], medium_tests: list[str], slow_tests: list[str]
-) -> None:
+def generate_marker_recommendations(fast_tests: list[str], medium_tests: list[str], slow_tests: list[str]) -> None:
     """Generate recommendations for adding markers to test files."""
     print("\n=== MARKER RECOMMENDATIONS ===")
 
@@ -84,21 +82,12 @@ def generate_marker_recommendations(
         if any(markers.values()):
             print(f"\n📁 {file_path}")
             if markers["fast"]:
-                fast_preview = (
-                    f"{', '.join(markers['fast'][:3])}"
-                    f"{'...' if len(markers['fast']) > 3 else ''}"
-                )
+                fast_preview = f"{', '.join(markers['fast'][:3])}{'...' if len(markers['fast']) > 3 else ''}"
                 print(f"  ⚡ Fast tests ({len(markers['fast'])}): {fast_preview}")
             if markers["medium"]:
-                print(
-                    f"  🔶 Medium tests ({len(markers['medium'])}): "
-                    f"{', '.join(markers['medium'])}"
-                )
+                print(f"  🔶 Medium tests ({len(markers['medium'])}): {', '.join(markers['medium'])}")
             if markers["slow"]:
-                print(
-                    f"  🐌 Slow tests ({len(markers['slow'])}): "
-                    f"{', '.join(markers['slow'])}"
-                )
+                print(f"  🐌 Slow tests ({len(markers['slow'])}): {', '.join(markers['slow'])}")
 
 
 def main():
@@ -124,9 +113,7 @@ def main():
         print(f"{duration:6.2f}s - {file_path}::{test_name}")
 
     print("\n=== FASTEST TESTS (<0.2s) ===")
-    fastest_tests = [
-        (test, durations[test]) for test in fast_tests if durations[test] < 0.2
-    ]
+    fastest_tests = [(test, durations[test]) for test in fast_tests if durations[test] < 0.2]
     fastest_tests.sort(key=lambda x: x[1])
 
     for test_path, duration in fastest_tests[:10]:  # Show top 10 fastest
