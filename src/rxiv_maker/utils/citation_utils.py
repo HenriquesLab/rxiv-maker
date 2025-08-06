@@ -47,17 +47,14 @@ def inject_rxiv_citation(yaml_metadata: dict[str, Any]) -> None:
 
     # Define the Rxiv-Maker citation
     rxiv_citation = """
-@article{saraiva_2025_rxivmaker,
-  author       = {Saraiva, Bruno M. and Jacquemet, Guillaume and Henriques, Ricardo},
-  title        = {Rxiv-Maker: an automated template engine for streamlined scientific
-                 publications},
-  journal      = {Zenodo},
-  publisher    = {Zenodo},
-  year         = 2025,
-  month        = jul,
-  doi          = {10.5281/zenodo.15753534},
-  url          = {https://zenodo.org/records/15753534},
-  eprint       = {https://zenodo.org/records/15753534/files/2025__saraiva_et_al__rxiv.pdf}
+@misc{saraiva_2025_rxivmaker,
+      title={Rxiv-Maker: An Automated Template Engine for Streamlined Scientific Publications},
+      author={Bruno M. Saraiva and Guillaume Jaquemet and Ricardo Henriques},
+      year={2025},
+      eprint={2508.00836},
+      archivePrefix={arXiv},
+      primaryClass={cs.DL},
+      url={https://arxiv.org/abs/2508.00836},
 }
 """
 

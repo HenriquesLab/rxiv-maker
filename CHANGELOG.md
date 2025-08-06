@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Citation**: Migrate from Zenodo to arXiv citation (2508.00836)
+  - Update `acknowledge_rxiv_maker` feature to use arXiv preprint citation instead of outdated Zenodo reference
+  - Change BibTeX entry from `@article` (Zenodo) to `@misc` (arXiv) format
+  - Maintain same citation key (`saraiva_2025_rxivmaker`) for backward compatibility
+
 ## [v1.4.13] - 2025-08-04
 
 ### Fixed
