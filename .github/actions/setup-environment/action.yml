@@ -251,7 +251,7 @@ runs:
             }
           }
         } catch {
-          Write-Host "⚠️ Failed to install Chocolatey: $_"
+          Write-Host "⚠️ Failed to install Chocolatey: $($_.Exception.Message)"
         }
 
         # Try to install essential packages if Chocolatey is available
@@ -262,7 +262,7 @@ runs:
               Write-Host "Installing $package..."
               choco install $package -y --no-progress --timeout=300
             } catch {
-              Write-Host "⚠️ Failed to install $package: $_"
+              Write-Host "⚠️ Failed to install ${package}: $($_.Exception.Message)"
             }
           }
         } else {
@@ -291,7 +291,7 @@ runs:
             $chocoAvailable = $true
           }
         } catch {
-          Write-Host "❌ Failed to set up Chocolatey: $_"
+          Write-Host "❌ Failed to set up Chocolatey: $($_.Exception.Message)"
           exit 1
         }
 
@@ -363,7 +363,7 @@ runs:
             }
 
           } catch {
-            Write-Host "❌ Failed to install MiKTeX: $_"
+            Write-Host "❌ Failed to install MiKTeX: $($_.Exception.Message)"
             exit 1
           }
         } else {
