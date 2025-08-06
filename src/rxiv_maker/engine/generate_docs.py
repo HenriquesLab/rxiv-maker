@@ -18,8 +18,8 @@ def generate_module_docs(docs_dir, module_path):
         # Find lazydocs executable
         lazydocs_cmd = shutil.which("lazydocs")
         if not lazydocs_cmd:
-            print("❌ lazydocs not found in PATH")
-            return False
+            print("⚠️ lazydocs not found in PATH (this is expected in CI/development environments)")
+            return None  # Indicate that tool is not available, but it's not an error
 
         # Generate documentation for the specific module
         cmd = [
@@ -117,7 +117,7 @@ def generate_api_docs(project_root: Path | None = None) -> bool:
     if project_root is None:
         project_root = Path(__file__).parent.parent.parent.parent
 
-    src_dir = project_root / "src" / "py"
+    src_dir = project_root / "src" / "rxiv_maker"
     docs_dir = project_root / "docs" / "api"
 
     # Ensure docs directory exists
@@ -146,6 +146,7 @@ def generate_api_docs(project_root: Path | None = None) -> bool:
 
     successful_files = []
     failed_files = []
+    lazydocs_available = None
 
     print(f"Found {len(python_files)} Python files to document:")
     for py_file in python_files:
@@ -157,12 +158,21 @@ def generate_api_docs(project_root: Path | None = None) -> bool:
         rel_path = py_file.relative_to(src_dir)
         print(f"\n📦 Generating docs for {rel_path}...")
 
-        if generate_module_docs(docs_dir, py_file):
+        result = generate_module_docs(docs_dir, py_file)
+        if result is None:  # lazydocs not available
+            if lazydocs_available is None:
+                lazydocs_available = False
+            break  # No point continuing if tool isn't available
+        elif result:  # Success
             successful_files.append(rel_path)
             print(f"✅ {rel_path} documented successfully")
-        else:
+            if lazydocs_available is None:
+                lazydocs_available = True
+        else:  # Failure
             failed_files.append(rel_path)
             print(f"❌ Failed to document {rel_path}")
+            if lazydocs_available is None:
+                lazydocs_available = True
 
     print(f"\n📁 Documentation saved to: {docs_dir}")
 
@@ -187,7 +197,12 @@ def generate_api_docs(project_root: Path | None = None) -> bool:
     print(f"  ✅ Successful: {len(successful_files)} files")
     print(f"  ❌ Failed: {len(failed_files)} files")
 
-    if successful_files:
+    # Handle case where lazydocs is not available
+    if lazydocs_available is False:
+        print("⚠️ Documentation generation skipped (lazydocs not available)")
+        print("   This is normal for development/CI environments")
+        return True  # Don't fail the pre-commit hook for missing optional tool
+    elif successful_files:
         print("✅ Documentation generated successfully!")
         print(f"\n📚 To view the documentation, browse to: {docs_dir}")
         print("   You can also open the index.md file in a Markdown viewer.")

@@ -22,7 +22,6 @@ except ImportError:
 
 try:
     from rxiv_maker.engine.validate import UnifiedValidator
-    from rxiv_maker.validators.citation_validator import CitationValidator
     from rxiv_maker.validators.doi_validator import DOIValidator
 
     INTEGRATION_AVAILABLE = True

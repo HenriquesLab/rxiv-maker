@@ -70,7 +70,7 @@ def _check_python() -> bool:
     try:
         version = sys.version_info
         return version.major == 3 and version.minor >= 11
-    except:
+    except Exception:
         return False
 
 
@@ -80,7 +80,7 @@ def _check_latex() -> bool:
         # Check for pdflatex
         result = subprocess.run(["pdflatex", "--version"], capture_output=True, text=True, timeout=10)
         return result.returncode == 0
-    except:
+    except Exception:
         return False
 
 
@@ -94,7 +94,7 @@ def _check_nodejs() -> bool:
         npm_result = subprocess.run(["npm", "--version"], capture_output=True, text=True, timeout=10)
 
         return node_result.returncode == 0 and npm_result.returncode == 0
-    except:
+    except Exception:
         return False
 
 
@@ -103,32 +103,28 @@ def _check_r() -> bool:
     try:
         result = subprocess.run(["R", "--version"], capture_output=True, text=True, timeout=10)
         return result.returncode == 0
-    except:
+    except Exception:
         return False
 
 
 def _check_system_libraries() -> bool:
     """Check if required system libraries are available."""
-    try:
-        # Try to import key Python packages that depend on system libraries
-        import matplotlib
-        import numpy
-        import PIL
+    import importlib.util
 
-        return True
-    except ImportError:
-        return False
+    packages = ["matplotlib", "numpy", "PIL"]
+
+    for package in packages:
+        if importlib.util.find_spec(package) is None:
+            return False
+
+    return True
 
 
 def _check_rxiv_maker() -> bool:
     """Check if rxiv-maker package is installed and working."""
-    try:
-        # Try to import the main module
-        import rxiv_maker
+    import importlib.util
 
-        return True
-    except ImportError:
-        return False
+    return importlib.util.find_spec("rxiv_maker") is not None
 
 
 def _print_verification_results(results: dict[str, bool]):

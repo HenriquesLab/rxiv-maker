@@ -31,16 +31,20 @@ class WindowsInstaller:
         # We mainly need to ensure Visual C++ redistributables are available
         # Note: Most graphics libraries use pre-built wheels on Windows
 
-        try:
-            # Check if we can import key packages
-            import matplotlib
-            import numpy
-            import PIL
+        import importlib.util
 
+        packages = ["matplotlib", "numpy", "PIL"]
+        missing_packages = []
+
+        for package in packages:
+            if importlib.util.find_spec(package) is None:
+                missing_packages.append(package)
+
+        if not missing_packages:
             self.logger.success("System libraries already available")
             return True
-        except ImportError as e:
-            self.logger.warning(f"Some system libraries may be missing: {e}")
+        else:
+            self.logger.warning(f"Some system libraries may be missing: {missing_packages}")
             # In most cases, pip will handle this during package installation
             return True
 
