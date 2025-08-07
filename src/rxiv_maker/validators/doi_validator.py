@@ -47,6 +47,7 @@ class DOIValidator(BaseValidator):
         enable_online_validation: bool = True,
         cache_dir: str | None = None,
         force_validation: bool = False,
+        ignore_ci_environment: bool = False,
     ):
         """Initialize DOI validator.
 
@@ -55,6 +56,7 @@ class DOIValidator(BaseValidator):
             enable_online_validation: Whether to perform online DOI validation
             cache_dir: Custom cache directory (default: .cache)
             force_validation: Force validation even if checksum unchanged
+            ignore_ci_environment: Force validation even in CI environments (for testing)
         """
         super().__init__(manuscript_path)
         self.enable_online_validation = enable_online_validation
@@ -70,6 +72,7 @@ class DOIValidator(BaseValidator):
 
         self.similarity_threshold = 0.8  # Minimum similarity for title matching
         self.force_validation = force_validation
+        self.ignore_ci_environment = ignore_ci_environment
 
     def _is_ci_environment(self) -> bool:
         """Check if running in a CI environment.
@@ -109,7 +112,7 @@ class DOIValidator(BaseValidator):
         }
 
         # Skip DOI validation completely in CI environments to avoid API abuse policies
-        if self._is_ci_environment():
+        if self._is_ci_environment() and not self.ignore_ci_environment:
             logger.info("CI environment detected - skipping DOI validation to avoid API rate limits")
 
             # Still count DOIs for metadata but mark as validated
@@ -148,9 +151,10 @@ class DOIValidator(BaseValidator):
         # Skip checksum optimization for temporary directories (e.g., in tests)
         manuscript_path_str = str(self.manuscript_path)
         is_temp_dir = (
-            manuscript_path_str.startswith("/tmp/") or 
-            manuscript_path_str.startswith("/var/tmp/") or
-            "temp" in manuscript_path_str.lower()
+            manuscript_path_str.startswith("/tmp/")
+            or manuscript_path_str.startswith("/var/tmp/")
+            or "/var/folders/" in manuscript_path_str  # macOS temp directories
+            or "temp" in manuscript_path_str.lower()
         )
 
         try:
@@ -257,9 +261,10 @@ class DOIValidator(BaseValidator):
         # Update checksum after successful validation (skip for temp directories)
         manuscript_path_str = str(self.manuscript_path)
         is_temp_dir = (
-            manuscript_path_str.startswith("/tmp/") or 
-            manuscript_path_str.startswith("/var/tmp/") or
-            "temp" in manuscript_path_str.lower()
+            manuscript_path_str.startswith("/tmp/")
+            or manuscript_path_str.startswith("/var/tmp/")
+            or "/var/folders/" in manuscript_path_str  # macOS temp directories
+            or "temp" in manuscript_path_str.lower()
         )
         if not is_temp_dir:
             try:
