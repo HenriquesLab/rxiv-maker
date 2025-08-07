@@ -82,9 +82,7 @@ class PackageSystemTester:
 
             # For test versions, expect failure when trying to download non-existent releases
             # but the script should handle it gracefully
-            passed = "DRY RUN" in result.stdout or (
-                result.returncode != 0 and "Failed to download" in result.stdout
-            )
+            passed = "DRY RUN" in result.stdout or (result.returncode != 0 and "Failed to download" in result.stdout)
             message = f"Exit code: {result.returncode}"
             if result.stderr:
                 message += f", Error: {result.stderr.strip()}"
@@ -113,9 +111,7 @@ class PackageSystemTester:
 
             # For test versions, expect failure when trying to download non-existent releases
             # but the script should handle it gracefully
-            passed = "DRY RUN" in result.stdout or (
-                result.returncode != 0 and "Failed to download" in result.stdout
-            )
+            passed = "DRY RUN" in result.stdout or (result.returncode != 0 and "Failed to download" in result.stdout)
             message = f"Exit code: {result.returncode}"
             if result.stderr:
                 message += f", Error: {result.stderr.strip()}"
@@ -144,9 +140,7 @@ class PackageSystemTester:
 
             # For test versions, expect failure when trying to download non-existent releases
             # but the script should handle it gracefully
-            passed = "DRY RUN" in result.stdout or (
-                result.returncode != 0 and "Failed to download" in result.stdout
-            )
+            passed = "DRY RUN" in result.stdout or (result.returncode != 0 and "Failed to download" in result.stdout)
             message = f"Exit code: {result.returncode}"
             if result.stderr:
                 message += f", Error: {result.stderr.strip()}"
@@ -167,10 +161,7 @@ class PackageSystemTester:
         success_count = 0
 
         # Test Homebrew template
-        homebrew_template = (
-            self.repo_root
-            / "submodules/homebrew-rxiv-maker/Formula/rxiv-maker.rb.template"
-        )
+        homebrew_template = self.repo_root / "submodules/homebrew-rxiv-maker/Formula/rxiv-maker.rb.template"
         if homebrew_template.exists():
             content = homebrew_template.read_text()
 
@@ -181,21 +172,14 @@ class PackageSystemTester:
                 "{{MACOS_X64_SHA256}}",
                 "{{LINUX_X64_SHA256}}",
             ]
-            missing_placeholders = [
-                p for p in required_placeholders if p not in content
-            ]
+            missing_placeholders = [p for p in required_placeholders if p not in content]
 
             # Check Ruby structure
             has_class = "class RxivMaker < Formula" in content
             has_install = "def install" in content
             has_test = "test do" in content
 
-            passed = (
-                len(missing_placeholders) == 0
-                and has_class
-                and has_install
-                and has_test
-            )
+            passed = len(missing_placeholders) == 0 and has_class and has_install and has_test
             message = ""
             if missing_placeholders:
                 message += f"Missing placeholders: {missing_placeholders}. "
@@ -217,10 +201,7 @@ class PackageSystemTester:
             )
 
         # Test Scoop template
-        scoop_template = (
-            self.repo_root
-            / "submodules/scoop-rxiv-maker/bucket/rxiv-maker.json.template"
-        )
+        scoop_template = self.repo_root / "submodules/scoop-rxiv-maker/bucket/rxiv-maker.json.template"
         if scoop_template.exists():
             try:
                 content = scoop_template.read_text()
@@ -231,9 +212,7 @@ class PackageSystemTester:
                     "{{VERSION_NUM}}",
                     "{{WINDOWS_X64_SHA256}}",
                 ]
-                missing_placeholders = [
-                    p for p in required_placeholders if p not in content
-                ]
+                missing_placeholders = [p for p in required_placeholders if p not in content]
 
                 # Test JSON structure (with placeholder replacement)
                 test_content = content
@@ -266,13 +245,9 @@ class PackageSystemTester:
                     success_count += 1
 
             except json.JSONDecodeError as e:
-                self.log_test(
-                    "Scoop template integrity", False, f"Invalid JSON structure: {e}"
-                )
+                self.log_test("Scoop template integrity", False, f"Invalid JSON structure: {e}")
         else:
-            self.log_test(
-                "Scoop template exists", False, f"File not found: {scoop_template}"
-            )
+            self.log_test("Scoop template exists", False, f"File not found: {scoop_template}")
 
         return success_count == 2
 
@@ -296,9 +271,7 @@ class PackageSystemTester:
         external_tools = [("ruby", "Ruby interpreter"), ("jq", "JSON processor")]
         for tool, description in external_tools:
             try:
-                result = subprocess.run(
-                    [tool, "--version"], capture_output=True, timeout=5
-                )
+                result = subprocess.run([tool, "--version"], capture_output=True, timeout=5)
                 available = result.returncode == 0
                 self.log_test(
                     f"External tool: {description}",
@@ -308,13 +281,9 @@ class PackageSystemTester:
                 if available:
                     success_count += 1
             except Exception:
-                self.log_test(
-                    f"External tool: {description}", False, "Not available (optional)"
-                )
+                self.log_test(f"External tool: {description}", False, "Not available (optional)")
 
-        return success_count >= len(
-            required_modules
-        )  # All Python modules must be available
+        return success_count >= len(required_modules)  # All Python modules must be available
 
     def test_orchestration_dry_run(self) -> bool:
         """Test orchestration script in dry run mode."""
@@ -374,9 +343,7 @@ class PackageSystemTester:
                 self.log_test(
                     f"Script executable: {script_file}",
                     executable,
-                    "Has execute permissions"
-                    if executable
-                    else "Missing execute permissions",
+                    "Has execute permissions" if executable else "Missing execute permissions",
                 )
                 if executable:
                     success_count += 1
@@ -438,9 +405,7 @@ class PackageSystemTester:
                     if not has_dispatch:
                         message += "Missing 'repository_dispatch' trigger. "
 
-                    self.log_test(
-                        f"Workflow structure: {workflow_file}", passed, message.strip()
-                    )
+                    self.log_test(f"Workflow structure: {workflow_file}", passed, message.strip())
                     if passed:
                         success_count += 1
 
@@ -451,9 +416,7 @@ class PackageSystemTester:
                         f"YAML parse error: {e}",
                     )
             else:
-                self.log_test(
-                    f"Workflow exists: {workflow_file}", False, "File not found"
-                )
+                self.log_test(f"Workflow exists: {workflow_file}", False, "File not found")
 
         return success_count >= 1  # At least one workflow should be valid
 
@@ -477,9 +440,7 @@ class PackageSystemTester:
                 if test_method():
                     passed_tests += 1
             except Exception as e:
-                self.log_test(
-                    f"Test method: {test_method.__name__}", False, f"Exception: {e}"
-                )
+                self.log_test(f"Test method: {test_method.__name__}", False, f"Exception: {e}")
 
         # Summary
         total_individual_tests = len(self.test_results)
@@ -487,17 +448,11 @@ class PackageSystemTester:
 
         print("\n📊 Test Summary:")
         print(f"  Test Methods: {passed_tests}/{len(test_methods)} passed")
-        print(
-            f"  Individual Tests: {passed_individual_tests}/{total_individual_tests} passed"
-        )
-        print(
-            f"  Success Rate: {passed_individual_tests / total_individual_tests * 100:.1f}%"
-        )
+        print(f"  Individual Tests: {passed_individual_tests}/{total_individual_tests} passed")
+        print(f"  Success Rate: {passed_individual_tests / total_individual_tests * 100:.1f}%")
 
         # Show failed tests
-        failed_tests = [
-            (name, msg) for name, passed, msg in self.test_results if not passed
-        ]
+        failed_tests = [(name, msg) for name, passed, msg in self.test_results if not passed]
         if failed_tests:
             print("\n❌ Failed Tests:")
             for name, msg in failed_tests:
@@ -506,8 +461,7 @@ class PackageSystemTester:
         # Overall success criteria
         overall_success = (
             passed_tests >= len(test_methods) * 0.8  # At least 80% of test methods pass
-            and passed_individual_tests
-            >= total_individual_tests * 0.8  # At least 80% of individual tests pass
+            and passed_individual_tests >= total_individual_tests * 0.8  # At least 80% of individual tests pass
         )
 
         if overall_success:

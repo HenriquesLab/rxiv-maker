@@ -61,9 +61,7 @@ def process_supplementary_notes(content: LatexContent) -> LatexContent:
 
         # Create the LaTeX subsection with proper counter increment
         # Use custom command to ensure counter is incremented for cross-references
-        latex_replacement = (
-            f"{prefix}\\suppnotesection{{{title}}}\\label{{{ref_label}}}"
-        )
+        latex_replacement = f"{prefix}\\suppnotesection{{{title}}}\\label{{{ref_label}}}"
 
         # Create a unique placeholder that completely replaces the markdown pattern
         # This placeholder won't contain any asterisks or other markdown syntax
@@ -84,9 +82,7 @@ def process_supplementary_notes(content: LatexContent) -> LatexContent:
         return match.group(0)
 
     # Replace patterns with placeholders
-    processed_content = re.sub(
-        pattern, replace_with_placeholder, content, flags=re.MULTILINE
-    )
+    processed_content = re.sub(pattern, replace_with_placeholder, content, flags=re.MULTILINE)
 
     # Store the replacements for later restoration after text formatting
     # We use a global variable since strings don't have attributes
@@ -194,9 +190,7 @@ def validate_supplementary_note_numbering(content: MarkdownContent) -> list[str]
     expected_num = 1
     for note_num, _title, _ in sorted(notes_info, key=lambda x: x[0]):
         if note_num != expected_num:
-            errors.append(
-                f"Supplementary Note {note_num} found, expected {expected_num}"
-            )
+            errors.append(f"Supplementary Note {note_num} found, expected {expected_num}")
         expected_num += 1
 
     # Check for duplicate numbers

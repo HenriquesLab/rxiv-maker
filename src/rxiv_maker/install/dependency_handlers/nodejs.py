@@ -38,38 +38,47 @@ class NodeJSHandler:
             )
 
             return node_result.returncode == 0 and npm_result.returncode == 0
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return False
 
     def get_version(self) -> str | None:
         """Get Node.js version."""
         try:
-            result = subprocess.run(
-                ["node", "--version"], capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(["node", "--version"], capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 return result.stdout.strip()
             return None
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return None
 
     def get_npm_version(self) -> str | None:
         """Get npm version."""
         try:
-            result = subprocess.run(
-                ["npm", "--version"], capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(["npm", "--version"], capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 return result.stdout.strip()
             return None
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return None
 
-    def install_packages(
-        self, packages: list[str], global_install: bool = True
-    ) -> bool:
+    def install_packages(self, packages: list[str], global_install: bool = True) -> bool:
         """Install npm packages."""
         if not packages:
             return True
@@ -84,9 +93,7 @@ class NodeJSHandler:
                     cmd.append("-g")
                 cmd.append(package)
 
-                result = subprocess.run(
-                    cmd, capture_output=True, text=True, timeout=300
-                )
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
 
                 if result.returncode != 0:
                     self.logger.debug(f"Failed to install {package}: {result.stderr}")
@@ -106,7 +113,7 @@ class NodeJSHandler:
     def verify_mermaid(self) -> bool:
         """Verify Mermaid CLI installation.
 
-        Note: Mermaid CLI dependency has been removed in favor of Python-based solutions.
+        Note: Mermaid CLI dependency removed in favor of Python-based solutions.
         This always returns False to indicate mermaid CLI is not required.
         """
         return False  # No longer using mermaid CLI (puppeteer dependency removed)

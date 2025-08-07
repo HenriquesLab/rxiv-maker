@@ -50,17 +50,13 @@ def convert_tables_to_latex(
         caption_line_index = None
         if i > 0:
             # Check line immediately before
-            if re.match(
-                r"^Table\*?\s+\d+[\s:.]\s*", lines[i - 1].strip(), re.IGNORECASE
-            ):
+            if re.match(r"^Table\*?\s+\d+[\s:.]\s*", lines[i - 1].strip(), re.IGNORECASE):
                 caption_line_index = i - 1
             # Check line two positions back (in case of blank line)
             elif (
                 i > 1
                 and lines[i - 1].strip() == ""
-                and re.match(
-                    r"^Table\*?\s+\d+[\s:.]\s*", lines[i - 2].strip(), re.IGNORECASE
-                )
+                and re.match(r"^Table\*?\s+\d+[\s:.]\s*", lines[i - 2].strip(), re.IGNORECASE)
             ):
                 caption_line_index = i - 2
 
@@ -70,9 +66,7 @@ def convert_tables_to_latex(
             if caption_line.lower().startswith("table*"):
                 table_width = "double"
             # Extract caption text after "Table X:" or "Table* X:" etc.
-            caption_match = re.match(
-                r"^Table\*?\s+\d+[\s:.]?\s*(.*)$", caption_line, re.IGNORECASE
-            )
+            caption_match = re.match(r"^Table\*?\s+\d+[\s:.]?\s*(.*)$", caption_line, re.IGNORECASE)
             if caption_match:
                 table_caption = caption_match.group(1).strip()
 
@@ -108,9 +102,7 @@ def convert_tables_to_latex(
                 lines_back = i - caption_line_index
                 # Remove the appropriate number of lines from result_lines
                 if lines_back == 1:  # Caption was immediately before table
-                    if result_lines and result_lines[-1].strip().lower().startswith(
-                        "table"
-                    ):
+                    if result_lines and result_lines[-1].strip().lower().startswith("table"):
                         result_lines.pop()
                 elif (
                     lines_back == 2
@@ -123,9 +115,7 @@ def convert_tables_to_latex(
                     result_lines.pop()  # Remove caption line
 
             # Check for new format table caption after the table
-            new_format_caption, table_id, rotation_angle = _parse_table_caption(
-                lines, i
-            )
+            new_format_caption, table_id, rotation_angle = _parse_table_caption(lines, i)
             if new_format_caption:
                 i += 2  # Skip blank line and caption line
 
@@ -188,12 +178,8 @@ def generate_latex_table(
     # syntax in the first column
     # Remove markdown formatting from header for comparison
     first_header_clean = headers[0].lower().strip() if headers else ""
-    first_header_clean = re.sub(
-        r"\*\*(.*?)\*\*", r"\1", first_header_clean
-    )  # Remove **bold**
-    first_header_clean = re.sub(
-        r"\*(.*?)\*", r"\1", first_header_clean
-    )  # Remove *italic*
+    first_header_clean = re.sub(r"\*\*(.*?)\*\*", r"\1", first_header_clean)  # Remove **bold**
+    first_header_clean = re.sub(r"\*(.*?)\*", r"\1", first_header_clean)  # Remove *italic*
     is_markdown_syntax_table = first_header_clean == "markdown element"
 
     # Determine if we should use tabularx for better width handling
@@ -268,13 +254,9 @@ def generate_latex_table(
             )
         else:
             # For other wide tables, use double column layout for better fit
-            table_env, position = _determine_table_environment(
-                "double", rotation_angle, is_supplementary
-            )
+            table_env, position = _determine_table_environment("double", rotation_angle, is_supplementary)
     else:
-        table_env, position = _determine_table_environment(
-            width, rotation_angle, is_supplementary
-        )
+        table_env, position = _determine_table_environment(width, rotation_angle, is_supplementary)
 
     # Build LaTeX table environment
     latex_lines = [
@@ -285,9 +267,7 @@ def generate_latex_table(
     # Add rotation if specified and not already using sidewaystable
     # Skip rotation for markdown syntax tables (they use tabularx instead)
     use_rotatebox = (
-        rotation_angle
-        and not table_env.startswith("sideways")
-        and not (is_markdown_syntax_table and use_tabularx)
+        rotation_angle and not table_env.startswith("sideways") and not (is_markdown_syntax_table and use_tabularx)
     )
     if use_rotatebox:
         latex_lines.append(f"\\rotatebox{{{rotation_angle}}}{{%")
@@ -681,9 +661,7 @@ def _is_table_row(line: str) -> bool:
     return "|" in line and line.startswith("|") and line.endswith("|")
 
 
-def _parse_table_caption(
-    lines: list[str], i: int
-) -> tuple[str | None, str | None, int | None]:
+def _parse_table_caption(lines: list[str], i: int) -> tuple[str | None, str | None, int | None]:
     """Parse table caption in new format after table."""
     new_format_caption = None
     table_id = None
@@ -699,9 +677,7 @@ def _parse_table_caption(
         caption_line = lines[i + 1].strip()
 
         # Parse caption with optional attributes like rotate=90
-        caption_match = re.match(
-            r"^\{#([a-zA-Z0-9_:-]+)([^}]*)\}\s*(.+)$", caption_line
-        )
+        caption_match = re.match(r"^\{#([a-zA-Z0-9_:-]+)([^}]*)\}\s*(.+)$", caption_line)
         if caption_match:
             table_id = caption_match.group(1)
             attributes_str = caption_match.group(2).strip()
@@ -714,12 +690,8 @@ def _parse_table_caption(
                     rotation_angle = int(rotation_match.group(1))
 
             # Process caption text to handle markdown formatting
-            new_format_caption = re.sub(
-                r"\*\*([^*]+)\*\*", r"\\textbf{\1}", caption_text
-            )
-            new_format_caption = re.sub(
-                r"\*([^*]+)\*", r"\\textit{\1}", new_format_caption
-            )
+            new_format_caption = re.sub(r"\*\*([^*]+)\*\*", r"\\textbf{\1}", caption_text)
+            new_format_caption = re.sub(r"\*([^*]+)\*", r"\\textit{\1}", new_format_caption)
 
     return new_format_caption, table_id, rotation_angle
 
@@ -797,9 +769,7 @@ def convert_table_references_to_latex(text: MarkdownContent) -> LatexContent:
     return text
 
 
-def _determine_table_environment(
-    width: str, rotation_angle: int | None, is_supplementary: bool
-) -> tuple[str, str]:
+def _determine_table_environment(width: str, rotation_angle: int | None, is_supplementary: bool) -> tuple[str, str]:
     """Determine the appropriate table environment and position."""
     if rotation_angle and is_supplementary:
         # Use unified sideways table for rotated supplementary tables

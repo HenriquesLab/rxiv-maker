@@ -4,6 +4,7 @@ import os
 import re
 from typing import Any
 
+from ..core.error_codes import ErrorCode, create_validation_error
 from .base_validator import (
     BaseValidator,
     ValidationError,
@@ -17,9 +18,7 @@ class FigureValidator(BaseValidator):
 
     # Figure patterns based on codebase analysis
     FIGURE_PATTERNS = {
-        "traditional": re.compile(
-            r"!\[([^\]]*)\]\(([^)]+)\)(\{[^}]*\})?"
-        ),  # ![caption](path){attrs}
+        "traditional": re.compile(r"!\[([^\]]*)\]\(([^)]+)\)(\{[^}]*\})?"),  # ![caption](path){attrs}
         "new_format": re.compile(
             r"!\[\]\(([^)]+)\)\s*\n\s*(\{[^}]*\})\s*\*\*([^*]+)\*\*.*?(?=\n\n|\Z)",
             re.MULTILINE | re.DOTALL,
@@ -75,15 +74,13 @@ class FigureValidator(BaseValidator):
         # Check if FIGURES directory exists
         if not os.path.exists(self.figures_dir):
             errors.append(
-                self._create_error(
-                    ValidationLevel.ERROR,
+                create_validation_error(
+                    ErrorCode.DIRECTORY_NOT_FOUND,
                     "FIGURES directory not found",
                     suggestion="Create FIGURES/ directory in manuscript folder",
                 )
             )
-            return ValidationResult(
-                "FigureValidator", errors, {"figures_dir_missing": True}
-            )
+            return ValidationResult("FigureValidator", errors, {"figures_dir_missing": True})
 
         # Scan available figure files
         self.available_files = self._scan_available_files()
@@ -152,9 +149,7 @@ class FigureValidator(BaseValidator):
 
         return errors
 
-    def _find_and_validate_figures(
-        self, content: str, file_path: str, file_type: str
-    ) -> list:
+    def _find_and_validate_figures(self, content: str, file_path: str, file_type: str) -> list:
         """Find and validate all figures in content."""
         errors = []
         processed_positions = set()
@@ -178,9 +173,7 @@ class FigureValidator(BaseValidator):
 
             self.found_figures.append(figure_info)
 
-            figure_errors = self._validate_single_figure(
-                figure_info, file_path, line_num
-            )
+            figure_errors = self._validate_single_figure(figure_info, file_path, line_num)
             errors.extend(figure_errors)
 
             # Mark this position as processed to avoid traditional pattern match
@@ -209,16 +202,12 @@ class FigureValidator(BaseValidator):
 
             self.found_figures.append(figure_info)
 
-            figure_errors = self._validate_single_figure(
-                figure_info, file_path, line_num
-            )
+            figure_errors = self._validate_single_figure(figure_info, file_path, line_num)
             errors.extend(figure_errors)
 
         return errors
 
-    def _validate_single_figure(
-        self, figure_info: dict, file_path: str, line_num: int
-    ) -> list:
+    def _validate_single_figure(self, figure_info: dict, file_path: str, line_num: int) -> list:
         """Validate a single figure reference."""
         errors = []
 
@@ -236,9 +225,7 @@ class FigureValidator(BaseValidator):
 
         return errors
 
-    def _validate_figure_path(
-        self, figure_info: dict, file_path: str, line_num: int
-    ) -> list:
+    def _validate_figure_path(self, figure_info: dict, file_path: str, line_num: int) -> list:
         """Validate figure file path and existence."""
         errors = []
         fig_path = figure_info["path"]
@@ -251,9 +238,7 @@ class FigureValidator(BaseValidator):
                     f"Figure path should start with 'FIGURES/': {fig_path}",
                     file_path=file_path,
                     line_number=line_num,
-                    suggestion=(
-                        "Use relative paths from manuscript root: FIGURES/filename.ext"
-                    ),
+                    suggestion=("Use relative paths from manuscript root: FIGURES/filename.ext"),
                     error_code="non_standard_path",
                 )
             )
@@ -270,10 +255,7 @@ class FigureValidator(BaseValidator):
                     f"Unsupported figure format: {ext}",
                     file_path=file_path,
                     line_number=line_num,
-                    suggestion=(
-                        "Use supported formats: "
-                        f"{', '.join(sorted(self.VALID_EXTENSIONS))}"
-                    ),
+                    suggestion=(f"Use supported formats: {', '.join(sorted(self.VALID_EXTENSIONS))}"),
                     error_code="unsupported_format",
                 )
             )
@@ -283,19 +265,14 @@ class FigureValidator(BaseValidator):
             # For .py and .mmd files, check if they will generate the expected output
             if ext in {".py", ".mmd"}:
                 expected_outputs = self._get_expected_outputs(rel_path)
-                if not any(
-                    output in self.available_files for output in expected_outputs
-                ):
+                if not any(output in self.available_files for output in expected_outputs):
                     errors.append(
                         self._create_error(
                             ValidationLevel.WARNING,
                             f"Figure source file not found: {fig_path}",
                             file_path=file_path,
                             line_number=line_num,
-                            suggestion=(
-                                "Ensure the figure source file exists in "
-                                "FIGURES/ directory"
-                            ),
+                            suggestion=("Ensure the figure source file exists in FIGURES/ directory"),
                             error_code="missing_source_file",
                         )
                     )
@@ -306,18 +283,14 @@ class FigureValidator(BaseValidator):
                         f"Figure file not found: {fig_path}",
                         file_path=file_path,
                         line_number=line_num,
-                        suggestion=(
-                            "Ensure the figure file exists in FIGURES/ directory"
-                        ),
+                        suggestion=("Ensure the figure file exists in FIGURES/ directory"),
                         error_code="missing_figure_file",
                     )
                 )
 
         return errors
 
-    def _validate_figure_attributes(
-        self, figure_info: dict, file_path: str, line_num: int
-    ) -> list[ValidationError]:
+    def _validate_figure_attributes(self, figure_info: dict, file_path: str, line_num: int) -> list[ValidationError]:
         """Validate figure attributes."""
         errors: list[ValidationError] = []
         attrs_str = figure_info["attributes"]
@@ -338,9 +311,7 @@ class FigureValidator(BaseValidator):
                         f"Non-standard figure ID format: {id_value}",
                         file_path=file_path,
                         line_number=line_num,
-                        suggestion=(
-                            "Use letters, numbers, underscores, and hyphens for IDs"
-                        ),
+                        suggestion=("Use letters, numbers, underscores, and hyphens for IDs"),
                         error_code="non_standard_id",
                     )
                 )
@@ -384,10 +355,7 @@ class FigureValidator(BaseValidator):
                         f"Non-standard LaTeX position: {pos_value}",
                         file_path=file_path,
                         line_number=line_num,
-                        suggestion=(
-                            "Use standard LaTeX positions like 'h', 't', 'b', "
-                            "'!ht', etc."
-                        ),
+                        suggestion=("Use standard LaTeX positions like 'h', 't', 'b', '!ht', etc."),
                         error_code="non_standard_position",
                     )
                 )
@@ -396,11 +364,7 @@ class FigureValidator(BaseValidator):
         span_value = attributes.get("span")
         twocolumn_value = attributes.get("twocolumn")
 
-        if (
-            span_value == "2col"
-            and twocolumn_value
-            and twocolumn_value.lower() != "true"
-        ):
+        if span_value == "2col" and twocolumn_value and twocolumn_value.lower() != "true":
             errors.append(
                 self._create_error(
                     ValidationLevel.WARNING,
@@ -414,9 +378,7 @@ class FigureValidator(BaseValidator):
 
         return errors
 
-    def _validate_figure_caption(
-        self, figure_info: dict, file_path: str, line_num: int
-    ) -> list:
+    def _validate_figure_caption(self, figure_info: dict, file_path: str, line_num: int) -> list:
         """Validate figure caption."""
         errors = []
         caption = figure_info["caption"]
@@ -442,9 +404,7 @@ class FigureValidator(BaseValidator):
                     f"Very long figure caption ({len(caption)} characters)",
                     file_path=file_path,
                     line_number=line_num,
-                    suggestion=(
-                        "Consider shortening caption or moving details to main text"
-                    ),
+                    suggestion=("Consider shortening caption or moving details to main text"),
                     error_code="long_caption",
                 )
             )
@@ -576,9 +536,7 @@ class FigureValidator(BaseValidator):
                 self._create_error(
                     ValidationLevel.INFO,
                     f"Unused figure file: FIGURES/{unused_file}",
-                    suggestion=(
-                        "Consider removing unused files to reduce repository size"
-                    ),
+                    suggestion=("Consider removing unused files to reduce repository size"),
                     error_code="unused_figure_file",
                 )
             )

@@ -21,9 +21,7 @@ console = Console()
     help="Template to use for initialization",
 )
 @click.option("--force", "-f", is_flag=True, help="Force overwrite existing files")
-@click.option(
-    "--no-interactive", is_flag=True, help="Skip interactive prompts and use defaults"
-)
+@click.option("--no-interactive", is_flag=True, help="Skip interactive prompts and use defaults")
 @click.pass_context
 def init(
     ctx: click.Context,
@@ -68,9 +66,7 @@ def init(
 
     # Check if directory exists
     if manuscript_dir.exists() and not force:
-        console.print(
-            f"❌ Error: Directory '{manuscript_path}' already exists", style="red"
-        )
+        console.print(f"❌ Error: Directory '{manuscript_path}' already exists", style="red")
         console.print("💡 Use --force to overwrite existing files", style="yellow")
         sys.exit(1)
 
@@ -80,9 +76,7 @@ def init(
         figures_dir = manuscript_dir / "FIGURES"
         figures_dir.mkdir(exist_ok=True)
 
-        console.print(
-            f"📁 Created manuscript directory: {manuscript_path}", style="green"
-        )
+        console.print(f"📁 Created manuscript directory: {manuscript_path}", style="green")
 
         # Get metadata (interactive or defaults)
         if no_interactive:
@@ -100,9 +94,7 @@ def init(
             # Author information
             author_name = Prompt.ask("Author name", default="Your Name")
             author_email = Prompt.ask("Author email", default="your.email@example.com")
-            author_affiliation = Prompt.ask(
-                "Author affiliation", default="Your Institution"
-            )
+            author_affiliation = Prompt.ask("Author affiliation", default="Your Institution")
 
         # Create 00_CONFIG.yml
         today = datetime.date.today().strftime("%Y-%m-%d")
@@ -205,9 +197,7 @@ Additional tables.
 Additional references if needed.
 """
 
-        with open(
-            manuscript_dir / "02_SUPPLEMENTARY_INFO.md", "w", encoding="utf-8"
-        ) as f:
+        with open(manuscript_dir / "02_SUPPLEMENTARY_INFO.md", "w", encoding="utf-8") as f:
             f.write(supp_content)
 
         # Create 03_REFERENCES.bib
@@ -295,18 +285,10 @@ Thumbs.db
 
         # Show next steps
         console.print("\\n🚀 Next steps:", style="blue")
-        console.print(
-            f"1. Edit {manuscript_path}/00_CONFIG.yml with your details", style="white"
-        )
-        console.print(
-            f"2. Write your content in {manuscript_path}/01_MAIN.md", style="white"
-        )
-        console.print(
-            f"3. Add references to {manuscript_path}/03_REFERENCES.bib", style="white"
-        )
-        console.print(
-            f"4. Run 'rxiv build {manuscript_path}' to generate PDF", style="white"
-        )
+        console.print(f"1. Edit {manuscript_path}/00_CONFIG.yml with your details", style="white")
+        console.print(f"2. Write your content in {manuscript_path}/01_MAIN.md", style="white")
+        console.print(f"3. Add references to {manuscript_path}/03_REFERENCES.bib", style="white")
+        console.print(f"4. Run 'rxiv pdf {manuscript_path}' to generate PDF", style="white")
 
     except Exception as e:
         console.print(f"❌ Error initializing manuscript: {e}", style="red")

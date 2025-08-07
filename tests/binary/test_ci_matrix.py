@@ -12,45 +12,29 @@ import pytest
 class TestCITestingMatrix:
     """Test CI testing matrix configuration for binary compatibility."""
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def test_workflow_path(self):
         """Get path to main test workflow."""
-        return (
-            Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
-        )
+        return Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def release_workflow_path(self):
         """Get path to release workflow."""
-        return (
-            Path(__file__).parent.parent.parent
-            / ".github"
-            / "workflows"
-            / "release.yml"
-        )
+        return Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
 
     def test_test_workflow_exists(self):
         """Test that the main test workflow exists."""
-        test_workflow_path = (
-            Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
-        )
+        test_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
         assert test_workflow_path.exists(), "Main test workflow not found"
 
     def test_release_workflow_exists(self):
         """Test that the release workflow exists."""
-        release_workflow_path = (
-            Path(__file__).parent.parent.parent
-            / ".github"
-            / "workflows"
-            / "release.yml"
-        )
+        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
         assert release_workflow_path.exists(), "Release workflow not found"
 
     def test_python_version_matrix(self):
         """Test that CI tests multiple Python versions for compatibility."""
-        test_workflow_path = (
-            Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
-        )
+        test_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
         if not test_workflow_path.exists():
             pytest.skip("Test workflow not found")
 
@@ -65,9 +49,7 @@ class TestCITestingMatrix:
 
     def test_os_matrix_coverage(self):
         """Test that CI covers all major operating systems."""
-        test_workflow_path = (
-            Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
-        )
+        test_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
         if not test_workflow_path.exists():
             pytest.skip("Test workflow not found")
 
@@ -80,12 +62,7 @@ class TestCITestingMatrix:
 
     def test_binary_build_matrix(self):
         """Test that binary builds cover all target platforms."""
-        release_workflow_path = (
-            Path(__file__).parent.parent.parent
-            / ".github"
-            / "workflows"
-            / "release.yml"
-        )
+        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
         if not release_workflow_path.exists():
             pytest.skip("Release workflow not found")
 
@@ -98,12 +75,7 @@ class TestCITestingMatrix:
 
     def test_architecture_matrix(self):
         """Test that different architectures are covered."""
-        release_workflow_path = (
-            Path(__file__).parent.parent.parent
-            / ".github"
-            / "workflows"
-            / "release.yml"
-        )
+        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
         if not release_workflow_path.exists():
             pytest.skip("Release workflow not found")
 
@@ -115,9 +87,7 @@ class TestCITestingMatrix:
 
     def test_dependency_matrix_testing(self):
         """Test that CI tests with different dependency versions."""
-        test_workflow_path = (
-            Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
-        )
+        test_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
         if not test_workflow_path.exists():
             pytest.skip("Test workflow not found")
 
@@ -129,9 +99,7 @@ class TestCITestingMatrix:
 
     def test_test_categorization(self):
         """Test that different test categories are properly configured."""
-        test_workflow_path = (
-            Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
-        )
+        test_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
         if not test_workflow_path.exists():
             pytest.skip("Test workflow not found")
 
@@ -147,21 +115,9 @@ class TestCITestingMatrix:
 
     def test_timeout_configurations(self):
         """Test that appropriate timeouts are configured."""
-        test_workflow_path = (
-            Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
-        )
-        release_workflow_path = (
-            Path(__file__).parent.parent.parent
-            / ".github"
-            / "workflows"
-            / "release.yml"
-        )
-        build_pdf_workflow_path = (
-            Path(__file__).parent.parent.parent
-            / ".github"
-            / "workflows"
-            / "build-pdf.yml"
-        )
+        test_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
+        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
+        build_pdf_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "build-pdf.yml"
 
         workflows = []
         if test_workflow_path.exists():
@@ -183,18 +139,14 @@ class TestCITestingMatrix:
             if has_timeout:
                 found_timeout = True
             else:
-                print(
-                    f"Warning: No timeout configuration found in {workflow_path.name}"
-                )
+                print(f"Warning: No timeout configuration found in {workflow_path.name}")
 
         # At least one workflow should have timeout configurations
         assert found_timeout, "No timeout configurations found in any workflow"
 
     def test_failure_handling_matrix(self):
         """Test that CI handles failures appropriately across platforms."""
-        test_workflow_path = (
-            Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
-        )
+        test_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
         if not test_workflow_path.exists():
             pytest.skip("Test workflow not found")
 
@@ -227,9 +179,7 @@ class TestBinaryCompatibilityMatrix:
             assert ">=3.11" in content or ">=3.10" in content
 
         # Current version should be supported
-        assert current_version >= (3, 11), (
-            f"Python {current_version} may not be supported"
-        )
+        assert current_version >= (3, 11), f"Python {current_version} may not be supported"
 
     def test_os_specific_functionality(self):
         """Test OS-specific functionality that affects binary compatibility."""
@@ -288,9 +238,7 @@ class TestBinaryCompatibilityMatrix:
                 missing_deps[dep] = purpose
 
         if missing_deps:
-            pytest.skip(
-                f"Missing dependencies in test environment: {list(missing_deps.keys())}"
-            )
+            pytest.skip(f"Missing dependencies in test environment: {list(missing_deps.keys())}")
 
     def test_file_system_compatibility(self):
         """Test file system operations across platforms."""
@@ -320,9 +268,7 @@ class TestBinaryCompatibilityMatrix:
         test_content = "Test content with Unicode: áéíóú 中文 🚀"
 
         try:
-            with tempfile.NamedTemporaryFile(
-                mode="w", encoding="utf-8", delete=False
-            ) as f:
+            with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False) as f:
                 f.write(test_content)
                 temp_path = f.name
 
@@ -339,9 +285,7 @@ class TestBinaryCompatibilityMatrix:
             # Test with ASCII-safe content instead
             test_content_ascii = "Test content with basic characters: hello world"
 
-            with tempfile.NamedTemporaryFile(
-                mode="w", encoding="utf-8", delete=False
-            ) as f:
+            with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False) as f:
                 f.write(test_content_ascii)
                 temp_path = f.name
 
@@ -360,12 +304,7 @@ class TestCIPerformanceMatrix:
 
     def test_build_time_considerations(self):
         """Test that build times are reasonable across platforms."""
-        release_workflow_path = (
-            Path(__file__).parent.parent.parent
-            / ".github"
-            / "workflows"
-            / "release.yml"
-        )
+        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
         if not release_workflow_path.exists():
             pytest.skip("Release workflow not found")
 
@@ -384,15 +323,8 @@ class TestCIPerformanceMatrix:
 
     def test_cache_configuration(self):
         """Test that caching is properly configured to improve CI performance."""
-        test_workflow_path = (
-            Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
-        )
-        release_workflow_path = (
-            Path(__file__).parent.parent.parent
-            / ".github"
-            / "workflows"
-            / "release.yml"
-        )
+        test_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
+        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
 
         workflows = []
         if test_workflow_path.exists():
@@ -411,9 +343,7 @@ class TestCIPerformanceMatrix:
 
     def test_parallel_execution(self):
         """Test that tests can run in parallel where appropriate."""
-        test_workflow_path = (
-            Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
-        )
+        test_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
         if not test_workflow_path.exists():
             pytest.skip("Test workflow not found")
 
@@ -427,12 +357,7 @@ class TestCIPerformanceMatrix:
 
     def test_resource_optimization(self):
         """Test that CI resources are optimized for binary building."""
-        release_workflow_path = (
-            Path(__file__).parent.parent.parent
-            / ".github"
-            / "workflows"
-            / "release.yml"
-        )
+        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
         if not release_workflow_path.exists():
             pytest.skip("Release workflow not found")
 
@@ -450,9 +375,7 @@ class TestCIQualityAssurance:
 
     def test_linting_across_platforms(self):
         """Test that linting runs across platforms."""
-        test_workflow_path = (
-            Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
-        )
+        test_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
         if not test_workflow_path.exists():
             pytest.skip("Test workflow not found")
 
@@ -466,9 +389,7 @@ class TestCIQualityAssurance:
 
     def test_type_checking_integration(self):
         """Test that type checking is integrated into CI."""
-        test_workflow_path = (
-            Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
-        )
+        test_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
         if not test_workflow_path.exists():
             pytest.skip("Test workflow not found")
 
@@ -483,15 +404,8 @@ class TestCIQualityAssurance:
 
     def test_security_scanning(self):
         """Test that security scanning is included where appropriate."""
-        test_workflow_path = (
-            Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
-        )
-        release_workflow_path = (
-            Path(__file__).parent.parent.parent
-            / ".github"
-            / "workflows"
-            / "release.yml"
-        )
+        test_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
+        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
 
         workflows = []
         if test_workflow_path.exists():
@@ -513,9 +427,7 @@ class TestCIQualityAssurance:
 
     def test_test_coverage_reporting(self):
         """Test that test coverage is properly reported."""
-        test_workflow_path = (
-            Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
-        )
+        test_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "test.yml"
         if not test_workflow_path.exists():
             pytest.skip("Test workflow not found")
 
@@ -524,20 +436,13 @@ class TestCIQualityAssurance:
         # Should include coverage reporting
         coverage_indicators = ["coverage", "codecov", "cov"]
 
-        has_coverage = any(
-            indicator in content.lower() for indicator in coverage_indicators
-        )
+        has_coverage = any(indicator in content.lower() for indicator in coverage_indicators)
         if not has_coverage:
             print("No coverage reporting found in CI")
 
     def test_artifact_retention_policy(self):
         """Test that artifact retention is properly configured."""
-        release_workflow_path = (
-            Path(__file__).parent.parent.parent
-            / ".github"
-            / "workflows"
-            / "release.yml"
-        )
+        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
         if not release_workflow_path.exists():
             pytest.skip("Release workflow not found")
 
@@ -602,9 +507,7 @@ class TestBinaryTestingIntegrations:
             content = current_file.read_text()
 
             pm_indicators = ["homebrew", "scoop", "package_manager", "brew", "manifest"]
-            has_pm_tests = any(
-                indicator in content.lower() for indicator in pm_indicators
-            )
+            has_pm_tests = any(indicator in content.lower() for indicator in pm_indicators)
 
             assert has_pm_tests, "No package manager integration tests found"
 
@@ -620,8 +523,6 @@ class TestBinaryTestingIntegrations:
             content = current_file.read_text()
 
             e2e_indicators = ["end_to_end", "e2e", "workflow", "distribution"]
-            has_e2e_tests = any(
-                indicator in content.lower() for indicator in e2e_indicators
-            )
+            has_e2e_tests = any(indicator in content.lower() for indicator in e2e_indicators)
 
             assert has_e2e_tests, "No end-to-end binary tests found"

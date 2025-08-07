@@ -26,18 +26,16 @@ class SystemLibsHandler:
 
     def verify_installation(self) -> bool:
         """Verify system libraries installation."""
-        try:
-            # Test key Python packages that depend on system libraries
-            import matplotlib
-            import numpy
-            import pandas
-            import PIL
-            import scipy
+        import importlib.util
 
-            return True
-        except ImportError as e:
-            self.logger.debug(f"Missing Python package: {e}")
-            return False
+        packages = ["matplotlib", "numpy", "pandas", "PIL", "scipy"]
+
+        for package in packages:
+            if importlib.util.find_spec(package) is None:
+                self.logger.debug(f"Missing Python package: {package}")
+                return False
+
+        return True
 
     def get_missing_packages(self) -> list[str]:
         """Get list of missing Python packages."""
@@ -75,7 +73,7 @@ class SystemLibsHandler:
                 )
 
             return result.returncode == 0
-        except:
+        except Exception:
             return False
 
     def get_python_version(self) -> str:

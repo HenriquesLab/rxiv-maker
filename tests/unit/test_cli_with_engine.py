@@ -41,9 +41,7 @@ def test_check_installation(execution_engine):
     Tests the check-installation command across different engines.
     """
     if execution_engine.engine_type == "local":
-        result = execution_engine.run(
-            [sys.executable, "-m", "rxiv_maker.cli", "check-installation"]
-        )
+        result = execution_engine.run([sys.executable, "-m", "rxiv_maker.cli", "check-installation"])
     else:
         result = execution_engine.run(["rxiv", "check-installation"])
 
@@ -89,10 +87,7 @@ def test_init_command(execution_engine, temp_dir):
         assert "usage" not in result.stderr.lower() or "error" in result.stderr.lower()
     else:
         # If it succeeded, verify output mentions creation
-        assert (
-            "creating" in result.stdout.lower()
-            or "initialized" in result.stdout.lower()
-        )
+        assert "creating" in result.stdout.lower() or "initialized" in result.stdout.lower()
 
 
 @pytest.mark.fast
@@ -103,9 +98,7 @@ def test_invalid_commands(execution_engine, invalid_command):
     """
     # We expect this to fail, so we don't use check=True in the engine
     if execution_engine.engine_type == "local":
-        result = execution_engine.run(
-            [sys.executable, "-m", "rxiv_maker.cli", invalid_command], check=False
-        )
+        result = execution_engine.run([sys.executable, "-m", "rxiv_maker.cli", invalid_command], check=False)
     else:
         result = execution_engine.run(["rxiv", invalid_command], check=False)
 
@@ -129,9 +122,7 @@ def test_validate_without_manuscript(execution_engine, temp_dir):
             check=False,
         )
     else:
-        result = execution_engine.run(
-            ["rxiv", "validate"], cwd=str(temp_dir), check=False
-        )
+        result = execution_engine.run(["rxiv", "validate"], cwd=str(temp_dir), check=False)
 
     # Should fail since no manuscript exists
     assert result.returncode != 0
@@ -191,9 +182,7 @@ class TestEngineIntegration:
             execution_engine.run(["mkdir", "-p", test_dir])
 
             # Create a marker file
-            execution_engine.run(
-                ["sh", "-c", f"echo 'test content' > {test_dir}/marker.txt"]
-            )
+            execution_engine.run(["sh", "-c", f"echo 'test content' > {test_dir}/marker.txt"])
 
             # List files in the directory
             result = execution_engine.run(

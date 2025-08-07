@@ -39,7 +39,7 @@ repos:
     hooks:
       # Linting (includes docstring validation with Google convention)
       - id: ruff
-        args: [--fix]
+        args: [--fix, --extend-ignore=E501,D100,D101,D102,D103,D107]
         exclude: ^(.*\.ipynb|git_submodules/.*)$
       # Formatting (replaces black, isort, autoflake, docformatter)
       - id: ruff-format
@@ -84,10 +84,26 @@ repos:
     hooks:
       - id: lazydocs-generate
         name: Generate API documentation
-        entry: python src/rxiv_maker/commands/generate_docs.py
+        entry: python src/rxiv_maker/engine/generate_docs.py
         language: system
         files: ^src/rxiv_maker/.*\.py$
         exclude: ^git_submodules/.*$
+        pass_filenames: false
+
+  # Repository integrity and contamination prevention safeguards
+  - repo: local
+    hooks:
+      - id: validate-submodules
+        name: Validate submodule integrity
+        entry: scripts/safeguards/validate-submodules.sh
+        language: system
+        files: ^(\.gitmodules|submodules/.*)$
+        pass_filenames: false
+      - id: check-repo-boundaries
+        name: Check repository boundaries
+        entry: python scripts/safeguards/check-repo-boundaries.py
+        language: system
+        files: ^(\.gitmodules|submodules/.*|src/.*|pyproject\.toml|Makefile)$
         pass_filenames: false
 
 default_language_version:

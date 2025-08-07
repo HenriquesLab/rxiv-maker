@@ -73,9 +73,7 @@ class TestMarkdownToLatexConversion:
 
         for markdown, expected in test_cases:
             result = convert_markdown_to_latex(markdown, is_supplementary=False)
-            assert expected in result, (
-                f"Failed for: {markdown}\nExpected: {expected}\nGot: {result}"
-            )
+            assert expected in result, f"Failed for: {markdown}\nExpected: {expected}\nGot: {result}"
 
     def test_list_items_with_formatting(self):
         """Test list items that contain formatting (bold and italic)."""
@@ -115,10 +113,7 @@ class TestFigureConversion:
 
     def test_figure_with_attributes(self):
         """Test conversion of figures with attributes."""
-        markdown = (
-            "![Test Caption](FIGURES/test.png)"
-            '{#fig:test width="0.8" tex_position="!ht"}'
-        )
+        markdown = '![Test Caption](FIGURES/test.png){#fig:test width="0.8" tex_position="!ht"}'
         result = convert_figures_to_latex(markdown)
 
         assert r"\begin{figure}[!ht]" in result
@@ -133,9 +128,7 @@ class TestFigureConversion:
         result = convert_figures_to_latex(markdown)
 
         assert r"\begin{figure}[ht]" in result
-        assert (
-            r"\includegraphics[width=\linewidth]{Figures/simple/simple.png}" in result
-        )
+        assert r"\includegraphics[width=\linewidth]{Figures/simple/simple.png}" in result
         assert r"\caption{Simple Caption}" in result
         assert r"\end{figure}" in result
 
@@ -153,18 +146,14 @@ class TestTableReferenceConversion:
     def test_regular_table_reference_conversion(self):
         """Test conversion of regular table references."""
         text = "As shown in @table:results, the performance is excellent."
-        expected = (
-            r"As shown in Table \ref{table:results}, the performance is excellent."
-        )
+        expected = r"As shown in Table \ref{table:results}, the performance is excellent."
         result = convert_table_references_to_latex(text)
         assert result == expected
 
     def test_supplementary_table_reference_conversion(self):
         """Test conversion of supplementary table references."""
         text = "A detailed comparison is provided in @stable:tool-comparison."
-        expected = (
-            r"A detailed comparison is provided in Table \ref{stable:tool-comparison}."
-        )
+        expected = r"A detailed comparison is provided in Table \ref{stable:tool-comparison}."
         result = convert_table_references_to_latex(text)
         assert result == expected
 
@@ -212,10 +201,7 @@ class TestSectionExtraction:
         """Test mapping of section titles to keys."""
         assert map_section_title_to_key("Abstract") == "abstract"
         assert map_section_title_to_key("Methods") == "methods"
-        assert (
-            map_section_title_to_key("Results and Discussion")
-            == "results_and_discussion"
-        )
+        assert map_section_title_to_key("Results and Discussion") == "results_and_discussion"
         assert map_section_title_to_key("Acknowledgements") == "acknowledgements"
 
     def test_extract_sections_with_yaml(self, temp_dir, sample_markdown):
@@ -267,20 +253,14 @@ class TestListConversion:
     def test_convert_unordered_list(self):
         """Test conversion of unordered lists with dash bullets."""
         markdown = "- First item\n- Second item\n- Third item"
-        expected = (
-            "\\begin{itemize}\n  \\item First item\n  \\item Second item\n"
-            "  \\item Third item\n\\end{itemize}"
-        )
+        expected = "\\begin{itemize}\n  \\item First item\n  \\item Second item\n  \\item Third item\n\\end{itemize}"
         result = convert_lists_to_latex(markdown)
         assert expected in result
 
     def test_convert_unordered_list_asterisk(self):
         """Test conversion of unordered lists with asterisk bullets."""
         markdown = "* First item\n* Second item\n* Third item"
-        expected = (
-            "\\begin{itemize}\n  \\item First item\n  \\item Second item\n"
-            "  \\item Third item\n\\end{itemize}"
-        )
+        expected = "\\begin{itemize}\n  \\item First item\n  \\item Second item\n  \\item Third item\n\\end{itemize}"
         result = convert_lists_to_latex(markdown)
         assert expected in result
 
@@ -288,8 +268,7 @@ class TestListConversion:
         """Test conversion of ordered lists."""
         markdown = "1. First item\n2. Second item\n3. Third item"
         expected = (
-            "\\begin{enumerate}\n  \\item First item\n  \\item Second item\n"
-            "  \\item Third item\n\\end{enumerate}"
+            "\\begin{enumerate}\n  \\item First item\n  \\item Second item\n  \\item Third item\n\\end{enumerate}"
         )
         result = convert_lists_to_latex(markdown)
         assert expected in result
@@ -298,8 +277,7 @@ class TestListConversion:
         """Test conversion of ordered lists with parentheses."""
         markdown = "1) First item\n2) Second item\n3) Third item"
         expected = (
-            "\\begin{enumerate}\n  \\item First item\n  \\item Second item\n"
-            "  \\item Third item\n\\end{enumerate}"
+            "\\begin{enumerate}\n  \\item First item\n  \\item Second item\n  \\item Third item\n\\end{enumerate}"
         )
         result = convert_lists_to_latex(markdown)
         assert expected in result
@@ -321,10 +299,7 @@ class TestCodeBlockConversion:
     def test_convert_fenced_code_block(self):
         """Test conversion of fenced code blocks."""
         markdown = "```\nprint('Hello, world!')\nprint('Second line')\n```"
-        expected = (
-            "\\begin{verbatim}\nprint('Hello, world!')\n"
-            "print('Second line')\n\\end{verbatim}"
-        )
+        expected = "\\begin{verbatim}\nprint('Hello, world!')\nprint('Second line')\n\\end{verbatim}"
         result = convert_code_blocks_to_latex(markdown)
         assert expected in result
 
@@ -342,10 +317,7 @@ class TestCodeBlockConversion:
     def test_convert_indented_code_block(self):
         """Test conversion of indented code blocks."""
         markdown = "    print('Hello, world!')\n    print('Second line')"
-        expected = (
-            "\\begin{verbatim}\nprint('Hello, world!')\n"
-            "print('Second line')\n\\end{verbatim}"
-        )
+        expected = "\\begin{verbatim}\nprint('Hello, world!')\nprint('Second line')\n\\end{verbatim}"
         result = convert_code_blocks_to_latex(markdown)
         assert expected in result
 
@@ -664,13 +636,8 @@ class TestSupplementaryNoteIntegration:
         markdown = "{#snote:test-id} **Test Supplementary Note.**"
         result = convert_markdown_to_latex(markdown, is_supplementary=True)
 
-        assert (
-            "\\suppnotesection{Test Supplementary Note.}\\label{snote:test-id}"
-            in result
-        )
-        assert (
-            "\\renewcommand{\\thesubsection}{Supp. Note \\arabic{subsection}}" in result
-        )
+        assert "\\suppnotesection{Test Supplementary Note.}\\label{snote:test-id}" in result
+        assert "\\renewcommand{\\thesubsection}{Supp. Note \\arabic{subsection}}" in result
 
     def test_supplementary_note_with_reference(self):
         """Test supplementary note with reference."""
@@ -697,12 +664,7 @@ Content of second note with reference to @snote:first."""
         assert "\\suppnotesection{Second Note.}\\label{snote:second}" in result
         assert "\\ref{snote:first}" in result
         # Should only have one renewcommand setup
-        assert (
-            result.count(
-                "\\renewcommand{\\thesubsection}{Supp. Note \\arabic{subsection}}"
-            )
-            == 1
-        )
+        assert result.count("\\renewcommand{\\thesubsection}{Supp. Note \\arabic{subsection}}") == 1
 
     def test_supplementary_note_with_text_formatting(self):
         """Test that supplementary notes work with text formatting."""
@@ -853,9 +815,7 @@ This is a supplementary note in the main document."""
         assert "\\label{snote:test-id_with.dots}" in result2
 
         # Test with long title
-        long_title = (
-            "Very Long Title That Spans Multiple Words And Tests Title Handling"
-        )
+        long_title = "Very Long Title That Spans Multiple Words And Tests Title Handling"
         markdown3 = f"{{#snote:long}} **{long_title}.**"
         result3 = convert_markdown_to_latex(markdown3, is_supplementary=True)
         assert f"\\suppnotesection{{{long_title}.}}" in result3
@@ -901,14 +861,8 @@ And references to @snote:detailed and @fig:example."""
         assert "\\subsubsection{Subsection in Note}" in result
 
         # Verify supplementary notes are processed
-        assert (
-            "\\suppnotesection{Detailed Analysis Methods.}\\label{snote:detailed}"
-            in result
-        )
-        assert (
-            "\\suppnotesection{Implementation Details.}\\label{snote:implementation}"
-            in result
-        )
+        assert "\\suppnotesection{Detailed Analysis Methods.}\\label{snote:detailed}" in result
+        assert "\\suppnotesection{Implementation Details.}\\label{snote:implementation}" in result
 
         # Verify references are processed
         assert "\\ref{snote:detailed}" in result
@@ -924,10 +878,7 @@ class TestCompleteFormatter:
 
     def test_bold_and_italic_in_list_items(self):
         """Test that bold and italic formatting works correctly in list items."""
-        markdown = (
-            "- **Bold Processing**: Test description\n"
-            "- *Italic Processing*: Another test"
-        )
+        markdown = "- **Bold Processing**: Test description\n- *Italic Processing*: Another test"
         result = convert_markdown_to_latex(markdown)
 
         assert "\\begin{itemize}" in result
@@ -937,10 +888,7 @@ class TestCompleteFormatter:
 
     def test_italic_in_list_items(self):
         """Test that italic formatting works correctly in list items."""
-        markdown = (
-            "- *Citation Processing*: Test description\n"
-            "- *Figure Processing*: Another test"
-        )
+        markdown = "- *Citation Processing*: Test description\n- *Figure Processing*: Another test"
         result = convert_markdown_to_latex(markdown)
 
         assert "\\begin{itemize}" in result

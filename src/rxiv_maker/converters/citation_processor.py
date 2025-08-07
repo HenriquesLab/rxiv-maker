@@ -27,17 +27,31 @@ def convert_citations_to_latex(text: MarkdownContent) -> LatexContent:
         citations: list[CitationKey] = []
         for cite in citations_text.split(";"):
             # Remove @ symbol and whitespace
-            clean_cite = cite.strip().lstrip("@")
+            clean_cite = cite.strip().lstrip("@").strip()
             if clean_cite:
                 citations.append(clean_cite)
         return "\\cite{" + ",".join(citations) + "}"
 
     text = re.sub(r"\[(@[^]]+)\]", process_multiple_citations, text)
 
+    # First, protect email addresses and domain-like patterns by temporarily replacing them
+    email_patterns = []
+
+    def protect_email(match):
+        email_patterns.append(match.group(0))
+        return f"__EMAIL_PATTERN_{len(email_patterns) - 1}__"
+
+    # Match email-like patterns: word@word.word or @word.word (domain patterns)
+    text = re.sub(r"(\w+@[\w.-]+\.\w+|@[\w.-]+\.\w+)", protect_email, text)
+
     # Handle single citations like @citation_key (but not figure/equation references)
     # Allow alphanumeric, underscore, and hyphen in citation keys
     # Exclude figure and equation references by not matching @fig: or @eq: patterns
     text = re.sub(r"@(?!fig:|eq:)([a-zA-Z0-9_-]+)", r"\\cite{\1}", text)
+
+    # Restore protected email patterns
+    for i, pattern in enumerate(email_patterns):
+        text = text.replace(f"__EMAIL_PATTERN_{i}__", pattern)
 
     return text
 
@@ -70,9 +84,7 @@ def process_citations_outside_tables(
                 split_parts = part.split(placeholder)
                 for i, split_part in enumerate(split_parts):
                     new_parts.append(split_part)
-                    if (
-                        i < len(split_parts) - 1
-                    ):  # Don't add placeholder after last part
+                    if i < len(split_parts) - 1:  # Don't add placeholder after last part
                         new_parts.append(placeholder)
             else:
                 new_parts.append(part)
@@ -108,17 +120,31 @@ def process_citations_in_text(text: MarkdownContent) -> LatexContent:
         citations: list[CitationKey] = []
         for cite in citations_text.split(";"):
             # Remove @ symbol and whitespace
-            clean_cite = cite.strip().lstrip("@")
+            clean_cite = cite.strip().lstrip("@").strip()
             if clean_cite:
                 citations.append(clean_cite)
         return "\\cite{" + ",".join(citations) + "}"
 
     text = re.sub(r"\[(@[^]]+)\]", process_multiple_citations, text)
 
+    # First, protect email addresses and domain-like patterns by temporarily replacing them
+    email_patterns = []
+
+    def protect_email(match):
+        email_patterns.append(match.group(0))
+        return f"__EMAIL_PATTERN_{len(email_patterns) - 1}__"
+
+    # Match email-like patterns: word@word.word or @word.word (domain patterns)
+    text = re.sub(r"(\w+@[\w.-]+\.\w+|@[\w.-]+\.\w+)", protect_email, text)
+
     # Handle single citations like @citation_key (but not figure/equation references)
     # Allow alphanumeric, underscore, and hyphen in citation keys
     # Exclude figure and equation references by not matching @fig: or @eq: patterns
     text = re.sub(r"@(?!fig:|eq:)([a-zA-Z0-9_-]+)", r"\\cite{\1}", text)
+
+    # Restore protected email patterns
+    for i, pattern in enumerate(email_patterns):
+        text = text.replace(f"__EMAIL_PATTERN_{i}__", pattern)
     return text
 
 
@@ -151,7 +177,7 @@ def extract_citations_from_text(text: MarkdownContent) -> list[CitationKey]:
     bracketed_matches = re.findall(r"\[(@[^]]+)\]", text)
     for match in bracketed_matches:
         for cite in match.split(";"):
-            clean_cite = cite.strip().lstrip("@")
+            clean_cite = cite.strip().lstrip("@").strip()
             if clean_cite and clean_cite not in citations:
                 citations.append(clean_cite)
 

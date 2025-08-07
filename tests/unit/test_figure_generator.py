@@ -161,9 +161,7 @@ p <- ggplot(data.frame(x=1:10, y=1:10), aes(x=x, y=y)) +
     @patch("subprocess.run")
     def test_r_script_execution_simulation(self, mock_run):
         """Test R script execution simulation."""
-        mock_run.return_value = Mock(
-            returncode=0, stdout="Script executed successfully"
-        )
+        mock_run.return_value = Mock(returncode=0, stdout="Script executed successfully")
 
         # Simulate running an R script
         result = subprocess.run(
@@ -179,13 +177,9 @@ p <- ggplot(data.frame(x=1:10, y=1:10), aes(x=x, y=y)) +
     @patch("subprocess.run")
     def test_r_script_execution_failure(self, mock_run):
         """Test R script execution failure handling."""
-        mock_run.return_value = Mock(
-            returncode=1, stderr="Error: object 'linewidth' not found"
-        )
+        mock_run.return_value = Mock(returncode=1, stderr="Error: object 'linewidth' not found")
 
-        result = subprocess.run(
-            ["Rscript", str(self.test_r_script)], capture_output=True, text=True
-        )
+        result = subprocess.run(["Rscript", str(self.test_r_script)], capture_output=True, text=True)
 
         self.assertEqual(result.returncode, 1)
         self.assertIn("linewidth", result.stderr)
@@ -257,9 +251,7 @@ plt.savefig("test_figure.svg", bbox_inches='tight')
     @patch("subprocess.run")
     def test_python_script_execution_simulation(self, mock_run):
         """Test Python script execution simulation."""
-        mock_run.return_value = Mock(
-            returncode=0, stdout="Figure generated successfully"
-        )
+        mock_run.return_value = Mock(returncode=0, stdout="Figure generated successfully")
 
         result = subprocess.run(
             ["python", str(self.test_py_script)],
@@ -273,13 +265,9 @@ plt.savefig("test_figure.svg", bbox_inches='tight')
     @patch("subprocess.run")
     def test_python_script_import_error(self, mock_run):
         """Test Python script execution with import errors."""
-        mock_run.return_value = Mock(
-            returncode=1, stderr="ModuleNotFoundError: No module named 'matplotlib'"
-        )
+        mock_run.return_value = Mock(returncode=1, stderr="ModuleNotFoundError: No module named 'matplotlib'")
 
-        result = subprocess.run(
-            ["python", str(self.test_py_script)], capture_output=True, text=True
-        )
+        result = subprocess.run(["python", str(self.test_py_script)], capture_output=True, text=True)
 
         self.assertEqual(result.returncode, 1)
         self.assertIn("matplotlib", result.stderr)
@@ -449,14 +437,10 @@ class TestFigureValidationAndErrorHandling(unittest.TestCase):
         """Test handling of script execution timeouts."""
         import subprocess
 
-        mock_run.side_effect = subprocess.TimeoutExpired(
-            cmd=["python", "long_running_script.py"], timeout=30
-        )
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd=["python", "long_running_script.py"], timeout=30)
 
         with self.assertRaises(subprocess.TimeoutExpired):
-            subprocess.run(
-                ["python", "long_running_script.py"], timeout=30, capture_output=True
-            )
+            subprocess.run(["python", "long_running_script.py"], timeout=30, capture_output=True)
 
     def test_figure_checksum_validation(self):
         """Test figure file checksum validation for regeneration decisions."""

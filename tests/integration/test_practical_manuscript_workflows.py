@@ -183,9 +183,7 @@ This work demonstrates effectiveness.
 
         assert copied_pdf.resolve() == expected_pdf_path.resolve()
         assert expected_pdf_path.exists()
-        assert (
-            expected_pdf_path.read_text() == "Mock PDF content - compiled LaTeX output"
-        )
+        assert expected_pdf_path.read_text() == "Mock PDF content - compiled LaTeX output"
 
         print(f"✅ Complete user workflow validated for manuscript: {manuscript_name}")
         print(f"   - LaTeX output: {result_tex}")
@@ -460,10 +458,7 @@ This work contributes significantly.
 
         assert final_pdf.resolve() == expected_pdf_path.resolve()
         assert expected_pdf_path.exists()
-        assert (
-            expected_pdf_path.read_text()
-            == "Compiled PDF content with figures and references"
-        )
+        assert expected_pdf_path.read_text() == "Compiled PDF content with figures and references"
 
         # Verify directory structure is maintained
         assert manuscript_dir.is_dir()

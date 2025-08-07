@@ -44,9 +44,14 @@ class PlatformDetector:
 
     def _detect_python_command(self) -> str:
         """Detect the best Python command to use."""
-        # Priority: uv > venv > system python
+        # Priority: uv > conda/mamba > venv > system python
         if shutil.which("uv"):
             return "uv run python"
+
+        # Check for conda environment
+        conda_python = self.get_conda_python_path()
+        if conda_python and Path(conda_python).exists():
+            return str(conda_python)
 
         # Check for virtual environment
         venv_python = self.get_venv_python_path()
@@ -119,9 +124,66 @@ class PlatformDetector:
 
         return str(activate_path) if activate_path.exists() else None
 
-    def run_command(
-        self, cmd: str, shell: bool = True, **kwargs
-    ) -> subprocess.CompletedProcess:
+    def is_in_conda_env(self) -> bool:
+        """Check if running in a conda/mamba environment."""
+        return (
+            os.getenv("CONDA_DEFAULT_ENV") is not None
+            or os.getenv("CONDA_PREFIX") is not None
+            or os.getenv("MAMBA_DEFAULT_ENV") is not None
+            or os.getenv("MAMBA_PREFIX") is not None
+        )
+
+    def get_conda_env_name(self) -> str | None:
+        """Get the name of the current conda/mamba environment."""
+        # Try conda first, then mamba
+        env_name = os.getenv("CONDA_DEFAULT_ENV") or os.getenv("MAMBA_DEFAULT_ENV")
+        return env_name if env_name and env_name != "base" else None
+
+    def get_conda_prefix(self) -> Path | None:
+        """Get the prefix path of the current conda/mamba environment."""
+        prefix = os.getenv("CONDA_PREFIX") or os.getenv("MAMBA_PREFIX")
+        return Path(prefix) if prefix else None
+
+    def get_conda_python_path(self) -> str | None:
+        """Get the conda/mamba environment Python path."""
+        if not self.is_in_conda_env():
+            return None
+
+        conda_prefix = self.get_conda_prefix()
+        if not conda_prefix or not conda_prefix.exists():
+            return None
+
+        if self.is_windows():
+            python_path = conda_prefix / "python.exe"
+        else:
+            python_path = conda_prefix / "bin" / "python"
+
+        return str(python_path) if python_path.exists() else None
+
+    def get_conda_executable(self) -> str | None:
+        """Get the conda or mamba executable to use."""
+        # Prefer mamba if available (faster)
+        if shutil.which("mamba"):
+            return "mamba"
+        elif shutil.which("conda"):
+            return "conda"
+        return None
+
+    def is_conda_forge_available(self) -> bool:
+        """Check if conda-forge channel is configured."""
+        conda_exe = self.get_conda_executable()
+        if not conda_exe:
+            return False
+
+        try:
+            result = subprocess.run(
+                [conda_exe, "config", "--show", "channels"], capture_output=True, text=True, timeout=10
+            )
+            return "conda-forge" in result.stdout
+        except (subprocess.TimeoutExpired, FileNotFoundError, Exception):
+            return False
+
+    def run_command(self, cmd: str, shell: bool = True, **kwargs) -> subprocess.CompletedProcess:
         """Run a command with platform-appropriate settings."""
         if self.is_windows():
             # On Windows, use cmd.exe for better compatibility
@@ -235,9 +297,27 @@ def run_platform_command(cmd: str, **kwargs) -> subprocess.CompletedProcess:
     return platform_detector.run_command(cmd, **kwargs)
 
 
-def safe_print(
-    message: str, success_symbol: str = "✅", fallback_symbol: str = "[OK]"
-) -> None:
+def is_in_conda_env() -> bool:
+    """Check if running in a conda/mamba environment."""
+    return platform_detector.is_in_conda_env()
+
+
+def get_conda_env_name() -> str | None:
+    """Get the name of the current conda/mamba environment."""
+    return platform_detector.get_conda_env_name()
+
+
+def get_conda_python_path() -> str | None:
+    """Get the conda/mamba environment Python path."""
+    return platform_detector.get_conda_python_path()
+
+
+def get_conda_executable() -> str | None:
+    """Get the conda or mamba executable to use."""
+    return platform_detector.get_conda_executable()
+
+
+def safe_print(message: str, success_symbol: str = "✅", fallback_symbol: str = "[OK]") -> None:
     """Print a message with cross-platform compatible symbols.
 
     Args:
@@ -261,9 +341,7 @@ def safe_print(
         print(f"{fallback_symbol} {message}")
 
 
-def safe_console_print(
-    console, message: str, style: str | None = None, **kwargs
-) -> None:
+def safe_console_print(console, message: str, style: str | None = None, **kwargs) -> None:
     """Print a message using Rich console with cross-platform Unicode fallback.
 
     Args:

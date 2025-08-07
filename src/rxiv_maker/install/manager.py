@@ -82,12 +82,14 @@ class InstallManager:
         self.logger.info(f"Platform: {self.platform_name}")
 
         try:
-            # Check if running in virtual environment
+            # Check if running in special environments
             if self._is_in_docker():
-                self.logger.info(
-                    "Docker container detected - skipping system dependencies"
-                )
+                self.logger.info("Docker container detected - skipping system dependencies")
                 return True
+
+            if self._is_in_conda():
+                self.logger.info("Conda environment detected - using conda-aware installation")
+                return self._run_conda_installation()
 
             # Pre-installation checks
             if not self._pre_install_checks():
@@ -118,15 +120,109 @@ class InstallManager:
             and "docker" in open("/proc/1/cgroup", encoding="utf-8").read()
         )
 
+    def _is_in_conda(self) -> bool:
+        """Check if running in a conda/mamba environment."""
+        return (
+            os.getenv("CONDA_DEFAULT_ENV") is not None
+            or os.getenv("CONDA_PREFIX") is not None
+            or os.getenv("MAMBA_DEFAULT_ENV") is not None
+            or os.getenv("MAMBA_PREFIX") is not None
+        )
+
+    def _get_conda_executable(self) -> str | None:
+        """Get the conda or mamba executable to use."""
+        # Import here to avoid circular dependency
+        import shutil
+
+        # Prefer mamba if available (faster)
+        if shutil.which("mamba"):
+            return "mamba"
+        elif shutil.which("conda"):
+            return "conda"
+        return None
+
+    def _run_conda_installation(self) -> bool:
+        """Run conda-specific installation process."""
+        conda_exe = self._get_conda_executable()
+        if not conda_exe:
+            self.logger.error("Conda/mamba executable not found despite being in conda environment")
+            return False
+
+        env_name = os.getenv("CONDA_DEFAULT_ENV") or os.getenv("MAMBA_DEFAULT_ENV", "unknown")
+        self.logger.info(f"Installing dependencies using {conda_exe} in environment: {env_name}")
+
+        success = True
+
+        # Install Python packages that are better from conda-forge
+        conda_packages = []
+
+        # Define what to install based on mode
+        install_latex = self.mode in [
+            InstallMode.FULL,
+            InstallMode.MINIMAL,
+            InstallMode.CORE,
+        ]
+        install_nodejs = self.mode in [InstallMode.FULL, InstallMode.CORE]
+        install_r = self.mode == InstallMode.FULL
+
+        # Add packages available in conda-forge
+        if install_r:
+            conda_packages.append("r-base")
+        if install_nodejs:
+            conda_packages.append("nodejs")
+
+        # Install conda packages if any
+        if conda_packages:
+            self.progress.start_task(f"Installing packages with {conda_exe}")
+            try:
+                import subprocess
+
+                result = subprocess.run(
+                    [conda_exe, "install", "-y", "-c", "conda-forge"] + conda_packages,
+                    capture_output=True,
+                    text=True,
+                    timeout=300,
+                )
+                if result.returncode == 0:
+                    self.logger.info(f"Successfully installed conda packages: {', '.join(conda_packages)}")
+                    for pkg in conda_packages:
+                        self.installation_results[pkg] = True
+                else:
+                    self.logger.warning(f"Conda installation failed: {result.stderr}")
+                    success = False
+                    for pkg in conda_packages:
+                        self.installation_results[pkg] = False
+            except Exception as e:
+                self.logger.error(f"Error running conda install: {e}")
+                success = False
+            self.progress.complete_task()
+
+        # For LaTeX, still use system package manager as conda's latex is limited
+        if install_latex:
+            self.progress.start_task("Installing LaTeX distribution (system package manager)")
+            result = self.platform_installer.install_latex()
+            self.installation_results["latex"] = result
+            if not result:
+                success = False
+                self.errors.append("Failed to install LaTeX")
+            self.progress.complete_task()
+
+        # Post-installation verification
+        if success:
+            success = self._post_install_verification()
+
+        # Generate installation report
+        self._generate_report()
+
+        return success
+
     def _pre_install_checks(self) -> bool:
         """Run pre-installation checks."""
         self.logger.info("Running pre-installation checks...")
 
         # Check for admin privileges if needed
         if self.platform_name == "Windows" and not self._has_admin_privileges():
-            self.logger.warning(
-                "Administrator privileges may be required for system installations"
-            )
+            self.logger.warning("Administrator privileges may be required for system installations")
 
         # Check available disk space
         if not self._check_disk_space():
@@ -145,7 +241,7 @@ class InstallManager:
             import ctypes
 
             return ctypes.windll.shell32.IsUserAnAdmin()
-        except:
+        except (ImportError, OSError, Exception):
             return False
 
     def _check_disk_space(self, required_gb: float = 2.0) -> bool:
@@ -156,7 +252,7 @@ class InstallManager:
             free_bytes = shutil.disk_usage(".").free
             free_gb = free_bytes / (1024**3)
             return free_gb >= required_gb
-        except:
+        except (ImportError, OSError, Exception):
             return True  # Assume sufficient space if check fails
 
     def _check_internet(self) -> bool:
@@ -166,7 +262,7 @@ class InstallManager:
 
             urllib.request.urlopen("https://www.google.com", timeout=5)
             return True
-        except:
+        except (ImportError, OSError, Exception):
             return False
 
     def _run_platform_installation(self) -> bool:
@@ -246,9 +342,7 @@ class InstallManager:
 
         # Return True if critical components are working
         critical_components = ["python", "latex"]
-        return all(
-            verification_results.get(comp, False) for comp in critical_components
-        )
+        return all(verification_results.get(comp, False) for comp in critical_components)
 
     def _generate_report(self):
         """Generate installation report."""
@@ -272,9 +366,7 @@ class InstallManager:
         self.logger.info("Next steps:")
         self.logger.info("  1. Run 'rxiv --check-installation' to verify setup")
         self.logger.info("  2. Try 'rxiv init my-paper' to create a test manuscript")
-        self.logger.info(
-            "  3. Check the documentation at https://github.com/henriqueslab/rxiv-maker"
-        )
+        self.logger.info("  3. Check the documentation at https://github.com/henriqueslab/rxiv-maker")
 
         self.logger.info("=" * 60)
 
@@ -287,9 +379,7 @@ class InstallManager:
 
         # Check what's broken
         verification_results = verify_installation(verbose=self.verbose)
-        broken_components = [
-            comp for comp, result in verification_results.items() if not result
-        ]
+        broken_components = [comp for comp, result in verification_results.items() if not result]
 
         if not broken_components:
             self.logger.info("No broken components found")
@@ -318,30 +408,22 @@ class InstallManager:
 
 def main():
     """Main entry point for the installation manager."""
-    parser = argparse.ArgumentParser(
-        description="Install rxiv-maker system dependencies"
-    )
+    parser = argparse.ArgumentParser(description="Install rxiv-maker system dependencies")
     parser.add_argument(
         "--mode",
         choices=[mode.value for mode in InstallMode],
         default=InstallMode.FULL.value,
         help="Installation mode (default: full)",
     )
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Enable verbose output"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
     parser.add_argument(
         "--force",
         "-f",
         action="store_true",
         help="Force reinstallation of existing dependencies",
     )
-    parser.add_argument(
-        "--non-interactive", action="store_true", help="Run in non-interactive mode"
-    )
-    parser.add_argument(
-        "--repair", action="store_true", help="Repair broken installation"
-    )
+    parser.add_argument("--non-interactive", action="store_true", help="Run in non-interactive mode")
+    parser.add_argument("--repair", action="store_true", help="Repair broken installation")
     parser.add_argument("--log-file", type=Path, help="Path to log file")
 
     args = parser.parse_args()

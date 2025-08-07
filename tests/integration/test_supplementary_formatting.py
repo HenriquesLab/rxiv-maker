@@ -35,10 +35,7 @@ class TestSupplementaryNoteReferences:
         # Should use custom command that increments counter and includes numbering setup
         assert "\\suppnotesection{Test Title}" in restored
         assert "\\label{snote:test-id}" in restored
-        assert (
-            "\\renewcommand{\\thesubsection}{Supp. Note \\arabic{subsection}}"
-            in restored
-        )
+        assert "\\renewcommand{\\thesubsection}{Supp. Note \\arabic{subsection}}" in restored
         assert "\\subsection*{" not in restored  # Should not use starred subsection
 
     def test_supplementary_note_reference_conversion(self):
@@ -52,11 +49,7 @@ class TestSupplementaryNoteReferences:
 
     def test_counter_setup_included_once(self):
         """Test that counter setup is only included for the first note."""
-        content = (
-            "{#snote:first} **First Note**\n\n"
-            "Some content\n\n"
-            "{#snote:second} **Second Note**"
-        )
+        content = "{#snote:first} **First Note**\n\nSome content\n\n{#snote:second} **Second Note**"
 
         processed = process_supplementary_notes(content)
         restored = restore_supplementary_note_placeholders(processed)
@@ -152,16 +145,12 @@ class TestNoForcedPageBreaks:
 
         # Should not contain automatic newpage after table
         lines = result.split("\n")
-        table_end_indices = [
-            i for i, line in enumerate(lines) if "\\end{" in line and "table" in line
-        ]
+        table_end_indices = [i for i, line in enumerate(lines) if "\\end{" in line and "table" in line]
 
         for idx in table_end_indices:
             if idx + 1 < len(lines):
                 next_line = lines[idx + 1].strip()
-                assert next_line != "\\newpage", (
-                    "Tables should not automatically add \\newpage"
-                )
+                assert next_line != "\\newpage", "Tables should not automatically add \\newpage"
 
     def test_supplementary_content_no_forced_breaks(self):
         """Test that supplementary content processing doesn't force page breaks."""

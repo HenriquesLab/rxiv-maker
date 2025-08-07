@@ -25,7 +25,7 @@ class DependencyInfo:
     found: bool
     version: str | None = None
     path: str | None = None
-    install_commands: dict[str, str] = None
+    install_commands: dict[str, str] | None = None
     description: str = ""
     alternative: str | None = None
 
@@ -76,9 +76,7 @@ class DependencyChecker:
                 return False, None, None
 
             # Get version
-            result = subprocess.run(
-                [command, version_flag], capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run([command, version_flag], capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 version = result.stdout.strip().split("\n")[0]
@@ -218,6 +216,46 @@ class DependencyChecker:
             description=description,
         )
 
+    def check_conda(self) -> DependencyInfo:
+        """Check for conda/mamba package manager (optional)."""
+        self.log("Checking conda/mamba...")
+
+        # Check for mamba first (faster), then conda
+        conda_exe = self.platform.get_conda_executable()
+        found = conda_exe is not None
+        version = None
+        path = None
+
+        if found:
+            found, version, path = self.check_command_version(conda_exe)
+
+        # Installation commands for conda
+        install_commands = {
+            "Windows": "Download Miniconda from https://docs.conda.io/en/latest/miniconda.html",
+            "macOS": "brew install miniconda (or download from conda.io)",
+            "Linux": "wget -O miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && bash miniconda.sh",
+        }
+
+        # Check if running in conda environment
+        env_info = ""
+        if self.platform.is_in_conda_env():
+            env_name = self.platform.get_conda_env_name() or "base"
+            env_info = f" (current environment: {env_name})"
+
+        description = f"Conda/Mamba package manager{env_info}"
+        alternative = "Use pip for package installation or Docker mode"
+
+        return DependencyInfo(
+            name="Conda/Mamba",
+            required=False,
+            found=found,
+            version=version,
+            path=path,
+            install_commands=install_commands,
+            description=description,
+            alternative=alternative,
+        )
+
     def check_all_dependencies(self) -> list[DependencyInfo]:
         """Check all system dependencies.
 
@@ -232,6 +270,7 @@ class DependencyChecker:
             self.check_latex(),
             self.check_r(),
             self.check_git(),
+            self.check_conda(),
         ]
 
         return self.dependencies
@@ -315,24 +354,18 @@ class DependencyChecker:
         )
 
         if missing_required:
-            print(
-                f"\n⚠️  You have {len(missing_required)} missing required dependencies."
-            )
+            print(f"\n⚠️  You have {len(missing_required)} missing required dependencies.")
             print("   Please install them before running 'make pdf'.")
         else:
             print("\n✅ All required dependencies are available!")
             print("   You can run 'make pdf' to generate PDFs.")
 
         if missing_optional:
-            print(
-                f"\n💡 Optional: Install {len(missing_optional)} additional dependencies for full functionality."
-            )
+            print(f"\n💡 Optional: Install {len(missing_optional)} additional dependencies for full functionality.")
 
         # Docker recommendation
         if missing_required or len(missing_optional) > 1:
-            print(
-                "\n🐳 Alternative: Use Docker mode to avoid local dependency installation:"
-            )
+            print("\n🐳 Alternative: Use Docker mode to avoid local dependency installation:")
             print("   make pdf RXIV_ENGINE=DOCKER")
             print("   (Only requires Docker and Make to be installed)")
 
@@ -366,9 +399,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Check Rxiv-Maker system dependencies")
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Show verbose output during checks"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Show verbose output during checks")
 
     args = parser.parse_args()
 

@@ -43,9 +43,7 @@ from .types import LatexContent, MarkdownContent, ProtectedContent
 from .url_processor import convert_links_to_latex
 
 
-def convert_markdown_to_latex(
-    content: MarkdownContent, is_supplementary: bool = False
-) -> LatexContent:
+def convert_markdown_to_latex(content: MarkdownContent, is_supplementary: bool = False) -> LatexContent:
     r"""Convert basic markdown formatting to LaTeX.
 
     Args:
@@ -149,9 +147,7 @@ def convert_markdown_to_latex(
     content = content.replace("XUNDERSCOREX", "\\_")
 
     # Restore protected content
-    content = _restore_protected_content(
-        content, protected_tables, protected_verbatim_content
-    )
+    content = _restore_protected_content(content, protected_tables, protected_verbatim_content)
 
     # Finally restore mathematical expressions
     content = restore_math_expressions(content, protected_math)
@@ -170,9 +166,7 @@ def _process_newpage_markers(content: MarkdownContent) -> LatexContent:
     """
     # Replace <clearpage> with \\clearpage, handling both with and without
     # surrounding whitespace
-    content = re.sub(
-        r"^\s*<clearpage>\s*$", r"\\clearpage", content, flags=re.MULTILINE
-    )
+    content = re.sub(r"^\s*<clearpage>\s*$", r"\\clearpage", content, flags=re.MULTILINE)
     content = re.sub(r"<clearpage>", r"\\clearpage", content)
 
     # Replace <newpage> with \\newpage, handling both with and without
@@ -194,9 +188,7 @@ def _process_float_barrier_markers(content: MarkdownContent) -> LatexContent:
     """
     # Replace <float-barrier> with \\FloatBarrier, handling both with and without
     # surrounding whitespace
-    content = re.sub(
-        r"^\s*<float-barrier>\s*$", r"\\FloatBarrier", content, flags=re.MULTILINE
-    )
+    content = re.sub(r"^\s*<float-barrier>\s*$", r"\\FloatBarrier", content, flags=re.MULTILINE)
     content = re.sub(r"<float-barrier>", r"\\FloatBarrier", content)
 
     return content
@@ -210,22 +202,15 @@ def _protect_backtick_content(
 
     def protect_backtick_content_func(match: re.Match[str]) -> str:
         original = match.group(0)
-        placeholder = (
-            f"XXPROTECTEDBACKTICKXX{len(protected_backtick_content)}"
-            f"XXPROTECTEDBACKTICKXX"
-        )
+        placeholder = f"XXPROTECTEDBACKTICKXX{len(protected_backtick_content)}XXPROTECTEDBACKTICKXX"
         protected_backtick_content[placeholder] = original
         return placeholder
 
     # Protect all backtick content globally (excluding fenced blocks which are
     # already processed)
     # Handle both single backticks and double backticks for inline code
-    content = re.sub(
-        r"``[^`]+``", protect_backtick_content_func, content
-    )  # Double backticks first
-    content = re.sub(
-        r"`[^`]+`", protect_backtick_content_func, content
-    )  # Then single backticks
+    content = re.sub(r"``[^`]+``", protect_backtick_content_func, content)  # Double backticks first
+    content = re.sub(r"`[^`]+`", protect_backtick_content_func, content)  # Then single backticks
 
     return content, protected_backtick_content
 
@@ -238,10 +223,7 @@ def _protect_markdown_tables(
 
     def protect_markdown_table(match: re.Match[str]) -> str:
         table_content = match.group(0)
-        placeholder = (
-            f"XXPROTECTEDMARKDOWNTABLEXX{len(protected_markdown_tables)}"
-            f"XXPROTECTEDMARKDOWNTABLEXX"
-        )
+        placeholder = f"XXPROTECTEDMARKDOWNTABLEXX{len(protected_markdown_tables)}XXPROTECTEDMARKDOWNTABLEXX"
         protected_markdown_tables[placeholder] = table_content
         return placeholder
 
@@ -302,33 +284,23 @@ def _process_tables_with_protection(
     # Protect all LaTeX table environments from further processing
     for env in ["table", "sidewaystable", "stable"]:
         pattern = rf"\\begin\{{{env}\*?\}}.*?\\end\{{{env}\*?\}}"
-        table_processed_content = re.sub(
-            pattern, protect_latex_table, table_processed_content, flags=re.DOTALL
-        )
+        table_processed_content = re.sub(pattern, protect_latex_table, table_processed_content, flags=re.DOTALL)
 
     # Re-protect any backtick content that wasn't converted to \texttt{} in tables
-    for original, placeholder in [
-        (v, k) for k, v in protected_backtick_content.items()
-    ]:
+    for original, placeholder in [(v, k) for k, v in protected_backtick_content.items()]:
         if original in table_processed_content:
-            table_processed_content = table_processed_content.replace(
-                original, placeholder
-            )
+            table_processed_content = table_processed_content.replace(original, placeholder)
 
     return table_processed_content
 
 
-def _convert_headers(
-    content: LatexContent, is_supplementary: bool = False
-) -> LatexContent:
+def _convert_headers(content: LatexContent, is_supplementary: bool = False) -> LatexContent:
     """Convert markdown headers to LaTeX sections."""
     if is_supplementary:
         # For supplementary content, use \\section* for the first header
         # to avoid "Note 1:" prefix
         # First, find the first # header and replace it with \section*
-        content = re.sub(
-            r"^# (.+)$", r"\\section*{\1}", content, flags=re.MULTILINE, count=1
-        )
+        content = re.sub(r"^# (.+)$", r"\\section*{\1}", content, flags=re.MULTILINE, count=1)
         # Then replace any remaining # headers with regular \section
         content = re.sub(r"^# (.+)$", r"\\section{\1}", content, flags=re.MULTILINE)
     else:
@@ -340,17 +312,13 @@ def _convert_headers(
     # supplementary note processor
     # For non-supplementary content, convert all ### headers normally
     if not is_supplementary:
-        content = re.sub(
-            r"^### (.+)$", r"\\subsubsection{\1}", content, flags=re.MULTILINE
-        )
+        content = re.sub(r"^### (.+)$", r"\\subsubsection{\1}", content, flags=re.MULTILINE)
 
     content = re.sub(r"^#### (.+)$", r"\\paragraph{\1}", content, flags=re.MULTILINE)
     return content
 
 
-def _process_text_formatting(
-    content: LatexContent, protected_backtick_content: ProtectedContent
-) -> LatexContent:
+def _process_text_formatting(content: LatexContent, protected_backtick_content: ProtectedContent) -> LatexContent:
     """Process text formatting (backticks, bold, italic, subscript, superscript)."""
     # IMPORTANT: Process backticks BEFORE bold/italic to ensure markdown inside
     # code spans is preserved as literal text
@@ -388,9 +356,7 @@ def _process_list_item_formatting(content: MarkdownContent) -> LatexContent:
         Text with formatted list items
     """
     # Find all list environments
-    list_pattern = (
-        r"(\\begin\{(?:itemize|enumerate)\}.*?\\end\{(?:itemize|enumerate)\})"
-    )
+    list_pattern = r"(\\begin\{(?:itemize|enumerate)\}.*?\\end\{(?:itemize|enumerate)\})"
     list_blocks = re.findall(list_pattern, content, re.DOTALL)
 
     for list_block in list_blocks:

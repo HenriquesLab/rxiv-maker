@@ -57,6 +57,9 @@ class DOICache:
         # Load existing cache
         self._cache = self._load_cache()
 
+        # Performance tracking
+        self._stats = {"hits": 0, "misses": 0, "sets": 0, "expires": 0, "total_size": 0}
+
     def _migrate_legacy_cache(self) -> None:
         """Migrate cache file from legacy location if it exists."""
         if self.cache_dir == get_cache_dir("doi"):
@@ -71,9 +74,7 @@ class DOICache:
             if legacy_file.exists():
                 try:
                     migrate_cache_file(legacy_file, self.cache_file)
-                    logger.info(
-                        f"Migrated DOI cache from {legacy_file} to {self.cache_file}"
-                    )
+                    logger.info(f"Migrated DOI cache from {legacy_file} to {self.cache_file}")
                 except Exception as e:
                     logger.warning(f"Failed to migrate DOI cache: {e}")
 
@@ -94,9 +95,7 @@ class DOICache:
                 if "timestamp" in entry:
                     # Check if entry is still valid
                     entry_time = entry["timestamp"]
-                    if (current_time - entry_time) < (
-                        self.cache_expiry_days * 24 * 3600
-                    ):
+                    if (current_time - entry_time) < (self.cache_expiry_days * 24 * 3600):
                         cleaned_cache[doi] = entry
                     else:
                         logger.debug(f"Expired cache entry for DOI: {doi}")
@@ -139,14 +138,17 @@ class DOICache:
 
                 if (current_time - entry_time) < (self.cache_expiry_days * 24 * 3600):
                     logger.debug(f"Cache hit for DOI: {doi}")
+                    self._stats["hits"] += 1
                     return entry.get("metadata")
                 else:
                     # Entry expired, remove it
                     logger.debug(f"Cache entry expired for DOI: {doi}")
+                    self._stats["expires"] += 1
                     del self._cache[normalized_doi]
                     self._save_cache()
 
         logger.debug(f"Cache miss for DOI: {doi}")
+        self._stats["misses"] += 1
         return None
 
     def set(self, doi: str, metadata: dict[str, Any]) -> None:
@@ -159,13 +161,13 @@ class DOICache:
         normalized_doi = doi.lower().strip()
 
         self._cache[normalized_doi] = {"metadata": metadata, "timestamp": time.time()}
+        self._stats["sets"] += 1
+        self._stats["total_size"] = len(self._cache)
 
         self._save_cache()
         logger.debug(f"Cached metadata for DOI: {doi}")
 
-    def set_resolution_status(
-        self, doi: str, resolves: bool, error_message: str | None = None
-    ) -> None:
+    def set_resolution_status(self, doi: str, resolves: bool, error_message: str | None = None) -> None:
         """Cache DOI resolution status.
 
         Args:
@@ -215,9 +217,7 @@ class DOICache:
                     current_time = time.time()
                     entry_time = resolution_data["timestamp"]
 
-                    if (current_time - entry_time) < (
-                        self.cache_expiry_days * 24 * 3600
-                    ):
+                    if (current_time - entry_time) < (self.cache_expiry_days * 24 * 3600):
                         logger.debug(f"Cache hit for DOI resolution: {doi}")
                         return resolution_data
                     else:
@@ -232,6 +232,7 @@ class DOICache:
     def clear(self) -> None:
         """Clear all cached entries."""
         self._cache.clear()
+        self._stats = {"hits": 0, "misses": 0, "sets": 0, "expires": 0, "total_size": 0}
         self._save_cache()
         logger.info("Cleared DOI cache")
 
@@ -283,7 +284,58 @@ class DOICache:
             "valid_entries": valid_entries,
             "expired_entries": expired_entries,
             "cache_file": str(self.cache_file),
-            "cache_size_bytes": self.cache_file.stat().st_size
-            if self.cache_file.exists()
-            else 0,
+            "cache_size_bytes": self.cache_file.stat().st_size if self.cache_file.exists() else 0,
+            # Performance statistics
+            "performance": self._stats.copy(),
+            "hit_rate": self._stats["hits"] / (self._stats["hits"] + self._stats["misses"])
+            if (self._stats["hits"] + self._stats["misses"]) > 0
+            else 0.0,
         }
+
+    def get_performance_stats(self) -> dict[str, Any]:
+        """Get detailed performance statistics.
+
+        Returns:
+            Dictionary with performance metrics
+        """
+        total_requests = self._stats["hits"] + self._stats["misses"]
+        return {
+            "cache_hits": self._stats["hits"],
+            "cache_misses": self._stats["misses"],
+            "total_requests": total_requests,
+            "hit_rate": self._stats["hits"] / total_requests if total_requests > 0 else 0.0,
+            "cache_sets": self._stats["sets"],
+            "expired_entries": self._stats["expires"],
+            "current_size": self._stats["total_size"],
+        }
+
+    def batch_get(self, dois: list[str]) -> dict[str, Any]:
+        """Batch retrieve multiple DOIs from cache.
+
+        Args:
+            dois: List of DOIs to retrieve
+
+        Returns:
+            Dictionary mapping DOIs to their cached metadata (if available)
+        """
+        results = {}
+        for doi in dois:
+            metadata = self.get(doi)
+            if metadata is not None:
+                results[doi] = metadata
+        return results
+
+    def batch_set(self, doi_metadata_pairs: list[tuple[str, dict[str, Any]]]) -> None:
+        """Batch cache multiple DOI metadata pairs.
+
+        Args:
+            doi_metadata_pairs: List of (doi, metadata) tuples to cache
+        """
+        for doi, metadata in doi_metadata_pairs:
+            normalized_doi = doi.lower().strip()
+            self._cache[normalized_doi] = {"metadata": metadata, "timestamp": time.time()}
+            self._stats["sets"] += 1
+
+        self._stats["total_size"] = len(self._cache)
+        self._save_cache()
+        logger.debug(f"Batch cached {len(doi_metadata_pairs)} DOI entries")

@@ -126,7 +126,11 @@ class BaseValidator(ABC):
         suggestion: str | None = None,
         error_code: str | None = None,
     ) -> ValidationError:
-        """Helper to create validation errors."""
+        """Helper to create validation errors.
+
+        Note: This method is deprecated in favor of using create_validation_error
+        with structured ErrorCode enums for better consistency.
+        """
         return ValidationError(
             level=level,
             message=message,
@@ -153,9 +157,7 @@ class BaseValidator(ABC):
         except OSError:
             return None
 
-    def _get_line_context(
-        self, content: str, line_number: int, context_lines: int = 2
-    ) -> str:
+    def _get_line_context(self, content: str, line_number: int, context_lines: int = 2) -> str:
         """Get context around a specific line number."""
         lines = content.split("\n")
         start = max(0, line_number - context_lines - 1)

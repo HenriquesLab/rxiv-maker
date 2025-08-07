@@ -3,6 +3,7 @@
 import shutil
 import subprocess
 import sys
+from typing import Any
 
 from rxiv_maker.utils.unicode_safe import get_safe_icon
 
@@ -11,7 +12,7 @@ try:
     from ...utils.dependency_checker import DependencyChecker
 except ImportError:
     # Fallback for testing
-    DependencyChecker = None
+    DependencyChecker = None  # type: ignore[misc,assignment]
 
 
 def verify_installation(verbose: bool = False) -> dict[str, bool]:
@@ -70,7 +71,7 @@ def _check_python() -> bool:
     try:
         version = sys.version_info
         return version.major == 3 and version.minor >= 11
-    except:
+    except Exception:
         return False
 
 
@@ -78,11 +79,9 @@ def _check_latex() -> bool:
     """Check if LaTeX is available."""
     try:
         # Check for pdflatex
-        result = subprocess.run(
-            ["pdflatex", "--version"], capture_output=True, text=True, timeout=10
-        )
+        result = subprocess.run(["pdflatex", "--version"], capture_output=True, text=True, timeout=10)
         return result.returncode == 0
-    except:
+    except Exception:
         return False
 
 
@@ -90,56 +89,46 @@ def _check_nodejs() -> bool:
     """Check if Node.js and npm are available."""
     try:
         # Check Node.js
-        node_result = subprocess.run(
-            ["node", "--version"], capture_output=True, text=True, timeout=10
-        )
+        node_result = subprocess.run(["node", "--version"], capture_output=True, text=True, timeout=10)
 
         # Check npm
-        npm_result = subprocess.run(
-            ["npm", "--version"], capture_output=True, text=True, timeout=10
-        )
+        npm_result = subprocess.run(["npm", "--version"], capture_output=True, text=True, timeout=10)
 
         return node_result.returncode == 0 and npm_result.returncode == 0
-    except:
+    except Exception:
         return False
 
 
 def _check_r() -> bool:
     """Check if R is available."""
     try:
-        result = subprocess.run(
-            ["R", "--version"], capture_output=True, text=True, timeout=10
-        )
+        result = subprocess.run(["R", "--version"], capture_output=True, text=True, timeout=10)
         return result.returncode == 0
-    except:
+    except Exception:
         return False
 
 
 def _check_system_libraries() -> bool:
     """Check if required system libraries are available."""
-    try:
-        # Try to import key Python packages that depend on system libraries
-        import matplotlib
-        import numpy
-        import PIL
+    import importlib.util
 
-        return True
-    except ImportError:
-        return False
+    packages = ["matplotlib", "numpy", "PIL"]
+
+    for package in packages:
+        if importlib.util.find_spec(package) is None:
+            return False
+
+    return True
 
 
 def _check_rxiv_maker() -> bool:
     """Check if rxiv-maker package is installed and working."""
-    try:
-        # Try to import the main module
-        import rxiv_maker
+    import importlib.util
 
-        return True
-    except ImportError:
-        return False
+    return importlib.util.find_spec("rxiv_maker") is not None
 
 
-def _print_verification_results(results: dict[str, bool]):
+def _print_verification_results(results: dict[str, bool]) -> None:
     """Print verification results in a formatted way."""
     print("\n" + "=" * 50)
     print("INSTALLATION VERIFICATION RESULTS")
@@ -159,10 +148,10 @@ def _print_verification_results(results: dict[str, bool]):
 
     # Summary
     total = len(results)
-    installed = sum(results.values())
-    missing = total - installed
+    installed_count: int = sum(results.values())
+    missing = total - installed_count
 
-    print(f"Summary: {installed}/{total} components installed")
+    print(f"Summary: {installed_count}/{total} components installed")
 
     if missing > 0:
         warning_icon = get_safe_icon("⚠️", "[WARNING]")
@@ -175,7 +164,7 @@ def _print_verification_results(results: dict[str, bool]):
     print("=" * 50)
 
 
-def diagnose_installation() -> dict[str, dict[str, any]]:
+def diagnose_installation() -> dict[str, dict[str, Any]]:
     """Perform detailed diagnosis of installation issues.
 
     Returns:
@@ -201,15 +190,13 @@ def diagnose_installation() -> dict[str, dict[str, any]]:
     return diagnosis
 
 
-def _diagnose_python() -> dict[str, any]:
+def _diagnose_python() -> dict[str, Any]:
     """Diagnose Python installation."""
-    info = {"installed": False, "version": None, "path": None, "issues": []}
+    info: dict[str, Any] = {"installed": False, "version": None, "path": None, "issues": []}
 
     try:
         info["installed"] = True
-        info["version"] = (
-            f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-        )
+        info["version"] = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
         info["path"] = sys.executable
 
         # Check version requirement
@@ -221,18 +208,16 @@ def _diagnose_python() -> dict[str, any]:
     return info
 
 
-def _diagnose_latex() -> dict[str, any]:
+def _diagnose_latex() -> dict[str, Any]:
     """Diagnose LaTeX installation."""
-    info = {"installed": False, "version": None, "path": None, "issues": []}
+    info: dict[str, Any] = {"installed": False, "version": None, "path": None, "issues": []}
 
     try:
         # Check pdflatex
         pdflatex_path = shutil.which("pdflatex")
         if pdflatex_path:
             info["path"] = pdflatex_path
-            result = subprocess.run(
-                ["pdflatex", "--version"], capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(["pdflatex", "--version"], capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 info["installed"] = True
@@ -252,9 +237,9 @@ def _diagnose_latex() -> dict[str, any]:
     return info
 
 
-def _diagnose_nodejs() -> dict[str, any]:
+def _diagnose_nodejs() -> dict[str, Any]:
     """Diagnose Node.js installation."""
-    info = {
+    info: dict[str, Any] = {
         "installed": False,
         "version": None,
         "path": None,
@@ -267,17 +252,13 @@ def _diagnose_nodejs() -> dict[str, any]:
         node_path = shutil.which("node")
         if node_path:
             info["path"] = node_path
-            result = subprocess.run(
-                ["node", "--version"], capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(["node", "--version"], capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 info["version"] = result.stdout.strip()
 
                 # Check npm
-                npm_result = subprocess.run(
-                    ["npm", "--version"], capture_output=True, text=True, timeout=10
-                )
+                npm_result = subprocess.run(["npm", "--version"], capture_output=True, text=True, timeout=10)
 
                 if npm_result.returncode == 0:
                     info["npm_version"] = npm_result.stdout.strip()
@@ -294,18 +275,16 @@ def _diagnose_nodejs() -> dict[str, any]:
     return info
 
 
-def _diagnose_r() -> dict[str, any]:
+def _diagnose_r() -> dict[str, Any]:
     """Diagnose R installation."""
-    info = {"installed": False, "version": None, "path": None, "issues": []}
+    info: dict[str, Any] = {"installed": False, "version": None, "path": None, "issues": []}
 
     try:
         # Check R
         r_path = shutil.which("R")
         if r_path:
             info["path"] = r_path
-            result = subprocess.run(
-                ["R", "--version"], capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(["R", "--version"], capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 info["installed"] = True
@@ -325,9 +304,9 @@ def _diagnose_r() -> dict[str, any]:
     return info
 
 
-def _diagnose_system_libs() -> dict[str, any]:
+def _diagnose_system_libs() -> dict[str, Any]:
     """Diagnose system libraries installation."""
-    info = {"installed": False, "missing_packages": [], "issues": []}
+    info: dict[str, Any] = {"installed": False, "missing_packages": [], "issues": []}
 
     # Check key Python packages
     packages_to_check = ["matplotlib", "PIL", "numpy", "pandas", "scipy"]
@@ -341,8 +320,6 @@ def _diagnose_system_libs() -> dict[str, any]:
     if not info["missing_packages"]:
         info["installed"] = True
     else:
-        info["issues"].append(
-            f"Missing packages: {', '.join(info['missing_packages'])}"
-        )
+        info["issues"].append(f"Missing packages: {', '.join(info['missing_packages'])}")
 
     return info

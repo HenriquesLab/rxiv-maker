@@ -48,9 +48,7 @@ def convert_html_tags_to_latex(text: MarkdownContent) -> LatexContent:
     text = re.sub(r"<br\s*/?>", r"\\\\", text, flags=re.IGNORECASE)
 
     # Convert bold tags
-    text = re.sub(
-        r"<b>(.*?)</b>", r"\\textbf{\1}", text, flags=re.IGNORECASE | re.DOTALL
-    )
+    text = re.sub(r"<b>(.*?)</b>", r"\\textbf{\1}", text, flags=re.IGNORECASE | re.DOTALL)
     text = re.sub(
         r"<strong>(.*?)</strong>",
         r"\\textbf{\1}",
@@ -59,17 +57,11 @@ def convert_html_tags_to_latex(text: MarkdownContent) -> LatexContent:
     )
 
     # Convert italic tags
-    text = re.sub(
-        r"<i>(.*?)</i>", r"\\textit{\1}", text, flags=re.IGNORECASE | re.DOTALL
-    )
-    text = re.sub(
-        r"<em>(.*?)</em>", r"\\textit{\1}", text, flags=re.IGNORECASE | re.DOTALL
-    )
+    text = re.sub(r"<i>(.*?)</i>", r"\\textit{\1}", text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r"<em>(.*?)</em>", r"\\textit{\1}", text, flags=re.IGNORECASE | re.DOTALL)
 
     # Convert code tags
-    text = re.sub(
-        r"<code>(.*?)</code>", r"\\texttt{\1}", text, flags=re.IGNORECASE | re.DOTALL
-    )
+    text = re.sub(r"<code>(.*?)</code>", r"\\texttt{\1}", text, flags=re.IGNORECASE | re.DOTALL)
 
     return text
 
@@ -206,9 +198,7 @@ def clean_html_for_latex(text: MarkdownContent) -> LatexContent:
     # List of tags to completely remove (including content)
     remove_tags = ["script", "style", "head", "meta", "link"]
     for tag in remove_tags:
-        text = re.sub(
-            rf"<{tag}[^>]*>.*?</{tag}>", "", text, flags=re.IGNORECASE | re.DOTALL
-        )
+        text = re.sub(rf"<{tag}[^>]*>.*?</{tag}>", "", text, flags=re.IGNORECASE | re.DOTALL)
 
     # Remove remaining HTML tags but keep content
     text = strip_html_tags(text)

@@ -150,26 +150,21 @@ class UpdateCheckGroup(click.Group):
                     pass
 
 
-@click.group(
-    cls=UpdateCheckGroup, context_settings={"help_option_names": ["-h", "--help"]}
-)
+@click.group(cls=UpdateCheckGroup, context_settings={"help_option_names": ["-h", "--help"]})
 @click.version_option(version=__version__, prog_name="rxiv")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.option(
     "--engine",
     type=click.Choice(["local", "docker"]),
     default=lambda: os.environ.get("RXIV_ENGINE", "local").lower(),
-    help="Engine to use for processing (local or docker). "
-    "Can be set with RXIV_ENGINE environment variable.",
+    help="Engine to use for processing (local or docker). Can be set with RXIV_ENGINE environment variable.",
 )
 @click.option(
     "--install-completion",
     type=click.Choice(["bash", "zsh", "fish"]),
     help="Install shell completion for the specified shell",
 )
-@click.option(
-    "--no-update-check", is_flag=True, help="Skip update check for this command"
-)
+@click.option("--no-update-check", is_flag=True, help="Skip update check for this command")
 @click.pass_context
 def main(
     ctx: click.Context,
@@ -242,8 +237,7 @@ def main(
                 console.print("🐳 Checking Docker availability...", style="blue")
             if not docker_manager.check_docker_available():
                 console.print(
-                    "❌ Docker is not available or not running. "
-                    "Please start Docker and try again.",
+                    "❌ Docker is not available or not running. Please start Docker and try again.",
                     style="red",
                 )
                 console.print(
@@ -298,12 +292,8 @@ def install_shell_completion(shell: str) -> None:
         with open(install_path, "a", encoding="utf-8") as f:
             f.write(f"\n# Rxiv-Maker completion\n{completion_line}\n")
 
-        console.print(
-            f"✅ {shell} completion installed to {install_path}", style="green"
-        )
-        console.print(
-            f"💡 Restart your shell or run: source {install_path}", style="yellow"
-        )
+        console.print(f"✅ {shell} completion installed to {install_path}", style="green")
+        console.print(f"💡 Restart your shell or run: source {install_path}", style="yellow")
 
     except Exception as e:
         console.print(f"❌ Error installing completion: {e}", style="red")

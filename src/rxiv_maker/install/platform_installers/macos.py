@@ -29,11 +29,9 @@ class MacOSInstaller:
     def _is_apple_silicon(self) -> bool:
         """Check if running on Apple Silicon."""
         try:
-            result = subprocess.run(
-                ["uname", "-m"], capture_output=True, text=True, timeout=5
-            )
+            result = subprocess.run(["uname", "-m"], capture_output=True, text=True, timeout=5)
             return result.stdout.strip() == "arm64"
-        except:
+        except Exception:
             return False
 
     def install_system_libraries(self) -> bool:
@@ -46,17 +44,20 @@ class MacOSInstaller:
         # On macOS, most system libraries are handled by pip wheels
         # We may need to install some build tools for certain packages
 
-        try:
-            # Check if we can import key packages
-            import matplotlib
-            import numpy
-            import PIL
+        import importlib.util
 
+        packages = ["matplotlib", "numpy", "PIL"]
+        missing_packages = []
+
+        for package in packages:
+            if importlib.util.find_spec(package) is None:
+                missing_packages.append(package)
+
+        if not missing_packages:
             self.logger.success("System libraries already available")
             return libraries_success
-        except ImportError as e:
-            self.logger.warning(f"Some system libraries may be missing: {e}")
-
+        else:
+            self.logger.warning(f"Some system libraries may be missing: {missing_packages}")
             # Try to install Xcode command line tools
             return self._install_xcode_tools() and libraries_success
 
@@ -141,7 +142,7 @@ class MacOSInstaller:
                 timeout=10,
             )
             return result.returncode == 0
-        except:
+        except Exception:
             return False
 
     def _is_nodejs_installed(self) -> bool:
@@ -162,7 +163,7 @@ class MacOSInstaller:
                 timeout=10,
             )
             return node_result.returncode == 0 and npm_result.returncode == 0
-        except:
+        except Exception:
             return False
 
     def _is_r_installed(self) -> bool:
@@ -176,17 +177,15 @@ class MacOSInstaller:
                 timeout=10,
             )
             return result.returncode == 0
-        except:
+        except Exception:
             return False
 
     def _is_homebrew_installed(self) -> bool:
         """Check if Homebrew is installed."""
         try:
-            result = subprocess.run(
-                ["brew", "--version"], capture_output=True, timeout=10
-            )
+            result = subprocess.run(["brew", "--version"], capture_output=True, timeout=10)
             return result.returncode == 0
-        except:
+        except Exception:
             return False
 
     def _install_xcode_tools(self) -> bool:
@@ -195,9 +194,7 @@ class MacOSInstaller:
 
         try:
             # Check if already installed
-            result = subprocess.run(
-                ["xcode-select", "-p"], capture_output=True, timeout=10
-            )
+            result = subprocess.run(["xcode-select", "-p"], capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 self.logger.success("Xcode command line tools already installed")
@@ -432,9 +429,7 @@ class MacOSInstaller:
 
         try:
             # Install R
-            result = subprocess.run(
-                ["brew", "install", "r"], capture_output=True, text=True, timeout=600
-            )
+            result = subprocess.run(["brew", "install", "r"], capture_output=True, text=True, timeout=600)
 
             if result.returncode == 0:
                 self.logger.success("R installed using Homebrew")
