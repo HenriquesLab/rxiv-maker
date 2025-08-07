@@ -182,7 +182,6 @@ class PlatformDetector:
             return "conda-forge" in result.stdout
         except (subprocess.TimeoutExpired, FileNotFoundError, Exception):
             return False
-
     def run_command(self, cmd: str, shell: bool = True, **kwargs) -> subprocess.CompletedProcess:
         """Run a command with platform-appropriate settings."""
         if self.is_windows():
@@ -315,8 +314,6 @@ def get_conda_python_path() -> str | None:
 def get_conda_executable() -> str | None:
     """Get the conda or mamba executable to use."""
     return platform_detector.get_conda_executable()
-
-
 def safe_print(message: str, success_symbol: str = "✅", fallback_symbol: str = "[OK]") -> None:
     """Print a message with cross-platform compatible symbols.
 

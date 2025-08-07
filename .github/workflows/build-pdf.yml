@@ -580,7 +580,6 @@ jobs:
 
           # Make script executable and run it
           chmod +x scripts/generate-track-changes.sh
-
           # Generate track changes PDF
           if ./scripts/generate-track-changes.sh "$MANUSCRIPT_DIR" "output"; then
             # Find the generated track changes PDF
@@ -590,7 +589,6 @@ jobs:
               echo "track_changes_generated=true" >> $GITHUB_OUTPUT
               echo "track_changes_pdf=${TRACK_CHANGES_PDF}" >> $GITHUB_OUTPUT
               echo "✅ Track changes PDF generated: $TRACK_CHANGES_PDF"
-
               # Show file details
               ls -la "$TRACK_CHANGES_PDF"
               echo "📊 Track changes PDF size: $(du -h "$TRACK_CHANGES_PDF" | cut -f1)"
