@@ -49,11 +49,19 @@ runs:
       with:
         version: "0.8.5"  # Pin to specific version for stability
         enable-cache: ${{ inputs.enable-cache == 'true' && 'true' || 'false' }}
-        cache-suffix: ${{ format('{0}-{1}', inputs.cache-suffix, runner.os) }}
+        cache-suffix: ${{ format('{0}-{1}-v2', inputs.cache-suffix, runner.os) }}  # v2 to invalidate old caches
         cache-dependency-glob: "**/uv.lock"
         prune-cache: false  # Disable cache pruning to avoid issues
         ignore-nothing-to-cache: true
       continue-on-error: true  # Don't fail on cache issues
+
+    - name: Fallback UV installation on cache failure
+      if: failure() && inputs.enable-cache == 'true'
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "0.8.5"
+        enable-cache: false  # Disable cache entirely on fallback
+      continue-on-error: false
 
     - name: Set UV environment variables for better caching
       shell: bash

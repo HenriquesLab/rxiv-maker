@@ -3,6 +3,12 @@ name: "rxiv-maker CodeQL config"
 # Disable automatic dependency vulnerability scanning to avoid issues
 disable-default-path-filters: false
 
+# Explicitly specify languages to analyze (no Ruby!)
+# This prevents false positives from auto-detection
+languages:
+  - python
+  - javascript
+
 # Paths to ignore during analysis
 paths-ignore:
   - "tests/**"
@@ -12,12 +18,13 @@ paths-ignore:
   - "submodules/**"  # Ignore git submodules to avoid contamination issues
   - "EXAMPLE_MANUSCRIPT/**"
   - "MANUSCRIPT/**"
+  - ".nox/**"  # Ignore nox environments that contain Ruby files
 
 # Only analyze the main source code
 paths:
   - "src/**"
 
-# Python-specific configuration
+# Security and quality queries
 queries:
   - uses: security-and-quality
 

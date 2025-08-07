@@ -552,17 +552,79 @@ jobs:
           *Binary distributions are self-contained and don't require Python installation.*
           EOF
 
+      - name: Validate artifacts before release
+        run: |
+          echo "🔍 Validating artifacts structure..."
+          echo "Artifacts directory contents:"
+          find artifacts/ -type f -exec ls -la {} \; || echo "No artifacts found"
+
+          echo ""
+          echo "Checking for required artifact patterns..."
+
+          # Check for python packages
+          if ls artifacts/python-packages/* 1> /dev/null 2>&1; then
+            echo "✅ Python packages found:"
+            ls -la artifacts/python-packages/
+          elif ls artifacts/*-*.whl artifacts/*-*.tar.gz 1> /dev/null 2>&1; then
+            echo "✅ Python packages found in artifacts root:"
+            ls -la artifacts/*-*.whl artifacts/*-*.tar.gz || echo "No Python packages"
+          else
+            echo "❌ No Python packages found"
+          fi
+
+          # Check for binary artifacts
+          if ls artifacts/*.tar.gz artifacts/*.zip 1> /dev/null 2>&1; then
+            echo "✅ Binary artifacts found:"
+            ls -la artifacts/*.tar.gz artifacts/*.zip
+          else
+            echo "❌ No binary artifacts found"
+          fi
+
       - name: Create Release
         id: create_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          echo "🚀 Creating GitHub release..."
+
+          # Build list of artifacts to include
+          ARTIFACTS=""
+
+          # Add Python packages (try different possible locations)
+          if ls artifacts/python-packages/* 1> /dev/null 2>&1; then
+            ARTIFACTS="$ARTIFACTS artifacts/python-packages/*"
+          elif ls artifacts/*-*.whl artifacts/*-*.tar.gz 1> /dev/null 2>&1; then
+            for file in artifacts/*-*.whl artifacts/*-*.tar.gz; do
+              if [[ -f "$file" && "$file" == *"-"*"."* ]]; then
+                ARTIFACTS="$ARTIFACTS $file"
+              fi
+            done
+          fi
+
+          # Add binary artifacts
+          if ls artifacts/*.tar.gz 1> /dev/null 2>&1; then
+            for file in artifacts/*.tar.gz; do
+              if [[ -f "$file" && "$file" != *"-"*"."* ]]; then
+                ARTIFACTS="$ARTIFACTS $file"
+              fi
+            done
+          fi
+
+          if ls artifacts/*.zip 1> /dev/null 2>&1; then
+            ARTIFACTS="$ARTIFACTS artifacts/*.zip"
+          fi
+
+          echo "Artifacts to include: $ARTIFACTS"
+
+          if [[ -z "$ARTIFACTS" ]]; then
+            echo "❌ No artifacts found to include in release"
+            exit 1
+          fi
+
           gh release create ${{ steps.get_version.outputs.tag }} \
             --title "Rxiv-Maker ${{ steps.get_version.outputs.tag }}" \
             --notes-file release_notes.md \
-            artifacts/python-packages/* \
-            artifacts/*.tar.gz \
-            artifacts/*.zip
+            $ARTIFACTS
 
   # Publish to PyPI
   publish-pypi:

@@ -1,0 +1,54 @@
+name: "CodeQL Security Analysis"
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+    paths:
+      - 'src/**'
+      - '.github/workflows/**'
+  schedule:
+    - cron: '18 13 * * 0'  # Weekly scan on Sundays
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Only analyze languages that actually exist in this project
+        # Explicitly exclude Ruby to prevent false positives
+        include:
+          - language: python
+            build-mode: none
+          - language: javascript-typescript
+            build-mode: none
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+        build-mode: ${{ matrix.build-mode }}
+        config-file: ./.github/codeql/codeql-config.yml
+
+    # No build step needed since build-mode is 'none' for both languages
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{ matrix.language }}"
