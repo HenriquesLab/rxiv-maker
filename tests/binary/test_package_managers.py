@@ -5,6 +5,7 @@ import platform
 import shutil
 import subprocess
 from pathlib import Path
+from urllib.parse import urlparse
 
 import pytest
 import yaml
@@ -156,7 +157,10 @@ class TestScoopManifest:
         url = manifest["url"]
 
         # Should point to PyPI source distribution
-        assert "files.pythonhosted.org" in url
+        parsed_url = urlparse(url)
+        assert parsed_url.netloc == "files.pythonhosted.org", (
+            f"URL should use files.pythonhosted.org, got {parsed_url.netloc}"
+        )
 
         # Should be source distribution
         assert "rxiv_maker-" in url
@@ -215,7 +219,11 @@ class TestScoopManifest:
         autoupdate = manifest["autoupdate"]
 
         # Should auto-update from PyPI source distribution
-        assert "files.pythonhosted.org" in autoupdate["url"]
+        autoupdate_url = autoupdate["url"]
+        parsed_autoupdate_url = urlparse(autoupdate_url)
+        assert parsed_autoupdate_url.netloc == "files.pythonhosted.org", (
+            f"Auto-update URL should use files.pythonhosted.org, got {parsed_autoupdate_url.netloc}"
+        )
         assert "rxiv_maker-" in autoupdate["url"]
         assert "$version" in autoupdate["url"]
         assert ".tar.gz" in autoupdate["url"]
