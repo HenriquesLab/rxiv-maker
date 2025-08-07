@@ -5,13 +5,14 @@ import re
 from typing import Any
 
 try:
-    from .base_validator import BaseValidator, ValidationLevel, ValidationResult
+    from ..core.error_codes import ErrorCode, create_validation_error
+    from .base_validator import BaseValidator, ValidationResult
     from .doi_validator import DOIValidator
 except ImportError:
     # Fallback for script execution
+    from ..core.error_codes import ErrorCode, create_validation_error
     from .base_validator import (
         BaseValidator,
-        ValidationLevel,
         ValidationResult,
     )
     from .doi_validator import DOIValidator
@@ -55,10 +56,10 @@ class CitationValidator(BaseValidator):
             metadata["bibliography_keys"] = len(self.bib_keys)
         else:
             errors.append(
-                self._create_error(
-                    ValidationLevel.WARNING,
+                create_validation_error(
+                    ErrorCode.BIBLIOGRAPHY_ERROR,
                     "Bibliography file 03_REFERENCES.bib not found",
-                    suggestion=("Create bibliography file to validate citation references"),
+                    suggestion="Create bibliography file to validate citation references",
                 )
             )
 
@@ -90,8 +91,8 @@ class CitationValidator(BaseValidator):
             for unused_key in sorted(unused_entries):
                 line_number = self.bib_key_lines.get(unused_key)
                 errors.append(
-                    self._create_error(
-                        ValidationLevel.WARNING,
+                    create_validation_error(
+                        ErrorCode.CITATION_NOT_FOUND,
                         f"Unused bibliography entry: '{unused_key}'",
                         file_path=bib_file_path,
                         line_number=line_number,
@@ -99,7 +100,6 @@ class CitationValidator(BaseValidator):
                             f"Bibliography entry '{unused_key}' is not cited in the manuscript. "
                             "Consider removing it or adding citations."
                         ),
-                        error_code="unused_bibliography_entry",
                     )
                 )
 
@@ -163,8 +163,8 @@ class CitationValidator(BaseValidator):
 
         if not content:
             errors.append(
-                self._create_error(
-                    ValidationLevel.ERROR,
+                create_validation_error(
+                    ErrorCode.FILE_READ_ERROR,
                     f"Could not read file: {os.path.basename(file_path)}",
                     file_path=file_path,
                 )
@@ -256,45 +256,39 @@ class CitationValidator(BaseValidator):
         # Check key format
         if not self.VALID_KEY_PATTERN.match(key):
             errors.append(
-                self._create_error(
-                    ValidationLevel.ERROR,
+                create_validation_error(
+                    ErrorCode.INVALID_REFERENCE,
                     f"Invalid citation key format: '{key}'",
                     file_path=file_path,
                     line_number=line_num,
-                    column=column,
                     context=context,
-                    suggestion=("Citation keys should contain only letters, numbers, underscores, and hyphens"),
-                    error_code="invalid_citation_key",
+                    suggestion="Citation keys should contain only letters, numbers, underscores, and hyphens",
                 )
             )
 
         # Check if key exists in bibliography (only if we have bib keys loaded)
         elif self.bib_keys and key not in self.bib_keys:
             errors.append(
-                self._create_error(
-                    ValidationLevel.ERROR,
+                create_validation_error(
+                    ErrorCode.CITATION_NOT_FOUND,
                     f"Undefined citation: '{key}'",
                     file_path=file_path,
                     line_number=line_num,
-                    column=column,
                     context=context,
-                    suggestion=(f"Add citation key '{key}' to 03_REFERENCES.bib or check spelling"),
-                    error_code="undefined_citation",
+                    suggestion=f"Add citation key '{key}' to 03_REFERENCES.bib or check spelling",
                 )
             )
 
         # Check for common mistakes
         elif self._is_likely_reference_not_citation(key):
             errors.append(
-                self._create_error(
-                    ValidationLevel.WARNING,
+                create_validation_error(
+                    ErrorCode.INVALID_REFERENCE,
                     f"Citation key '{key}' looks like it might be a cross-reference",
                     file_path=file_path,
                     line_number=line_num,
-                    column=column,
                     context=context,
-                    suggestion=("Use @fig:label for figures, @table:label for tables, @eq:label for equations"),
-                    error_code="possible_reference_error",
+                    suggestion="Use @fig:label for figures, @table:label for tables, @eq:label for equations",
                 )
             )
 

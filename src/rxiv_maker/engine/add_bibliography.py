@@ -157,8 +157,12 @@ class BibliographyAdder:
                 if doi_match:
                     entries[doi_match.group(1)] = entry_key
 
+        except (FileNotFoundError, PermissionError) as e:
+            logger.warning(f"Could not access bibliography file: {e}")
+        except UnicodeDecodeError as e:
+            logger.warning(f"Bibliography file encoding error: {e}")
         except Exception as e:
-            logger.warning(f"Error reading bibliography file: {e}")
+            logger.warning(f"Unexpected error reading bibliography file: {e}")
 
         return entries
 
@@ -198,8 +202,14 @@ class BibliographyAdder:
                 self.cache.set(doi, metadata)
                 logger.debug(f"Found DOI in CrossRef: {doi}")
                 return metadata
+        except requests.exceptions.Timeout:
+            logger.debug(f"CrossRef API timeout for {doi}")
+        except requests.exceptions.ConnectionError:
+            logger.debug(f"CrossRef API connection error for {doi}")
+        except requests.exceptions.HTTPError as e:
+            logger.debug(f"CrossRef API HTTP error for {doi}: {e}")
         except Exception as e:
-            logger.debug(f"CrossRef failed for {doi}: {e}")
+            logger.debug(f"CrossRef API unexpected error for {doi}: {e}")
 
         # If CrossRef failed, try DataCite
         try:
@@ -209,8 +219,14 @@ class BibliographyAdder:
                 self.cache.set(doi, metadata)
                 logger.debug(f"Found DOI in DataCite: {doi}")
                 return metadata
+        except requests.exceptions.Timeout:
+            logger.debug(f"DataCite API timeout for {doi}")
+        except requests.exceptions.ConnectionError:
+            logger.debug(f"DataCite API connection error for {doi}")
+        except requests.exceptions.HTTPError as e:
+            logger.debug(f"DataCite API HTTP error for {doi}: {e}")
         except Exception as e:
-            logger.debug(f"DataCite failed for {doi}: {e}")
+            logger.debug(f"DataCite API unexpected error for {doi}: {e}")
 
         return None
 

@@ -31,22 +31,19 @@ def convert_figures_to_latex(text: MarkdownContent, is_supplementary: bool = Fal
     # First protect code blocks from figure processing
     protected_blocks: list[str] = []
 
-    def protect_code_blocks(match: re.Match[str]) -> str:
-        return f"__CODE_BLOCK_{len(protected_blocks)}__"
-
-    # Protect inline code (backticks)
-    def protect_inline_code(match: re.Match[str]) -> str:
-        protected_blocks.append(match.group(0))
-        return f"__CODE_BLOCK_{len(protected_blocks) - 1}__"
-
-    text = re.sub(r"`[^`]+`", protect_inline_code, text)
-
-    # Protect fenced code blocks
+    # Protect fenced code blocks FIRST (before inline code)
     def protect_fenced_code(match: re.Match[str]) -> str:
         protected_blocks.append(match.group(0))
         return f"__CODE_BLOCK_{len(protected_blocks) - 1}__"
 
     text = re.sub(r"```.*?```", protect_fenced_code, text, flags=re.DOTALL)
+
+    # Protect inline code (backticks) AFTER fenced code blocks
+    def protect_inline_code(match: re.Match[str]) -> str:
+        protected_blocks.append(match.group(0))
+        return f"__CODE_BLOCK_{len(protected_blocks) - 1}__"
+
+    text = re.sub(r"`[^`]+`", protect_inline_code, text)
 
     # Process different figure formats
     text = _process_new_figure_format(text)

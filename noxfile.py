@@ -19,6 +19,9 @@ PYTHON_VERSIONS = [
     "3.13",
 ]  # Updated to match pyproject.toml requires-python >= 3.11
 
+# Backend configurations for testing different environments
+VENV_BACKENDS = ["uv", "conda", "mamba", "venv"]
+
 # Common test dependencies - centralized to avoid repetition
 TEST_DEPS = [
     "pytest>=7.4.0",
@@ -32,11 +35,42 @@ nox.options.sessions = ["format", "lint", "test_local"]
 
 
 # Helper Functions
-def install_deps(session, extra_deps=None):
-    """Install project and test dependencies efficiently."""
+def install_deps(session, extra_deps=None, backend=None):
+    """Install project and test dependencies efficiently.
+
+    Args:
+        session: nox session
+        extra_deps: additional dependencies to install
+        backend: backend to use (uv, conda, mamba, venv, None for auto-detect)
+    """
     extra_deps = extra_deps or []
-    session.run("uv", "pip", "install", "-e", ".", external=True)
-    session.run("uv", "pip", "install", *(TEST_DEPS + extra_deps), external=True)
+
+    # Auto-detect backend if not specified
+    if backend is None:
+        backend = getattr(session, "venv_backend", "uv")
+
+    if backend in ["conda", "mamba"]:
+        # Use conda/mamba for installation
+        session.conda_install("-c", "conda-forge", "pip")
+        session.install("-e", ".")
+        session.install(*(TEST_DEPS + extra_deps))
+    elif backend == "uv":
+        # Use uv (current default)
+        session.run("uv", "pip", "install", "-e", ".", external=True)
+        session.run("uv", "pip", "install", *(TEST_DEPS + extra_deps), external=True)
+    else:
+        # Use standard pip (venv backend)
+        session.install("-e", ".")
+        session.install(*(TEST_DEPS + extra_deps))
+
+
+def check_backend_availability(session, backend):
+    """Check if the specified backend is available on the system."""
+    if backend in ["conda", "mamba"]:
+        try:
+            session.run(backend, "--version", external=True, silent=True)
+        except Exception:
+            session.skip(f"{backend.capitalize()} is not available on this system")
 
 
 def check_engine_availability(session, engine):
@@ -238,6 +272,156 @@ def integration(session, engine):
     )
 
 
+# Conda/Mamba Backend Testing Sessions
+@nox.session(python=PYTHON_VERSIONS, venv_backend="conda", reuse_venv=True)
+@nox.parametrize("engine", ENGINES)
+def test_conda(session, engine):
+    """Test with conda environments across engines.
+
+    Examples:
+        nox -s test_conda(python="3.11", engine="local")
+        nox -s test_conda(engine="docker")  # Run with all Python versions
+    """
+    check_backend_availability(session, "conda")
+    install_deps(session, backend="conda")
+    check_engine_availability(session, engine)
+
+    session.log(f"Running tests with conda backend and {engine} engine")
+
+    session.run(
+        "pytest",
+        f"--engine={engine}",
+        "-v",
+        "--timeout=180",
+        "-m",
+        "not slow",
+        "-n",
+        "auto" if engine == "local" else "1",  # Parallel only for local
+        "--dist=worksteal" if engine == "local" else "",
+        *session.posargs,
+    )
+
+
+@nox.session(python=PYTHON_VERSIONS, venv_backend="mamba", reuse_venv=True)
+@nox.parametrize("engine", ENGINES)
+def test_mamba(session, engine):
+    """Test with mamba environments across engines.
+
+    Examples:
+        nox -s test_mamba(python="3.11", engine="local")
+        nox -s test_mamba(engine="docker")
+    """
+    check_backend_availability(session, "mamba")
+    install_deps(session, backend="mamba")
+    check_engine_availability(session, engine)
+
+    session.log(f"Running tests with mamba backend and {engine} engine")
+
+    session.run(
+        "pytest",
+        f"--engine={engine}",
+        "-v",
+        "--timeout=180",
+        "-m",
+        "not slow",
+        "-n",
+        "auto" if engine == "local" else "1",  # Parallel only for local
+        "--dist=worksteal" if engine == "local" else "",
+        *session.posargs,
+    )
+
+
+@nox.session(python="3.11", venv_backend="conda", reuse_venv=True)
+def conda_integration(session):
+    """Run comprehensive conda environment integration tests.
+
+    This session specifically tests conda environment detection, dependency
+    installation, and build processes to ensure full conda compatibility.
+    """
+    check_backend_availability(session, "conda")
+    install_deps(session, backend="conda")
+
+    session.log("Running comprehensive conda integration tests")
+
+    # Test environment detection
+    session.run(
+        "pytest",
+        "tests/unit/test_platform_detector.py",
+        "-v",
+        "-k",
+        "conda",
+        *session.posargs,
+    )
+
+    # Test dependency checking with conda
+    session.run(
+        "pytest",
+        "tests/unit/test_conda_installation_manager.py",
+        "-v",
+        *session.posargs,
+    )
+
+    # Test installation manager conda support
+    session.run(
+        "pytest",
+        "tests/unit/test_install*",
+        "-v",
+        "-k",
+        "conda",
+        *session.posargs,
+    )
+
+
+@nox.session(python="3.11", reuse_venv=True)
+def docs(session):
+    """Generate API documentation using lazydocs."""
+    install_deps(session, extra_deps=["lazydocs>=0.4.8"])
+
+    session.log("Generating API documentation")
+
+    # Run the documentation generation
+    session.run("python", "src/rxiv_maker/engine/generate_docs.py")
+
+    session.log("API documentation generated in docs/api/ directory")
+
+
+@nox.session(python="3.11", reuse_venv=True)
+@nox.parametrize("backend", VENV_BACKENDS)
+def test_cross_backend(session, backend):
+    """Test across different virtual environment backends with local engine.
+
+    This session tests rxiv-maker compatibility with different Python environment
+    management systems to ensure consistent behavior regardless of how Python
+    environments are managed.
+
+    Examples:
+        nox -s test_cross_backend(backend="conda")
+        nox -s test_cross_backend(backend="mamba")
+        nox -s test_cross_backend(backend="uv")
+    """
+    # Set backend for session
+    if backend in ["conda", "mamba"]:
+        # Need to recreate session with correct backend
+        session.skip(f"Use 'nox -s test_{backend}' instead for {backend} backend testing")
+
+    check_backend_availability(session, backend)
+    install_deps(session, backend=backend)
+
+    session.log(f"Running cross-backend tests with {backend}")
+
+    # Focus on environment detection and platform-specific tests
+    session.run(
+        "pytest",
+        "tests/unit/test_platform_detector.py",
+        "tests/unit/test_conda_platform_detection.py",
+        "-v",
+        "--timeout=120",
+        "-k",
+        "conda or platform or environment",
+        *session.posargs,
+    )
+
+
 # Advanced Features
 @nox.session(python="3.11", reuse_venv=True)
 def coverage(session):
@@ -255,19 +439,6 @@ def coverage(session):
     session.run("coverage", "xml", "-o", "coverage.xml")
 
     session.log("Coverage reports generated: coverage_html/, coverage.xml")
-
-
-@nox.session(python="3.11", reuse_venv=True)
-def docs(session):
-    """Generate API documentation using lazydocs."""
-    install_deps(session, extra_deps=["lazydocs>=0.4.8"])
-
-    session.log("Generating API documentation")
-
-    # Run the documentation generation
-    session.run("python", "src/rxiv_maker/engine/generate_docs.py")
-
-    session.log("API documentation generated in docs/api/ directory")
 
 
 @nox.session(python="3.11", reuse_venv=True)

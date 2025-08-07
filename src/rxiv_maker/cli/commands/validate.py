@@ -97,7 +97,7 @@ def validate(ctx: click.Context, manuscript_path: str | None, detailed: bool, no
                     console.print("❌ Validation failed. See details above.", style="red")
                     console.print("💡 Run with --detailed for more information", style="yellow")
                     console.print(
-                        "💡 Use 'rxiv build --skip-validation' to build anyway",
+                        "💡 Use 'rxiv pdf --skip-validation' to build anyway",
                         style="yellow",
                     )
                     sys.exit(1)

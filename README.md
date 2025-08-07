@@ -134,7 +134,7 @@ make pdf RXIV_ENGINE=DOCKER
 git clone https://github.com/henriqueslab/rxiv-maker.git
 cd rxiv-maker
 pip install -e .                    # Install with modern CLI
-rxiv build                          # Generate PDF using CLI
+rxiv pdf                            # Generate PDF using CLI
 ```
 
 **🛠️ Legacy Make Interface** (Still supported)
@@ -166,8 +166,8 @@ rxiv validate MY_PAPER/
 ### Key CLI Commands
 ```bash
 # Essential commands
-rxiv build                          # Generate PDF from MANUSCRIPT/
-rxiv build --force-figures          # Force regeneration of figures
+rxiv pdf                            # Generate PDF from MANUSCRIPT/
+rxiv pdf --force-figures            # Force regeneration of figures
 rxiv validate                       # Validate manuscript
 rxiv clean                          # Clean generated files
 
@@ -201,7 +201,7 @@ rxiv --help                         # Show help
 #### 📖 Manuscript Management
 ```bash
 rxiv init MY_PAPER/                 # Initialize new manuscript
-rxiv build MY_PAPER/                # Generate PDF
+rxiv pdf MY_PAPER/                  # Generate PDF
 rxiv validate MY_PAPER/             # Validate manuscript
 rxiv clean MY_PAPER/                # Clean generated files
 ```
@@ -210,7 +210,7 @@ rxiv clean MY_PAPER/                # Clean generated files
 ```bash
 rxiv figures MY_PAPER/              # Generate all figures
 rxiv figures --force                # Force regeneration
-rxiv build --force-figures          # Build with fresh figures
+rxiv pdf --force-figures            # Build with fresh figures
 ```
 
 #### 📚 Bibliography Management
@@ -244,7 +244,7 @@ rxiv --help                         # Show help
 
 #### 🐳 Docker Support
 ```bash
-rxiv build --engine docker          # Use Docker engine
+rxiv pdf --engine docker            # Use Docker engine
 rxiv config set general.default_engine docker  # Set Docker as default
 ```
 
@@ -278,6 +278,12 @@ RXIV_INSTALL_MODE=core pip install rxiv-maker
 
 # Python packages only (skip all system dependencies)
 RXIV_SKIP_SYSTEM_DEPS=1 pip install rxiv-maker
+
+# Conda/Mamba environments (recommended for data science users)
+conda create -n rxiv-maker python=3.11
+conda activate rxiv-maker
+conda install -c conda-forge numpy matplotlib nodejs r-base
+pip install rxiv-maker
 ```
 
 ### 🍺 Homebrew (macOS) - Deprecated
@@ -313,12 +319,12 @@ Existing users can continue using Make commands or migrate to the CLI:
 | Make Command | CLI Command | Notes |
 |-------------|-------------|-------|
 | `make setup` | `rxiv setup` | Setup environment |
-| `make pdf` | `rxiv build` | Build PDF |
+| `make pdf` | `rxiv pdf` | Build PDF |
 | `make validate` | `rxiv validate` | Validate manuscript |
 | `make clean` | `rxiv clean` | Clean files |
 | `make arxiv` | `rxiv arxiv` | Prepare arXiv |
-| `make pdf FORCE_FIGURES=true` | `rxiv build --force-figures` | Force figures |
-| `MANUSCRIPT_PATH=path/ make pdf` | `rxiv build path/` | Custom path |
+| `make pdf FORCE_FIGURES=true` | `rxiv pdf --force-figures` | Force figures |
+| `MANUSCRIPT_PATH=path/ make pdf` | `rxiv pdf path/` | Custom path |
 
 📖 **Complete migration guide**: [docs/MIGRATION.md](docs/MIGRATION.md)  
 📚 **Complete CLI reference**: [docs/CLI_REFERENCE.md](docs/CLI_REFERENCE.md)  

@@ -72,6 +72,13 @@ env:
   DOCKER_BUILDKIT: 1
   # Resource optimization for GitHub Actions compliance
   RESOURCE_CONSTRAINED: true
+  # Additional resource constraints
+  UV_NO_PROGRESS: 1
+  UV_COMPILE_BYTECODE: 1
+  GITHUB_ACTIONS_CPU_LIMIT: 2
+  # Prevent resource abuse
+  MAX_CONCURRENT_JOBS: 2
+  WORKFLOW_TIMEOUT_MINUTES: 120
 
 jobs:
   setup:
@@ -100,14 +107,15 @@ jobs:
             os_matrix="${{ inputs.os-matrix }}"
             run_ecosystem="false"
           else
-            # Auto-triggered (push/PR) - use standard scope with reduced matrix for stability
+            # Auto-triggered (push/PR) - use standard scope with minimal matrix for cache efficiency
             test_scope="standard"
-            python_versions="3.11"  # Reduced to prevent resource abuse
-            # Prioritize Ubuntu for most testing, reduce macOS/Windows burden
+            python_versions="3.11"  # Single version to minimize cache footprint
+            # Ultra-minimal matrix to drastically reduce cache usage
             if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-              os_matrix="ubuntu-latest"  # Reduced for PR efficiency
+              os_matrix="ubuntu-latest"  # Only Ubuntu for PRs
             else
-              os_matrix="ubuntu-latest,macos-latest"  # Reduced to prevent resource abuse
+              # Only test Ubuntu on pushes to main/dev - manual workflow dispatch for full matrix
+              os_matrix="ubuntu-latest"
             fi
             run_ecosystem="false"
           fi
@@ -475,7 +483,7 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.setup.outputs.test-matrix) }}
       fail-fast: false
-      max-parallel: 2  # Reduced to prevent resource abuse
+      max-parallel: 1  # Minimize concurrent jobs to reduce cache pressure
     timeout-minutes: 25  # Reduced timeout for faster feedback on core tests only
 
     steps:
@@ -489,7 +497,7 @@ jobs:
         uses: ./.github/actions/setup-environment
         with:
           python-version: ${{ matrix.python-version }}
-          cache-suffix: ${{ matrix.os }}-${{ matrix.python-version }}
+          cache-suffix: ${{ matrix.python-version }}  # Simplified cache key - no OS suffix to share cache
 
       - name: Run unit tests
         uses: ./.github/actions/test-execution
@@ -598,6 +606,96 @@ jobs:
         with:
           test-type: integration
 
+  # Conda Environment Testing
+  conda-tests:
+    name: Conda Environment Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [setup, test]
+    if: needs.setup.outputs.test-scope == 'comprehensive' && always() && needs.setup.result == 'success'
+
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+        conda-backend: ["conda", "mamba"]
+      fail-fast: false
+      max-parallel: 2
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+          mamba-version: "*"  # Install mamba for speed
+          channels: conda-forge,defaults
+          channel-priority: true
+          activate-environment: rxiv-maker-test
+          environment-file: .github/conda-environment.yml
+
+      - name: Verify conda environment
+        shell: bash -l {0}  # Use login shell to activate conda
+        run: |
+          echo "Testing conda environment detection..."
+          conda info
+          echo "CONDA_DEFAULT_ENV: $CONDA_DEFAULT_ENV"
+          echo "CONDA_PREFIX: $CONDA_PREFIX"
+          which python
+          python --version
+
+      - name: Install rxiv-maker with conda dependencies
+        shell: bash -l {0}
+        run: |
+          echo "Installing dependencies with ${{ matrix.conda-backend }}..."
+          # Install conda dependencies first
+          ${{ matrix.conda-backend }} install -y nodejs r-base
+          # Then install rxiv-maker with pip
+          pip install -e .
+
+      - name: Run conda-specific tests
+        shell: bash -l {0}
+        run: |
+          echo "Running conda platform detection tests..."
+          python -m pytest tests/unit/test_conda_platform_detection.py -v
+
+          echo "Running conda installation manager tests..."
+          python -m pytest tests/unit/test_conda_installation_manager.py -v
+
+          echo "Running platform detector tests with conda focus..."
+          python -m pytest tests/unit/test_platform_detector.py -v -k "conda"
+
+      - name: Test dependency detection in conda environment
+        shell: bash -l {0}
+        run: |
+          echo "Testing dependency checker in conda environment..."
+          python -c "
+          import sys
+          sys.path.insert(0, 'src')
+          from rxiv_maker.utils.dependency_checker import check_system_dependencies
+          checker = check_system_dependencies(verbose=True)
+          print(f'Found conda: {any(d.name == \"Conda/Mamba\" and d.found for d in checker.dependencies)}')
+          print(f'Python detected: {any(d.name == \"Python\" and d.found for d in checker.dependencies)}')
+          print(f'In conda env: {checker.platform.is_in_conda_env()}')
+          "
+
+      - name: Test basic CLI functionality in conda
+        shell: bash -l {0}
+        run: |
+          echo "Testing basic rxiv-maker CLI in conda environment..."
+          python -m rxiv_maker.cli version --detailed
+          python -c "
+          import sys
+          sys.path.insert(0, 'src')
+          from rxiv_maker.utils.platform import platform_detector
+          print(f'Conda environment detected: {platform_detector.is_in_conda_env()}')
+          print(f'Conda env name: {platform_detector.get_conda_env_name()}')
+          print(f'Python command: {platform_detector.python_cmd}')
+          "
   # Docker Engine Testing
   docker-tests:
     name: Docker Engine Tests
@@ -625,26 +723,42 @@ jobs:
 
       - name: Setup Docker environment
         run: |
-          # Ensure Docker is running
+          # Ensure Docker is running with resource limits
           sudo systemctl start docker
           sudo systemctl enable docker
 
-          # Configure Docker for testing
+          # Configure Docker for testing with resource constraints
           echo "DOCKER_BUILDKIT=1" >> $GITHUB_ENV
           echo "RXIV_ENGINE=DOCKER" >> $GITHUB_ENV
 
-          # Check if base image exists, try to pull it
+          # Set Docker resource limits for CI
+          echo "DOCKER_DEFAULT_MEMORY=1g" >> $GITHUB_ENV
+          echo "DOCKER_DEFAULT_CPUS=1.0" >> $GITHUB_ENV
+
+          # Clean up any existing containers/images to free space
+          echo "🧹 Cleaning up Docker resources..."
+          docker system prune -f --volumes || echo "Docker cleanup warning (expected)"
+
+          # Check available Docker resources
+          echo "📊 Docker system info:"
+          docker system df || echo "Docker df unavailable"
+
+          # Check if base image exists, try to pull it with timeout
           echo "🐳 Checking for rxiv-maker base image..."
-          if docker pull henriqueslab/rxiv-maker-base:latest; then
+          timeout 300 docker pull henriqueslab/rxiv-maker-base:latest && {
             echo "✅ Base image pulled successfully"
             docker images henriqueslab/rxiv-maker-base:latest
 
-            # Verify pdflatex is available in the image
+            # Verify pdflatex is available in the image with strict limits
             echo "🔍 Verifying pdflatex in Docker image..."
-            docker run --rm --memory="1g" --cpus="1.0" henriqueslab/rxiv-maker-base:latest pdflatex --version
-          else
-            echo "⚠️ Base image not available, Docker tests will use local build if needed"
-          fi
+            timeout 60 docker run --rm \
+              --memory="512m" \
+              --cpus="0.5" \
+              --ulimit nofile=1024:1024 \
+              henriqueslab/rxiv-maker-base:latest pdflatex --version | head -3
+          } || {
+            echo "⚠️ Base image pull failed or timed out, Docker tests may be limited"
+          }
 
       - name: Test Docker engine functionality
         env:
@@ -758,7 +872,7 @@ jobs:
             test-results/
             logs/
             docker-logs/
-          retention-days: 7
+          retention-days: 3  # Very short retention for Docker logs to minimize storage
 
   build:
     name: Build & Test Distribution
@@ -858,6 +972,7 @@ jobs:
         with:
           python-version: '3.11'
           install-latex: 'true'
+          enable-cache: 'false'  # Disable cache for ecosystem tests to reduce cache pressure
 
       - name: Verify LaTeX installation
         run: |
