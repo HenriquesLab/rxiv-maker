@@ -331,6 +331,60 @@ def test_mamba(session, engine):
     )
 
 
+@nox.session(python="3.11", venv_backend="conda", reuse_venv=True)
+def conda_integration(session):
+    """Run comprehensive conda environment integration tests.
+
+    This session specifically tests conda environment detection, dependency
+    installation, and build processes to ensure full conda compatibility.
+    """
+    check_backend_availability(session, "conda")
+    install_deps(session, backend="conda")
+
+    session.log("Running comprehensive conda integration tests")
+
+    # Test environment detection
+    session.run(
+        "pytest",
+        "tests/unit/test_platform_detector.py",
+        "-v",
+        "-k",
+        "conda",
+        *session.posargs,
+    )
+
+    # Test dependency checking with conda
+    session.run(
+        "pytest",
+        "tests/unit/test_conda_installation_manager.py",
+        "-v",
+        *session.posargs,
+    )
+
+    # Test installation manager conda support
+    session.run(
+        "pytest",
+        "tests/unit/test_install*",
+        "-v",
+        "-k",
+        "conda",
+        *session.posargs,
+    )
+
+
+@nox.session(python="3.11", reuse_venv=True)
+def docs(session):
+    """Generate API documentation using lazydocs."""
+    install_deps(session, extra_deps=["lazydocs>=0.4.8"])
+
+    session.log("Generating API documentation")
+
+    # Run the documentation generation
+    session.run("python", "src/rxiv_maker/engine/generate_docs.py")
+
+    session.log("API documentation generated in docs/api/ directory")
+
+
 @nox.session(python="3.11", reuse_venv=True)
 @nox.parametrize("backend", VENV_BACKENDS)
 def test_cross_backend(session, backend):
@@ -426,19 +480,6 @@ def coverage(session):
     session.run("coverage", "xml", "-o", "coverage.xml")
 
     session.log("Coverage reports generated: coverage_html/, coverage.xml")
-
-
-@nox.session(python="3.11", reuse_venv=True)
-def docs(session):
-    """Generate API documentation using lazydocs."""
-    install_deps(session, extra_deps=["lazydocs>=0.4.8"])
-
-    session.log("Generating API documentation")
-
-    # Run the documentation generation
-    session.run("python", "src/rxiv_maker/engine/generate_docs.py")
-
-    session.log("API documentation generated in docs/api/ directory")
 
 
 @nox.session(python="3.11", reuse_venv=True)

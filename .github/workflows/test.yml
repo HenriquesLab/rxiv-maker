@@ -696,7 +696,6 @@ jobs:
           print(f'Conda env name: {platform_detector.get_conda_env_name()}')
           print(f'Python command: {platform_detector.python_cmd}')
           "
-
   # Docker Engine Testing
   docker-tests:
     name: Docker Engine Tests
