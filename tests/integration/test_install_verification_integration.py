@@ -90,7 +90,7 @@ class TestInstallationVerificationWorkflow:
 
             # Test verification
             verification_result = handler.verify_installation()
-            missing_packages = handler.get_missing_packages()
+            handler.get_missing_packages()  # Just call it for side effects
 
             assert verification_result is False  # Should fail due to missing packages
 
@@ -364,7 +364,7 @@ class TestInstallationVerificationPerformance:
         ):
             # Run diagnosis multiple times
             for _ in range(3):
-                diagnosis = diagnose_installation()
+                diagnose_installation()  # Just call for side effects
 
             # Each run should make fresh calls (no caching expected in current implementation)
             # But the number should be predictable

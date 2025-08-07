@@ -127,7 +127,7 @@ class CitationValidator(BaseValidator):
 
             # Merge DOI validation results
             errors.extend(doi_result.errors)
-            metadata.update({"doi_validation": doi_result.metadata})
+            metadata["doi_validation"] = doi_result.metadata
 
         return ValidationResult("CitationValidator", errors, metadata)
 

@@ -32,7 +32,12 @@ class TestCrossPlatformPathHandling:
             # When converted to string, should use platform-appropriate separator
             path_str = str(test_path)
             if platform == "win32":
-                assert "\\" in path_str
+                # On actual Windows, pathlib uses \\ but when mocking on Unix systems,
+                # pathlib still uses the native separator. So we test the actual OS behavior.
+                import os
+
+                expected_sep = "\\" if os.name == "nt" else "/"
+                assert expected_sep in path_str
             else:
                 assert "/" in path_str
 
@@ -170,7 +175,7 @@ class TestProcessExecutionCrossPlatform:
             result2 = subprocess.run(cmd, capture_output=True, text=True, timeout=10, shell=True)
 
             # Both should succeed (or fail similarly)
-            assert type(result1.returncode) == type(result2.returncode)
+            assert type(result1.returncode) is type(result2.returncode)
 
         except FileNotFoundError:
             pytest.skip("Python command not available")
@@ -213,14 +218,39 @@ class TestPlatformSpecificBehaviors:
             lower_file = temp_path / "testfile.txt"
             upper_file = temp_path / "TESTFILE.TXT"
 
-            # Behavior depends on platform
-            if sys.platform == "win32":
-                # Windows is case-insensitive
-                assert lower_file.exists() or not lower_file.exists()  # May vary
+            # Ensure files don't exist initially
+            lower_file.unlink(missing_ok=True)
+            upper_file.unlink(missing_ok=True)
+
+            # Test filesystem case sensitivity by creating lower file first
+            lower_file.write_text("lower")
+
+            # Check if filesystem is case-sensitive by seeing if upper_file exists
+            is_case_sensitive = not upper_file.exists()
+
+            if is_case_sensitive:
+                # Case-sensitive filesystem - can have both files
+                upper_file.write_text("upper")
+                assert lower_file.exists()
+                assert upper_file.exists()
+                assert lower_file.read_text() == "lower"
+                assert upper_file.read_text() == "upper"
+
+                # Clean up
+                lower_file.unlink(missing_ok=True)
+                upper_file.unlink(missing_ok=True)
             else:
-                # Unix-like systems are case-sensitive
-                assert not lower_file.exists()
-                assert not upper_file.exists()
+                # Case-insensitive filesystem - both names refer to same file
+                assert upper_file.exists()  # Should exist because it's the same file
+                # The content should be what we wrote to lower_file
+                assert upper_file.read_text() == "lower"
+
+                # Writing to upper_file should overwrite the same file
+                upper_file.write_text("upper")
+                assert lower_file.read_text() == "upper"
+
+                # Clean up
+                lower_file.unlink(missing_ok=True)
 
     def test_line_ending_handling(self):
         """Test line ending handling across platforms."""
@@ -312,8 +342,12 @@ class TestImportBehaviorCrossPlatform:
         ]
 
         for module in fake_modules:
-            spec = importlib.util.find_spec(module)
-            assert spec is None  # Should consistently return None
+            try:
+                spec = importlib.util.find_spec(module)
+                assert spec is None  # Should consistently return None
+            except (ImportError, ModuleNotFoundError):
+                # Expected for non-existent modules
+                pass
 
 
 class TestTestFrameworkOptimizations:
@@ -328,7 +362,7 @@ class TestTestFrameworkOptimizations:
 
         # Simulate fixture setup
         temp_resources = []
-        for i in range(10):
+        for _ in range(10):
             temp_dir = tempfile.mkdtemp()
             temp_resources.append(temp_dir)
 

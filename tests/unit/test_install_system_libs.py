@@ -331,7 +331,7 @@ class TestSystemLibsHandlerCrossPlatform:
         # Mock successful imports
         mock_import.return_value = MagicMock()
 
-        missing = handler.get_missing_packages()
+        handler.get_missing_packages()  # Just call for side effects
 
         # Should check the same packages that are commonly used
         expected_packages = ["matplotlib", "PIL", "numpy", "pandas", "scipy", "seaborn"]
