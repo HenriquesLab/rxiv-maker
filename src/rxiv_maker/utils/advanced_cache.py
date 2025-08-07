@@ -78,7 +78,7 @@ class AdvancedCache:
         else:
             serialized = str(data)
 
-        return hashlib.md5(serialized.encode()).hexdigest()[:12]
+        return hashlib.md5(serialized.encode(), usedforsecurity=False).hexdigest()[:12]
 
     def _evict_memory_lru(self) -> None:
         """Evict least recently used items from memory cache."""
@@ -349,7 +349,9 @@ def cached_function(
         def wrapper(*args, **kwargs):
             # Generate cache key from function name and arguments
             key_data = {"function": func.__name__, "args": args, "kwargs": kwargs}
-            base_key = hashlib.md5(json.dumps(key_data, default=str, sort_keys=True).encode()).hexdigest()
+            base_key = hashlib.md5(
+                json.dumps(key_data, default=str, sort_keys=True).encode(), usedforsecurity=False
+            ).hexdigest()
 
             # Check cache
             result = cache.get_data(base_key)

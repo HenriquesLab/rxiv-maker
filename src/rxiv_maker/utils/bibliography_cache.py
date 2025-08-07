@@ -253,7 +253,7 @@ class BibliographyCache:
     def _generate_doi_key(self, doi: str, source: str) -> str:
         """Generate cache key for DOI metadata."""
         normalized_doi = doi.lower().strip()
-        return f"doi_{source}_{hashlib.md5(normalized_doi.encode()).hexdigest()[:12]}"
+        return f"doi_{source}_{hashlib.md5(normalized_doi.encode(), usedforsecurity=False).hexdigest()[:12]}"
 
     def _generate_citations_key(self, citations: Dict[str, List[str]], bibliography_keys: Set[str]) -> str:
         """Generate deterministic key for citation network."""
@@ -264,7 +264,7 @@ class BibliographyCache:
         }
 
         json_str = json.dumps(citation_data, sort_keys=True)
-        return f"network_{hashlib.md5(json_str.encode()).hexdigest()[:16]}"
+        return f"network_{hashlib.md5(json_str.encode(), usedforsecurity=False).hexdigest()[:16]}"
 
     def bulk_cache_doi_metadata(self, metadata_list: List[Tuple[str, Dict[str, Any], str]]) -> int:
         """Bulk cache multiple DOI metadata entries for efficiency.

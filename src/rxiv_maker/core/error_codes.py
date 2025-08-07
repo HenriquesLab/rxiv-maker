@@ -242,7 +242,7 @@ class ErrorCode(Enum):
             self.DOCKER_COMMAND_ERROR: "Docker command execution failed",
         }
 
-        return descriptions.get(self, "Unknown error")
+        return descriptions.get(self.value, "Unknown error")
 
     @property
     def suggested_actions(self) -> list[str]:
@@ -288,16 +288,16 @@ class ErrorCode(Enum):
             ],
         }
 
-        return actions.get(self, ["Contact support for assistance"])
+        return actions.get(self.value, ["Contact support for assistance"])
 
 
 def create_validation_error(
     error_code: ErrorCode,
-    message: str = None,
-    file_path: str = None,
-    line_number: int = None,
-    context: str = None,
-    suggestion: str = None,
+    message: str | None = None,
+    file_path: str | None = None,
+    line_number: int | None = None,
+    context: str | None = None,
+    suggestion: str | None = None,
 ) -> ValidationError:
     """Create a ValidationError with structured error code."""
     from ..validators.base_validator import ValidationError, ValidationLevel

@@ -670,18 +670,18 @@ class SecurityScanner:
         key_parts = ["dep_scan"]
 
         if requirements_file and requirements_file.exists():
-            hash_obj = hashlib.md5(requirements_file.read_bytes())
+            hash_obj = hashlib.md5(requirements_file.read_bytes(), usedforsecurity=False)
             key_parts.append(f"req_{hash_obj.hexdigest()[:8]}")
 
         if pyproject_file and pyproject_file.exists():
-            hash_obj = hashlib.md5(pyproject_file.read_bytes())
+            hash_obj = hashlib.md5(pyproject_file.read_bytes(), usedforsecurity=False)
             key_parts.append(f"pyproject_{hash_obj.hexdigest()[:8]}")
 
         return "_".join(key_parts)
 
     def _calculate_dir_hash(self, directory: Path) -> str:
         """Calculate hash of directory contents."""
-        hash_obj = hashlib.md5()
+        hash_obj = hashlib.md5(usedforsecurity=False)
 
         for file_path in sorted(directory.rglob("*.py")):
             if not self._should_skip_file(file_path):

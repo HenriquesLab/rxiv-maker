@@ -131,7 +131,7 @@ runs:
 
         # Skip Homebrew update to reduce cache usage and speed up builds
         echo "ℹ️ Skipping Homebrew update to minimize cache footprint"
-        
+
         # Essential dependencies only - remove optional deps to reduce cache
         ESSENTIAL_DEPS="pkg-config freetype jpeg libpng"
         # Removed optional dependencies to minimize Homebrew cache usage

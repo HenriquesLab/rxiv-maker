@@ -37,7 +37,7 @@ nox.options.sessions = ["format", "lint", "test_local"]
 # Helper Functions
 def install_deps(session, extra_deps=None, backend=None):
     """Install project and test dependencies efficiently.
-    
+
     Args:
         session: nox session
         extra_deps: additional dependencies to install
@@ -47,7 +47,7 @@ def install_deps(session, extra_deps=None, backend=None):
 
     # Auto-detect backend if not specified
     if backend is None:
-        backend = getattr(session, 'venv_backend', 'uv')
+        backend = getattr(session, "venv_backend", "uv")
 
     if backend in ["conda", "mamba"]:
         # Use conda/mamba for installation
@@ -277,7 +277,7 @@ def integration(session, engine):
 @nox.parametrize("engine", ENGINES)
 def test_conda(session, engine):
     """Test with conda environments across engines.
-    
+
     Examples:
         nox -s test_conda(python="3.11", engine="local")
         nox -s test_conda(engine="docker")  # Run with all Python versions
@@ -306,7 +306,7 @@ def test_conda(session, engine):
 @nox.parametrize("engine", ENGINES)
 def test_mamba(session, engine):
     """Test with mamba environments across engines.
-    
+
     Examples:
         nox -s test_mamba(python="3.11", engine="local")
         nox -s test_mamba(engine="docker")
@@ -335,11 +335,11 @@ def test_mamba(session, engine):
 @nox.parametrize("backend", VENV_BACKENDS)
 def test_cross_backend(session, backend):
     """Test across different virtual environment backends with local engine.
-    
+
     This session tests rxiv-maker compatibility with different Python environment
     management systems to ensure consistent behavior regardless of how Python
     environments are managed.
-    
+
     Examples:
         nox -s test_cross_backend(backend="conda")
         nox -s test_cross_backend(backend="mamba")
@@ -362,7 +362,8 @@ def test_cross_backend(session, backend):
         "tests/unit/test_conda_platform_detection.py",
         "-v",
         "--timeout=120",
-        "-k", "conda or platform or environment",
+        "-k",
+        "conda or platform or environment",
         *session.posargs,
     )
 
@@ -370,7 +371,7 @@ def test_cross_backend(session, backend):
 @nox.session(python="3.11", venv_backend="conda", reuse_venv=True)
 def conda_integration(session):
     """Run comprehensive conda environment integration tests.
-    
+
     This session specifically tests conda environment detection, dependency
     installation, and build processes to ensure full conda compatibility.
     """
@@ -384,7 +385,8 @@ def conda_integration(session):
         "pytest",
         "tests/unit/test_platform_detector.py",
         "-v",
-        "-k", "conda",
+        "-k",
+        "conda",
         *session.posargs,
     )
 
@@ -401,7 +403,8 @@ def conda_integration(session):
         "pytest",
         "tests/unit/test_install*",
         "-v",
-        "-k", "conda",
+        "-k",
+        "conda",
         *session.posargs,
     )
 

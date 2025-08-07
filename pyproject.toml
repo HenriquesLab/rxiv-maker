@@ -27,7 +27,7 @@ requires-python = ">=3.11"
 dependencies = [
     # Core scientific libraries for figure generation (optional for users who don't generate figures)
     "matplotlib>=3.7.0",
-    "seaborn>=0.12.0", 
+    "seaborn>=0.12.0",
     "numpy>=1.24.0",
     "pandas>=2.0.0",
     # Core functionality dependencies
@@ -55,7 +55,7 @@ dev = [
     # Testing and linting tools (moved from main dependencies)
     "pytest>=7.4,<8.0",
     "ruff>=0.12.2",
-    "pre-commit>=4.2.0", 
+    "pre-commit>=4.2.0",
     "types-requests>=2.32.4.20250611",
     # Additional development tools
     "py>=1.11.0",
@@ -78,7 +78,7 @@ dev = [
 ]
 security = [
     "bandit[toml]>=1.7.0",
-    "safety>=3.0.0", 
+    "safety>=3.0.0",
     "pip-audit>=2.6.0",
 ]
 minimal = []  # Same as base dependencies

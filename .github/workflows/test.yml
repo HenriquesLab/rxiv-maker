@@ -613,14 +613,14 @@ jobs:
     timeout-minutes: 30
     needs: [setup, test]
     if: needs.setup.outputs.test-scope == 'comprehensive' && always() && needs.setup.result == 'success'
-    
+
     strategy:
       matrix:
         python-version: ["3.11", "3.12"]
         conda-backend: ["conda", "mamba"]
       fail-fast: false
       max-parallel: 2
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -662,10 +662,10 @@ jobs:
         run: |
           echo "Running conda platform detection tests..."
           python -m pytest tests/unit/test_conda_platform_detection.py -v
-          
+
           echo "Running conda installation manager tests..."
           python -m pytest tests/unit/test_conda_installation_manager.py -v
-          
+
           echo "Running platform detector tests with conda focus..."
           python -m pytest tests/unit/test_platform_detector.py -v -k "conda"
 
@@ -731,7 +731,7 @@ jobs:
           # Configure Docker for testing with resource constraints
           echo "DOCKER_BUILDKIT=1" >> $GITHUB_ENV
           echo "RXIV_ENGINE=DOCKER" >> $GITHUB_ENV
-          
+
           # Set Docker resource limits for CI
           echo "DOCKER_DEFAULT_MEMORY=1g" >> $GITHUB_ENV
           echo "DOCKER_DEFAULT_CPUS=1.0" >> $GITHUB_ENV
@@ -739,7 +739,7 @@ jobs:
           # Clean up any existing containers/images to free space
           echo "🧹 Cleaning up Docker resources..."
           docker system prune -f --volumes || echo "Docker cleanup warning (expected)"
-          
+
           # Check available Docker resources
           echo "📊 Docker system info:"
           docker system df || echo "Docker df unavailable"
@@ -749,7 +749,7 @@ jobs:
           timeout 300 docker pull henriqueslab/rxiv-maker-base:latest && {
             echo "✅ Base image pulled successfully"
             docker images henriqueslab/rxiv-maker-base:latest
-            
+
             # Verify pdflatex is available in the image with strict limits
             echo "🔍 Verifying pdflatex in Docker image..."
             timeout 60 docker run --rm \
