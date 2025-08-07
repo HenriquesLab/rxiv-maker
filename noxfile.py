@@ -72,6 +72,7 @@ def check_backend_availability(session, backend):
         except Exception:
             session.skip(f"{backend.capitalize()} is not available on this system")
 
+
 def check_engine_availability(session, engine):
     """Check if the specified engine is available on the system."""
     if engine != "local":
@@ -438,6 +439,8 @@ def coverage(session):
     session.run("coverage", "xml", "-o", "coverage.xml")
 
     session.log("Coverage reports generated: coverage_html/, coverage.xml")
+
+
 @nox.session(python="3.11", reuse_venv=True)
 def security(session):
     """Run comprehensive security checks."""
