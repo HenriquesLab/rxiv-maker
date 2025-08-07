@@ -593,26 +593,29 @@ jobs:
           # Add Python packages (try different possible locations)
           if ls artifacts/python-packages/* 1> /dev/null 2>&1; then
             ARTIFACTS="$ARTIFACTS artifacts/python-packages/*"
-          elif ls artifacts/*-*.whl artifacts/*-*.tar.gz 1> /dev/null 2>&1; then
-            for file in artifacts/*-*.whl artifacts/*-*.tar.gz; do
-              if [[ -f "$file" && "$file" == *"-"*"."* ]]; then
-                ARTIFACTS="$ARTIFACTS $file"
-              fi
+          else
+            # Look for Python packages in artifacts root (wheel and tar.gz files)
+            for pattern in "artifacts/*.whl" "artifacts/*-*.tar.gz"; do
+              for file in $pattern; do
+                if [[ -f "$file" && "$file" == *"rxiv_maker"* ]]; then
+                  ARTIFACTS="$ARTIFACTS $file"
+                fi
+              done
             done
           fi
 
-          # Add binary artifacts
-          if ls artifacts/*.tar.gz 1> /dev/null 2>&1; then
-            for file in artifacts/*.tar.gz; do
-              if [[ -f "$file" && "$file" != *"-"*"."* ]]; then
-                ARTIFACTS="$ARTIFACTS $file"
-              fi
-            done
-          fi
+          # Add binary artifacts (excluding Python packages)
+          for file in artifacts/*.tar.gz; do
+            if [[ -f "$file" && "$file" == *"rxiv-maker-"* ]]; then
+              ARTIFACTS="$ARTIFACTS $file"
+            fi
+          done
 
-          if ls artifacts/*.zip 1> /dev/null 2>&1; then
-            ARTIFACTS="$ARTIFACTS artifacts/*.zip"
-          fi
+          for file in artifacts/*.zip; do
+            if [[ -f "$file" && "$file" == *"rxiv-maker-"* ]]; then
+              ARTIFACTS="$ARTIFACTS $file"
+            fi
+          done
 
           echo "Artifacts to include: $ARTIFACTS"
 
@@ -621,10 +624,13 @@ jobs:
             exit 1
           fi
 
+          # Split artifacts into an array and expand properly
+          ARTIFACTS_ARRAY=($ARTIFACTS)
+
           gh release create ${{ steps.get_version.outputs.tag }} \
             --title "Rxiv-Maker ${{ steps.get_version.outputs.tag }}" \
             --notes-file release_notes.md \
-            $ARTIFACTS
+            "${ARTIFACTS_ARRAY[@]}"
 
   # Publish to PyPI
   publish-pypi:
