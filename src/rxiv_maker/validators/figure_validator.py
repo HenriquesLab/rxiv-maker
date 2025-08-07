@@ -4,6 +4,7 @@ import os
 import re
 from typing import Any
 
+from ..core.error_codes import ErrorCode, create_validation_error
 from .base_validator import (
     BaseValidator,
     ValidationError,
@@ -73,8 +74,8 @@ class FigureValidator(BaseValidator):
         # Check if FIGURES directory exists
         if not os.path.exists(self.figures_dir):
             errors.append(
-                self._create_error(
-                    ValidationLevel.ERROR,
+                create_validation_error(
+                    ErrorCode.DIRECTORY_NOT_FOUND,
                     "FIGURES directory not found",
                     suggestion="Create FIGURES/ directory in manuscript folder",
                 )

@@ -126,7 +126,11 @@ class BaseValidator(ABC):
         suggestion: str | None = None,
         error_code: str | None = None,
     ) -> ValidationError:
-        """Helper to create validation errors."""
+        """Helper to create validation errors.
+
+        Note: This method is deprecated in favor of using create_validation_error
+        with structured ErrorCode enums for better consistency.
+        """
         return ValidationError(
             level=level,
             message=message,

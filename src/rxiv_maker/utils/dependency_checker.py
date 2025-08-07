@@ -216,6 +216,46 @@ class DependencyChecker:
             description=description,
         )
 
+    def check_conda(self) -> DependencyInfo:
+        """Check for conda/mamba package manager (optional)."""
+        self.log("Checking conda/mamba...")
+
+        # Check for mamba first (faster), then conda
+        conda_exe = self.platform.get_conda_executable()
+        found = conda_exe is not None
+        version = None
+        path = None
+
+        if found:
+            found, version, path = self.check_command_version(conda_exe)
+
+        # Installation commands for conda
+        install_commands = {
+            "Windows": "Download Miniconda from https://docs.conda.io/en/latest/miniconda.html",
+            "macOS": "brew install miniconda (or download from conda.io)",
+            "Linux": "wget -O miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && bash miniconda.sh",
+        }
+
+        # Check if running in conda environment
+        env_info = ""
+        if self.platform.is_in_conda_env():
+            env_name = self.platform.get_conda_env_name() or "base"
+            env_info = f" (current environment: {env_name})"
+
+        description = f"Conda/Mamba package manager{env_info}"
+        alternative = "Use pip for package installation or Docker mode"
+
+        return DependencyInfo(
+            name="Conda/Mamba",
+            required=False,
+            found=found,
+            version=version,
+            path=path,
+            install_commands=install_commands,
+            description=description,
+            alternative=alternative,
+        )
+
     def check_all_dependencies(self) -> list[DependencyInfo]:
         """Check all system dependencies.
 
@@ -230,6 +270,7 @@ class DependencyChecker:
             self.check_latex(),
             self.check_r(),
             self.check_git(),
+            self.check_conda(),
         ]
 
         return self.dependencies
