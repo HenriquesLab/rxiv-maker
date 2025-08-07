@@ -71,9 +71,7 @@ class DOICache:
             if legacy_file.exists():
                 try:
                     migrate_cache_file(legacy_file, self.cache_file)
-                    logger.info(
-                        f"Migrated DOI cache from {legacy_file} to {self.cache_file}"
-                    )
+                    logger.info(f"Migrated DOI cache from {legacy_file} to {self.cache_file}")
                 except Exception as e:
                     logger.warning(f"Failed to migrate DOI cache: {e}")
 
@@ -94,9 +92,7 @@ class DOICache:
                 if "timestamp" in entry:
                     # Check if entry is still valid
                     entry_time = entry["timestamp"]
-                    if (current_time - entry_time) < (
-                        self.cache_expiry_days * 24 * 3600
-                    ):
+                    if (current_time - entry_time) < (self.cache_expiry_days * 24 * 3600):
                         cleaned_cache[doi] = entry
                     else:
                         logger.debug(f"Expired cache entry for DOI: {doi}")
@@ -163,9 +159,7 @@ class DOICache:
         self._save_cache()
         logger.debug(f"Cached metadata for DOI: {doi}")
 
-    def set_resolution_status(
-        self, doi: str, resolves: bool, error_message: str | None = None
-    ) -> None:
+    def set_resolution_status(self, doi: str, resolves: bool, error_message: str | None = None) -> None:
         """Cache DOI resolution status.
 
         Args:
@@ -215,9 +209,7 @@ class DOICache:
                     current_time = time.time()
                     entry_time = resolution_data["timestamp"]
 
-                    if (current_time - entry_time) < (
-                        self.cache_expiry_days * 24 * 3600
-                    ):
+                    if (current_time - entry_time) < (self.cache_expiry_days * 24 * 3600):
                         logger.debug(f"Cache hit for DOI resolution: {doi}")
                         return resolution_data
                     else:
@@ -283,7 +275,5 @@ class DOICache:
             "valid_entries": valid_entries,
             "expired_entries": expired_entries,
             "cache_file": str(self.cache_file),
-            "cache_size_bytes": self.cache_file.stat().st_size
-            if self.cache_file.exists()
-            else 0,
+            "cache_size_bytes": self.cache_file.stat().st_size if self.cache_file.exists() else 0,
         }

@@ -20,67 +20,81 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Execute with retry
-      shell: ${{ inputs.shell }}
+    - name: Create command script
+      shell: bash
       run: |
-        if [ "${{ inputs.shell }}" = "bash" ]; then
-          # Bash retry logic
-          attempt=1
-          max_attempts=${{ inputs.max-attempts }}
-          delay=${{ inputs.retry-delay }}
+        # Create the command script
+        cat > /tmp/retry_command.sh << 'EOF'
+        ${{ inputs.command }}
+        EOF
+        chmod +x /tmp/retry_command.sh
 
-          while [ $attempt -le $max_attempts ]; do
-            echo "🔄 Attempt $attempt of $max_attempts..."
+    - name: Execute with retry (Bash)
+      if: inputs.shell == 'bash'
+      shell: bash
+      run: |
+        # Bash retry logic
+        attempt=1
+        max_attempts=${{ inputs.max-attempts }}
+        delay=${{ inputs.retry-delay }}
 
-            if eval "${{ inputs.command }}"; then
-              echo "✅ Command succeeded on attempt $attempt"
-              exit 0
+        while [ $attempt -le $max_attempts ]; do
+          echo "🔄 Attempt $attempt of $max_attempts..."
+
+          if bash /tmp/retry_command.sh; then
+            echo "✅ Command succeeded on attempt $attempt"
+            exit 0
+          else
+            exit_code=$?
+            echo "❌ Command failed with exit code $exit_code"
+
+            if [ $attempt -lt $max_attempts ]; then
+              echo "⏳ Waiting ${delay}s before retry..."
+              sleep $delay
+              # Exponential backoff
+              delay=$((delay * 2))
             else
-              exit_code=$?
-              echo "❌ Command failed with exit code $exit_code"
-
-              if [ $attempt -lt $max_attempts ]; then
-                echo "⏳ Waiting ${delay}s before retry..."
-                sleep $delay
-                # Exponential backoff
-                delay=$((delay * 2))
-              else
-                echo "❌ All attempts failed"
-                exit $exit_code
-              fi
+              echo "❌ All attempts failed"
+              exit $exit_code
             fi
+          fi
 
-            attempt=$((attempt + 1))
-          done
-        else
-          # PowerShell retry logic
-          $attempt = 1
-          $maxAttempts = ${{ inputs.max-attempts }}
-          $delay = ${{ inputs.retry-delay }}
+          attempt=$((attempt + 1))
+        done
 
-          while ($attempt -le $maxAttempts) {
-            Write-Host "🔄 Attempt $attempt of $maxAttempts..."
+    - name: Execute with retry (PowerShell)
+      if: inputs.shell == 'powershell'
+      shell: powershell
+      run: |
+        # PowerShell retry logic
+        $attempt = 1
+        $maxAttempts = ${{ inputs.max-attempts }}
+        $delay = ${{ inputs.retry-delay }}
 
-            try {
-              Invoke-Expression "${{ inputs.command }}"
-              Write-Host "✅ Command succeeded on attempt $attempt"
-              exit 0
-            } catch {
-              $exitCode = $LASTEXITCODE
-              if ($exitCode -eq 0) { $exitCode = 1 }
-              Write-Host "❌ Command failed: $_"
+        while ($attempt -le $maxAttempts) {
+          Write-Host "🔄 Attempt $attempt of $maxAttempts..."
 
-              if ($attempt -lt $maxAttempts) {
-                Write-Host "⏳ Waiting ${delay}s before retry..."
-                Start-Sleep -Seconds $delay
-                # Exponential backoff
-                $delay = $delay * 2
-              } else {
-                Write-Host "❌ All attempts failed"
-                exit $exitCode
-              }
+          try {
+            Invoke-Expression @"
+        ${{ inputs.command }}
+        "@
+            Write-Host "✅ Command succeeded on attempt $attempt"
+            exit 0
+          } catch {
+            $exitCode = $LASTEXITCODE
+            if ($exitCode -eq 0) { $exitCode = 1 }
+            Write-Host "❌ Command failed: $_"
+
+            if ($attempt -lt $maxAttempts) {
+              Write-Host "⏳ Waiting ${delay}s before retry..."
+              Start-Sleep -Seconds $delay
+              # Exponential backoff
+              $delay = $delay * 2
+            } else {
+              Write-Host "❌ All attempts failed"
+              exit $exitCode
             }
-
-            $attempt++
           }
-        fi
+
+          $attempt++
+        }

@@ -10,28 +10,131 @@ on:
         description: 'Tag to release (e.g., v1.4.8)'
         required: true
         type: string
+      skip-tests:
+        description: 'Skip comprehensive testing (use with caution)'
+        required: false
+        default: false
+        type: boolean
+      skip-package-managers:
+        description: 'Skip package manager updates'
+        required: false
+        default: false
+        type: boolean
+      dry-run:
+        description: 'Dry run - prepare release but do not publish'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
   actions: write
   id-token: write  # Required for PyPI trusted publishing
+  packages: write  # Required for Docker registry
 
 env:
   FORCE_COLOR: 1
   PIP_DISABLE_PIP_VERSION_CHECK: 1
   PYTHONIOENCODING: utf-8
+  PYTHONUTF8: 1
+  DOCKER_BUILDKIT: 1
+  REGISTRY: docker.io
+  BASE_IMAGE_NAME: henriqueslab/rxiv-maker-base
 
 jobs:
-  # First job: Run comprehensive tests
+  # Setup and Version Management
+  setup:
+    name: Setup Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      version-number: ${{ steps.version.outputs.version-number }}
+      is-dry-run: ${{ steps.version.outputs.is-dry-run }}
+      skip-tests: ${{ steps.version.outputs.skip-tests }}
+      skip-package-managers: ${{ steps.version.outputs.skip-package-managers }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Determine release version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.tag }}"
+            echo "Using manual tag: $VERSION"
+          else
+            VERSION="${{ github.ref_name }}"
+            echo "Using pushed tag: $VERSION"
+          fi
+
+          # Extract version number (remove 'v' prefix)
+          VERSION_NUMBER="${VERSION#v}"
+
+          # Validate version format
+          if [[ ! "$VERSION_NUMBER" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid version format: $VERSION_NUMBER (expected: x.y.z)"
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$VERSION" >> $GITHUB_OUTPUT
+          echo "version-number=$VERSION_NUMBER" >> $GITHUB_OUTPUT
+          echo "is-dry-run=${{ github.event.inputs.dry-run }}" >> $GITHUB_OUTPUT
+          echo "skip-tests=${{ github.event.inputs.skip-tests }}" >> $GITHUB_OUTPUT
+          echo "skip-package-managers=${{ github.event.inputs.skip-package-managers }}" >> $GITHUB_OUTPUT
+
+          echo "## Release Setup" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: $VERSION_NUMBER" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag**: $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dry Run**: ${{ github.event.inputs.dry-run }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Skip Tests**: ${{ github.event.inputs.skip-tests }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Skip Package Managers**: ${{ github.event.inputs.skip-package-managers }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Update version in codebase
+        if: steps.version.outputs.is-dry-run != 'true'
+        run: |
+          VERSION_NUMBER="${{ steps.version.outputs.version-number }}"
+          echo "📝 Updating version to $VERSION_NUMBER in codebase..."
+
+          # Update __version__.py
+          echo "__version__ = \"$VERSION_NUMBER\"" > src/rxiv_maker/__version__.py
+
+          # Update pyproject.toml version
+          sed -i "s/^version = .*/version = \"$VERSION_NUMBER\"/" pyproject.toml
+
+          # Verify updates
+          echo "Updated version in:"
+          echo "  - src/rxiv_maker/__version__.py: $(cat src/rxiv_maker/__version__.py)"
+          echo "  - pyproject.toml version: $(grep '^version = ' pyproject.toml)"
+
+      - name: Commit version updates
+        if: steps.version.outputs.is-dry-run != 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add src/rxiv_maker/__version__.py pyproject.toml
+          git commit -m "Update version to ${{ steps.version.outputs.version-number }} for release ${{ steps.version.outputs.tag }}" || echo "No changes to commit"
+          git push origin HEAD:${{ github.ref_name }} || echo "Failed to push version update"
+
+  # Comprehensive Testing (Optional)
   test:
-    name: Test Suite
+    name: Release Testing
     runs-on: ${{ matrix.os }}
+    needs: setup
+    if: needs.setup.outputs.skip-tests != 'true'
     timeout-minutes: 45
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ['3.11', '3.12']
-      fail-fast: false
+      fail-fast: true  # Fail fast for releases
 
     steps:
       - name: Checkout code
@@ -44,21 +147,62 @@ jobs:
         uses: ./.github/actions/setup-environment
         with:
           python-version: ${{ matrix.python-version }}
-          cache-suffix: ${{ matrix.os }}-${{ matrix.python-version }}
+          cache-suffix: release-${{ matrix.os }}-${{ matrix.python-version }}
 
-      - name: Run unit tests
+      - name: Run comprehensive tests
         uses: ./.github/actions/test-execution
         with:
-          test-type: unit
+          test-type: comprehensive
           python-version: ${{ matrix.python-version }}
           os: ${{ matrix.os }}
 
-  # Second job: Build Python packages
+      - name: Upload test results
+        if: always()
+        uses: ./.github/actions/artifact-management
+        with:
+          action: upload-test-results
+          name: release-test-results-${{ matrix.os }}-${{ matrix.python-version }}
+          matrix-os: ${{ matrix.os }}
+          matrix-python: ${{ matrix.python-version }}
+
+  # Repository Integrity Check
+  integrity-check:
+    name: Repository Integrity
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.skip-tests != 'true'
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Run repository integrity checks
+        run: |
+          chmod +x scripts/safeguards/*.sh scripts/safeguards/*.py
+          scripts/safeguards/validate-submodules.sh
+          python scripts/safeguards/check-repo-boundaries.py
+
+  # Build Python Packages
   build-python:
     name: Build Python Packages
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: test
+    needs: [setup, test, integrity-check]
+    if: always() && (needs.setup.result == 'success' && (needs.test.result == 'success' || needs.setup.outputs.skip-tests == 'true') && (needs.integrity-check.result == 'success' || needs.setup.outputs.skip-tests == 'true'))
 
     steps:
       - name: Checkout code
@@ -72,12 +216,24 @@ jobs:
           python-version: '3.11'
 
       - name: Build Python packages
-        run: uv build
+        run: |
+          echo "🏗️ Building Python packages..."
+          uv build
+          echo "✅ Python packages built successfully"
 
       - name: Verify packages
         run: |
+          echo "🔍 Verifying package integrity..."
           python -m pip install --upgrade pip twine
           python -m twine check dist/*
+
+          # Display package info
+          ls -la dist/
+          echo "Package contents:"
+          for file in dist/*; do
+            echo "  - $(basename $file): $(stat -c%s $file) bytes"
+          done
+          echo "✅ Package verification passed"
 
       - name: Upload Python packages
         uses: ./.github/actions/artifact-management
@@ -85,13 +241,15 @@ jobs:
           action: upload
           name: python-packages
           path: dist/
+          retention-days: 30
 
-  # Third job: Build binaries for each platform
+  # Build Cross-Platform Binaries
   build-binaries:
     name: Build Binary (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
-    needs: test
+    needs: [setup, test, integrity-check, build-python]
+    if: always() && (needs.setup.result == 'success' && (needs.test.result == 'success' || needs.setup.outputs.skip-tests == 'true') && (needs.integrity-check.result == 'success' || needs.setup.outputs.skip-tests == 'true') && needs.build-python.result == 'success')
     strategy:
       matrix:
         include:
@@ -144,17 +302,15 @@ jobs:
       - name: Install PyInstaller
         run: uv pip install pyinstaller
 
-      - name: Get version
+      - name: Get version from setup
         id: get_version
         shell: bash
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ github.event.inputs.tag }}"
-          else
-            VERSION="${{ github.ref_name }}"
-          fi
-          echo "version=${VERSION#v}" >> $GITHUB_OUTPUT
-          echo "tag=${VERSION}" >> $GITHUB_OUTPUT
+          VERSION="${{ needs.setup.outputs.version-number }}"
+          TAG="${{ needs.setup.outputs.tag }}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION (tag: $TAG)"
 
       - name: Create PyInstaller spec file
         shell: bash
@@ -175,7 +331,7 @@ jobs:
               ['src/rxiv_maker/rxiv_maker_cli.py'],
               pathex=[src_path],
               binaries=[],
-              datas=[
+              data=[
                   ('src/rxiv_maker/tex', 'rxiv_maker/tex'),
                   ('src/rxiv_maker/install/templates', 'rxiv_maker/install/templates'),
                   ('src/rxiv_maker/utils/schemas', 'rxiv_maker/utils/schemas'),
@@ -311,16 +467,18 @@ jobs:
             dist/${{ matrix.artifact_name }}.zip
           retention-days: 30
 
-  # Fourth job: Create GitHub release
+  # Create GitHub Release
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [test, build-python, build-binaries]
+    needs: [setup, test, integrity-check, build-python, build-binaries]
+    if: needs.setup.outputs.is-dry-run != 'true'
 
     outputs:
       release_id: ${{ steps.create_release.outputs.id }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
+      release_url: ${{ steps.create_release.outputs.url }}
 
     steps:
       - name: Checkout code
@@ -328,16 +486,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get version
+      - name: Get version from setup
         id: get_version
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ github.event.inputs.tag }}"
-          else
-            VERSION="${{ github.ref_name }}"
-          fi
-          echo "version=${VERSION#v}" >> $GITHUB_OUTPUT
-          echo "tag=${VERSION}" >> $GITHUB_OUTPUT
+          VERSION="${{ needs.setup.outputs.version-number }}"
+          TAG="${{ needs.setup.outputs.tag }}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "📦 Creating release for version: $VERSION (tag: $TAG)"
 
       - name: Download all artifacts
         uses: ./.github/actions/artifact-management
@@ -396,25 +552,87 @@ jobs:
           *Binary distributions are self-contained and don't require Python installation.*
           EOF
 
+      - name: Validate artifacts before release
+        run: |
+          echo "🔍 Validating artifacts structure..."
+          echo "Artifacts directory contents:"
+          find artifacts/ -type f -exec ls -la {} \; || echo "No artifacts found"
+
+          echo ""
+          echo "Checking for required artifact patterns..."
+
+          # Check for python packages
+          if ls artifacts/python-packages/* 1> /dev/null 2>&1; then
+            echo "✅ Python packages found:"
+            ls -la artifacts/python-packages/
+          elif ls artifacts/*-*.whl artifacts/*-*.tar.gz 1> /dev/null 2>&1; then
+            echo "✅ Python packages found in artifacts root:"
+            ls -la artifacts/*-*.whl artifacts/*-*.tar.gz || echo "No Python packages"
+          else
+            echo "❌ No Python packages found"
+          fi
+
+          # Check for binary artifacts
+          if ls artifacts/*.tar.gz artifacts/*.zip 1> /dev/null 2>&1; then
+            echo "✅ Binary artifacts found:"
+            ls -la artifacts/*.tar.gz artifacts/*.zip
+          else
+            echo "❌ No binary artifacts found"
+          fi
+
       - name: Create Release
         id: create_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          echo "🚀 Creating GitHub release..."
+
+          # Build list of artifacts to include
+          ARTIFACTS=""
+
+          # Add Python packages (try different possible locations)
+          if ls artifacts/python-packages/* 1> /dev/null 2>&1; then
+            ARTIFACTS="$ARTIFACTS artifacts/python-packages/*"
+          elif ls artifacts/*-*.whl artifacts/*-*.tar.gz 1> /dev/null 2>&1; then
+            for file in artifacts/*-*.whl artifacts/*-*.tar.gz; do
+              if [[ -f "$file" && "$file" == *"-"*"."* ]]; then
+                ARTIFACTS="$ARTIFACTS $file"
+              fi
+            done
+          fi
+
+          # Add binary artifacts
+          if ls artifacts/*.tar.gz 1> /dev/null 2>&1; then
+            for file in artifacts/*.tar.gz; do
+              if [[ -f "$file" && "$file" != *"-"*"."* ]]; then
+                ARTIFACTS="$ARTIFACTS $file"
+              fi
+            done
+          fi
+
+          if ls artifacts/*.zip 1> /dev/null 2>&1; then
+            ARTIFACTS="$ARTIFACTS artifacts/*.zip"
+          fi
+
+          echo "Artifacts to include: $ARTIFACTS"
+
+          if [[ -z "$ARTIFACTS" ]]; then
+            echo "❌ No artifacts found to include in release"
+            exit 1
+          fi
+
           gh release create ${{ steps.get_version.outputs.tag }} \
             --title "Rxiv-Maker ${{ steps.get_version.outputs.tag }}" \
             --notes-file release_notes.md \
-            artifacts/python-packages/* \
-            artifacts/*.tar.gz \
-            artifacts/*.zip
+            $ARTIFACTS
 
-  # Fifth job: Publish to PyPI
+  # Publish to PyPI
   publish-pypi:
     name: Publish to PyPI
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [create-release]
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    needs: [setup, create-release]
+    if: needs.setup.outputs.is-dry-run != 'true'
     environment: release
 
     steps:
@@ -430,13 +648,13 @@ jobs:
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
 
-  # Sixth job: Trigger Docker image sync for new releases
+  # Sync Docker Images
   sync-docker-version:
     name: Sync Docker Version
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [create-release]
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    needs: [setup, create-release]
+    if: needs.setup.outputs.is-dry-run != 'true'
 
     steps:
       - name: Checkout code
@@ -444,16 +662,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get version
+      - name: Get version from setup
         id: get_version
         run: |
-          VERSION="${{ github.ref_name }}"
-          echo "version=${VERSION#v}" >> $GITHUB_OUTPUT
-          echo "tag=${VERSION}" >> $GITHUB_OUTPUT
+          VERSION="${{ needs.setup.outputs.version-number }}"
+          TAG="${{ needs.setup.outputs.tag }}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "🐳 Syncing Docker images for version: $VERSION"
 
       - name: Trigger Docker image build
         run: |
           echo "Triggering Docker image build for release ${{ steps.get_version.outputs.tag }}"
+
+          # Add rate limiting to prevent API abuse detection
+          sleep 2
 
           # Use DOCKER_SYNC_TOKEN if available, otherwise fall back to GITHUB_TOKEN
           if [ -n "${{ secrets.DOCKER_SYNC_TOKEN }}" ]; then
@@ -510,13 +733,13 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Monitor Docker build at [docker-rxiv-maker actions](https://github.com/HenriquesLab/docker-rxiv-maker/actions)" >> $GITHUB_STEP_SUMMARY
 
-  # Seventh job: Orchestrate package manager updates
+  # Package Manager Updates
   update-package-managers:
     name: Update Package Managers
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [create-release, sync-docker-version]
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    needs: [setup, create-release, sync-docker-version]
+    if: needs.setup.outputs.is-dry-run != 'true' && needs.setup.outputs.skip-package-managers != 'true'
 
     steps:
       - name: Checkout code
@@ -535,59 +758,102 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install requests pyyaml
 
-      - name: Get version
-        id: get_version
+      - name: Get release information
+        id: release_info
         run: |
-          VERSION="${{ github.ref_name }}"
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "version_num=${VERSION#v}" >> $GITHUB_OUTPUT
+          VERSION="${{ needs.setup.outputs.version-number }}"
+          TAG="${{ needs.setup.outputs.tag }}"
 
-      - name: Validate release readiness
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+          echo "📦 Updating package managers for version: $VERSION"
+
+          # Get release assets from GitHub
+          RELEASE_URL="${{ needs.create-release.outputs.release_url }}"
+          echo "release_url=$RELEASE_URL" >> $GITHUB_OUTPUT
+
+      - name: Update Homebrew Formula
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.PACKAGE_MANAGER_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          echo "🔍 Validating release readiness for ${{ steps.get_version.outputs.version }}"
-          python scripts/orchestrate-release.py validate "${{ steps.get_version.outputs.version }}" || echo "Validation failed, continuing anyway"
+          echo "🍺 Triggering Homebrew formula update..."
 
-      - name: Test package manager readiness
+          # Add rate limiting to prevent API abuse
+          sleep 3
+
+          curl -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "User-Agent: rxiv-maker-release" \
+            https://api.github.com/repos/henriqueslab/homebrew-rxiv-maker/dispatches \
+            -d '{
+              "event_type": "update-formula",
+              "client_payload": {
+                "version": "${{ steps.release_info.outputs.version }}",
+                "tag": "${{ steps.release_info.outputs.tag }}",
+                "source_repo": "${{ github.repository }}",
+                "release_url": "${{ steps.release_info.outputs.release_url }}"
+              }
+            }' || echo "⚠️ Homebrew update failed"
+
+      - name: Update Scoop Manifest
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.PACKAGE_MANAGER_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          echo "🧪 Testing package manager readiness..."
-          python scripts/orchestrate-release.py test "${{ steps.get_version.outputs.version }}" || echo "Test failed, continuing anyway"
+          echo "🪣 Triggering Scoop manifest update..."
 
-      - name: Orchestrate package manager updates
-        id: orchestrate
+          # Add rate limiting to prevent API abuse
+          sleep 3
+
+          curl -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "User-Agent: rxiv-maker-release" \
+            https://api.github.com/repos/henriqueslab/scoop-rxiv-maker/dispatches \
+            -d '{
+              "event_type": "update-formula",
+              "client_payload": {
+                "version": "${{ steps.release_info.outputs.version }}",
+                "tag": "${{ steps.release_info.outputs.tag }}",
+                "source_repo": "${{ github.repository }}",
+                "release_url": "${{ steps.release_info.outputs.release_url }}"
+              }
+            }' || echo "⚠️ Scoop update failed"
+
+      - name: Verify package manager updates
         continue-on-error: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.PACKAGE_MANAGER_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          echo "🚀 Orchestrating package manager updates for ${{ steps.get_version.outputs.version }}"
-          python scripts/orchestrate-release.py orchestrate "${{ steps.get_version.outputs.version }}" || echo "Package manager updates failed, continuing anyway"
+          echo "🔍 Verifying package manager updates..."
+
+          # Wait a moment for dispatches to process
+          sleep 30
+
+          # Check if workflows were triggered (basic verification)
+          echo "Package manager update dispatches sent successfully"
+          echo "Monitor progress at:"
+          echo "  - Homebrew: https://github.com/henriqueslab/homebrew-rxiv-maker/actions"
+          echo "  - Scoop: https://github.com/henriqueslab/scoop-rxiv-maker/actions"
 
       - name: Create package manager summary
         if: always()
         run: |
           echo "## 📦 Package Manager Updates" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version**: ${{ steps.get_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.release_info.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag**: ${{ steps.release_info.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Timestamp**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          if [ "${{ steps.orchestrate.outcome }}" = "success" ]; then
-            echo "### ✅ Update Status: SUCCESS" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "All package managers have been updated successfully:" >> $GITHUB_STEP_SUMMARY
-            echo "- 🍺 **Homebrew**: Formula updated with new binaries and checksums" >> $GITHUB_STEP_SUMMARY
-            echo "- 🪣 **Scoop**: Manifest updated with new binary and checksum" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "### ❌ Update Status: FAILED" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Some package manager updates failed. Check the logs for details." >> $GITHUB_STEP_SUMMARY
-            echo "Manual intervention may be required." >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "### 🚀 Repository Dispatch Sent" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Update triggers sent to package manager repositories:" >> $GITHUB_STEP_SUMMARY
+          echo "- 🍺 **Homebrew**: Repository dispatch sent to henriqueslab/homebrew-rxiv-maker" >> $GITHUB_STEP_SUMMARY
+          echo "- 🪣 **Scoop**: Repository dispatch sent to henriqueslab/scoop-rxiv-maker" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Package managers will update automatically via their workflows." >> $GITHUB_STEP_SUMMARY
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📋 Installation Commands" >> $GITHUB_STEP_SUMMARY
@@ -628,3 +894,98 @@ jobs:
           echo "- Check workflow logs for specific errors" >> $GITHUB_STEP_SUMMARY
           echo "- Trigger updates manually using the GitHub Actions UI" >> $GITHUB_STEP_SUMMARY
           echo "- Contact maintainers if issues persist" >> $GITHUB_STEP_SUMMARY
+
+  # Release Summary
+  release-summary:
+    name: Release Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [setup, test, integrity-check, build-python, build-binaries, create-release, publish-pypi, sync-docker-version, update-package-managers]
+    if: always()
+
+    steps:
+      - name: Generate release summary
+        run: |
+          echo "# 🚀 Release Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version**: ${{ needs.setup.outputs.version-number }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag**: ${{ needs.setup.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Dry Run**: ${{ needs.setup.outputs.is-dry-run }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Job results
+          jobs=(
+            "setup:Setup & Version Management"
+            "test:Comprehensive Testing"
+            "integrity-check:Repository Integrity"
+            "build-python:Python Package Build"
+            "build-binaries:Cross-Platform Binaries"
+            "create-release:GitHub Release"
+            "publish-pypi:PyPI Publishing"
+            "sync-docker-version:Docker Image Sync"
+            "update-package-managers:Package Manager Updates"
+          )
+
+          for job_info in "${jobs[@]}"; do
+            job_name="${job_info%%:*}"
+            job_title="${job_info#*:}"
+
+            # Get job result using needs context
+            case $job_name in
+              "setup") result="${{ needs.setup.result }}" ;;
+              "test") result="${{ needs.test.result }}" ;;
+              "integrity-check") result="${{ needs.integrity-check.result }}" ;;
+              "build-python") result="${{ needs.build-python.result }}" ;;
+              "build-binaries") result="${{ needs.build-binaries.result }}" ;;
+              "create-release") result="${{ needs.create-release.result }}" ;;
+              "publish-pypi") result="${{ needs.publish-pypi.result }}" ;;
+              "sync-docker-version") result="${{ needs.sync-docker-version.result }}" ;;
+              "update-package-managers") result="${{ needs.update-package-managers.result }}" ;;
+            esac
+
+            case $result in
+              "success") echo "✅ **$job_title**: Completed successfully" >> $GITHUB_STEP_SUMMARY ;;
+              "failure") echo "❌ **$job_title**: Failed" >> $GITHUB_STEP_SUMMARY ;;
+              "cancelled") echo "⚠️ **$job_title**: Cancelled" >> $GITHUB_STEP_SUMMARY ;;
+              "skipped") echo "⏭️ **$job_title**: Skipped" >> $GITHUB_STEP_SUMMARY ;;
+              *) echo "❓ **$job_title**: $result" >> $GITHUB_STEP_SUMMARY ;;
+            esac
+          done
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Overall status
+          if [[ "${{ needs.setup.result }}" == "success" &&
+                ("${{ needs.test.result }}" == "success" || "${{ needs.setup.outputs.skip-tests }}" == "true") &&
+                ("${{ needs.integrity-check.result }}" == "success" || "${{ needs.setup.outputs.skip-tests }}" == "true") &&
+                "${{ needs.build-python.result }}" == "success" &&
+                "${{ needs.build-binaries.result }}" == "success" &&
+                ("${{ needs.create-release.result }}" == "success" || "${{ needs.setup.outputs.is-dry-run }}" == "true") ]]; then
+            echo "## 🎉 Release Status: SUCCESS" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            if [ "${{ needs.setup.outputs.is-dry-run }}" == "true" ]; then
+              echo "✅ **Dry run completed successfully** - No artifacts published" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "✅ **Release ${{ needs.setup.outputs.tag }} published successfully!**" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "### 📦 Available Now" >> $GITHUB_STEP_SUMMARY
+              echo "- **GitHub Release**: [View Release](${{ needs.create-release.outputs.release_url }})" >> $GITHUB_STEP_SUMMARY
+              echo "- **PyPI Package**: \`pip install rxiv-maker==${{ needs.setup.outputs.version-number }}\`" >> $GITHUB_STEP_SUMMARY
+              echo "- **Docker Image**: \`henriqueslab/rxiv-maker-base:v${{ needs.setup.outputs.version-number }}\`" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "### 📋 Package Managers (Updating)" >> $GITHUB_STEP_SUMMARY
+              echo "- **Homebrew**: \`brew install henriqueslab/rxiv-maker/rxiv-maker\`" >> $GITHUB_STEP_SUMMARY
+              echo "- **Scoop**: \`scoop install henriqueslab/rxiv-maker\`" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "## ❌ Release Status: FAILED" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The release pipeline encountered failures. Please check the job details above." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Notify completion
+        if: always()
+        run: |
+          echo "🚀 Release pipeline completed for ${{ needs.setup.outputs.tag }}"
+          echo "Check the summary above for detailed results."

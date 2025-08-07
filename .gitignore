@@ -89,6 +89,7 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
+coverage-*.xml
 *.cover
 *.py,cover
 .hypothesis/
@@ -245,10 +246,48 @@ docs/api/*.md
 # Git submodules are tracked by .gitmodules
 # Individual submodule contents are managed by git submodule commands
 
+# Prevent individual submodule files from being committed
+# Submodules should only be managed via git submodule commands
+submodules/homebrew-rxiv-maker/
+submodules/scoop-rxiv-maker/
+submodules/vscode-rxiv-maker/
+
+# Repository contamination prevention
+# Prevent common files from wrong repositories being accidentally added
+
+# Homebrew files should only be in homebrew-rxiv-maker submodule
+/Formula/
+*.rb
+brew-*
+
+# Scoop files should only be in scoop-rxiv-maker submodule
+/bucket/
+*.ps1
+scoop-*
+
+# VSCode extension files should only be in vscode-rxiv-maker submodule
+/.vscodeignore
+/language-configuration.json
+/*.tmLanguage.json
+/src/extension.ts
+/src/test/extension.test.ts
+/schemas/config-schema.json
+/esbuild.js
+/eslint.config.mjs
+
+# Prevent temporary submodule clones from being committed
+temp-*-clone/
+temp-*-fix/
+
+# Safeguard system logs and temporary files
+scripts/safeguards/*.log
+.safeguard-validation-*
+
 .gitignore
 MANUSCRIPT/2025__author_et_al__rxiv.pdf
 EXAMPLE_MANUSCRIPT/2025__Saraiva_et_al__for_arxiv.zip
 GEMINI.md
+# Temporary analysis files
 output.md
 .folder2md_ignore
 submodules/vscode-rxiv-maker/node_modules

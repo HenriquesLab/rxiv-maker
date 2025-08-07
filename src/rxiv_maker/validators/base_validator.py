@@ -153,9 +153,7 @@ class BaseValidator(ABC):
         except OSError:
             return None
 
-    def _get_line_context(
-        self, content: str, line_number: int, context_lines: int = 2
-    ) -> str:
+    def _get_line_context(self, content: str, line_number: int, context_lines: int = 2) -> str:
         """Get context around a specific line number."""
         lines = content.split("\n")
         start = max(0, line_number - context_lines - 1)

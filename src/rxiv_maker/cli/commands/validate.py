@@ -12,15 +12,11 @@ console = Console()
 
 
 @click.command(context_settings={"help_option_names": ["-h", "--help"]})
-@click.argument(
-    "manuscript_path", type=click.Path(exists=True, file_okay=False), required=False
-)
+@click.argument("manuscript_path", type=click.Path(exists=True, file_okay=False), required=False)
 @click.option("--detailed", "-d", is_flag=True, help="Show detailed validation report")
 @click.option("--no-doi", is_flag=True, help="Skip DOI validation")
 @click.pass_context
-def validate(
-    ctx: click.Context, manuscript_path: str | None, detailed: bool, no_doi: bool
-) -> None:
+def validate(ctx: click.Context, manuscript_path: str | None, detailed: bool, no_doi: bool) -> None:
     """Validate manuscript structure and content before PDF generation.
 
     **MANUSCRIPT_PATH**: Directory containing your manuscript files.
@@ -75,7 +71,7 @@ def validate(
             task = progress.add_task("Running validation...", total=None)
 
             # Import and run validation
-            from ...commands.validate import main as validate_main
+            from ...engine.validate import main as validate_main
 
             # Prepare arguments
             args = [manuscript_path]
@@ -98,12 +94,8 @@ def validate(
             except SystemExit as e:
                 progress.update(task, description="❌ Validation failed")
                 if e.code != 0:
-                    console.print(
-                        "❌ Validation failed. See details above.", style="red"
-                    )
-                    console.print(
-                        "💡 Run with --detailed for more information", style="yellow"
-                    )
+                    console.print("❌ Validation failed. See details above.", style="red")
+                    console.print("💡 Run with --detailed for more information", style="yellow")
                     console.print(
                         "💡 Use 'rxiv build --skip-validation' to build anyway",
                         style="yellow",

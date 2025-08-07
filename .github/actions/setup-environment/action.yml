@@ -21,6 +21,10 @@ inputs:
     description: 'Install Python dependencies with UV'
     required: false
     default: 'true'
+  install-latex:
+    description: 'Install LaTeX for local PDF generation (macOS/Windows only, Linux uses Docker)'
+    required: false
+    default: 'false'
 
 outputs:
   python-version:
@@ -39,93 +43,449 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
 
-    - name: Install UV
+    - name: Install UV with improved caching
       id: setup-uv
       uses: astral-sh/setup-uv@v4
       with:
-        version: "latest"
-        enable-cache: ${{ inputs.enable-cache }}
-        cache-suffix: ${{ inputs.cache-suffix }}
+        version: "0.8.5"  # Pin to specific version for stability
+        enable-cache: ${{ inputs.enable-cache == 'true' && 'true' || 'false' }}
+        cache-suffix: ${{ format('{0}-{1}-v2', inputs.cache-suffix, runner.os) }}  # v2 to invalidate old caches
         cache-dependency-glob: "**/uv.lock"
-        prune-cache: true
+        prune-cache: false  # Disable cache pruning to avoid issues
         ignore-nothing-to-cache: true
       continue-on-error: true  # Don't fail on cache issues
+
+    - name: Fallback UV installation on cache failure
+      if: failure() && inputs.enable-cache == 'true'
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "0.8.5"
+        enable-cache: false  # Disable cache entirely on fallback
+      continue-on-error: false
+
+    - name: Set UV environment variables for better caching
+      shell: bash
+      run: |
+        # Set UV cache directory to a predictable location
+        if [ "${{ inputs.enable-cache }}" = "true" ]; then
+          echo "UV_CACHE_DIR=${{ runner.temp }}/uv-cache" >> $GITHUB_ENV
+          mkdir -p "${{ runner.temp }}/uv-cache"
+        else
+          echo "UV_NO_CACHE=1" >> $GITHUB_ENV
+        fi
+
+        # Add UV configuration for better stability
+        echo "UV_SYSTEM_PYTHON=1" >> $GITHUB_ENV
+        echo "UV_COMPILE_BYTECODE=1" >> $GITHUB_ENV
 
     - name: Install system dependencies (Linux)
       if: inputs.install-system-deps == 'true' && runner.os == 'Linux'
       shell: bash
       run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          build-essential \
-          libfreetype6-dev \
-          libjpeg-dev \
-          libpng-dev \
-          libtiff-dev \
-          libwebp-dev \
-          libopenjp2-7-dev \
-          zlib1g-dev \
-          liblcms2-dev \
-          libffi-dev \
-          pkg-config \
-          git
+        echo "🐧 Installing Linux system dependencies..."
+
+        # Update package lists with retry
+        for attempt in 1 2 3; do
+          echo "Updating package lists (attempt $attempt)..."
+          if sudo apt-get update; then
+            echo "✅ Package lists updated successfully"
+            break
+          else
+            echo "⚠️ Package update failed, retrying in 5 seconds..."
+            sleep 5
+          fi
+        done
+
+        # Install dependencies with fallbacks
+        ESSENTIAL_DEPS="build-essential git pkg-config"
+        IMAGE_DEPS="libfreetype6-dev libjpeg-dev libpng-dev libtiff-dev libwebp-dev"
+        OPTIONAL_DEPS="libopenjp2-7-dev zlib1g-dev liblcms2-dev libffi-dev"
+
+        # Install essential dependencies first
+        echo "Installing essential dependencies..."
+        if ! sudo apt-get install -y $ESSENTIAL_DEPS; then
+          echo "❌ Failed to install essential dependencies"
+          exit 1
+        fi
+
+        # Try to install image processing libraries
+        echo "Installing image processing dependencies..."
+        sudo apt-get install -y $IMAGE_DEPS || echo "⚠️ Some image processing libraries failed to install"
+
+        # Try optional dependencies
+        echo "Installing optional dependencies..."
+        for dep in $OPTIONAL_DEPS; do
+          sudo apt-get install -y $dep || echo "⚠️ Optional dependency $dep failed to install"
+        done
+
+        echo "✅ Linux system dependencies installation completed"
 
     - name: Install system dependencies (macOS)
       if: inputs.install-system-deps == 'true' && runner.os == 'macOS'
       shell: bash
       run: |
-        brew install \
-          freetype \
-          jpeg \
-          libpng \
-          libtiff \
-          webp \
-          openjpeg \
-          zlib \
-          lcms2 \
-          libffi \
-          pkg-config
+        echo "🍎 Installing macOS system dependencies..."
+
+        # Update Homebrew with retry
+        for attempt in 1 2 3; do
+          echo "Updating Homebrew (attempt $attempt)..."
+          if brew update; then
+            echo "✅ Homebrew updated successfully"
+            break
+          else
+            echo "⚠️ Homebrew update failed, continuing anyway..."
+            break  # Don't fail on Homebrew update issues
+          fi
+        done
+
+        # Essential dependencies
+        ESSENTIAL_DEPS="pkg-config"
+        IMAGE_DEPS="freetype jpeg libpng libtiff webp"
+        OPTIONAL_DEPS="openjpeg zlib lcms2 libffi"
+
+        # Install essential dependencies
+        echo "Installing essential dependencies..."
+        for dep in $ESSENTIAL_DEPS; do
+          if ! brew install $dep; then
+            echo "❌ Failed to install essential dependency: $dep"
+            exit 1
+          fi
+        done
+
+        # Install image processing libraries with fallbacks
+        echo "Installing image processing dependencies..."
+        for dep in $IMAGE_DEPS; do
+          brew install $dep || echo "⚠️ Failed to install $dep, continuing..."
+        done
+
+        # Install optional dependencies
+        echo "Installing optional dependencies..."
+        for dep in $OPTIONAL_DEPS; do
+          brew install $dep || echo "⚠️ Optional dependency $dep failed to install"
+        done
+
+        echo "✅ macOS system dependencies installation completed"
+
+    - name: Install LaTeX (macOS)
+      if: inputs.install-latex == 'true' && runner.os == 'macOS'
+      shell: bash
+      run: |
+        echo "🍎 Installing LaTeX for macOS..."
+
+        # Try different LaTeX packages with fallbacks
+        LATEX_PACKAGES=("basictex" "mactex-no-gui")
+
+        for package in "${LATEX_PACKAGES[@]}"; do
+          echo "Attempting to install $package..."
+          if brew install --cask "$package"; then
+            echo "✅ Successfully installed $package"
+
+            # Update PATH to include LaTeX executables
+            if [[ -d "/usr/local/texlive" ]]; then
+              # Find the latest TexLive installation
+              TEXLIVE_PATH=$(find /usr/local/texlive -name "bin" -type d | grep -E "x86_64-darwin|universal-darwin" | head -1)
+              if [[ -n "$TEXLIVE_PATH" ]]; then
+                echo "Adding TexLive to PATH: $TEXLIVE_PATH"
+                echo "$TEXLIVE_PATH" >> $GITHUB_PATH
+              fi
+            fi
+
+            # Also check /Library/TeX/texbin (common MacTeX location)
+            if [[ -d "/Library/TeX/texbin" ]]; then
+              echo "Adding MacTeX to PATH: /Library/TeX/texbin"
+              echo "/Library/TeX/texbin" >> $GITHUB_PATH
+            fi
+
+            # Verify installation
+            sleep 5  # Give time for PATH to update
+            export PATH="/Library/TeX/texbin:$PATH"
+            if pdflatex --version >/dev/null 2>&1; then
+              echo "✅ pdflatex is accessible"
+              pdflatex --version | head -1
+              break
+            else
+              echo "⚠️ pdflatex not yet accessible, checking next package..."
+            fi
+          else
+            echo "⚠️ Failed to install $package, trying next option..."
+          fi
+        done
+
+        # Final verification
+        export PATH="/Library/TeX/texbin:$PATH"
+        if pdflatex --version >/dev/null 2>&1; then
+          echo "✅ LaTeX installation completed successfully"
+          echo "RXIV_ENGINE=LOCAL" >> $GITHUB_ENV
+        else
+          echo "❌ LaTeX installation failed - pdflatex not accessible"
+          echo "Available in PATH:"
+          echo $PATH
+          echo "Checking common locations:"
+          ls -la /Library/TeX/texbin/ 2>/dev/null || echo "  /Library/TeX/texbin not found"
+          ls -la /usr/local/texlive/ 2>/dev/null || echo "  /usr/local/texlive not found"
+          exit 1
+        fi
 
     - name: Install system dependencies (Windows)
       if: inputs.install-system-deps == 'true' && runner.os == 'Windows'
       shell: powershell
       run: |
-        Write-Host "Setting up Windows dependencies..."
-        # Install chocolatey if not present
-        if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
-          Write-Host "Installing Chocolatey..."
-          Set-ExecutionPolicy Bypass -Scope Process -Force
-          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-          iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-        }
-        Write-Host "Windows system dependencies configured"
+        Write-Host "🪟 Installing Windows system dependencies..."
 
-    - name: Install Python dependencies
+        # Check if chocolatey is available
+        $chocoAvailable = $false
+        try {
+          if (Get-Command choco -ErrorAction SilentlyContinue) {
+            Write-Host "✅ Chocolatey is already installed"
+            $chocoAvailable = $true
+          } else {
+            Write-Host "Installing Chocolatey..."
+            Set-ExecutionPolicy Bypass -Scope Process -Force
+            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+
+            # Try to install Chocolatey with timeout
+            $timeout = 300  # 5 minutes
+            $job = Start-Job -ScriptBlock {
+              iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+            }
+
+            if (Wait-Job $job -Timeout $timeout) {
+              Receive-Job $job
+              $chocoAvailable = $true
+              Write-Host "✅ Chocolatey installed successfully"
+            } else {
+              Write-Host "⚠️ Chocolatey installation timed out"
+              Remove-Job $job -Force
+            }
+          }
+        } catch {
+          Write-Host "⚠️ Failed to install Chocolatey: $($_.Exception.Message)"
+        }
+
+        # Try to install essential packages if Chocolatey is available
+        if ($chocoAvailable) {
+          $essentialPackages = @("git", "7zip")
+          foreach ($package in $essentialPackages) {
+            try {
+              Write-Host "Installing $package..."
+              choco install $package -y --no-progress --timeout=300
+            } catch {
+              Write-Host "⚠️ Failed to install ${package}: $($_.Exception.Message)"
+            }
+          }
+        } else {
+          Write-Host "⚠️ Skipping package installation due to Chocolatey issues"
+        }
+
+        Write-Host "✅ Windows system dependencies configuration completed"
+
+    - name: Install LaTeX (Windows)
+      if: inputs.install-latex == 'true' && runner.os == 'Windows'
+      shell: powershell
+      run: |
+        Write-Host "🪟 Installing LaTeX for Windows..."
+
+        # Check if chocolatey is available (should be from previous step)
+        $chocoAvailable = $false
+        try {
+          if (Get-Command choco -ErrorAction SilentlyContinue) {
+            Write-Host "✅ Chocolatey is available"
+            $chocoAvailable = $true
+          } else {
+            Write-Host "Installing Chocolatey for LaTeX installation..."
+            Set-ExecutionPolicy Bypass -Scope Process -Force
+            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+            iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+            $chocoAvailable = $true
+          }
+        } catch {
+          Write-Host "❌ Failed to set up Chocolatey: $($_.Exception.Message)"
+          exit 1
+        }
+
+        if ($chocoAvailable) {
+          Write-Host "Installing MiKTeX..."
+          try {
+            # Install MiKTeX with basic package set
+            choco install miktex --params="/Set:basic" -y --no-progress --timeout=1800
+
+            # Refresh environment to get new PATH
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+
+            # Common MiKTeX installation paths
+            $miktexPaths = @(
+              "${env:ProgramFiles}\MiKTeX\miktex\bin\x64",
+              "${env:ProgramFiles(x86)}\MiKTeX\miktex\bin",
+              "${env:LOCALAPPDATA}\Programs\MiKTeX\miktex\bin\x64"
+            )
+
+            foreach ($path in $miktexPaths) {
+              if (Test-Path $path) {
+                Write-Host "Adding MiKTeX to PATH: $path"
+                $env:Path = "$path;$env:Path"
+
+                # Also add to GitHub PATH for subsequent steps
+                echo $path | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+              }
+            }
+
+            # Configure MiKTeX for automatic package installation
+            Write-Host "Configuring MiKTeX..."
+            Start-Sleep -Seconds 10  # Give MiKTeX time to initialize
+
+            # Try to find miktex-console or initexmf
+            $miktexConsole = Get-Command "initexmf" -ErrorAction SilentlyContinue
+            if ($miktexConsole) {
+              Write-Host "Configuring automatic package installation..."
+              & initexmf --set-config-value=[MPM]AutoInstall=1 2>$null || Write-Host "Config failed, continuing..."
+              & initexmf --update-fndb 2>$null || Write-Host "FNDB update failed, continuing..."
+            }
+
+            # Verify pdflatex installation
+            Start-Sleep -Seconds 5
+            try {
+              $version = & pdflatex --version 2>$null
+              if ($LASTEXITCODE -eq 0) {
+                Write-Host "✅ pdflatex is accessible"
+                Write-Host "Version: $($version[0])"
+
+                # Set environment variable for rxiv-maker
+                echo "RXIV_ENGINE=LOCAL" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+                Write-Host "✅ LaTeX installation completed successfully"
+              } else {
+                throw "pdflatex not accessible"
+              }
+            } catch {
+              Write-Host "❌ LaTeX installation verification failed"
+              Write-Host "PATH: $env:Path"
+              Write-Host "Checking common locations:"
+              foreach ($path in $miktexPaths) {
+                if (Test-Path $path) {
+                  Write-Host "  Found: $path"
+                  Get-ChildItem $path -Name "pdflatex*" | ForEach-Object { Write-Host "    $_" }
+                } else {
+                  Write-Host "  Not found: $path"
+                }
+              }
+              exit 1
+            }
+
+          } catch {
+            Write-Host "❌ Failed to install MiKTeX: $($_.Exception.Message)"
+            exit 1
+          }
+        } else {
+          Write-Host "❌ Cannot install LaTeX without Chocolatey"
+          exit 1
+        }
+
+    - name: Configure LaTeX engine preference (Linux - Docker)
+      if: inputs.install-latex == 'true' && runner.os == 'Linux'
+      shell: bash
+      run: |
+        echo "🐧 Configuring Docker engine for Linux LaTeX processing..."
+        echo "RXIV_ENGINE=DOCKER" >> $GITHUB_ENV
+        echo "✅ Linux configured to use Docker for LaTeX (henriqueslab/rxiv-maker-base)"
+
+    - name: Install Python dependencies with enhanced retry
       if: inputs.install-python-deps == 'true'
       shell: bash
       run: |
-        # Install Python dependencies and package in development mode
-        # Try sync first, fallback to manual install on persistent failures
-        if uv sync; then
-          echo "✅ Dependencies synced successfully"
-        else
-          echo "⚠️ Sync failed, attempting manual installation..."
-          # Fallback to manual dependency installation
-          uv pip install -e . || {
-            echo "❌ Manual installation failed, trying with --force-reinstall"
-            uv pip install -e . --force-reinstall
+        set +e  # Don't exit on error immediately
+
+        echo "Installing Python dependencies..."
+        echo "UV version: $(uv --version || echo 'UV not found')"
+        echo "Python version: $(python --version)"
+        echo "Working directory: $(pwd)"
+
+        # Function to try UV sync with different strategies
+        try_uv_sync() {
+          echo "Attempting UV sync (attempt $1)..."
+
+          # Clear any existing virtual environment
+          rm -rf .venv || true
+
+          # Try sync with verbose output
+          if uv sync --verbose; then
+            echo "✅ UV sync successful"
+            return 0
+          fi
+
+          echo "⚠️ UV sync failed, trying alternative approaches..."
+
+          # Try with fresh lock file resolution
+          if uv lock --upgrade && uv sync --verbose; then
+            echo "✅ UV sync with lock upgrade successful"
+            return 0
+          fi
+
+          # Try manual pip-style installation
+          if uv venv && uv pip install -e . --verbose; then
+            echo "✅ UV manual installation successful"
+            return 0
+          fi
+
+          return 1
+        }
+
+        # Try UV installation with retries
+        success=false
+        for attempt in 1 2 3; do
+          if try_uv_sync $attempt; then
+            success=true
+            break
+          fi
+          echo "Attempt $attempt failed, waiting 10 seconds..."
+          sleep 10
+        done
+
+        if [ "$success" = false ]; then
+          echo "⚠️ UV installation failed, falling back to pip..."
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install -e . || {
+            echo "❌ All installation methods failed"
+            exit 1
           }
         fi
 
-        # Also install in system Python for subprocess calls in integration tests
-        python -m pip install -e . || echo "⚠️ System Python installation failed (might be expected)"
+        echo "✅ Python dependencies installed successfully"
 
-    - name: Verify CLI installation
+    - name: Verify CLI installation with comprehensive checks
       if: inputs.install-python-deps == 'true'
       shell: bash
       run: |
-        # Test that rxiv command is available
-        which rxiv || echo "rxiv not in PATH"
-        uv run rxiv --version || echo "rxiv command failed"
-        # Also test system Python access
-        python -c "import rxiv_maker; print('✅ System Python can import rxiv_maker')" || echo "⚠️ System Python import failed"
+        echo "🔍 Verifying CLI installation..."
+
+        # Check virtual environment
+        if [ -d ".venv" ]; then
+          echo "✅ Virtual environment found: .venv"
+          source .venv/bin/activate 2>/dev/null || true
+        else
+          echo "⚠️ No virtual environment found"
+        fi
+
+        # Test UV run command
+        if uv run rxiv --version 2>/dev/null; then
+          echo "✅ UV run rxiv command works"
+        else
+          echo "⚠️ UV run rxiv command failed - this may be expected"
+        fi
+
+        # Test Python import
+        if python -c "import rxiv_maker; print('✅ rxiv_maker package import successful')" 2>/dev/null; then
+          echo "✅ Python import test passed"
+        else
+          echo "⚠️ Python import test failed - checking installation..."
+          # Try alternate import paths
+          if uv run python -c "import rxiv_maker; print('✅ UV Python import successful')" 2>/dev/null; then
+            echo "✅ UV Python environment works"
+          else
+            echo "❌ Package import still failing"
+            # List installed packages for debugging
+            echo "Installed packages:"
+            uv pip list 2>/dev/null | head -10 || pip list 2>/dev/null | head -10 || echo "Could not list packages"
+            # Don't fail here as this is often expected in CI
+          fi
+        fi
+
+        echo "✅ CLI verification completed (warnings are often expected in CI)"

@@ -49,9 +49,7 @@ def get_custom_pdf_filename(yaml_metadata: dict[str, Any]) -> str:
     return filename
 
 
-def copy_pdf_to_manuscript_folder(
-    output_dir: str, yaml_metadata: dict[str, Any]
-) -> Path | None:
+def copy_pdf_to_manuscript_folder(output_dir: str, yaml_metadata: dict[str, Any]) -> Path | None:
     """Copy the generated PDF to the manuscript folder with proper naming.
 
     Args:
@@ -72,14 +70,12 @@ def copy_pdf_to_manuscript_folder(
 
     # Generate custom filename
     custom_filename = get_custom_pdf_filename(yaml_metadata)
-    # Use current working directory for testability
-    manuscript_pdf_path = Path.cwd() / manuscript_path / custom_filename
+    # Use absolute path resolution to avoid nested directories
+    manuscript_pdf_path = Path(manuscript_path).resolve() / custom_filename
 
     try:
         shutil.copy2(output_pdf, manuscript_pdf_path)
-        safe_print(
-            f"PDF copied to manuscript folder: {manuscript_pdf_path}", "✅", "[OK]"
-        )
+        safe_print(f"PDF copied to manuscript folder: {manuscript_pdf_path}", "✅", "[OK]")
         return manuscript_pdf_path
     except Exception as e:
         print(f"Error copying PDF: {e}")

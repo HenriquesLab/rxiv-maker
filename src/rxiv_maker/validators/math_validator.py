@@ -14,9 +14,7 @@ class MathValidator(BaseValidator):
     MATH_PATTERNS = {
         "inline_math": re.compile(r"\$([^$]+)\$"),  # $...$
         "display_math": re.compile(r"\$\$([^$]+)\$\$"),  # $$...$$
-        "attributed_math": re.compile(
-            r"\$\$(.*?)\$\$\s*\{([^}]*#[^}]*)\}"
-        ),  # $$...$${#eq:label}
+        "attributed_math": re.compile(r"\$\$(.*?)\$\$\s*\{([^}]*#[^}]*)\}"),  # $$...$${#eq:label}
         "environment_math": re.compile(r"\\begin\{([^}]+)\}.*?\\end\{\1\}", re.DOTALL),
     }
 
@@ -296,9 +294,7 @@ class MathValidator(BaseValidator):
 
         return errors
 
-    def _find_and_validate_math(
-        self, content: str, file_path: str, file_type: str
-    ) -> list:
+    def _find_and_validate_math(self, content: str, file_path: str, file_type: str) -> list:
         """Find and validate all mathematical expressions in content."""
         errors = []
         processed_ranges = []
@@ -346,8 +342,7 @@ class MathValidator(BaseValidator):
             # Check if this match overlaps with any processed attributed_math ranges
             match_start, match_end = match.start(), match.end()
             is_overlapping = any(
-                not (match_end <= proc_start or match_start >= proc_end)
-                for proc_start, proc_end in processed_ranges
+                not (match_end <= proc_start or match_start >= proc_end) for proc_start, proc_end in processed_ranges
             )
 
             if is_overlapping:
@@ -378,8 +373,7 @@ class MathValidator(BaseValidator):
             # Check if this match overlaps with any processed attributed_math ranges
             match_start, match_end = match.start(), match.end()
             is_overlapping = any(
-                not (match_end <= proc_start or match_start >= proc_end)
-                for proc_start, proc_end in processed_ranges
+                not (match_end <= proc_start or match_start >= proc_end) for proc_start, proc_end in processed_ranges
             )
 
             if is_overlapping:
@@ -404,17 +398,13 @@ class MathValidator(BaseValidator):
 
         return errors
 
-    def _validate_math_expression(
-        self, math_info: dict, file_path: str, line_num: int
-    ) -> list:
+    def _validate_math_expression(self, math_info: dict, file_path: str, line_num: int) -> list:
         """Validate a single mathematical expression."""
         errors = []
         math_content = math_info["content"]
 
         # Check for balanced delimiters
-        delimiter_errors = self._check_balanced_delimiters(
-            math_content, file_path, line_num
-        )
+        delimiter_errors = self._check_balanced_delimiters(math_content, file_path, line_num)
         errors.extend(delimiter_errors)
 
         # Check for valid LaTeX environments
@@ -440,9 +430,7 @@ class MathValidator(BaseValidator):
 
         return errors
 
-    def _check_balanced_delimiters(
-        self, math_content: str, file_path: str, line_num: int
-    ) -> list:
+    def _check_balanced_delimiters(self, math_content: str, file_path: str, line_num: int) -> list:
         """Check for balanced delimiters in math expression."""
         errors = []
 
@@ -458,21 +446,15 @@ class MathValidator(BaseValidator):
                         f"Unbalanced {delim_name} delimiters in math expression",
                         file_path=file_path,
                         line_number=line_num,
-                        context=math_content[:100] + "..."
-                        if len(math_content) > 100
-                        else math_content,
-                        suggestion=(
-                            f"Ensure every {open_delim} has a matching {close_delim}"
-                        ),
+                        context=math_content[:100] + "..." if len(math_content) > 100 else math_content,
+                        suggestion=(f"Ensure every {open_delim} has a matching {close_delim}"),
                         error_code="unbalanced_delimiters",
                     )
                 )
 
         return errors
 
-    def _check_math_environments(
-        self, math_content: str, file_path: str, line_num: int
-    ) -> list:
+    def _check_math_environments(self, math_content: str, file_path: str, line_num: int) -> list:
         """Check for valid LaTeX math environments."""
         errors = []
 
@@ -487,12 +469,9 @@ class MathValidator(BaseValidator):
                         f"Unknown or non-standard math environment: {env_name}",
                         file_path=file_path,
                         line_number=line_num,
-                        context=match.group(0)[:100] + "..."
-                        if len(match.group(0)) > 100
-                        else match.group(0),
+                        context=match.group(0)[:100] + "..." if len(match.group(0)) > 100 else match.group(0),
                         suggestion=(
-                            f"Use standard environments like: "
-                            f"{', '.join(sorted(list(self.VALID_ENVIRONMENTS)[:5]))}"
+                            f"Use standard environments like: {', '.join(sorted(list(self.VALID_ENVIRONMENTS)[:5]))}"
                         ),
                         error_code="unknown_environment",
                     )
@@ -500,9 +479,7 @@ class MathValidator(BaseValidator):
 
         return errors
 
-    def _check_math_syntax(
-        self, math_content: str, file_path: str, line_num: int
-    ) -> list:
+    def _check_math_syntax(self, math_content: str, file_path: str, line_num: int) -> list:
         """Check for common LaTeX math syntax issues."""
         errors = []
 
@@ -538,19 +515,14 @@ class MathValidator(BaseValidator):
                     file_path=file_path,
                     line_number=line_num,
                     context=math_content,
-                    suggestion=(
-                        "Remove inner $$ - they should only surround the "
-                        "entire expression"
-                    ),
+                    suggestion=("Remove inner $$ - they should only surround the entire expression"),
                     error_code="nested_math_delimiters",
                 )
             )
 
         return errors
 
-    def _check_command_syntax(
-        self, math_content: str, file_path: str, line_num: int
-    ) -> list:
+    def _check_command_syntax(self, math_content: str, file_path: str, line_num: int) -> list:
         """Check LaTeX command syntax in math expressions."""
         errors = []
 
@@ -582,10 +554,7 @@ class MathValidator(BaseValidator):
                             f"Unknown or custom LaTeX command: {command}",
                             file_path=file_path,
                             line_number=line_num,
-                            suggestion=(
-                                "Ensure the command is defined or use standard "
-                                "LaTeX commands"
-                            ),
+                            suggestion=("Ensure the command is defined or use standard LaTeX commands"),
                             error_code="unknown_command",
                         )
                     )
@@ -631,10 +600,7 @@ class MathValidator(BaseValidator):
             errors.append(
                 self._create_error(
                     ValidationLevel.ERROR,
-                    (
-                        f"Command {command} expects {expected_args} argument(s), "
-                        f"found {found_args}"
-                    ),
+                    (f"Command {command} expects {expected_args} argument(s), found {found_args}"),
                     file_path=file_path,
                     line_number=line_num,
                     suggestion=f"Provide all required arguments for {command}",
@@ -644,9 +610,7 @@ class MathValidator(BaseValidator):
 
         return errors
 
-    def _validate_equation_label(
-        self, math_info: dict, file_path: str, line_num: int
-    ) -> list:
+    def _validate_equation_label(self, math_info: dict, file_path: str, line_num: int) -> list:
         """Validate equation labels in attributed math expressions."""
         errors = []
         attrs_content = math_info.get("attributes", "")
@@ -679,9 +643,7 @@ class MathValidator(BaseValidator):
                         f"Non-standard equation label format: {label_id}",
                         file_path=file_path,
                         line_number=line_num,
-                        suggestion=(
-                            "Use letters, numbers, underscores, and hyphens for labels"
-                        ),
+                        suggestion=("Use letters, numbers, underscores, and hyphens for labels"),
                         error_code="non_standard_label",
                     )
                 )
@@ -698,8 +660,7 @@ class MathValidator(BaseValidator):
                         file_path=file_path,
                         line_number=line_num,
                         suggestion=(
-                            f"Use standard environments: "
-                            f"{', '.join(sorted(list(self.VALID_ENVIRONMENTS)[:5]))}"
+                            f"Use standard environments: {', '.join(sorted(list(self.VALID_ENVIRONMENTS)[:5]))}"
                         ),
                         error_code="unknown_specified_environment",
                     )

@@ -58,9 +58,7 @@ class TestConfigCommand:
 
                 config.config_data = config.get_default_config()
 
-                result = self.runner.invoke(
-                    config_cmd, ["get", "general.default_engine"]
-                )
+                result = self.runner.invoke(config_cmd, ["get", "general.default_engine"])
                 assert result.exit_code == 0
                 assert "general.default_engine = local" in result.output
 
@@ -76,25 +74,19 @@ class TestConfigCommand:
         """Test config set with string value."""
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("pathlib.Path.home", return_value=Path(tmpdir)):
-                result = self.runner.invoke(
-                    config_cmd, ["set", "general.default_engine", "docker"]
-                )
+                result = self.runner.invoke(config_cmd, ["set", "general.default_engine", "docker"])
                 assert result.exit_code == 0
                 assert "Set general.default_engine = docker" in result.output
 
                 # Verify the value was set
-                result = self.runner.invoke(
-                    config_cmd, ["get", "general.default_engine"]
-                )
+                result = self.runner.invoke(config_cmd, ["get", "general.default_engine"])
                 assert "general.default_engine = docker" in result.output
 
     def test_config_set_boolean_value(self):
         """Test config set with boolean value."""
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("pathlib.Path.home", return_value=Path(tmpdir)):
-                result = self.runner.invoke(
-                    config_cmd, ["set", "general.verbose", "true"]
-                )
+                result = self.runner.invoke(config_cmd, ["set", "general.verbose", "true"])
                 assert result.exit_code == 0
                 # Strip ANSI codes for reliable string matching in CI
                 clean_output = self._strip_ansi_codes(result.output)
@@ -116,9 +108,7 @@ class TestConfigCommand:
         """Test config set with integer value."""
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("pathlib.Path.home", return_value=Path(tmpdir)):
-                result = self.runner.invoke(
-                    config_cmd, ["set", "figures.default_dpi", "600"]
-                )
+                result = self.runner.invoke(config_cmd, ["set", "figures.default_dpi", "600"])
                 assert result.exit_code == 0
                 # Strip ANSI codes for reliable string matching in CI
                 clean_output = self._strip_ansi_codes(result.output)
@@ -141,9 +131,7 @@ class TestConfigCommand:
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("pathlib.Path.home", return_value=Path(tmpdir)):
                 # First set a custom value
-                self.runner.invoke(
-                    config_cmd, ["set", "general.default_engine", "docker"]
-                )
+                self.runner.invoke(config_cmd, ["set", "general.default_engine", "docker"])
 
                 # Reset configuration
                 result = self.runner.invoke(config_cmd, ["reset"], input="y\n")
@@ -151,9 +139,7 @@ class TestConfigCommand:
                 assert "Configuration reset" in result.output
 
                 # Verify the value was reset
-                result = self.runner.invoke(
-                    config_cmd, ["get", "general.default_engine"]
-                )
+                result = self.runner.invoke(config_cmd, ["get", "general.default_engine"])
                 assert "general.default_engine = local" in result.output
 
     def test_config_reset_cancelled(self):
@@ -161,18 +147,14 @@ class TestConfigCommand:
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("pathlib.Path.home", return_value=Path(tmpdir)):
                 # First set a custom value
-                self.runner.invoke(
-                    config_cmd, ["set", "general.default_engine", "docker"]
-                )
+                self.runner.invoke(config_cmd, ["set", "general.default_engine", "docker"])
 
                 # Try to reset but cancel
                 result = self.runner.invoke(config_cmd, ["reset"], input="n\n")
                 assert result.exit_code == 0
 
                 # Verify the value was not reset
-                result = self.runner.invoke(
-                    config_cmd, ["get", "general.default_engine"]
-                )
+                result = self.runner.invoke(config_cmd, ["get", "general.default_engine"])
                 assert "general.default_engine = docker" in result.output
 
     def test_config_edit(self):

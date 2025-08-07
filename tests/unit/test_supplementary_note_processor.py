@@ -16,10 +16,7 @@ class TestSupplementaryNoteProcessing:
 
     def test_single_supplementary_note_processing(self):
         """Test processing of a single supplementary note."""
-        content = (
-            "{#snote:file-structure} **File Structure and Organisation.**\n\n"
-            "This is the note content."
-        )
+        content = "{#snote:file-structure} **File Structure and Organisation.**\n\nThis is the note content."
 
         # Process the notes
         processed = process_supplementary_notes(content)
@@ -32,15 +29,9 @@ class TestSupplementaryNoteProcessing:
         restored = restore_supplementary_note_placeholders(processed)
 
         # Should contain LaTeX subsection with label
-        expected_section = (
-            "\\suppnotesection{File Structure and Organisation.}"
-            "\\label{snote:file-structure}"
-        )
+        expected_section = "\\suppnotesection{File Structure and Organisation.}\\label{snote:file-structure}"
         assert expected_section in restored
-        assert (
-            "\\renewcommand{\\thesubsection}{Supp. Note \\arabic{subsection}}"
-            in restored
-        )
+        assert "\\renewcommand{\\thesubsection}{Supp. Note \\arabic{subsection}}" in restored
         assert "\\setcounter{subsection}{0}" in restored
 
     def test_multiple_supplementary_notes_processing(self):
@@ -69,12 +60,7 @@ More content here."""
         assert "\\suppnotesection{First Note.}\\label{snote:first}" in restored
         assert "\\suppnotesection{Second Note.}\\label{snote:second}" in restored
         # Should only have renewcommand setup once (for the first note)
-        assert (
-            restored.count(
-                "\\renewcommand{\\thesubsection}{Supp. Note \\arabic{subsection}}"
-            )
-            == 1
-        )
+        assert restored.count("\\renewcommand{\\thesubsection}{Supp. Note \\arabic{subsection}}") == 1
 
     def test_supplementary_note_with_special_characters(self):
         """Test processing notes with special characters in titles."""
@@ -83,10 +69,7 @@ More content here."""
         processed = process_supplementary_notes(content)
         restored = restore_supplementary_note_placeholders(processed)
 
-        assert (
-            "\\suppnotesection{Title with & Special % Characters.}\\label{snote:test}"
-            in restored
-        )
+        assert "\\suppnotesection{Title with & Special % Characters.}\\label{snote:test}" in restored
 
     def test_supplementary_note_reference_processing(self):
         """Test processing of supplementary note references."""
@@ -170,18 +153,10 @@ This section provides the complete statistical analysis framework."""
         final = restore_supplementary_note_placeholders(processed)
 
         # Verify LaTeX output
-        assert (
-            "\\suppnotesection{Research Methodology Details.}\\label{snote:methodology}"
-            in final
-        )
-        assert (
-            "\\suppnotesection{Statistical Analysis Framework.}\\label{snote:analysis}"
-            in final
-        )
+        assert "\\suppnotesection{Research Methodology Details.}\\label{snote:methodology}" in final
+        assert "\\suppnotesection{Statistical Analysis Framework.}\\label{snote:analysis}" in final
         assert "\\ref{snote:methodology}" in final
-        assert (
-            "\\renewcommand{\\thesubsection}{Supp. Note \\arabic{subsection}}" in final
-        )
+        assert "\\renewcommand{\\thesubsection}{Supp. Note \\arabic{subsection}}" in final
         assert "{#snote:" not in final
         assert "@snote:" not in final
 
@@ -332,9 +307,7 @@ This note describes the implementation approach."""
         assert "\\suppnotesection{Technical Implementation Details.}" in final
         assert "\\ref{snote:detailed-analysis}" in final
         assert "\\ref{snote:implementation}" in final
-        assert (
-            "\\renewcommand{\\thesubsection}{Supp. Note \\arabic{subsection}}" in final
-        )
+        assert "\\renewcommand{\\thesubsection}{Supp. Note \\arabic{subsection}}" in final
 
         # Verify no original syntax remains
         assert "{#snote:" not in final

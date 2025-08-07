@@ -73,18 +73,14 @@ def install_deps(
             log_file=log_file,
         )
 
-        console.print(
-            f"🔧 Installing system dependencies in {mode} mode...", style="blue"
-        )
+        console.print(f"🔧 Installing system dependencies in {mode} mode...", style="blue")
 
         # Run installation or repair
         success = manager.repair() if repair else manager.install()
 
         if success:
             console.print("✅ System dependency installation completed!", style="green")
-            console.print(
-                "💡 Run 'rxiv check-installation' to verify setup", style="dim"
-            )
+            console.print("💡 Run 'rxiv check-installation' to verify setup", style="dim")
         else:
             console.print("❌ System dependency installation failed!", style="red")
             console.print("💡 Check the log file for details", style="dim")

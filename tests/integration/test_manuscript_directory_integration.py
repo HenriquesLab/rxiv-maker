@@ -126,11 +126,9 @@ This work demonstrates successful custom manuscript directory handling.
         output_dir.mkdir()
 
         # Test the manuscript generation process
-        with patch(
-            "sys.argv", ["generate_preprint.py", "--output-dir", str(output_dir)]
-        ):
+        with patch("sys.argv", ["generate_preprint.py", "--output-dir", str(output_dir)]):
             try:
-                from rxiv_maker.commands.generate_preprint import main
+                from rxiv_maker.engine.generate_preprint import main
 
                 result = main()
 
@@ -159,9 +157,7 @@ This work demonstrates successful custom manuscript directory handling.
                         yaml_metadata = extract_yaml_metadata_from_file(str(main_file))
 
                         # Copy PDF with custom naming
-                        copied_pdf = copy_pdf_to_manuscript_folder(
-                            str(output_dir), yaml_metadata
-                        )
+                        copied_pdf = copy_pdf_to_manuscript_folder(str(output_dir), yaml_metadata)
 
                         # Verify custom naming: 2025__chen_et_al__rxiv.pdf
                         expected_pdf_name = "2025__chen_et_al__rxiv.pdf"
@@ -173,10 +169,7 @@ This work demonstrates successful custom manuscript directory handling.
 
                         print(f"✅ PDF successfully copied to: {expected_pdf_path}")
                     else:
-                        print(
-                            "ℹ️ PDF not generated "
-                            "(LaTeX compilation may not be available)"
-                        )
+                        print("ℹ️ PDF not generated (LaTeX compilation may not be available)")
 
                 else:
                     pytest.skip("Manuscript generation failed")
@@ -242,9 +235,7 @@ This is manuscript {manuscript}.
 
             from rxiv_maker.utils import write_manuscript_output
 
-            tex_result = write_manuscript_output(
-                str(output_dir), f"\\title{{Paper {manuscript[-1]}}}"
-            )
+            tex_result = write_manuscript_output(str(output_dir), f"\\title{{Paper {manuscript[-1]}}}")
 
             expected_tex = output_dir / f"{manuscript}.tex"
             assert Path(tex_result) == expected_tex

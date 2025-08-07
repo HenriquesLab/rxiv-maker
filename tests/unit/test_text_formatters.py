@@ -25,10 +25,7 @@ class TestCodeSpanMathProcessing:
 
     def test_example_manuscript_problematic_text(self):
         """Test the specific problematic text from EXAMPLE_MANUSCRIPT."""
-        input_text = (
-            "Display equations utilise double dollar sign delimiters (`$$...$$`) "
-            "for prominent expressions"
-        )
+        input_text = "Display equations utilise double dollar sign delimiters (`$$...$$`) for prominent expressions"
         result = process_code_spans(input_text)
 
         assert "\\texttt{\\detokenize{$$...$$}}" in result
@@ -36,10 +33,7 @@ class TestCodeSpanMathProcessing:
 
     def test_inline_math_problematic_text(self):
         """Test inline math version of the problematic text."""
-        input_text = (
-            "Inline mathematical expressions use delimiters (`$...$`) "
-            "for simple formulas"
-        )
+        input_text = "Inline mathematical expressions use delimiters (`$...$`) for simple formulas"
         result = process_code_spans(input_text)
 
         assert "\\texttt{\\detokenize{$...$}}" in result
@@ -47,10 +41,7 @@ class TestCodeSpanMathProcessing:
 
     def test_long_code_without_math_uses_seqsplit(self):
         """Test that long code spans without math still use seqsplit."""
-        input_text = (
-            "`This is a very long code span that exceeds twenty characters "
-            "but has no mathematical content`"
-        )
+        input_text = "`This is a very long code span that exceeds twenty characters but has no mathematical content`"
         result = process_code_spans(input_text)
 
         assert "PROTECTED_TEXTTT_SEQSPLIT_START" in result
@@ -92,9 +83,7 @@ class TestCodeSpanMathProcessing:
 
     def test_multiple_code_spans_with_math(self):
         """Test multiple code spans with different math content."""
-        input_text = (
-            "Use `$x$` for variables and `$$\\sum_{i=1}^{n} x_i$$` for summations"
-        )
+        input_text = "Use `$x$` for variables and `$$\\sum_{i=1}^{n} x_i$$` for summations"
         result = process_code_spans(input_text)
 
         assert "\\texttt{\\detokenize{$x$}}" in result
@@ -127,12 +116,8 @@ Long code: `This is a very long code span that exceeds twenty characters`
         assert "\\texttt{\\detokenize{$$...$$}}" in result
 
         # Should not have seqsplit for math content
-        lines_with_math_and_seqsplit = [
-            line for line in result.split("\n") if "seqsplit" in line and "$" in line
-        ]
-        assert len(lines_with_math_and_seqsplit) == 0, (
-            f"Found math in seqsplit: {lines_with_math_and_seqsplit}"
-        )
+        lines_with_math_and_seqsplit = [line for line in result.split("\n") if "seqsplit" in line and "$" in line]
+        assert len(lines_with_math_and_seqsplit) == 0, f"Found math in seqsplit: {lines_with_math_and_seqsplit}"
 
     def test_supplementary_content_handles_math_in_code_spans(self):
         """Test that supplementary content correctly handles math in code spans."""
@@ -149,12 +134,8 @@ Mathematical expressions are supported through (`$...$`) and (`$$...$$`) delimit
         assert "\\texttt{\\detokenize{$$...$$}}" in result
 
         # Should not have seqsplit for math content
-        lines_with_math_and_seqsplit = [
-            line for line in result.split("\n") if "seqsplit" in line and "$" in line
-        ]
-        assert len(lines_with_math_and_seqsplit) == 0, (
-            f"Found math in seqsplit: {lines_with_math_and_seqsplit}"
-        )
+        lines_with_math_and_seqsplit = [line for line in result.split("\n") if "seqsplit" in line and "$" in line]
+        assert len(lines_with_math_and_seqsplit) == 0, f"Found math in seqsplit: {lines_with_math_and_seqsplit}"
 
     def test_actual_example_manuscript_content(self):
         """Test the actual problematic content from EXAMPLE_MANUSCRIPT."""
@@ -175,12 +156,8 @@ prominent mathematical expressions.
         assert "\\texttt{\\detokenize{$$...$$}}" in result
 
         # Should not have seqsplit for math content
-        lines_with_math_and_seqsplit = [
-            line for line in result.split("\n") if "seqsplit" in line and "$" in line
-        ]
-        assert len(lines_with_math_and_seqsplit) == 0, (
-            f"Found math in seqsplit: {lines_with_math_and_seqsplit}"
-        )
+        lines_with_math_and_seqsplit = [line for line in result.split("\n") if "seqsplit" in line and "$" in line]
+        assert len(lines_with_math_and_seqsplit) == 0, f"Found math in seqsplit: {lines_with_math_and_seqsplit}"
 
 
 class TestCodeSpanEdgeCases:
@@ -202,10 +179,7 @@ class TestCodeSpanEdgeCases:
 
     def test_code_span_with_backslashes(self):
         """Test that code spans with backslashes don't use seqsplit."""
-        input_text = (
-            "`This is a very long code span with \\backslashes that should "
-            "not use the seqsplit command`"
-        )
+        input_text = "`This is a very long code span with \\backslashes that should not use the seqsplit command`"
         result = process_code_spans(input_text)
 
         # Should use regular texttt, not seqsplit, because of backslashes
@@ -233,10 +207,7 @@ class TestRegressionTests:
 
     def test_seqsplit_still_works_for_long_code(self):
         """Test that seqsplit still works for long code without math."""
-        input_text = (
-            "`This is a very long code span without any mathematical content "
-            "that should trigger seqsplit`"
-        )
+        input_text = "`This is a very long code span without any mathematical content that should trigger seqsplit`"
         result = process_code_spans(input_text)
 
         # Should still use seqsplit for long non-math content

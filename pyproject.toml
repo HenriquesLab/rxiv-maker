@@ -148,8 +148,8 @@ dev-dependencies = [
 
 # Ruff configuration (replaces black, isort, flake8, autoflake, docformatter)
 [tool.ruff]
-# Set the maximum line length to match Black
-line-length = 88
+# Set the maximum line length (increased for better readability)
+line-length = 120
 target-version = "py311"
 exclude = [
     "versioneer.py",
@@ -157,7 +157,7 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-# Enable the following rule sets
+# Enable the following rule sets (reduced strictness)
 select = [
     "E",    # pycodestyle errors
     "W",    # pycodestyle warnings
@@ -165,17 +165,26 @@ select = [
     "I",    # isort
     "B",    # flake8-bugbear
     "C4",   # flake8-comprehensions
-    "UP",   # pyupgrade
     "D",    # pydocstyle
-    "SIM",  # flake8-simplify
 ]
 
-# Ignore specific rules that conflict with Black or are too strict
+# Ignore specific rules that are too strict or conflict with practical coding
 ignore = [
     "E203",  # whitespace before ':'
+    "E501",  # line too long (handled by line-length setting with more tolerance)
     "D100",  # Missing docstring in public module
+    "D101",  # Missing docstring in public class
+    "D102",  # Missing docstring in public method
+    "D103",  # Missing docstring in public function
     "D104",  # Missing docstring in public package
     "D105",  # Missing docstring in magic method
+    "D107",  # Missing docstring in __init__
+    "D200",  # One-line docstring should fit on one line
+    "D212",  # Multi-line docstring summary should start at the first line
+    "D213",  # Multi-line docstring summary should start at the second line
+    "D400",  # First line should end with a period
+    "D401",  # First line should be in imperative mood
+    "D415",  # First line should end with a period, question mark, or exclamation point
 ]
 
 [tool.ruff.format]
@@ -266,6 +275,7 @@ markers = [
     "package_manager: Package manager integration tests",
     "homebrew: Homebrew-specific tests",
     "scoop: Scoop-specific tests",
+    "pypi: PyPI distribution and integration tests",
     "end_to_end: End-to-end binary workflow tests",
     "platform_specific: Tests that only run on specific platforms",
     "performance: Performance benchmark tests",

@@ -43,9 +43,7 @@ class LaTeXErrorParser(BaseValidator):
         r"Package (\w+) Error": {
             "type": "package_error",
             "message": "LaTeX package error occurred",
-            "suggestion": (
-                "Check package usage and ensure required packages are installed"
-            ),
+            "suggestion": ("Check package usage and ensure required packages are installed"),
         },
         r"LaTeX Error: Environment (\w+) undefined": {
             "type": "undefined_environment",
@@ -85,9 +83,7 @@ class LaTeXErrorParser(BaseValidator):
         r"Overfull \\hbox": {
             "type": "overfull_hbox",
             "message": "Text extends beyond page margins",
-            "suggestion": (
-                "This is often caused by long URLs or code that should be broken"
-            ),
+            "suggestion": ("This is often caused by long URLs or code that should be broken"),
         },
     }
 
@@ -146,11 +142,7 @@ class LaTeXErrorParser(BaseValidator):
 
         # Convert to validation errors
         for latex_error in latex_errors:
-            level = (
-                ValidationLevel.ERROR
-                if latex_error.error_type != "warning"
-                else ValidationLevel.WARNING
-            )
+            level = ValidationLevel.ERROR if latex_error.error_type != "warning" else ValidationLevel.WARNING
 
             errors.append(
                 self._create_error(
@@ -167,12 +159,8 @@ class LaTeXErrorParser(BaseValidator):
         # Add summary metadata
         metadata.update(
             {
-                "total_errors": len(
-                    [e for e in latex_errors if e.error_type != "warning"]
-                ),
-                "total_warnings": len(
-                    [e for e in latex_errors if e.error_type == "warning"]
-                ),
+                "total_errors": len([e for e in latex_errors if e.error_type != "warning"]),
+                "total_warnings": len([e for e in latex_errors if e.error_type == "warning"]),
                 "parsed_errors": len(latex_errors),
             }
         )
@@ -202,18 +190,14 @@ class LaTeXErrorParser(BaseValidator):
 
         return errors
 
-    def _parse_error_line(
-        self, line: str, all_lines: list[str], line_index: int
-    ) -> LaTeXError | None:
+    def _parse_error_line(self, line: str, all_lines: list[str], line_index: int) -> LaTeXError | None:
         """Parse a single line for LaTeX errors."""
         # Check each error pattern
         for pattern, error_info in self.ERROR_PATTERNS.items():
             match = re.search(pattern, line, re.IGNORECASE)
             if match:
                 # Extract file and line info from surrounding context
-                file_path, line_number = self._extract_location_info(
-                    all_lines, line_index
-                )
+                file_path, line_number = self._extract_location_info(all_lines, line_index)
 
                 # Get additional context
                 context = self._extract_error_context(all_lines, line_index)
@@ -229,15 +213,11 @@ class LaTeXErrorParser(BaseValidator):
 
         # Check for generic error markers
         if re.match(r"^!", line):
-            return LaTeXError(
-                error_type="generic_error", message=line[1:].strip(), raw_error=line
-            )
+            return LaTeXError(error_type="generic_error", message=line[1:].strip(), raw_error=line)
 
         return None
 
-    def _extract_location_info(
-        self, lines: list[str], start_index: int
-    ) -> tuple[str | None, int | None]:
+    def _extract_location_info(self, lines: list[str], start_index: int) -> tuple[str | None, int | None]:
         """Extract file path and line number from log context."""
         file_path = None
         line_number = None
@@ -258,9 +238,7 @@ class LaTeXErrorParser(BaseValidator):
 
         return file_path, line_number
 
-    def _extract_error_context(
-        self, lines: list[str], start_index: int, context_lines: int = 3
-    ) -> str | None:
+    def _extract_error_context(self, lines: list[str], start_index: int, context_lines: int = 3) -> str | None:
         """Extract context around error location."""
         start = max(0, start_index - context_lines)
         end = min(len(lines), start_index + context_lines + 1)
@@ -280,26 +258,19 @@ class LaTeXErrorParser(BaseValidator):
 
                 # Customize suggestion based on specific error content
                 if latex_error.error_type == "missing_file" and latex_error.raw_error:
-                    file_match = re.search(
-                        r"File `([^']+)' not found", latex_error.raw_error
-                    )
+                    file_match = re.search(r"File `([^']+)' not found", latex_error.raw_error)
                     if file_match:
                         missing_file = file_match.group(1)
                         suggestion = (
-                            f"The file '{missing_file}' cannot be found. "
-                            "Check the file path and ensure it exists."
+                            f"The file '{missing_file}' cannot be found. Check the file path and ensure it exists."
                         )
 
-                elif (
-                    latex_error.error_type == "undefined_citation"
-                    and latex_error.raw_error
-                ):
+                elif latex_error.error_type == "undefined_citation" and latex_error.raw_error:
                     cite_match = re.search(r"Citation '([^']+)'", latex_error.raw_error)
                     if cite_match:
                         citation_key = cite_match.group(1)
                         suggestion = (
-                            f"Citation key '{citation_key}' not found in bibliography. "
-                            "Check 03_REFERENCES.bib file."
+                            f"Citation key '{citation_key}' not found in bibliography. Check 03_REFERENCES.bib file."
                         )
 
                 return suggestion

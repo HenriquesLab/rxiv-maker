@@ -44,6 +44,15 @@ git tag v1.4.8
 git push origin v1.4.8
 ```
 
+### Track Changes PDF Generation
+
+For tag-triggered releases, the system automatically generates a track changes PDF for the EXAMPLE_MANUSCRIPT showing differences since the last major version:
+
+- **Automatic Detection**: Identifies the previous major version (e.g., v1.3.0 when releasing v1.4.2)
+- **File Naming**: Uses format `{year}__{authors}_et_al__changes_vs_{version}.pdf`
+- **LaTeX Diff**: Employs `latexdiff` to highlight additions (blue underlined) and deletions (red strikethrough)
+- **Release Integration**: Automatically includes track changes PDF in release assets and notes
+
 Or manually via GitHub Actions workflow dispatch:
 - Go to Actions → Release and Binary Distribution
 - Click "Run workflow"
@@ -66,7 +75,7 @@ The release pipeline automatically:
 
 3. **GitHub Release Creation**
    - Creates release notes from CHANGELOG.md
-   - Attaches binary artifacts
+   - Attaches binary artifacts and PDFs (including track changes)
    - Marks as pre-release or stable based on version
 
 ## Package Manager Updates
@@ -145,7 +154,7 @@ scoop test rxiv-maker
 
 - [ ] Tag created and pushed
 - [ ] GitHub Actions workflow completed successfully
-- [ ] All artifacts uploaded to GitHub release
+- [ ] All artifacts uploaded to GitHub release (including track changes PDF)
 - [ ] PyPI package published
 - [ ] Package managers updated (Homebrew, Scoop)
 - [ ] Release notes reviewed and published
@@ -260,6 +269,7 @@ For release-related issues:
 
 ### Key Scripts
 - `scripts/orchestrate-release.py`: Main release orchestration
+- `scripts/generate-track-changes.sh`: Generate track changes PDFs for releases
 - `scripts/fetch-package-sha256.py`: SHA256 calculation for packages
 - `scripts/update-package-templates.py`: Update package manager templates
 - `scripts/validate-package-templates.py`: Validate package configurations

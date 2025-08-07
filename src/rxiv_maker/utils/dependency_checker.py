@@ -25,7 +25,7 @@ class DependencyInfo:
     found: bool
     version: str | None = None
     path: str | None = None
-    install_commands: dict[str, str] = None
+    install_commands: dict[str, str] | None = None
     description: str = ""
     alternative: str | None = None
 
@@ -76,9 +76,7 @@ class DependencyChecker:
                 return False, None, None
 
             # Get version
-            result = subprocess.run(
-                [command, version_flag], capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run([command, version_flag], capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 version = result.stdout.strip().split("\n")[0]
@@ -315,24 +313,18 @@ class DependencyChecker:
         )
 
         if missing_required:
-            print(
-                f"\n⚠️  You have {len(missing_required)} missing required dependencies."
-            )
+            print(f"\n⚠️  You have {len(missing_required)} missing required dependencies.")
             print("   Please install them before running 'make pdf'.")
         else:
             print("\n✅ All required dependencies are available!")
             print("   You can run 'make pdf' to generate PDFs.")
 
         if missing_optional:
-            print(
-                f"\n💡 Optional: Install {len(missing_optional)} additional dependencies for full functionality."
-            )
+            print(f"\n💡 Optional: Install {len(missing_optional)} additional dependencies for full functionality.")
 
         # Docker recommendation
         if missing_required or len(missing_optional) > 1:
-            print(
-                "\n🐳 Alternative: Use Docker mode to avoid local dependency installation:"
-            )
+            print("\n🐳 Alternative: Use Docker mode to avoid local dependency installation:")
             print("   make pdf RXIV_ENGINE=DOCKER")
             print("   (Only requires Docker and Make to be installed)")
 
@@ -366,9 +358,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Check Rxiv-Maker system dependencies")
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Show verbose output during checks"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Show verbose output during checks")
 
     args = parser.parse_args()
 

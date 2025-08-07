@@ -31,16 +31,20 @@ class WindowsInstaller:
         # We mainly need to ensure Visual C++ redistributables are available
         # Note: Most graphics libraries use pre-built wheels on Windows
 
-        try:
-            # Check if we can import key packages
-            import matplotlib
-            import numpy
-            import PIL
+        import importlib.util
 
+        packages = ["matplotlib", "numpy", "PIL"]
+        missing_packages = []
+
+        for package in packages:
+            if importlib.util.find_spec(package) is None:
+                missing_packages.append(package)
+
+        if not missing_packages:
             self.logger.success("System libraries already available")
             return True
-        except ImportError as e:
-            self.logger.warning(f"Some system libraries may be missing: {e}")
+        else:
+            self.logger.warning(f"Some system libraries may be missing: {missing_packages}")
             # In most cases, pip will handle this during package installation
             return True
 
@@ -137,7 +141,12 @@ class WindowsInstaller:
                 timeout=10,
             )
             return result.returncode == 0
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return False
 
     def _is_nodejs_installed(self) -> bool:
@@ -158,7 +167,12 @@ class WindowsInstaller:
                 timeout=10,
             )
             return node_result.returncode == 0 and npm_result.returncode == 0
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return False
 
     def _is_r_installed(self) -> bool:
@@ -172,7 +186,12 @@ class WindowsInstaller:
                 timeout=10,
             )
             return result.returncode == 0
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return False
 
     def _install_latex_winget(self) -> bool:
@@ -236,7 +255,9 @@ class WindowsInstaller:
 
         try:
             # Download MiKTeX installer
-            installer_url = "https://miktex.org/download/ctan/systems/win32/miktex/setup/windows-x64/basic-miktex-22.1-x64.exe"
+            installer_url = (
+                "https://miktex.org/download/ctan/systems/win32/miktex/setup/windows-x64/basic-miktex-22.1-x64.exe"
+            )
             installer_path = self.temp_dir / "miktex-installer.exe"
 
             self.logger.info("Downloading MiKTeX installer...")
@@ -406,9 +427,7 @@ class WindowsInstaller:
 
         try:
             # Download R installer
-            installer_url = (
-                "https://cran.r-project.org/bin/windows/base/R-4.3.1-win.exe"
-            )
+            installer_url = "https://cran.r-project.org/bin/windows/base/R-4.3.1-win.exe"
             installer_path = self.temp_dir / "r-installer.exe"
 
             self.logger.info("Downloading R installer...")

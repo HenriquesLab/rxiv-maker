@@ -96,9 +96,7 @@ class TestTableRotation(unittest.TestCase):
         caption = "Test caption"
 
         # Test with rotation
-        result = generate_latex_table(
-            headers, data_rows, caption, "single", "test:table", None, 90
-        )
+        result = generate_latex_table(headers, data_rows, caption, "single", "test:table", None, 90)
 
         self.assertIn("\\rotatebox{90}{%", result)
         self.assertIn("}%", result)
@@ -106,9 +104,7 @@ class TestTableRotation(unittest.TestCase):
         self.assertIn("\\end{tabular}", result)
 
         # Test without rotation
-        result_no_rotation = generate_latex_table(
-            headers, data_rows, caption, "single", "test:table", None, None
-        )
+        result_no_rotation = generate_latex_table(headers, data_rows, caption, "single", "test:table", None, None)
 
         self.assertNotIn("\\rotatebox", result_no_rotation)
 
@@ -117,9 +113,7 @@ class TestTableRotation(unittest.TestCase):
         headers = ["Header 1", "Header 2"]
         data_rows = [["Data 1", "Data 2"]]
 
-        result = generate_latex_table(
-            headers, data_rows, "Test caption", "double", "test:table", None, 90
-        )
+        result = generate_latex_table(headers, data_rows, "Test caption", "double", "test:table", None, 90)
 
         # Should have table* environment for double column
         self.assertIn("\\begin{table*}[!ht]", result)

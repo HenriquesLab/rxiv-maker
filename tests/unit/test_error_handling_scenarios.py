@@ -36,9 +36,7 @@ class TestNetworkErrorHandling(unittest.TestCase):
         """Test DOI validation with connection error."""
         import requests
 
-        mock_get.side_effect = requests.exceptions.ConnectionError(
-            "No internet connection"
-        )
+        mock_get.side_effect = requests.exceptions.ConnectionError("No internet connection")
 
         with self.assertRaises(requests.exceptions.ConnectionError):
             requests.get("https://api.crossref.org/works/10.1000/test")
@@ -318,9 +316,7 @@ class TestResourceExhaustionScenarios(unittest.TestCase):
         """Test handling of process timeouts."""
         import subprocess
 
-        mock_run.side_effect = subprocess.TimeoutExpired(
-            cmd=["long_running_command"], timeout=30
-        )
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd=["long_running_command"], timeout=30)
 
         with self.assertRaises(subprocess.TimeoutExpired):
             subprocess.run(["long_running_command"], timeout=30)
@@ -444,9 +440,7 @@ class TestExternalDependencyFailures(unittest.TestCase):
     @patch("subprocess.run")
     def test_python_package_import_failure(self, mock_run):
         """Test handling of Python package import failures."""
-        mock_run.return_value = Mock(
-            returncode=1, stderr="ModuleNotFoundError: No module named 'matplotlib'"
-        )
+        mock_run.return_value = Mock(returncode=1, stderr="ModuleNotFoundError: No module named 'matplotlib'")
 
         result = mock_run.return_value
         self.assertEqual(result.returncode, 1)
@@ -455,9 +449,7 @@ class TestExternalDependencyFailures(unittest.TestCase):
     @patch("subprocess.run")
     def test_r_package_not_available(self, mock_run):
         """Test handling of R package unavailability."""
-        mock_run.return_value = Mock(
-            returncode=1, stderr="Error: there is no package called 'ggplot2'"
-        )
+        mock_run.return_value = Mock(returncode=1, stderr="Error: there is no package called 'ggplot2'")
 
         result = mock_run.return_value
         self.assertEqual(result.returncode, 1)
@@ -516,9 +508,7 @@ class TestDataIntegrityAndCorruption(unittest.TestCase):
         required_files = ["config.yml", "main.md", "references.bib"]
 
         for filename in required_files:
-            with tempfile.NamedTemporaryFile(
-                suffix=f".{filename.split('.')[-1]}", delete=False
-            ) as f:
+            with tempfile.NamedTemporaryFile(suffix=f".{filename.split('.')[-1]}", delete=False) as f:
                 # Create empty file
                 empty_file = Path(f.name)
 
@@ -555,9 +545,7 @@ class TestGracefulDegradationScenarios(unittest.TestCase):
             "advanced_pdf_features": True,  # LaTeX available
         }
 
-        enabled_features = [
-            name for name, available in optional_features.items() if available
-        ]
+        enabled_features = [name for name, available in optional_features.items() if available]
         self.assertIn("advanced_pdf_features", enabled_features)
         self.assertIn("mermaid_diagrams", enabled_features)
         self.assertNotIn("r_figures", enabled_features)
@@ -589,12 +577,8 @@ class TestGracefulDegradationScenarios(unittest.TestCase):
         # Remove the error for this test
         test_issues = [i for i in issues if i[1] != "error"]
         # Now verify test_issues only has warnings
-        assert (
-            len([issue for issue, severity in test_issues if severity == "error"]) == 0
-        )
-        test_can_continue = (
-            len([issue for issue, severity in test_issues if severity == "error"]) == 0
-        )
+        assert len([issue for issue, severity in test_issues if severity == "error"]) == 0
+        test_can_continue = len([issue for issue, severity in test_issues if severity == "error"]) == 0
         self.assertTrue(test_can_continue)
 
 

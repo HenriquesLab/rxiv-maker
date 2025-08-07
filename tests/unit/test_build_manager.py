@@ -25,7 +25,7 @@ except ImportError:
     pytest = MockPytest()
 
 try:
-    from rxiv_maker.commands.build_manager import BuildManager
+    from rxiv_maker.engine.build_manager import BuildManager
 
     BUILD_MANAGER_AVAILABLE = True
 except ImportError:
@@ -58,9 +58,7 @@ class TestBuildManagerLogging(unittest.TestCase):
 
     def test_build_manager_initialization_creates_log_paths(self):
         """Test that BuildManager creates log file paths on initialization."""
-        build_manager = BuildManager(
-            manuscript_path=self.manuscript_dir, output_dir=self.output_dir
-        )
+        build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
 
         # Check that log file paths are set
         self.assertTrue(hasattr(build_manager, "warnings_log"))
@@ -70,9 +68,7 @@ class TestBuildManagerLogging(unittest.TestCase):
 
     def test_log_to_file_creates_warning_log(self):
         """Test that warnings are logged to file."""
-        build_manager = BuildManager(
-            manuscript_path=self.manuscript_dir, output_dir=self.output_dir
-        )
+        build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
 
         # Log a warning
         build_manager._log_to_file("Test warning message", "WARNING")
@@ -89,9 +85,7 @@ class TestBuildManagerLogging(unittest.TestCase):
 
     def test_log_to_file_creates_error_log(self):
         """Test that errors are logged to file."""
-        build_manager = BuildManager(
-            manuscript_path=self.manuscript_dir, output_dir=self.output_dir
-        )
+        build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
 
         # Log an error
         build_manager._log_to_file("Test error message", "ERROR")
@@ -107,9 +101,7 @@ class TestBuildManagerLogging(unittest.TestCase):
 
     def test_log_method_calls_file_logging_for_warnings(self):
         """Test that the log method calls file logging for warnings."""
-        build_manager = BuildManager(
-            manuscript_path=self.manuscript_dir, output_dir=self.output_dir
-        )
+        build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
 
         with patch.object(build_manager, "_log_to_file") as mock_log_to_file:
             build_manager.log("Test warning", "WARNING")
@@ -119,9 +111,7 @@ class TestBuildManagerLogging(unittest.TestCase):
 
     def test_log_method_calls_file_logging_for_errors(self):
         """Test that the log method calls file logging for errors."""
-        build_manager = BuildManager(
-            manuscript_path=self.manuscript_dir, output_dir=self.output_dir
-        )
+        build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
 
         with patch.object(build_manager, "_log_to_file") as mock_log_to_file:
             build_manager.log("Test error", "ERROR")
@@ -131,9 +121,7 @@ class TestBuildManagerLogging(unittest.TestCase):
 
     def test_log_method_does_not_call_file_logging_for_info(self):
         """Test that the log method does not call file logging for info messages."""
-        build_manager = BuildManager(
-            manuscript_path=self.manuscript_dir, output_dir=self.output_dir
-        )
+        build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
 
         with patch.object(build_manager, "_log_to_file") as mock_log_to_file:
             build_manager.log("Test info", "INFO")
@@ -143,9 +131,7 @@ class TestBuildManagerLogging(unittest.TestCase):
 
     def test_log_bibtex_warnings_extracts_from_blg_file(self):
         """Test that BibTeX warnings are extracted from .blg file."""
-        build_manager = BuildManager(
-            manuscript_path=self.manuscript_dir, output_dir=self.output_dir
-        )
+        build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
 
         # Create a mock .blg file with warnings
         blg_content = """This is BibTeX, Version 0.99d
@@ -181,9 +167,7 @@ You've used 2 entries,
 
     def test_log_bibtex_warnings_handles_no_warnings(self):
         """Test that BibTeX warning logging handles case with no warnings."""
-        build_manager = BuildManager(
-            manuscript_path=self.manuscript_dir, output_dir=self.output_dir
-        )
+        build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
 
         # Create a mock .blg file without warnings
         blg_content = """This is BibTeX, Version 0.99d
@@ -206,9 +190,7 @@ You've used 2 entries,
 
     def test_log_bibtex_warnings_handles_missing_blg_file(self):
         """Test that BibTeX warning logging handles missing .blg file."""
-        build_manager = BuildManager(
-            manuscript_path=self.manuscript_dir, output_dir=self.output_dir
-        )
+        build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
 
         # Don't create .blg file
 
@@ -223,9 +205,7 @@ You've used 2 entries,
 
     def test_log_to_file_handles_exceptions_gracefully(self):
         """Test that file logging handles exceptions gracefully."""
-        build_manager = BuildManager(
-            manuscript_path=self.manuscript_dir, output_dir=self.output_dir
-        )
+        build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
 
         # Mock file operations to raise exception
         with patch("builtins.open", side_effect=PermissionError("Permission denied")):
@@ -237,33 +217,19 @@ You've used 2 entries,
 
     def test_build_completion_reports_warning_log_existence(self):
         """Test that build completion reports warning log existence."""
-        build_manager = BuildManager(
-            manuscript_path=self.manuscript_dir, output_dir=self.output_dir
-        )
+        build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
 
         # Create a warning log file
         build_manager.warnings_log.touch()
 
         # Mock the full build process
-        with patch.object(
-            build_manager, "check_manuscript_structure", return_value=True
-        ):
-            with patch.object(
-                build_manager, "setup_output_directory", return_value=True
-            ):
+        with patch.object(build_manager, "check_manuscript_structure", return_value=True):
+            with patch.object(build_manager, "setup_output_directory", return_value=True):
                 with patch.object(build_manager, "generate_figures", return_value=True):
-                    with patch.object(
-                        build_manager, "validate_manuscript", return_value=True
-                    ):
-                        with patch.object(
-                            build_manager, "copy_style_files", return_value=True
-                        ):
-                            with patch.object(
-                                build_manager, "copy_references", return_value=True
-                            ):
-                                with patch.object(
-                                    build_manager, "copy_figures", return_value=True
-                                ):
+                    with patch.object(build_manager, "validate_manuscript", return_value=True):
+                        with patch.object(build_manager, "copy_style_files", return_value=True):
+                            with patch.object(build_manager, "copy_references", return_value=True):
+                                with patch.object(build_manager, "copy_figures", return_value=True):
                                     with patch.object(
                                         build_manager,
                                         "generate_tex_files",
@@ -289,21 +255,16 @@ You've used 2 entries,
                                                         "run_word_count_analysis",
                                                         return_value=True,
                                                     ):
-                                                        with patch.object(
-                                                            build_manager, "log"
-                                                        ) as mock_log:
+                                                        with patch.object(build_manager, "log") as mock_log:
                                                             result = build_manager.run_full_build()
 
                                                             # Should have logged about warning log
                                                             log_calls = [
                                                                 call
                                                                 for call in mock_log.call_args_list
-                                                                if "warnings logged"
-                                                                in str(call)
+                                                                if "warnings logged" in str(call)
                                                             ]
-                                                            self.assertTrue(
-                                                                len(log_calls) > 0
-                                                            )
+                                                            self.assertTrue(len(log_calls) > 0)
 
                                                             # Should return success
                                                             self.assertTrue(result)
@@ -335,9 +296,7 @@ class TestBuildProcessOrder(unittest.TestCase):
 
     def test_pdf_validation_runs_before_word_count(self):
         """Test that PDF validation runs before word count analysis."""
-        build_manager = BuildManager(
-            manuscript_path=self.manuscript_dir, output_dir=self.output_dir
-        )
+        build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
 
         # Track the order of method calls
         call_order = []
@@ -351,25 +310,13 @@ class TestBuildProcessOrder(unittest.TestCase):
             return True
 
         # Mock all prerequisites to return True
-        with patch.object(
-            build_manager, "check_manuscript_structure", return_value=True
-        ):
-            with patch.object(
-                build_manager, "setup_output_directory", return_value=True
-            ):
+        with patch.object(build_manager, "check_manuscript_structure", return_value=True):
+            with patch.object(build_manager, "setup_output_directory", return_value=True):
                 with patch.object(build_manager, "generate_figures", return_value=True):
-                    with patch.object(
-                        build_manager, "validate_manuscript", return_value=True
-                    ):
-                        with patch.object(
-                            build_manager, "copy_style_files", return_value=True
-                        ):
-                            with patch.object(
-                                build_manager, "copy_references", return_value=True
-                            ):
-                                with patch.object(
-                                    build_manager, "copy_figures", return_value=True
-                                ):
+                    with patch.object(build_manager, "validate_manuscript", return_value=True):
+                        with patch.object(build_manager, "copy_style_files", return_value=True):
+                            with patch.object(build_manager, "copy_references", return_value=True):
+                                with patch.object(build_manager, "copy_figures", return_value=True):
                                     with patch.object(
                                         build_manager,
                                         "generate_tex_files",
@@ -395,18 +342,14 @@ class TestBuildProcessOrder(unittest.TestCase):
                                                         "run_word_count_analysis",
                                                         side_effect=track_word_count,
                                                     ):
-                                                        with patch.object(
-                                                            build_manager, "log"
-                                                        ):
+                                                        with patch.object(build_manager, "log"):
                                                             result = build_manager.run_full_build()
 
                                                             # Should have run successfully
                                                             self.assertTrue(result)
 
                                                             # Should have called both methods
-                                                            self.assertEqual(
-                                                                len(call_order), 2
-                                                            )
+                                                            self.assertEqual(len(call_order), 2)
 
                                                             # PDF validation should come first
                                                             self.assertEqual(
@@ -445,9 +388,7 @@ class TestBibTeXWarningExtraction(unittest.TestCase):
 
     def test_bibtex_warning_extraction_multiple_warnings(self):
         """Test extraction of multiple BibTeX warnings."""
-        build_manager = BuildManager(
-            manuscript_path=self.manuscript_dir, output_dir=self.output_dir
-        )
+        build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
 
         # Create a realistic .blg file with multiple warnings
         blg_content = """This is BibTeX, Version 0.99d (TeX Live 2025)
@@ -492,9 +433,7 @@ warning$ -- 3
 
     def test_bibtex_warning_log_overwrites_previous(self):
         """Test that BibTeX warning log overwrites previous logs."""
-        build_manager = BuildManager(
-            manuscript_path=self.manuscript_dir, output_dir=self.output_dir
-        )
+        build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
 
         # Create initial warning log
         with open(build_manager.bibtex_log, "w") as f:
@@ -546,9 +485,7 @@ class TestBuildManagerIntegration(unittest.TestCase):
 
     def test_build_manager_with_bibtex_warnings_integration(self):
         """Test integration of BibTeX warning logging in build process."""
-        build_manager = BuildManager(
-            manuscript_path=self.manuscript_dir, output_dir=self.output_dir
-        )
+        build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
 
         # Create a .blg file that would be generated during build
         blg_content = """This is BibTeX, Version 0.99d
@@ -571,27 +508,13 @@ Warning--empty journal in test_reference
             mock_compile.side_effect = mock_compile_pdf
 
             # Mock other methods to focus on our specific functionality
-            with patch.object(
-                build_manager, "check_manuscript_structure", return_value=True
-            ):
-                with patch.object(
-                    build_manager, "setup_output_directory", return_value=True
-                ):
-                    with patch.object(
-                        build_manager, "generate_figures", return_value=True
-                    ):
-                        with patch.object(
-                            build_manager, "validate_manuscript", return_value=True
-                        ):
-                            with patch.object(
-                                build_manager, "copy_style_files", return_value=True
-                            ):
-                                with patch.object(
-                                    build_manager, "copy_references", return_value=True
-                                ):
-                                    with patch.object(
-                                        build_manager, "copy_figures", return_value=True
-                                    ):
+            with patch.object(build_manager, "check_manuscript_structure", return_value=True):
+                with patch.object(build_manager, "setup_output_directory", return_value=True):
+                    with patch.object(build_manager, "generate_figures", return_value=True):
+                        with patch.object(build_manager, "validate_manuscript", return_value=True):
+                            with patch.object(build_manager, "copy_style_files", return_value=True):
+                                with patch.object(build_manager, "copy_references", return_value=True):
+                                    with patch.object(build_manager, "copy_figures", return_value=True):
                                         with patch.object(
                                             build_manager,
                                             "generate_tex_files",
@@ -619,14 +542,10 @@ Warning--empty journal in test_reference
                                                         self.assertTrue(result)
 
                                                         # Should have created BibTeX warning log
-                                                        self.assertTrue(
-                                                            build_manager.bibtex_log.exists()
-                                                        )
+                                                        self.assertTrue(build_manager.bibtex_log.exists())
 
                                                         # Check log content
-                                                        with open(
-                                                            build_manager.bibtex_log
-                                                        ) as f:
+                                                        with open(build_manager.bibtex_log) as f:
                                                             content = f.read()
 
                                                         self.assertIn(
@@ -696,9 +615,7 @@ l.4 \undefined
 
     def test_latex_compilation_timeout(self):
         """Test handling of LaTeX compilation timeout."""
-        build_manager = BuildManager(
-            manuscript_path=self.manuscript_dir, output_dir=self.output_dir
-        )
+        build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
 
         # Mock subprocess to simulate timeout
         with patch("subprocess.run") as mock_run:
@@ -709,9 +626,7 @@ l.4 \undefined
 
     def test_latex_error_recovery_with_fallback(self):
         """Test LaTeX compilation with error recovery fallback."""
-        build_manager = BuildManager(
-            manuscript_path=self.manuscript_dir, output_dir=self.output_dir
-        )
+        build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
 
         # First compilation fails, second succeeds (simulating recovery)
         with patch("subprocess.run") as mock_run:

@@ -101,15 +101,13 @@ More text with citations @test2023 and @another2023.
         (manuscript_dir / "03_REFERENCES.bib").write_text(bib_content)
 
         # Generate LaTeX using the actual system
-        from rxiv_maker.commands.build_manager import BuildManager
+        from rxiv_maker.engine.build_manager import BuildManager
 
         output_dir = tmp_path / "output"
         output_dir.mkdir()
 
         # Run the build
-        build_manager = BuildManager(
-            manuscript_path=str(manuscript_dir), output_dir=str(output_dir)
-        )
+        build_manager = BuildManager(manuscript_path=str(manuscript_dir), output_dir=str(output_dir))
 
         # Run partial build to generate LaTeX
         assert build_manager.copy_style_files()
@@ -123,17 +121,11 @@ More text with citations @test2023 and @another2023.
         tex_content = tex_path.read_text()
 
         # Check for bibliography command
-        assert r"\bibliography{03_REFERENCES}" in tex_content, (
-            "Bibliography command not found in LaTeX"
-        )
+        assert r"\bibliography{03_REFERENCES}" in tex_content, "Bibliography command not found in LaTeX"
 
         # Check that citations were converted properly
-        assert r"\cite{test2023}" in tex_content, (
-            "Single citation not converted properly"
-        )
-        assert r"\cite{test2023,another2023}" in tex_content, (
-            "Multiple citations not converted properly"
-        )
+        assert r"\cite{test2023}" in tex_content, "Single citation not converted properly"
+        assert r"\cite{test2023,another2023}" in tex_content, "Multiple citations not converted properly"
         assert r"\cite{smith2023,jones2023,brown2023}" in tex_content, (
             "Multiple author citations not converted properly"
         )
@@ -156,9 +148,7 @@ More text with citations @test2023 and @another2023.
 
         aux_content = aux_path.read_text()
         assert r"\citation{test2023}" in aux_content, "Citation not found in aux file"
-        assert r"\bibdata{03_REFERENCES}" in aux_content, (
-            "Bibliography data not set in aux file"
-        )
+        assert r"\bibdata{03_REFERENCES}" in aux_content, "Bibliography data not set in aux file"
 
     def test_citation_in_generated_tex(self, tmp_path):
         """Test that citations are properly converted in the LaTeX file."""
@@ -204,14 +194,10 @@ class TestCitationProcessingIntegration:
         ]
 
         for citation in important_citations:
-            assert "@" in bib_content and citation in bib_content, (
-                f"Citation {citation} not found in bibliography"
-            )
+            assert "@" in bib_content and citation in bib_content, f"Citation {citation} not found in bibliography"
             # Also check it's a complete entry (has closing brace)
             pattern = rf"@\w+\{{{citation},[^@]+\}}"
-            assert re.search(pattern, bib_content, re.DOTALL), (
-                f"Citation {citation} appears incomplete in bibliography"
-            )
+            assert re.search(pattern, bib_content, re.DOTALL), f"Citation {citation} appears incomplete in bibliography"
 
     @pytest.mark.medium
     @requires_latex
@@ -272,14 +258,12 @@ This system also integrates Mermaid.js [@Mermaid2023] for generating diagrams.
         (manuscript_dir / "03_REFERENCES.bib").write_text(bib_content)
 
         # Run the full build process
-        from rxiv_maker.commands.build_manager import BuildManager
+        from rxiv_maker.engine.build_manager import BuildManager
 
         output_dir = tmp_path / "output"
         output_dir.mkdir()
 
-        build_manager = BuildManager(
-            manuscript_path=str(manuscript_dir), output_dir=str(output_dir)
-        )
+        build_manager = BuildManager(manuscript_path=str(manuscript_dir), output_dir=str(output_dir))
 
         # Run full build
         assert build_manager.copy_style_files()
@@ -314,9 +298,7 @@ This system also integrates Mermaid.js [@Mermaid2023] for generating diagrams.
 
         # Check that .bbl file was created (proof that BibTeX ran)
         bbl_path = output_dir / "test_manuscript.bbl"
-        assert bbl_path.exists(), (
-            "BibTeX did not run - this causes ? to appear instead of citations"
-        )
+        assert bbl_path.exists(), "BibTeX did not run - this causes ? to appear instead of citations"
 
         # Check LaTeX log doesn't have "undefined citation" warnings
         log_path = output_dir / "test_manuscript.log"
@@ -324,6 +306,5 @@ This system also integrates Mermaid.js [@Mermaid2023] for generating diagrams.
             log_content = log_path.read_text()
             undefined_citations = re.findall(r"Citation.*undefined", log_content)
             assert len(undefined_citations) == 0, (
-                f"Found undefined citations in log: {undefined_citations} - "
-                f"these appear as ? in PDF"
+                f"Found undefined citations in log: {undefined_citations} - these appear as ? in PDF"
             )

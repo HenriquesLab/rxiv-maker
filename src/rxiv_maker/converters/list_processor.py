@@ -39,9 +39,7 @@ def convert_lists_to_latex(text: MarkdownContent) -> LatexContent:
     return "\n".join(result_lines)
 
 
-def _process_unordered_list(
-    lines: list[str], start_index: int, result_lines: list[str]
-) -> int:
+def _process_unordered_list(lines: list[str], start_index: int, result_lines: list[str]) -> int:
     """Process an unordered list starting at the given index.
 
     Args:
@@ -67,9 +65,7 @@ def _process_unordered_list(
         elif current_line.strip() == "":
             # Empty line, might continue list
             i += 1
-            if i < len(lines) and re.match(
-                rf"^\s{{0,{indent_level + 2}}}[-*]\s+", lines[i]
-            ):
+            if i < len(lines) and re.match(rf"^\s{{0,{indent_level + 2}}}[-*]\s+", lines[i]):
                 continue
             else:
                 break
@@ -85,9 +81,7 @@ def _process_unordered_list(
     return i
 
 
-def _process_ordered_list(
-    lines: list[str], start_index: int, result_lines: list[str]
-) -> int:
+def _process_ordered_list(lines: list[str], start_index: int, result_lines: list[str]) -> int:
     """Process an ordered list starting at the given index.
 
     Args:
@@ -113,9 +107,7 @@ def _process_ordered_list(
         elif current_line.strip() == "":
             # Empty line, might continue list
             i += 1
-            if i < len(lines) and re.match(
-                rf"^\s{{0,{indent_level + 2}}}\d+[.)]\s+", lines[i]
-            ):
+            if i < len(lines) and re.match(rf"^\s{{0,{indent_level + 2}}}\d+[.)]\s+", lines[i]):
                 continue
             else:
                 break
@@ -176,9 +168,7 @@ def validate_list_structure(text: MarkdownContent) -> bool:
             # Unordered list item should have content after marker
             if not re.match(r"^\s*[-*]\s+.+", line):
                 return False
-        elif re.match(r"^\s*\d+[.)]\s", line) and not re.match(
-            r"^\s*\d+[.)]\s+.+", line
-        ):
+        elif re.match(r"^\s*\d+[.)]\s", line) and not re.match(r"^\s*\d+[.)]\s+.+", line):
             # Ordered list item should have content after marker
             return False
 

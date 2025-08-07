@@ -148,8 +148,6 @@ class TestMainCLI:
         """Test that context is properly passed to commands."""
         # This would need to be tested with actual command invocation
         # For now, we test that the context object is created properly
-        result = self.runner.invoke(
-            main, ["--verbose", "--engine", "docker", "version"]
-        )
+        result = self.runner.invoke(main, ["--verbose", "--engine", "docker", "version"])
         assert result.exit_code == 0
         # The actual context testing would require mocking the command handlers

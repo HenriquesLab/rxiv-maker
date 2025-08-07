@@ -102,9 +102,7 @@ class ManuscriptValidator:
     def validate_directory_structure(self) -> bool:
         """Validate that the manuscript directory exists and is accessible."""
         if not self.manuscript_path.exists():
-            self.errors.append(
-                f"Manuscript directory not found: {self.manuscript_path}"
-            )
+            self.errors.append(f"Manuscript directory not found: {self.manuscript_path}")
             return False
 
         if not self.manuscript_path.is_dir():
@@ -133,9 +131,7 @@ class ManuscriptValidator:
         for filename, description in self.OPTIONAL_FILES.items():
             file_path = self.manuscript_path / filename
             if not file_path.exists():
-                self.warnings.append(
-                    f"Optional file missing: {filename} ({description})"
-                )
+                self.warnings.append(f"Optional file missing: {filename} ({description})")
             else:
                 logger.info(f"✓ Found optional file: {filename}")
 
@@ -146,9 +142,7 @@ class ManuscriptValidator:
         for dirname, description in self.REQUIRED_DIRS.items():
             dir_path = self.manuscript_path / dirname
             if not dir_path.exists():
-                self.errors.append(
-                    f"Required directory missing: {dirname} ({description})"
-                )
+                self.errors.append(f"Required directory missing: {dirname} ({description})")
                 all_dirs_present = False
             elif not dir_path.is_dir():
                 self.errors.append(f"Path exists but is not a directory: {dirname}")
@@ -183,9 +177,7 @@ class ManuscriptValidator:
         config_valid = True
         for field, description in self.REQUIRED_CONFIG_FIELDS.items():
             if field not in config:
-                self.errors.append(
-                    f"Missing required config field: {field} ({description})"
-                )
+                self.errors.append(f"Missing required config field: {field} ({description})")
                 config_valid = False
             elif not config[field]:
                 self.warnings.append(f"Config field is empty: {field} ({description})")
@@ -213,9 +205,7 @@ class ManuscriptValidator:
         if not content.strip():
             self.warnings.append("Bibliography file is empty")
         elif "@" not in content:
-            self.warnings.append(
-                "Bibliography file appears to contain no BibTeX entries"
-            )
+            self.warnings.append("Bibliography file appears to contain no BibTeX entries")
         else:
             logger.info("✓ Bibliography file appears to contain BibTeX entries")
 
@@ -248,9 +238,7 @@ class ManuscriptValidator:
             "results",
             "discussion",
         ]
-        found_sections = [
-            section for section in common_sections if section in content_lower
-        ]
+        found_sections = [section for section in common_sections if section in content_lower]
 
         if len(found_sections) < 2:
             self.warnings.append(
@@ -287,9 +275,7 @@ class ManuscriptValidator:
                 missing_figures.append(fig_ref)
 
         if missing_figures:
-            self.warnings.append(
-                f"Referenced figures not found: {', '.join(missing_figures)}"
-            )
+            self.warnings.append(f"Referenced figures not found: {', '.join(missing_figures)}")
         elif figure_refs:
             logger.info(f"✓ All {len(figure_refs)} referenced figures found")
 
@@ -300,9 +286,7 @@ class ManuscriptValidator:
             return True
 
         if not ENHANCED_VALIDATION_AVAILABLE:
-            self.warnings.append(
-                "Enhanced validation not available - install validation dependencies"
-            )
+            self.warnings.append("Enhanced validation not available - install validation dependencies")
             return True
 
         enhanced_validation_passed = True
@@ -312,9 +296,7 @@ class ManuscriptValidator:
         try:
             citation_validator = CitationValidator(manuscript_str)
             citation_result = citation_validator.validate()
-            enhanced_validation_passed &= self._process_validation_result(
-                citation_result
-            )
+            enhanced_validation_passed &= self._process_validation_result(citation_result)
         except Exception as e:
             self.warnings.append(f"Citation validation failed: {e}")
 
@@ -322,9 +304,7 @@ class ManuscriptValidator:
         try:
             reference_validator = ReferenceValidator(manuscript_str)
             reference_result = reference_validator.validate()
-            enhanced_validation_passed &= self._process_validation_result(
-                reference_result
-            )
+            enhanced_validation_passed &= self._process_validation_result(reference_result)
         except Exception as e:
             self.warnings.append(f"Reference validation failed: {e}")
 
@@ -354,9 +334,7 @@ class ManuscriptValidator:
 
         # Run LaTeX error parsing (if log file exists)
         try:
-            latex_parser = LaTeXErrorParser(
-                manuscript_str, None
-            )  # Let it auto-find the log file
+            latex_parser = LaTeXErrorParser(manuscript_str, None)  # Let it auto-find the log file
             latex_result = latex_parser.validate()
             enhanced_validation_passed &= self._process_validation_result(latex_result)
         except Exception as e:
@@ -462,11 +440,7 @@ class ManuscriptValidator:
                 print(f"  {i}. {info}")
 
         # Print validation statistics if available
-        if (
-            self.validation_metadata
-            and ENHANCED_VALIDATION_AVAILABLE
-            and self.show_stats
-        ):
+        if self.validation_metadata and ENHANCED_VALIDATION_AVAILABLE and self.show_stats:
             self._print_validation_statistics()
 
         print("\n" + "=" * 60)
@@ -479,9 +453,7 @@ class ManuscriptValidator:
             if not metadata:
                 continue
 
-            validator_display = validator_name.replace("Validator", "").replace(
-                "Parser", ""
-            )
+            validator_display = validator_name.replace("Validator", "").replace("Parser", "")
             print(f"\n  {validator_display}:")
 
             # Display key statistics for each validator
@@ -491,9 +463,7 @@ class ManuscriptValidator:
                 if "unique_citations" in metadata:
                     print(f"    • Unique citations: {metadata['unique_citations']}")
                 if "bibliography_keys" in metadata:
-                    print(
-                        f"    • Bibliography entries: {metadata['bibliography_keys']}"
-                    )
+                    print(f"    • Bibliography entries: {metadata['bibliography_keys']}")
 
             elif validator_name == "ReferenceValidator":
                 if "total_labels_defined" in metadata:
@@ -509,13 +479,9 @@ class ManuscriptValidator:
 
             elif validator_name == "MathValidator":
                 if "total_math_expressions" in metadata:
-                    print(
-                        f"    • Math expressions: {metadata['total_math_expressions']}"
-                    )
+                    print(f"    • Math expressions: {metadata['total_math_expressions']}")
                 if "unique_equation_labels" in metadata:
-                    print(
-                        f"    • Equation labels: {metadata['unique_equation_labels']}"
-                    )
+                    print(f"    • Equation labels: {metadata['unique_equation_labels']}")
 
             elif validator_name == "SyntaxValidator":
                 if "total_elements" in metadata:
@@ -631,9 +597,7 @@ For LaTeX compilation errors after building, check the .log file in output/
             sys.exit(1)
 
     # Validate the manuscript
-    validator = ManuscriptValidator(
-        args.manuscript_path, skip_enhanced=args.basic_only, show_stats=args.show_stats
-    )
+    validator = ManuscriptValidator(args.manuscript_path, skip_enhanced=args.basic_only, show_stats=args.show_stats)
     validation_passed = validator.validate()
     validator.print_summary()
 

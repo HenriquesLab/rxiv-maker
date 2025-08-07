@@ -25,12 +25,8 @@ class ReferenceValidator(BaseValidator):
         "figure_label": re.compile(r"\{#fig:([a-zA-Z0-9_:-]+)([^}]*)\}"),
         "supplementary_figure_label": re.compile(r"\{#sfig:([a-zA-Z0-9_:-]+)([^}]*)\}"),
         "table_label": re.compile(r"\{#table:([a-zA-Z0-9_:-]+)([^}]*)\}"),
-        "supplementary_table_label": re.compile(
-            r"\{#stable:([a-zA-Z0-9_:-]+)([^}]*)\}"
-        ),
-        "equation_label": re.compile(
-            r"\$\$.*?\$\$\s*\{[^}]*#eq:([a-zA-Z0-9_:-]+)[^}]*\}"
-        ),
+        "supplementary_table_label": re.compile(r"\{#stable:([a-zA-Z0-9_:-]+)([^}]*)\}"),
+        "equation_label": re.compile(r"\$\$.*?\$\$\s*\{[^}]*#eq:([a-zA-Z0-9_:-]+)[^}]*\}"),
         "supplementary_note_label": re.compile(r"\{#snote:([a-zA-Z0-9_:-]+)\}"),
     }
 
@@ -115,9 +111,7 @@ class ReferenceValidator(BaseValidator):
 
         for line_num, line in enumerate(lines, 1):
             # Find label definitions
-            label_errors = self._extract_label_definitions(
-                line, file_path, line_num, file_type
-            )
+            label_errors = self._extract_label_definitions(line, file_path, line_num, file_type)
             errors.extend(label_errors)
 
             # Find reference uses
@@ -126,9 +120,7 @@ class ReferenceValidator(BaseValidator):
 
         return errors
 
-    def _extract_label_definitions(
-        self, line: str, file_path: str, line_num: int, file_type: str
-    ) -> list:
+    def _extract_label_definitions(self, line: str, file_path: str, line_num: int, file_type: str) -> list:
         """Extract label definitions from a line."""
         errors = []
 
@@ -174,10 +166,7 @@ class ReferenceValidator(BaseValidator):
                             file_path=file_path,
                             line_number=line_num,
                             context=line,
-                            suggestion=(
-                                "Use lowercase letters, numbers, underscores, and "
-                                "hyphens for consistency"
-                            ),
+                            suggestion=("Use lowercase letters, numbers, underscores, and hyphens for consistency"),
                             error_code="non_standard_label",
                         )
                     )
@@ -224,10 +213,7 @@ class ReferenceValidator(BaseValidator):
                             line_number=line_num,
                             column=match.start(),
                             context=line,
-                            suggestion=(
-                                "Use lowercase letters, numbers, underscores, and "
-                                "hyphens for consistency"
-                            ),
+                            suggestion=("Use lowercase letters, numbers, underscores, and hyphens for consistency"),
                             error_code="non_standard_reference",
                         )
                     )
@@ -243,9 +229,7 @@ class ReferenceValidator(BaseValidator):
                 label_id = ref["label"]
                 if label_id not in self.defined_labels[ref_type]:
                     # Check if it might be in the wrong category
-                    suggestion = self._suggest_correct_reference_type(
-                        label_id, ref_type
-                    )
+                    suggestion = self._suggest_correct_reference_type(label_id, ref_type)
 
                     errors.append(
                         self._create_error(
@@ -267,9 +251,7 @@ class ReferenceValidator(BaseValidator):
         warnings = []
 
         for ref_type, labels in self.defined_labels.items():
-            referenced_in_type = {
-                ref["label"] for ref in self.referenced_labels[ref_type]
-            }
+            referenced_in_type = {ref["label"] for ref in self.referenced_labels[ref_type]}
 
             for label_id, label_info in labels.items():
                 if label_id not in referenced_in_type:
@@ -280,10 +262,7 @@ class ReferenceValidator(BaseValidator):
                             file_path=label_info["file"],
                             line_number=label_info["line"],
                             context=label_info["context"],
-                            suggestion=(
-                                "Consider removing unused labels or add references "
-                                "to them"
-                            ),
+                            suggestion=("Consider removing unused labels or add references to them"),
                             error_code="unused_label",
                         )
                     )
@@ -381,16 +360,10 @@ class ReferenceValidator(BaseValidator):
     def _generate_reference_statistics(self) -> dict[str, Any]:
         """Generate statistics about references and labels."""
         stats: dict[str, Any] = {
-            "total_labels_defined": sum(
-                len(labels) for labels in self.defined_labels.values()
-            ),
-            "total_references_used": sum(
-                len(refs) for refs in self.referenced_labels.values()
-            ),
+            "total_labels_defined": sum(len(labels) for labels in self.defined_labels.values()),
+            "total_references_used": sum(len(refs) for refs in self.referenced_labels.values()),
             "labels_by_type": {k: len(v) for k, v in self.defined_labels.items()},
-            "references_by_type": {
-                k: len(v) for k, v in self.referenced_labels.items()
-            },
+            "references_by_type": {k: len(v) for k, v in self.referenced_labels.items()},
             "unused_labels": {},
             "undefined_references": {},
         }
@@ -398,18 +371,14 @@ class ReferenceValidator(BaseValidator):
         # Count unused labels by type
         unused_labels: dict[str, int] = stats["unused_labels"]
         for ref_type, labels in self.defined_labels.items():
-            referenced_in_type = {
-                ref["label"] for ref in self.referenced_labels[ref_type]
-            }
+            referenced_in_type = {ref["label"] for ref in self.referenced_labels[ref_type]}
             unused = set(labels.keys()) - referenced_in_type
             unused_labels[ref_type] = len(unused)
 
         # Count undefined references by type
         undefined_refs: dict[str, int] = stats["undefined_references"]
         for ref_type, references in self.referenced_labels.items():
-            undefined = {ref["label"] for ref in references} - set(
-                self.defined_labels[ref_type].keys()
-            )
+            undefined = {ref["label"] for ref in references} - set(self.defined_labels[ref_type].keys())
             undefined_refs[ref_type] = len(undefined)
 
         return stats

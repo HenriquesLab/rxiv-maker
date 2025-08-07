@@ -9,7 +9,11 @@
 # ======================================================================
 # Automated Scientific Article Generation and Publishing System
 #
-# 🚀 QUICK START:
+# 🆕 RECOMMENDED: Use the modern rxiv CLI for the best experience:
+#   pip install rxiv-maker
+#   rxiv init my-paper && cd my-paper && rxiv build
+#
+# 🚀 LEGACY MAKEFILE INTERFACE (maintained for backward compatibility):
 #   make setup        # Install Python dependencies
 #   make pdf          # Generate PDF (requires LaTeX)
 #   make help         # Show all available commands
@@ -215,13 +219,13 @@ endif
 arxiv: pdf
 	@echo "Preparing arXiv submission package..."
 	@$(PYTHON_CMD) -m rxiv_maker.cli arxiv "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) || \
-	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.prepare_arxiv --output-dir $(OUTPUT_DIR) --arxiv-dir $(OUTPUT_DIR)/arxiv_submission --zip-filename $(OUTPUT_DIR)/for_arxiv.zip --manuscript-path "$(MANUSCRIPT_PATH)" --zip
-	@echo "✅ arXiv package ready: $(OUTPUT_DIR)/for_arxiv.zip"
+	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.engine.prepare_arxiv --output-dir $(MANUSCRIPT_PATH)/$(OUTPUT_DIR) --arxiv-dir $(MANUSCRIPT_PATH)/$(OUTPUT_DIR)/arxiv_submission --zip-filename $(MANUSCRIPT_PATH)/$(OUTPUT_DIR)/for_arxiv.zip --manuscript-path "$(MANUSCRIPT_PATH)" --create-zip
+	@echo "✅ arXiv package ready: $(MANUSCRIPT_PATH)/$(OUTPUT_DIR)/for_arxiv.zip"
 	@echo "Copying arXiv package to manuscript directory with naming convention..."
 	@YEAR=$$($(PYTHON_CMD) -c "import yaml; config = yaml.safe_load(open('$(MANUSCRIPT_CONFIG)', 'r')); print(config.get('date', '').split('-')[0] if config.get('date') else '$(shell date +%Y)')"); \
 	FIRST_AUTHOR=$$($(PYTHON_CMD) -c "import yaml; config = yaml.safe_load(open('$(MANUSCRIPT_CONFIG)', 'r')); authors = config.get('authors', []); name = authors[0]['name'] if authors and len(authors) > 0 else 'Unknown'; print(name.split()[-1] if ' ' in name else name)"); \
 	ARXIV_FILENAME="$${YEAR}__$${FIRST_AUTHOR}_et_al__for_arxiv.zip"; \
-	cp $(OUTPUT_DIR)/for_arxiv.zip $(MANUSCRIPT_PATH)/$${ARXIV_FILENAME}; \
+	cp $(MANUSCRIPT_PATH)/$(OUTPUT_DIR)/for_arxiv.zip $(MANUSCRIPT_PATH)/$${ARXIV_FILENAME}; \
 	echo "✅ arXiv package copied to: $(MANUSCRIPT_PATH)/$${ARXIV_FILENAME}"
 	@echo "📤 Upload the renamed file to arXiv for submission"
 
@@ -266,6 +270,27 @@ _validate_quiet:
 test:
 	@echo "🧪 Running all tests..."
 	@$(PYTHON_CMD) -m pytest tests/ -v
+
+# Repository integrity and safeguard validation
+.PHONY: validate-repo
+validate-repo:
+	@echo "🛡️  Validating repository integrity and submodule boundaries..."
+	@scripts/safeguards/validate-submodules.sh
+	@$(PYTHON_CMD) scripts/safeguards/check-repo-boundaries.py
+
+.PHONY: test-safeguards
+test-safeguards:
+	@echo "🧪 Testing safeguards with simulated corruption scenarios..."
+	@scripts/safeguards/test-safeguards.sh
+
+.PHONY: test-submodule-guardrails
+test-submodule-guardrails:
+	@echo "🛡️  Testing submodule guardrails..."
+	@scripts/test-submodule-guardrails.sh
+
+.PHONY: validate-all
+validate-all: validate validate-repo
+	@echo "✅ All validation checks completed successfully!"
 
 # Run unit tests only
 .PHONY: test-unit
@@ -415,6 +440,10 @@ help:
 	echo "  make install-deps - Install system dependencies (LaTeX, etc.)"; \
 	echo "  make pdf        - Generate PDF with validation"; \
 	echo "  make validate   - Check manuscript for issues"; \
+	echo "  make validate-repo - Check repository integrity"; \
+	echo "  make validate-all  - Run all validation checks"; \
+	echo "  make test-safeguards - Test repository safeguards"; \
+	echo "  make test-submodule-guardrails - Test submodule guardrails"; \
 	echo "  make clean      - Remove output files"; \
 	echo "  make arxiv      - Prepare arXiv submission"; \
 	echo ""; \

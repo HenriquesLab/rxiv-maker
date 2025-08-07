@@ -20,9 +20,7 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
     def setUp(self):
         """Set up test environment."""
         self.temp_dir = tempfile.mkdtemp()
-        self.workflow_file = (
-            Path(__file__).parent.parent.parent / ".github/workflows/build-pdf.yml"
-        )
+        self.workflow_file = Path(__file__).parent.parent.parent / ".github/workflows/build-pdf.yml"
 
     def test_workflow_file_exists(self):
         """Test that the GitHub Actions workflow file exists."""
@@ -149,9 +147,7 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
             workflow = yaml.safe_load(f)
 
         build_steps = workflow["jobs"]["build-pdf"]["steps"]
-        cache_steps = [
-            step for step in build_steps if step.get("name", "").startswith("Cache")
-        ]
+        cache_steps = [step for step in build_steps if step.get("name", "").startswith("Cache")]
 
         # Test that we have cache steps
         self.assertGreater(len(cache_steps), 0)
@@ -228,9 +224,7 @@ class TestWorkflowStepSimulation(unittest.TestCase):
     @patch("subprocess.run")
     def test_python_setup_step(self, mock_run):
         """Test Python setup step simulation."""
-        mock_run.return_value = Mock(
-            returncode=0, stdout="Setup completed successfully"
-        )
+        mock_run.return_value = Mock(returncode=0, stdout="Setup completed successfully")
 
         # Simulate make setup command
         result = mock_run.return_value
@@ -345,9 +339,7 @@ class TestErrorHandlingScenarios(unittest.TestCase):
     @patch("subprocess.run")
     def test_latex_compilation_failure(self, mock_run):
         """Test handling of LaTeX compilation failures."""
-        mock_run.return_value = Mock(
-            returncode=1, stderr="! LaTeX Error: File `missing.sty' not found."
-        )
+        mock_run.return_value = Mock(returncode=1, stderr="! LaTeX Error: File `missing.sty' not found.")
 
         result = mock_run.return_value
         self.assertEqual(result.returncode, 1)
@@ -368,9 +360,7 @@ class TestErrorHandlingScenarios(unittest.TestCase):
     @patch("subprocess.run")
     def test_r_package_installation_failure(self, mock_run):
         """Test handling of R package installation failures."""
-        mock_run.return_value = Mock(
-            returncode=1, stderr="ERROR: dependency 'package' is not available"
-        )
+        mock_run.return_value = Mock(returncode=1, stderr="ERROR: dependency 'package' is not available")
 
         result = mock_run.return_value
         self.assertEqual(result.returncode, 1)
@@ -417,9 +407,7 @@ class TestContainerizedBuildOptimizations(unittest.TestCase):
         traditional_build_time_minutes = 10
         containerized_build_time_minutes = 2
 
-        performance_improvement = (
-            traditional_build_time_minutes / containerized_build_time_minutes
-        )
+        performance_improvement = traditional_build_time_minutes / containerized_build_time_minutes
         self.assertGreaterEqual(performance_improvement, 4.0)  # ~5x improvement
 
     def test_dependency_caching_effectiveness(self):

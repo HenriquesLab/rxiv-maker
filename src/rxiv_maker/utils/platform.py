@@ -119,9 +119,7 @@ class PlatformDetector:
 
         return str(activate_path) if activate_path.exists() else None
 
-    def run_command(
-        self, cmd: str, shell: bool = True, **kwargs
-    ) -> subprocess.CompletedProcess:
+    def run_command(self, cmd: str, shell: bool = True, **kwargs) -> subprocess.CompletedProcess:
         """Run a command with platform-appropriate settings."""
         if self.is_windows():
             # On Windows, use cmd.exe for better compatibility
@@ -235,9 +233,7 @@ def run_platform_command(cmd: str, **kwargs) -> subprocess.CompletedProcess:
     return platform_detector.run_command(cmd, **kwargs)
 
 
-def safe_print(
-    message: str, success_symbol: str = "✅", fallback_symbol: str = "[OK]"
-) -> None:
+def safe_print(message: str, success_symbol: str = "✅", fallback_symbol: str = "[OK]") -> None:
     """Print a message with cross-platform compatible symbols.
 
     Args:
@@ -261,9 +257,7 @@ def safe_print(
         print(f"{fallback_symbol} {message}")
 
 
-def safe_console_print(
-    console, message: str, style: str | None = None, **kwargs
-) -> None:
+def safe_console_print(console, message: str, style: str | None = None, **kwargs) -> None:
     """Print a message using Rich console with cross-platform Unicode fallback.
 
     Args:

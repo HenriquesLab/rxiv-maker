@@ -23,14 +23,38 @@ def convert_subscript_superscript_to_latex(text: LatexContent) -> LatexContent:
 
     # Helper function to avoid replacing inside LaTeX commands
     def replace_outside_commands(pattern, replacement, text):
-        """Replace pattern with replacement, but not inside LaTeX commands."""
-        # Split text by LaTeX commands like \texttt{...}
-        parts = re.split(r"(\\texttt\{[^}]*\})", text)
+        """Replace pattern with replacement, but not inside LaTeX commands or math mode."""
+        # Combine all protection patterns into a single regex to avoid
+        # sequential processing issues where one pattern affects another
+        combined_pattern = (
+            r"(\\texttt\{[^}]*\})|"  # \texttt{...}
+            r"(\\text\{[^}]*\})|"  # \text{...}
+            r"(\$[^$]*\$)|"  # Inline math $...$
+            r"(\$\$.*?\$\$)|"  # Display math $$...$$
+            r"(\\begin\{equation\}.*?\\end\{equation\})"  # equation environments
+        )
+
+        # Split by the combined pattern - protected parts will be in groups
+        parts = re.split(combined_pattern, text, flags=re.DOTALL)
         result = []
 
-        for i, part in enumerate(parts):
-            if i % 2 == 0:  # Not inside a LaTeX command
+        for part in parts:
+            if part is None or part == "":
+                continue
+
+            # Check if this part matches any of our protection patterns
+            is_protected = (
+                part.startswith("\\texttt{")
+                or part.startswith("\\text{")
+                or (part.startswith("$") and not part.startswith("$$"))
+                or part.startswith("$$")
+                or part.startswith("\\begin{equation}")
+            )
+
+            if not is_protected:
+                # Only apply replacement to unprotected parts
                 part = re.sub(pattern, replacement, part)
+
             result.append(part)
 
         return "".join(result)
@@ -103,9 +127,7 @@ def process_code_spans(text: MarkdownContent) -> LatexContent:
         if has_dollar_paren or has_math_delimiters:
             # For code spans with mathematical content, use \detokenize for robust
             # protection. This prevents LaTeX from interpreting $ as math delimiters
-            return (
-                f"PROTECTED_DETOKENIZE_START{{{code_content}}}PROTECTED_DETOKENIZE_END"
-            )
+            return f"PROTECTED_DETOKENIZE_START{{{code_content}}}PROTECTED_DETOKENIZE_END"
         else:
             # Handle special LaTeX characters inside code spans using standard escaping
             escaped_content = code_content
@@ -119,10 +141,7 @@ def process_code_spans(text: MarkdownContent) -> LatexContent:
             # BUT only if no LaTeX commands (indicated by backslashes)
             if len(code_content) > 20 and "\\" not in code_content:
                 # Use protected placeholder to prevent escaping of \seqsplit command
-                return (
-                    f"PROTECTED_TEXTTT_SEQSPLIT_START{{{escaped_content}}}"
-                    "PROTECTED_TEXTTT_SEQSPLIT_END"
-                )
+                return f"PROTECTED_TEXTTT_SEQSPLIT_START{{{escaped_content}}}PROTECTED_TEXTTT_SEQSPLIT_END"
             else:
                 return f"\\texttt{{{escaped_content}}}"
 
@@ -319,10 +338,7 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
                     if d not in full_content:
                         delimiter = d
                         break
-                print(
-                    f"DEBUG: Converting texttt with listings to verb: "
-                    f"{full_content[:50]}..."
-                )
+                print(f"DEBUG: Converting texttt with listings to verb: {full_content[:50]}...")
                 return f"\\verb{delimiter}{full_content}{delimiter}"
             else:
                 # Return unchanged
@@ -422,6 +438,19 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
 
     text = re.sub(r"\(([^)]+)\)", escape_file_paths_in_parens, text)
 
+    # Protect LaTeX commands (like \includegraphics{}) from underscore escaping
+    protected_latex_commands: dict[str, str] = {}
+
+    def protect_latex_command(match: re.Match[str]) -> str:
+        """Replace LaTeX command with placeholder."""
+        command = match.group(0)
+        placeholder = f"XXPROTECTEDLATEXCOMMANDXX{len(protected_latex_commands)}XXPROTECTEDLATEXCOMMANDXX"
+        protected_latex_commands[placeholder] = command
+        return placeholder
+
+    # Protect \includegraphics{} commands
+    text = re.sub(r"\\includegraphics\[[^\]]*\]\{[^}]*\}", protect_latex_command, text)
+
     # Handle remaining underscores in file names and paths
     # Match common filename patterns: WORD_WORD.ext, word_word.ext, etc.
     def escape_filenames(match: re.Match[str]) -> str:
@@ -441,6 +470,10 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
 
     # Final step: replace all placeholders with properly escaped underscores
     text = text.replace("XUNDERSCOREX", "\\_")
+
+    # Restore protected LaTeX commands after escaping
+    for placeholder, original_command in protected_latex_commands.items():
+        text = text.replace(placeholder, original_command)
 
     # Handle Unicode arrows that can cause LaTeX math mode issues
     # These need to be converted to proper LaTeX math commands

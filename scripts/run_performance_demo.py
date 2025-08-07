@@ -28,11 +28,7 @@ def copy_tree_optimized(src: Path, dst: Path, use_hardlinks: bool = True):
             file_size = item.stat().st_size
 
             # Only use hardlinks for larger files where the benefit outweighs overhead
-            if (
-                use_hardlinks
-                and file_size > HARDLINK_THRESHOLD
-                and item.suffix.lower() in STATIC_EXTENSIONS
-            ):
+            if use_hardlinks and file_size > HARDLINK_THRESHOLD and item.suffix.lower() in STATIC_EXTENSIONS:
                 # Use hardlinks for larger static binary files
                 try:
                     os.link(item, dst_item)
@@ -100,9 +96,7 @@ Optimizations are effective.
 }
 """)
 
-        print(
-            f"📁 Created test manuscript with {len(list(source_dir.rglob('*')))} files"
-        )
+        print(f"📁 Created test manuscript with {len(list(source_dir.rglob('*')))} files")
 
         # Benchmark standard copying
         print("\n⏱️  Benchmarking standard shutil.copytree...")
@@ -209,12 +203,8 @@ def main():
 
     print("\n🎯 OVERALL PERFORMANCE IMPACT:")
     print(f"   File operations improvement: {file_results['improvement_percent']:.1f}%")
-    print(
-        f"   Fixture scoping improvement: {fixture_results['improvement_percent']:.1f}%"
-    )
-    print(
-        f"   Combined potential speedup:  {file_results['speedup_factor'] * fixture_results['speedup_factor']:.2f}x"
-    )
+    print(f"   Fixture scoping improvement: {fixture_results['improvement_percent']:.1f}%")
+    print(f"   Combined potential speedup:  {file_results['speedup_factor'] * fixture_results['speedup_factor']:.2f}x")
 
     print("\n✅ Performance optimizations successfully demonstrated!")
     print("   Expected test suite improvement: 50-70% faster execution")

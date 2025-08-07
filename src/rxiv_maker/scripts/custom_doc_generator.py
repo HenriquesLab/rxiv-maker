@@ -29,11 +29,7 @@ def generate_markdown_doc(module_name, module, output_dir):
     members = inspect.getmembers(module)
 
     # Document classes
-    classes = [
-        member
-        for member in members
-        if inspect.isclass(member[1]) and member[1].__module__ == module.__name__
-    ]
+    classes = [member for member in members if inspect.isclass(member[1]) and member[1].__module__ == module.__name__]
     if classes:
         doc += "## Classes\n\n"
         for name, cls in classes:
@@ -60,9 +56,7 @@ def generate_markdown_doc(module_name, module, output_dir):
 
     # Document functions
     functions = [
-        member
-        for member in members
-        if inspect.isfunction(member[1]) and member[1].__module__ == module.__name__
+        member for member in members if inspect.isfunction(member[1]) and member[1].__module__ == module.__name__
     ]
     if functions:
         doc += "## Functions\n\n"
@@ -81,9 +75,7 @@ def generate_markdown_doc(module_name, module, output_dir):
 
     # Write to file
     os.makedirs(output_dir, exist_ok=True)
-    with open(
-        os.path.join(output_dir, f"{module_name}.md"), "w", encoding="utf-8"
-    ) as f:
+    with open(os.path.join(output_dir, f"{module_name}.md"), "w", encoding="utf-8") as f:
         f.write(doc)
 
 
@@ -105,9 +97,7 @@ def process_directory(dir_path, output_dir, base_package=""):
 
         elif item.endswith(".py") and not item.startswith("_"):
             module_name = item[:-3]  # Remove .py extension
-            full_module_name = (
-                f"{base_package}.{module_name}" if base_package else module_name
-            )
+            full_module_name = f"{base_package}.{module_name}" if base_package else module_name
 
             try:
                 # Try to import using the regular import system first
@@ -116,9 +106,7 @@ def process_directory(dir_path, output_dir, base_package=""):
                     print(f"Generated documentation for rxiv_maker.{full_module_name}")
                 except ImportError:
                     # Fallback to spec-based loading
-                    spec = importlib.util.spec_from_file_location(
-                        f"rxiv_maker.{full_module_name}", path
-                    )
+                    spec = importlib.util.spec_from_file_location(f"rxiv_maker.{full_module_name}", path)
                     if spec is None:
                         print(f"Failed to load spec for {path}")
                         continue
@@ -127,9 +115,7 @@ def process_directory(dir_path, output_dir, base_package=""):
                     # Add to sys.modules to help with relative imports
                     sys.modules[f"rxiv_maker.{full_module_name}"] = module
                     spec.loader.exec_module(module)
-                    print(
-                        f"Generated documentation for rxiv_maker.{full_module_name} (fallback)"
-                    )
+                    print(f"Generated documentation for rxiv_maker.{full_module_name} (fallback)")
 
                 # Generate documentation with clean module name
                 clean_name = full_module_name.replace(".", "_")

@@ -41,9 +41,8 @@ class LinuxInstaller:
             elif self._command_exists("yum"):
                 return "rhel", "yum"
 
-        if Path("/etc/arch-release").exists():
-            if self._command_exists("pacman"):
-                return "arch", "pacman"
+        if Path("/etc/arch-release").exists() and self._command_exists("pacman"):
+            return "arch", "pacman"
 
         if Path("/etc/alpine-release").exists() and self._command_exists("apk"):
             return "alpine", "apk"
@@ -175,9 +174,7 @@ class LinuxInstaller:
         }
 
         if self.package_manager not in latex_packages:
-            self.logger.warning(
-                f"LaTeX packages not defined for {self.package_manager}"
-            )
+            self.logger.warning(f"LaTeX packages not defined for {self.package_manager}")
             return False
 
         success = self._install_packages(latex_packages[self.package_manager])
@@ -207,9 +204,7 @@ class LinuxInstaller:
         }
 
         if self.package_manager not in nodejs_packages:
-            self.logger.warning(
-                f"Node.js packages not defined for {self.package_manager}"
-            )
+            self.logger.warning(f"Node.js packages not defined for {self.package_manager}")
             return False
 
         success = self._install_packages(nodejs_packages[self.package_manager])
@@ -255,7 +250,12 @@ class LinuxInstaller:
                 timeout=10,
             )
             return result.returncode == 0
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return False
 
     def _is_nodejs_installed(self) -> bool:
@@ -276,7 +276,12 @@ class LinuxInstaller:
                 timeout=10,
             )
             return node_result.returncode == 0 and npm_result.returncode == 0
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return False
 
     def _is_r_installed(self) -> bool:
@@ -290,7 +295,12 @@ class LinuxInstaller:
                 timeout=10,
             )
             return result.returncode == 0
-        except:
+        except (
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            OSError,
+        ):
             return False
 
     def _install_packages(self, packages: list[str]) -> bool:
@@ -328,7 +338,7 @@ class LinuxInstaller:
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=1800,  # 30 minutes timeout
+                timeout=900,  # 15 minutes timeout - reduced from 30 minutes
             )
 
             if result.returncode == 0:

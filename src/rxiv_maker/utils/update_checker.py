@@ -13,9 +13,9 @@ from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
 try:
-    from packaging import version
+    from packaging import version as pkg_version  # type: ignore
 except ImportError:
-    version = None
+    pkg_version = None  # type: ignore
 
 from rich.console import Console
 
@@ -29,7 +29,7 @@ console = Console()
 class UpdateChecker:
     """Handles version checking and update notifications."""
 
-    def __init__(self, package_name: str = "rxiv-maker", current_version: str = None):
+    def __init__(self, package_name: str = "rxiv-maker", current_version: str | None = None):
         """Initialize the update checker.
 
         Args:
@@ -160,13 +160,13 @@ class UpdateChecker:
         Returns:
             bool: True if latest is newer than current
         """
-        if version is None:
+        if pkg_version is None:
             # Fallback to simple string comparison if packaging not available
             return latest != current
 
         try:
-            return version.parse(latest) > version.parse(current)
-        except version.InvalidVersion:
+            return pkg_version.parse(latest) > pkg_version.parse(current)
+        except pkg_version.InvalidVersion:
             # Fallback to string comparison for invalid versions
             return latest != current
 
@@ -195,9 +195,7 @@ class UpdateChecker:
         }
 
         if latest_version and self.current_version != "unknown":
-            cache_data["update_available"] = self._compare_versions(
-                self.current_version, latest_version
-            )
+            cache_data["update_available"] = self._compare_versions(self.current_version, latest_version)
 
         self._save_cache(cache_data)
 
