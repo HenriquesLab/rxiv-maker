@@ -59,7 +59,7 @@ C:\Users\username\AppData\Local\rxiv-maker\Cache\
 ### Migration Example
 ```bash
 # First use after update
-rxiv build
+rxiv pdf
 
 # You'll see log messages like:
 # INFO: Migrated DOI cache from .cache/doi_cache.json to ~/.cache/rxiv-maker/doi/doi_cache.json
@@ -121,7 +121,7 @@ dir "%LOCALAPPDATA%\rxiv-maker\Cache"  # Windows
 
 # Force recreation of cache
 rm -rf ~/.cache/rxiv-maker/  # Linux/macOS
-rxiv build  # Will recreate cache with new structure
+rxiv pdf  # Will recreate cache with new structure
 ```
 
 ### Permission Issues
@@ -143,7 +143,7 @@ If cache files seem missing after migration:
 find ~/.cache/rxiv-maker/ -name "*.json"  # Linux/macOS
 
 # Verify cache is working
-rxiv build --verbose  # Will show cache activity
+rxiv pdf --verbose  # Will show cache activity
 ```
 
 ## Cache Management Commands

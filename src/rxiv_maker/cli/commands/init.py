@@ -288,7 +288,7 @@ Thumbs.db
         console.print(f"1. Edit {manuscript_path}/00_CONFIG.yml with your details", style="white")
         console.print(f"2. Write your content in {manuscript_path}/01_MAIN.md", style="white")
         console.print(f"3. Add references to {manuscript_path}/03_REFERENCES.bib", style="white")
-        console.print(f"4. Run 'rxiv build {manuscript_path}' to generate PDF", style="white")
+        console.print(f"4. Run 'rxiv pdf {manuscript_path}' to generate PDF", style="white")
 
     except Exception as e:
         console.print(f"❌ Error initializing manuscript: {e}", style="red")

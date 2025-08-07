@@ -167,7 +167,7 @@ def _show_next_steps(console: Console, results: dict):
     if all(results.values()):
         console.print("✅ Your installation is complete!")
         console.print("   Try: rxiv init my-paper")
-        console.print("   Then: rxiv build my-paper")
+        console.print("   Then: rxiv pdf my-paper")
     else:
         console.print("🔧 To fix missing dependencies:")
         console.print("   Run: rxiv check-installation --fix")

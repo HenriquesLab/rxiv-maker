@@ -25,21 +25,18 @@ description = "Automated LaTeX article generation with modern CLI and figure cre
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    # Core scientific libraries for figure generation (optional for users who don't generate figures)
     "matplotlib>=3.7.0",
-    "seaborn>=0.12.0",
+    "seaborn>=0.12.0", 
     "numpy>=1.24.0",
     "pandas>=2.0.0",
-    "scipy>=1.10.0",
+    # Core functionality dependencies
     "Pillow>=9.0.0",
     "pypdf>=3.0.0",
     "PyYAML>=6.0.0",
     "python-dotenv>=1.0.0",
     "crossref-commons>=0.0.7",
     "lazydocs>=0.4.8",
-    "types-requests>=2.32.4.20250611",
-    "pytest>=7.4.4",
-    "ruff>=0.12.2",
-    "pre-commit>=4.2.0",
     "folder2md4llms>=0.4.28",
     "click>=8.0.0",
     "rich>=13.0.0",
@@ -55,9 +52,13 @@ dependencies = [
 [project.optional-dependencies]
 all = ["rxiv-maker[dev]"]
 dev = [
+    # Testing and linting tools (moved from main dependencies)
     "pytest>=7.4,<8.0",
+    "ruff>=0.12.2",
+    "pre-commit>=4.2.0", 
+    "types-requests>=2.32.4.20250611",
+    # Additional development tools
     "py>=1.11.0",
-    "ruff>=0.8.0",
     "mypy>=1.0",
     "types-PyYAML>=6.0.0",
     "nox>=2023.0.0",
@@ -65,7 +66,6 @@ dev = [
     "coverage[toml]>=7.0",
     "pytest-notebook>=0.10.0",
     "nbstripout>=0.7.1",
-    "pre-commit>=4.0.0",
     "lazydocs>=0.4.8",
     "pytest-timeout>=2.0.0",
     "pytest-mock>=3.10.0",
@@ -75,6 +75,11 @@ dev = [
     "pytest-snapshot>=0.9.0",
     "pytest-datadir>=1.4.0",
     "pytest-clarity>=1.0.0",
+]
+security = [
+    "bandit[toml]>=1.7.0",
+    "safety>=3.0.0", 
+    "pip-audit>=2.6.0",
 ]
 minimal = []  # Same as base dependencies
 full = []     # Same as base dependencies (system deps handled by installer)

@@ -1,0 +1,29 @@
+name: rxiv-maker-test
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.11
+  - pip
+  - pytest>=7.4.0
+  - pytest-cov>=4.0
+  - pytest-timeout>=2.4.0
+  - pytest-xdist>=3.8.0
+  # Scientific packages that are better from conda-forge
+  - numpy>=1.24.0
+  - matplotlib>=3.7.0
+  - pandas>=2.0.0
+  - seaborn>=0.12.0
+  # Development tools
+  - nodejs  # For mermaid diagram generation
+  - r-base  # For R-based figure scripts
+  # System dependencies
+  - make
+  - git
+  # Additional testing dependencies
+  - pip:
+    - rich>=13.0.0
+    - click>=8.0.0
+    - pyyaml>=6.0.0
+    - pypdf>=3.0.0
+    - crossref-commons

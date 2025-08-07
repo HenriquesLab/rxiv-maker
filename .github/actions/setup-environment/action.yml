@@ -43,15 +43,16 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
 
-    - name: Install UV with improved caching
+    - name: Install UV with optimized caching
       id: setup-uv
       uses: astral-sh/setup-uv@v4
       with:
         version: "0.8.5"  # Pin to specific version for stability
         enable-cache: ${{ inputs.enable-cache == 'true' && 'true' || 'false' }}
-        cache-suffix: ${{ format('{0}-{1}-v2', inputs.cache-suffix, runner.os) }}  # v2 to invalidate old caches
+        cache-suffix: ${{ inputs.cache-suffix != '' && format('{0}-v3', inputs.cache-suffix) || 'shared-v3' }}  # v3 to invalidate old caches, consolidated keys
         cache-dependency-glob: "**/uv.lock"
-        prune-cache: false  # Disable cache pruning to avoid issues
+        prune-cache: true  # Enable pruning to reduce cache size
+        cache-local-path: ${{ runner.temp }}/uv-cache  # Centralized cache location
         ignore-nothing-to-cache: true
       continue-on-error: true  # Don't fail on cache issues
 
@@ -63,20 +64,22 @@ runs:
         enable-cache: false  # Disable cache entirely on fallback
       continue-on-error: false
 
-    - name: Set UV environment variables for better caching
+    - name: Set UV environment variables for optimized caching
       shell: bash
       run: |
-        # Set UV cache directory to a predictable location
+        # Set UV cache directory to a predictable location with size limits
         if [ "${{ inputs.enable-cache }}" = "true" ]; then
           echo "UV_CACHE_DIR=${{ runner.temp }}/uv-cache" >> $GITHUB_ENV
+          echo "UV_CACHE_MAX_SIZE=500MB" >> $GITHUB_ENV  # Limit cache size
           mkdir -p "${{ runner.temp }}/uv-cache"
         else
           echo "UV_NO_CACHE=1" >> $GITHUB_ENV
         fi
 
-        # Add UV configuration for better stability
+        # Add UV configuration for better stability and reduced cache footprint
         echo "UV_SYSTEM_PYTHON=1" >> $GITHUB_ENV
         echo "UV_COMPILE_BYTECODE=1" >> $GITHUB_ENV
+        echo "UV_NO_PROGRESS=1" >> $GITHUB_ENV  # Reduce log verbosity
 
     - name: Install system dependencies (Linux)
       if: inputs.install-system-deps == 'true' && runner.os == 'Linux'
@@ -124,47 +127,27 @@ runs:
       if: inputs.install-system-deps == 'true' && runner.os == 'macOS'
       shell: bash
       run: |
-        echo "🍎 Installing macOS system dependencies..."
+        echo "🍎 Installing macOS system dependencies with cache optimization..."
 
-        # Update Homebrew with retry
-        for attempt in 1 2 3; do
-          echo "Updating Homebrew (attempt $attempt)..."
-          if brew update; then
-            echo "✅ Homebrew updated successfully"
-            break
-          else
-            echo "⚠️ Homebrew update failed, continuing anyway..."
-            break  # Don't fail on Homebrew update issues
-          fi
-        done
+        # Skip Homebrew update to reduce cache usage and speed up builds
+        echo "ℹ️ Skipping Homebrew update to minimize cache footprint"
+        
+        # Essential dependencies only - remove optional deps to reduce cache
+        ESSENTIAL_DEPS="pkg-config freetype jpeg libpng"
+        # Removed optional dependencies to minimize Homebrew cache usage
 
-        # Essential dependencies
-        ESSENTIAL_DEPS="pkg-config"
-        IMAGE_DEPS="freetype jpeg libpng libtiff webp"
-        OPTIONAL_DEPS="openjpeg zlib lcms2 libffi"
-
-        # Install essential dependencies
-        echo "Installing essential dependencies..."
+        # Install essential dependencies only
+        echo "Installing minimal essential dependencies..."
         for dep in $ESSENTIAL_DEPS; do
-          if ! brew install $dep; then
-            echo "❌ Failed to install essential dependency: $dep"
-            exit 1
+          if ! brew list $dep &>/dev/null; then
+            echo "Installing $dep..."
+            brew install $dep || echo "⚠️ Failed to install $dep, continuing..."
+          else
+            echo "✅ $dep already installed"
           fi
         done
 
-        # Install image processing libraries with fallbacks
-        echo "Installing image processing dependencies..."
-        for dep in $IMAGE_DEPS; do
-          brew install $dep || echo "⚠️ Failed to install $dep, continuing..."
-        done
-
-        # Install optional dependencies
-        echo "Installing optional dependencies..."
-        for dep in $OPTIONAL_DEPS; do
-          brew install $dep || echo "⚠️ Optional dependency $dep failed to install"
-        done
-
-        echo "✅ macOS system dependencies installation completed"
+        echo "✅ macOS system dependencies installation completed (cache-optimized)"
 
     - name: Install LaTeX (macOS)
       if: inputs.install-latex == 'true' && runner.os == 'macOS'
@@ -172,8 +155,8 @@ runs:
       run: |
         echo "🍎 Installing LaTeX for macOS..."
 
-        # Try different LaTeX packages with fallbacks
-        LATEX_PACKAGES=("basictex" "mactex-no-gui")
+        # Use only BasicTeX to minimize cache usage (smaller package)
+        LATEX_PACKAGES=("basictex")
 
         for package in "${LATEX_PACKAGES[@]}"; do
           echo "Attempting to install $package..."

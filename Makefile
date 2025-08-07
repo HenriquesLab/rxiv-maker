@@ -11,7 +11,7 @@
 #
 # 🆕 RECOMMENDED: Use the modern rxiv CLI for the best experience:
 #   pip install rxiv-maker
-#   rxiv init my-paper && cd my-paper && rxiv build
+#   rxiv init my-paper && cd my-paper && rxiv pdf
 #
 # 🚀 LEGACY MAKEFILE INTERFACE (maintained for backward compatibility):
 #   make setup        # Install Python dependencies

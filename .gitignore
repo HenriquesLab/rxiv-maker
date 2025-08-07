@@ -294,3 +294,4 @@ submodules/vscode-rxiv-maker/node_modules
 test-results
 plan_prompt.md
 .gha-logs
+.bandit
