@@ -675,6 +675,9 @@ jobs:
         run: |
           echo "Triggering Docker image build for release ${{ steps.get_version.outputs.tag }}"
 
+          # Add rate limiting to prevent API abuse detection
+          sleep 2
+
           # Use DOCKER_SYNC_TOKEN if available, otherwise fall back to GITHUB_TOKEN
           if [ -n "${{ secrets.DOCKER_SYNC_TOKEN }}" ]; then
             AUTH_TOKEN="${{ secrets.DOCKER_SYNC_TOKEN }}"
@@ -777,6 +780,9 @@ jobs:
         run: |
           echo "🍺 Triggering Homebrew formula update..."
 
+          # Add rate limiting to prevent API abuse
+          sleep 3
+
           curl -X POST \
             -H "Accept: application/vnd.github.v3+json" \
             -H "Authorization: token $GITHUB_TOKEN" \
@@ -798,6 +804,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PACKAGE_MANAGER_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           echo "🪣 Triggering Scoop manifest update..."
+
+          # Add rate limiting to prevent API abuse
+          sleep 3
 
           curl -X POST \
             -H "Accept: application/vnd.github.v3+json" \
