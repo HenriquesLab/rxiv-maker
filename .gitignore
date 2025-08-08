@@ -295,3 +295,4 @@ test-results
 plan_prompt.md
 .gha-logs
 .bandit
+bandit-report.json

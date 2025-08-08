@@ -1,0 +1,38 @@
+# Bandit configuration for rxiv-maker security scanning
+
+[bandit]
+# Paths to exclude from scanning
+exclude_dirs = [
+    "tests",
+    "docs", 
+    "build",
+    "dist",
+    ".git",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    "node_modules"
+]
+
+# Tests to skip (if any specific tests are problematic)
+skips = [
+    # Skip subprocess shell=True warnings in specific contexts where it's safe
+    # B602 is subprocess_popen_with_shell_equals_true
+    # Only skip if we verify the usage is safe
+]
+
+# Confidence levels: LOW, MEDIUM, HIGH
+confidence = "MEDIUM"
+
+# Security issue levels: LOW, MEDIUM, HIGH  
+level = "LOW"
+
+# Output format options: csv, custom, html, json, screen, txt, xml, yaml
+format = "screen"
+
+# Show only issues with confidence level >= specified
+min_confidence_level = "MEDIUM"
+
+# Additional options
+verbose = true
+quiet = false

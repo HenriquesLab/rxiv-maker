@@ -571,26 +571,24 @@ jobs:
         echo "=================================================="
         echo "📄 Generating Track Changes PDF"
         echo "=================================================="
-        
+
         MANUSCRIPT_DIR="${{ needs.prepare.outputs.manuscript_path }}"
-        
+
         # Only generate track changes for EXAMPLE_MANUSCRIPT and tag-triggered builds
         if [ "$MANUSCRIPT_DIR" = "EXAMPLE_MANUSCRIPT" ] && [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref_type }}" = "tag" ]; then
           echo "✅ Generating track changes for EXAMPLE_MANUSCRIPT on tag release"
-          
+
           # Make script executable and run it
           chmod +x scripts/generate-track-changes.sh
-          
           # Generate track changes PDF
           if ./scripts/generate-track-changes.sh "$MANUSCRIPT_DIR" "output"; then
             # Find the generated track changes PDF
             TRACK_CHANGES_PDF=$(find output -name "*changes_vs_*.pdf" | head -1)
-            
+
             if [ -n "$TRACK_CHANGES_PDF" ]; then
               echo "track_changes_generated=true" >> $GITHUB_OUTPUT
               echo "track_changes_pdf=${TRACK_CHANGES_PDF}" >> $GITHUB_OUTPUT
               echo "✅ Track changes PDF generated: $TRACK_CHANGES_PDF"
-              
               # Show file details
               ls -la "$TRACK_CHANGES_PDF"
               echo "📊 Track changes PDF size: $(du -h "$TRACK_CHANGES_PDF" | cut -f1)"
@@ -606,7 +604,7 @@ jobs:
           echo "track_changes_generated=false" >> $GITHUB_OUTPUT
           echo "ℹ️ Skipping track changes PDF generation"
           echo "  - Manuscript: $MANUSCRIPT_DIR (need: EXAMPLE_MANUSCRIPT)"
-          echo "  - Event: ${{ github.event_name }} (need: push)" 
+          echo "  - Event: ${{ github.event_name }} (need: push)"
           echo "  - Ref type: ${{ github.ref_type }} (need: tag)"
         fi
 
