@@ -46,7 +46,7 @@ click.rich_click.COMMAND_GROUPS = {
         },
         {
             "name": "Configuration",
-            "commands": ["config", "check-installation"],
+            "commands": ["config", "check-installation", "completion"],
         },
         {
             "name": "Information",
@@ -63,7 +63,7 @@ click.rich_click.OPTION_GROUPS = {
         },
         {
             "name": "Setup Options",
-            "options": ["--install-completion", "--no-update-check"],
+            "options": ["--no-update-check"],
         },
         {
             "name": "Help & Version",
@@ -159,18 +159,12 @@ class UpdateCheckGroup(click.Group):
     default=lambda: os.environ.get("RXIV_ENGINE", "local").lower(),
     help="Engine to use for processing (local or docker). Can be set with RXIV_ENGINE environment variable.",
 )
-@click.option(
-    "--install-completion",
-    type=click.Choice(["bash", "zsh", "fish"]),
-    help="Install shell completion for the specified shell",
-)
 @click.option("--no-update-check", is_flag=True, help="Skip update check for this command")
 @click.pass_context
 def main(
     ctx: click.Context,
     verbose: bool,
     engine: str,
-    install_completion: str | None,
     no_update_check: bool,
 ) -> None:
     """**rxiv-maker** converts Markdown manuscripts into publication-ready PDFs.
@@ -211,12 +205,13 @@ def main(
         $ rxiv install-deps             # Install LaTeX, Node.js, R, etc.
 
         $ rxiv install-deps --mode=minimal  # Install only essential dependencies
-    """
-    # Handle completion installation
-    if install_completion:
-        install_shell_completion(install_completion)
-        return
 
+    **Enable shell completion:**
+
+        $ rxiv completion zsh           # Install for zsh
+
+        $ rxiv completion bash          # Install for bash
+    """
     # Initialize context
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
@@ -261,44 +256,6 @@ def main(
         os.environ["RXIV_NO_UPDATE_CHECK"] = "1"
 
 
-def install_shell_completion(shell: str) -> None:
-    """Install shell completion for the specified shell."""
-    console.print(f"Installing {shell} completion...", style="blue")
-
-    try:
-        if shell == "bash":
-            completion_script = "_RXIV_COMPLETE=bash_source rxiv"
-            install_path = Path.home() / ".bashrc"
-
-        elif shell == "zsh":
-            completion_script = "_RXIV_COMPLETE=zsh_source rxiv"
-            install_path = Path.home() / ".zshrc"
-
-        elif shell == "fish":
-            completion_script = "_RXIV_COMPLETE=fish_source rxiv"
-            install_path = Path.home() / ".config/fish/config.fish"
-
-        # Add completion to shell config
-        completion_line = f'eval "$({completion_script})"'
-
-        # Check if already installed
-        if install_path.exists():
-            content = install_path.read_text()
-            if completion_line in content:
-                console.print(f"✅ {shell} completion already installed", style="green")
-                return
-
-        # Add completion
-        with open(install_path, "a", encoding="utf-8") as f:
-            f.write(f"\n# Rxiv-Maker completion\n{completion_line}\n")
-
-        console.print(f"✅ {shell} completion installed to {install_path}", style="green")
-        console.print(f"💡 Restart your shell or run: source {install_path}", style="yellow")
-
-    except Exception as e:
-        console.print(f"❌ Error installing completion: {e}", style="red")
-
-
 # Register command groups
 main.add_command(commands.pdf, name="pdf")
 main.add_command(commands.validate)
@@ -313,6 +270,7 @@ main.add_command(commands.install_deps, name="install-deps")
 main.add_command(commands.version)
 main.add_command(config_cmd, name="config")
 main.add_command(check_installation, name="check-installation")
+main.add_command(commands.completion_cmd, name="completion")
 
 if __name__ == "__main__":
     main()

@@ -414,16 +414,31 @@ Enable tab completion for your shell:
 
 ```bash
 # Bash
-rxiv --install-completion bash
+rxiv completion bash
 
 # Zsh
-rxiv --install-completion zsh
+rxiv completion zsh
 
 # Fish
-rxiv --install-completion fish
+rxiv completion fish
+```
 
-# PowerShell
-rxiv --install-completion powershell
+### `rxiv completion`
+
+Install shell completion for the specified shell.
+
+```bash
+rxiv completion [OPTIONS] {bash|zsh|fish}
+```
+
+**Arguments:**
+- `SHELL`: Shell type (bash, zsh, or fish)
+
+**Examples:**
+```bash
+rxiv completion zsh               # Install for zsh
+rxiv completion bash              # Install for bash
+rxiv completion fish              # Install for fish
 ```
 
 ## Tips and Tricks

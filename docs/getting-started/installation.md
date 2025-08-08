@@ -8,6 +8,7 @@ This is the comprehensive installation guide for Rxiv-Maker. **Choose ONE method
 |--------|----------|--------------|------------|-------------|
 | **🌐 Google Colab** | First-time users, quick experiments | Google account | 2 minutes | Beginner |
 | **📦 Modern CLI** | Quick start, modern interface | Python 3.11+ | 2-3 minutes | Beginner |
+| **🍺 Homebrew** | macOS users, package management | macOS + Homebrew | 3-5 minutes | Beginner |
 | **🐳 Docker Engine** | Consistent environment, teams | Docker + Make | 3-5 minutes | Beginner |
 | **🏠 Local Development** | Advanced users, offline work | Python, LaTeX, Make | 10-30 minutes | Advanced |
 | **⚡ GitHub Actions** | Team collaboration, automation | GitHub account | 5 minutes | Intermediate |
@@ -30,6 +31,47 @@ This is the comprehensive installation guide for Rxiv-Maker. **Choose ONE method
 
 ### Complete Tutorial
 For detailed instructions, see: [Google Colab Tutorial](../tutorials/google_colab.md)
+
+---
+
+## 🍺 Homebrew (macOS Users)
+
+**Package manager installation for macOS with automatic dependency management.**
+
+### Prerequisites
+- macOS 10.15 or later
+- [Homebrew](https://brew.sh) package manager
+
+### Quick Install
+```bash
+# Add rxiv-maker tap (one-time setup)
+brew tap henriqueslab/rxiv-maker
+
+# Install rxiv-maker and dependencies
+brew install rxiv-maker
+
+# Verify installation
+rxiv check-installation
+
+# Initialize your first manuscript
+rxiv init MY_PAPER/
+
+# Build PDF
+rxiv pdf MY_PAPER/
+```
+
+### Benefits
+- ✅ Automatic dependency management (Python, LaTeX, etc.)
+- ✅ Integrated with macOS system package management
+- ✅ Easy updates with `brew upgrade rxiv-maker`
+- ✅ Clean uninstallation with `brew uninstall rxiv-maker`
+- ✅ No need to manage Python environments manually
+
+### Installing Homebrew (if needed)
+```bash
+# Install Homebrew package manager
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
 
 ---
 

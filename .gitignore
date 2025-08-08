@@ -255,10 +255,6 @@ submodules/vscode-rxiv-maker/
 # Repository contamination prevention
 # Prevent common files from wrong repositories being accidentally added
 
-# Homebrew files should only be in homebrew-rxiv-maker submodule
-/Formula/
-*.rb
-brew-*
 
 # Scoop files should only be in scoop-rxiv-maker submodule
 /bucket/
@@ -295,3 +291,4 @@ test-results
 plan_prompt.md
 .gha-logs
 .bandit
+bandit-report.json

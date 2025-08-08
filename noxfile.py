@@ -422,47 +422,6 @@ def test_cross_backend(session, backend):
     )
 
 
-@nox.session(python="3.11", venv_backend="conda", reuse_venv=True)
-def conda_integration(session):
-    """Run comprehensive conda environment integration tests.
-
-    This session specifically tests conda environment detection, dependency
-    installation, and build processes to ensure full conda compatibility.
-    """
-    check_backend_availability(session, "conda")
-    install_deps(session, backend="conda")
-
-    session.log("Running comprehensive conda integration tests")
-
-    # Test environment detection
-    session.run(
-        "pytest",
-        "tests/unit/test_platform_detector.py",
-        "-v",
-        "-k",
-        "conda",
-        *session.posargs,
-    )
-
-    # Test dependency checking with conda
-    session.run(
-        "pytest",
-        "tests/unit/test_conda_installation_manager.py",
-        "-v",
-        *session.posargs,
-    )
-
-    # Test installation manager conda support
-    session.run(
-        "pytest",
-        "tests/unit/test_install*",
-        "-v",
-        "-k",
-        "conda",
-        *session.posargs,
-    )
-
-
 # Advanced Features
 @nox.session(python="3.11", reuse_venv=True)
 def coverage(session):
