@@ -729,21 +729,21 @@ class BuildManager:
         try:
             # Import and call the copy_pdf function directly instead of subprocess
             from ..engine.copy_pdf import copy_pdf_with_custom_filename
-            
+
             # Set environment variables that the function expects
             env_backup = {}
             if "MANUSCRIPT_PATH" not in os.environ:
                 env_backup["MANUSCRIPT_PATH"] = os.environ.get("MANUSCRIPT_PATH")
                 os.environ["MANUSCRIPT_PATH"] = self.manuscript_path
-            
+
             # Change to the manuscript directory for the copy operation
             original_cwd = os.getcwd()
             os.chdir(Path(self.manuscript_path))
-            
+
             try:
                 # Call the function directly
                 success = copy_pdf_with_custom_filename(str(self.output_dir.name))
-                
+
                 if success:
                     self.log("PDF copied to manuscript directory")
                     return True
@@ -753,7 +753,7 @@ class BuildManager:
             finally:
                 # Restore original working directory
                 os.chdir(original_cwd)
-                
+
                 # Restore environment variables
                 for key, value in env_backup.items():
                     if value is None and key in os.environ:
@@ -785,7 +785,7 @@ class BuildManager:
 
             # Call the word count analysis function directly
             result = analyze_manuscript_word_count(manuscript_md)
-            
+
             if result == 0:
                 return True
             else:
@@ -895,7 +895,7 @@ class BuildManager:
                     print("💡 Check the generated PDF visually to confirm all content appears correctly")
 
             print()
-            
+
             self.log("PDF validation completed successfully")
             return True
 

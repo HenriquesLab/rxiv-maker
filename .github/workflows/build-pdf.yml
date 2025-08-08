@@ -28,6 +28,10 @@ on:
         description: 'Whether the build was successful'
         value: ${{ jobs.build-pdf.outputs.success }}
 
+permissions:
+  contents: read
+  actions: write
+
 env:
   PYTHONIOENCODING: utf-8
 

@@ -345,11 +345,8 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
                 return f"\\texttt{{{full_content}}}"
 
         # Use re.DOTALL to match across newlines, and handle nested braces properly
-        # This pattern handles one level of nested braces
-        pattern = r"\\texttt\{((?:[^{}]*(?:\{[^}]*\})*[^{}]*)*)\}"
-        text = re.sub(pattern, process_texttt_block, text, flags=re.DOTALL)
-
-        return text
+        # This pattern handles one level of nested braces without ReDoS vulnerability
+        pattern = r"\\texttt\{([^{}]*(?:\{[^}]*\}[^{}]*)*)\}"
         text = re.sub(pattern, process_texttt_block, text, flags=re.DOTALL)
 
         return text
