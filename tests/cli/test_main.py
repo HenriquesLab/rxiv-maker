@@ -4,7 +4,6 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
 from click.testing import CliRunner
 
 from rxiv_maker.cli.main import main
@@ -57,7 +56,6 @@ class TestMainCLI:
         result = self.runner.invoke(main, ["--engine", "invalid", "version"])
         assert result.exit_code != 0
 
-    @pytest.mark.skip(reason="Completion installation not implemented yet")
     def test_install_completion_bash(self):
         """Test bash completion installation."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -65,7 +63,7 @@ class TestMainCLI:
             bashrc_path.touch()
 
             with patch("pathlib.Path.home", return_value=Path(tmpdir)):
-                result = self.runner.invoke(main, ["--install-completion", "bash"])
+                result = self.runner.invoke(main, ["completion", "bash"])
                 assert result.exit_code == 0
                 assert "completion installed" in result.output
 
@@ -74,7 +72,6 @@ class TestMainCLI:
                 assert "eval" in content
                 assert "RXIV_COMPLETE" in content
 
-    @pytest.mark.skip(reason="Completion installation not implemented yet")
     def test_install_completion_zsh(self):
         """Test zsh completion installation."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -82,7 +79,7 @@ class TestMainCLI:
             zshrc_path.touch()
 
             with patch("pathlib.Path.home", return_value=Path(tmpdir)):
-                result = self.runner.invoke(main, ["--install-completion", "zsh"])
+                result = self.runner.invoke(main, ["completion", "zsh"])
                 assert result.exit_code == 0
                 assert "completion installed" in result.output
 
@@ -91,7 +88,6 @@ class TestMainCLI:
                 assert "eval" in content
                 assert "RXIV_COMPLETE" in content
 
-    @pytest.mark.skip(reason="Completion installation not implemented yet")
     def test_install_completion_fish(self):
         """Test fish completion installation."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -101,7 +97,7 @@ class TestMainCLI:
             config_fish_path.touch()
 
             with patch("pathlib.Path.home", return_value=Path(tmpdir)):
-                result = self.runner.invoke(main, ["--install-completion", "fish"])
+                result = self.runner.invoke(main, ["completion", "fish"])
                 assert result.exit_code == 0
                 assert "completion installed" in result.output
 
@@ -110,7 +106,6 @@ class TestMainCLI:
                 assert "eval" in content
                 assert "RXIV_COMPLETE" in content
 
-    @pytest.mark.skip(reason="Completion installation not implemented yet")
     def test_install_completion_already_installed(self):
         """Test completion installation when already installed."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -118,7 +113,7 @@ class TestMainCLI:
             bashrc_path.write_text('eval "$(_RXIV_COMPLETE=bash_source rxiv)"')
 
             with patch("pathlib.Path.home", return_value=Path(tmpdir)):
-                result = self.runner.invoke(main, ["--install-completion", "bash"])
+                result = self.runner.invoke(main, ["completion", "bash"])
                 assert result.exit_code == 0
                 assert "already installed" in result.output
 
@@ -139,6 +134,7 @@ class TestMainCLI:
             "setup",
             "version",
             "config",
+            "completion",
         ]
 
         for cmd in expected_commands:

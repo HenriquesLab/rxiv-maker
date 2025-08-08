@@ -96,7 +96,7 @@ rxiv init MY_PAPER/
 rxiv pdf MY_PAPER/
 
 # Enable auto-completion (optional)
-rxiv --install-completion bash  # or zsh, fish
+rxiv completion zsh              # Install for zsh, bash, or fish
 ```
 
 **🎛️ Installation Options**
@@ -286,9 +286,9 @@ conda install -c conda-forge numpy matplotlib nodejs r-base
 pip install rxiv-maker
 ```
 
-### 🍺 Homebrew (macOS) - Deprecated
+### 🍺 Homebrew (macOS)
 ```bash
-# Still supported but deprecated in favor of universal installer
+# macOS package manager installation
 brew tap henriqueslab/rxiv-maker
 brew install rxiv-maker
 ```
@@ -301,15 +301,13 @@ pip install -e .                       # Modern hatch-based build system
 ```
 
 ### 🔧 Auto-completion Setup
+
+Enable shell auto-completion for the `rxiv` command:
+
 ```bash
-# For bash users
-rxiv --install-completion bash
-
-# For zsh users  
-rxiv --install-completion zsh
-
-# For fish users
-rxiv --install-completion fish
+rxiv completion bash    # For bash users
+rxiv completion zsh     # For zsh users  
+rxiv completion fish    # For fish users
 ```
 
 ### 🔄 Migration from Make Commands

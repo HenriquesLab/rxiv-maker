@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.4.19] - 2025-08-08
+
+### Added
+- **Shell Completion**: Add dedicated `completion` command for installing shell auto-completion
+  - Provides `rxiv completion {bash|zsh|fish}` command for installing shell auto-completion
+  - Includes comprehensive help documentation with examples
+  - Replaces the problematic `--install-completion` option
+
+### Removed
+- **Shell Completion**: Remove `--install-completion` option to avoid redundancy
+  - Eliminates the Click framework command validation conflict
+  - Simplifies the CLI interface with a single, clear completion method
+  - Users should now use `rxiv completion {shell}` instead
+
 ## [v1.4.16] - 2025-08-06
 
 ### Fixed
