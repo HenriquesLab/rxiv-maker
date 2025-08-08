@@ -78,9 +78,6 @@ class BuildManager:
         # Find project root (where src directory is located)
         project_root = Path(__file__).resolve().parent.parent.parent.parent
         self.style_dir = project_root / "src" / "tex" / "style"
-        self.copy_pdf_script = project_root / "src" / "rxiv_maker" / "engine" / "copy_pdf.py"
-        self.analyze_word_count_script = project_root / "src" / "rxiv_maker" / "engine" / "analyze_word_count.py"
-        self.pdf_validator_script = project_root / "src" / "rxiv_maker" / "validators" / "pdf_validator.py"
 
         self.references_bib = self.manuscript_dir / "03_REFERENCES.bib"
 
@@ -730,37 +727,39 @@ class BuildManager:
     def copy_pdf_to_manuscript(self) -> bool:
         """Copy generated PDF to manuscript directory with custom name."""
         try:
-            # Use the existing copy_pdf command
-            python_parts = self.platform.python_cmd.split()
-            cmd = [
-                python_parts[0] if python_parts else "python",
-                str(self.copy_pdf_script),
-                "--output-dir",
-                str(self.output_dir),
-            ]
-
-            if "uv run" in self.platform.python_cmd:
-                cmd = ["uv", "run", "python"] + cmd[1:]
-
-            # Set environment variables
-            env = os.environ.copy()
-            env["MANUSCRIPT_PATH"] = self.manuscript_path
-
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                env=env,
-                encoding="utf-8",
-                errors="replace",
-            )
-
-            if result.returncode == 0:
-                self.log("PDF copied to manuscript directory")
-                return True
-            else:
-                self.log(f"Failed to copy PDF: {result.stderr}", "ERROR")
-                return False
+            # Import and call the copy_pdf function directly instead of subprocess
+            from ..engine.copy_pdf import copy_pdf_with_custom_filename
+            
+            # Set environment variables that the function expects
+            env_backup = {}
+            if "MANUSCRIPT_PATH" not in os.environ:
+                env_backup["MANUSCRIPT_PATH"] = os.environ.get("MANUSCRIPT_PATH")
+                os.environ["MANUSCRIPT_PATH"] = self.manuscript_path
+            
+            # Change to the manuscript directory for the copy operation
+            original_cwd = os.getcwd()
+            os.chdir(Path(self.manuscript_path))
+            
+            try:
+                # Call the function directly
+                success = copy_pdf_with_custom_filename(str(self.output_dir.name))
+                
+                if success:
+                    self.log("PDF copied to manuscript directory")
+                    return True
+                else:
+                    self.log("❌ Failed to copy PDF to manuscript directory", level="ERROR")
+                    return False
+            finally:
+                # Restore original working directory
+                os.chdir(original_cwd)
+                
+                # Restore environment variables
+                for key, value in env_backup.items():
+                    if value is None and key in os.environ:
+                        del os.environ[key]
+                    elif value is not None:
+                        os.environ[key] = value
 
         except Exception as e:
             self.log(f"Error copying PDF: {e}", "ERROR")
@@ -769,36 +768,28 @@ class BuildManager:
     def run_word_count_analysis(self) -> bool:
         """Run word count analysis on the manuscript."""
         try:
-            # Use the existing word count analysis command
-            python_parts = self.platform.python_cmd.split()
-            cmd = [
-                python_parts[0] if python_parts else "python",
-                str(self.analyze_word_count_script),
-            ]
+            # Import and call the analyze_manuscript_word_count function directly
+            from .analyze_word_count import analyze_manuscript_word_count
 
-            if "uv run" in self.platform.python_cmd:
-                cmd = ["uv", "run", "python"] + cmd[1:]
+            # Find the manuscript file
+            manuscript_md = None
+            for md_file in ["01_MAIN.md", "MAIN.md", "manuscript.md"]:
+                md_path = Path(self.manuscript_path) / md_file
+                if md_path.exists():
+                    manuscript_md = str(md_path)
+                    break
 
-            # Set environment variables
-            env = os.environ.copy()
-            env["MANUSCRIPT_PATH"] = self.manuscript_path
+            if not manuscript_md:
+                self.log("Could not find manuscript markdown file for word count analysis", "WARNING")
+                return False
 
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                env=env,
-                encoding="utf-8",
-                errors="replace",
-            )
-
-            if result.returncode == 0:
-                # Print the word count analysis output
-                if result.stdout:
-                    print(result.stdout)
+            # Call the word count analysis function directly
+            result = analyze_manuscript_word_count(manuscript_md)
+            
+            if result == 0:
                 return True
             else:
-                self.log(f"Word count analysis failed: {result.stderr}", "WARNING")
+                self.log("Word count analysis completed with warnings", "WARNING")
                 return False
 
         except Exception as e:
@@ -871,35 +862,42 @@ class BuildManager:
     def _run_pdf_validation_local(self) -> bool:
         """Run PDF validation using local installation."""
         try:
-            # Use the existing PDF validation command
-            python_parts = self.platform.python_cmd.split()
-            cmd = [
-                python_parts[0] if python_parts else "python",
-                str(self.pdf_validator_script),
-                self.manuscript_path,
-                "--pdf-path",
-                str(self.output_pdf),
-            ]
+            # Import and call the validate_pdf function directly
+            from ..validators.pdf_validator import validate_pdf
 
-            if "uv run" in self.platform.python_cmd:
-                cmd = ["uv", "run", "python"] + cmd[1:]
+            # Call the PDF validation function directly
+            result = validate_pdf(self.manuscript_path, str(self.output_pdf))
 
-            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+            # Print validation results
+            if result.errors:
+                print(f"\nPDF Validation Results for {self.manuscript_path}")
+                print("=" * 60)
+                for error in result.errors:
+                    level_str = error.level.name
+                    print(f"[{level_str}] {error.message}")
+                    if error.context:
+                        print(f"  Context: {error.context}")
+                    if error.suggestion:
+                        print(f"  Suggestion: {error.suggestion}")
+                print()
 
-            if result.returncode == 0:
-                self.log("PDF validation completed successfully")
-                # Print validation output if available
-                if result.stdout:
-                    print(result.stdout)
-                return True
-            else:
-                self.log("PDF validation found issues", "WARNING")
-                if result.stderr:
-                    print(result.stderr)
-                if result.stdout:
-                    print(result.stdout)
-                # Don't fail the build on PDF validation warnings
-                return True
+            # Show key statistics
+            if result.metadata:
+                total_pages = result.metadata.get("total_pages", "unknown")
+                total_words = result.metadata.get("total_words", "unknown")
+                citations_found = result.metadata.get("citations_found", 0)
+                figure_references = result.metadata.get("figure_references", 0)
+
+                print(
+                    f"📄 {total_pages} pages, {total_words} words, {citations_found} citations, {figure_references} figure references"
+                )
+                if result.errors:
+                    print("💡 Check the generated PDF visually to confirm all content appears correctly")
+
+            print()
+            
+            self.log("PDF validation completed successfully")
+            return True
 
         except Exception as e:
             self.log(f"Error running PDF validation: {e}", "WARNING")

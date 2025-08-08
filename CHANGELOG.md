@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.4.21] - 2025-08-08
+
+### Fixed
+- **Script Execution**: Fix PDF validation and word count analysis subprocess failures in pipx/Homebrew installations
+  - Replace subprocess execution of PDF validator and word count scripts with direct function imports
+  - Resolve path resolution issues for validation scripts in virtual environments  
+  - Ensure PDF validation and word count analysis work correctly in all installation methods
+  - Fix "No such file or directory" errors for validation and analysis tools
+
+## [v1.4.20] - 2025-08-08
+
+### Fixed
+- **PDF Copying**: Fix copy_pdf script execution failure in pipx/Homebrew installations
+  - Replace subprocess execution of copy_pdf.py with direct function import and call
+  - Resolve path resolution issues in virtual environments
+  - Ensure PDF copying works correctly in all installation methods (pip, pipx, Homebrew)
+  - Fix "No such file or directory" error when copying generated PDF to manuscript directory
+
 ## [v1.4.19] - 2025-08-08
 
 ### Added

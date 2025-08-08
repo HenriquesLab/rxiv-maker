@@ -275,7 +275,7 @@ class TestReleaseWorkflowIntegration:
         assert "create-release:" in content
 
         # Dependencies should be correct
-        assert "needs: test" in content  # build-binaries should need test
+        assert "needs: [setup, test, integrity-check, build-python]" in content  # build-binaries dependencies
         assert "needs: [" in content  # create-release should need multiple jobs
 
     def test_artifact_handling(self):
