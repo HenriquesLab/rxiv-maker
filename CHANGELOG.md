@@ -24,7 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Resolve path resolution issues in virtual environments
   - Ensure PDF copying works correctly in all installation methods (pip, pipx, Homebrew)
   - Fix "No such file or directory" error when copying generated PDF to manuscript directory
-
 ## [v1.4.19] - 2025-08-08
 
 ### Added
