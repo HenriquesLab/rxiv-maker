@@ -70,7 +70,7 @@ def copy_pdf_to_manuscript_folder(output_dir: str, yaml_metadata: dict[str, Any]
 
     # Generate custom filename
     custom_filename = get_custom_pdf_filename(yaml_metadata)
-    
+
     # Check if we're already in the manuscript directory by looking for 01_MAIN.md
     current_dir = Path.cwd()
     if (current_dir / "01_MAIN.md").exists():

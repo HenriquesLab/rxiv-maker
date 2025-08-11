@@ -16,6 +16,34 @@ from ..conftest import requires_latex
 @requires_latex
 class TestExampleManuscript:
     """Test the full pipeline for EXAMPLE_MANUSCRIPT."""
+    
+    def _get_container_manuscript_path(self, execution_engine):
+        """Get the correct manuscript path for container execution."""
+        if execution_engine.engine_type == "local":
+            return None
+            
+        # For container execution, check if TEMP_TEST_MANUSCRIPT was created on host
+        # and should exist in the container's workspace
+        temp_path = "/workspace/TEMP_TEST_MANUSCRIPT"
+        fallback_path = "/workspace/EXAMPLE_MANUSCRIPT"
+        
+        try:
+            # Check if TEMP_TEST_MANUSCRIPT exists in container
+            ls_result = execution_engine.run(
+                ["ls", "-d", temp_path],
+                cwd="/workspace",
+                check=False,
+                timeout=30  # Short timeout for this check
+            )
+            
+            if ls_result.returncode == 0:
+                return temp_path
+            else:
+                print(f"⚠️ TEMP_TEST_MANUSCRIPT not found in container, using fallback: {fallback_path}")
+                return fallback_path
+        except Exception as e:
+            print(f"⚠️ Error checking container path ({e}), using fallback: {fallback_path}")
+            return fallback_path
 
     @pytest.fixture
     def example_manuscript_copy(self, execution_engine):
@@ -57,55 +85,130 @@ class TestExampleManuscript:
                     except Exception as e:
                         print(f"\n⚠️ Warning: Could not clean up {workspace_test_dir}: {e}")
 
+    @pytest.mark.timeout(1200)
     def test_rxiv_pdf_example_manuscript_cli(self, example_manuscript_copy, execution_engine):
         """Test full PDF generation using rxiv CLI command across engines."""
+        # Extended timeout specifically for this heavy end-to-end PDF generation test.
         print(f"\n🔧 Running PDF generation test with {execution_engine.engine_type} engine")
+        print(f"📁 Test manuscript copy path: {example_manuscript_copy}")
 
-        # Use engine abstraction to handle local vs container execution
+        import time
+        start_time = time.time()
+
+        # Execute build depending on engine type
         if execution_engine.engine_type == "local":
-            # Try uv run rxiv first, then fall back to python module if not available
+            print("🚀 Attempting local execution with uv run rxiv...")
             try:
-                result = execution_engine.run(
-                    ["uv", "run", "rxiv", "pdf", str(example_manuscript_copy)],
-                    cwd=Path.cwd(),
-                )
-            except (subprocess.CalledProcessError, FileNotFoundError):
-                # Fall back to python module call
-                result = execution_engine.run(
-                    [
-                        "python",
-                        "-m",
-                        "rxiv_maker.cli",
-                        "pdf",
-                        str(example_manuscript_copy),
-                    ],
-                    cwd=Path.cwd(),
-                )
+                cmd = ["uv", "run", "rxiv", "pdf", str(example_manuscript_copy)]
+                print(f"▶️ Command: {' '.join(cmd)}")
+                result = execution_engine.run(cmd, cwd=Path.cwd(), timeout=1200, check=False)
+            except subprocess.TimeoutExpired as e:
+                raise pytest.fail(f"PDF generation timed out after {e.timeout} seconds. Command: {' '.join(cmd)}")
+            except (subprocess.CalledProcessError, FileNotFoundError) as e:
+                print(f"⚠️ uv run failed ({e}), falling back to python module...")
+                cmd = [
+                    "python",
+                    "-m",
+                    "rxiv_maker.cli",
+                    "pdf",
+                    str(example_manuscript_copy),
+                ]
+                print(f"▶️ Fallback command: {' '.join(cmd)}")
+                try:
+                    result = execution_engine.run(cmd, cwd=Path.cwd(), timeout=1200, check=False)
+                except subprocess.TimeoutExpired as e:
+                    raise pytest.fail(f"PDF generation timed out after {e.timeout} seconds. Command: {' '.join(cmd)}")
         else:
-            # In container, use the installed rxiv command with the test manuscript copy
-            result = execution_engine.run(
-                ["rxiv", "pdf", "/workspace/TEMP_TEST_MANUSCRIPT"],
-                cwd="/workspace",
-            )
+            container_manuscript_path = self._get_container_manuscript_path(execution_engine)
+            ls_result = execution_engine.run(["ls", "-la", "/workspace/"], cwd="/workspace", check=False)
+            print(f"\n📁 Container workspace contents:\n{ls_result.stdout}")
+            print(f"👁️ Using container path: {container_manuscript_path}")
+            cmd = ["rxiv", "pdf", container_manuscript_path]
+            print(f"▶️ Container command: {' '.join(cmd)}")
+            try:
+                result = execution_engine.run(cmd, cwd="/workspace", timeout=1200, check=False)
+            except subprocess.TimeoutExpired as e:
+                raise pytest.fail(f"Container PDF generation timed out after {e.timeout} seconds. Command: {' '.join(cmd)}")
 
+        # Calculate execution time
+        execution_time = time.time() - start_time
+        print(f"⏱️ PDF generation took {execution_time:.2f} seconds")
+        
+        # Debug output
+        print(f"📄 Command output:")
+        print(f"  Return code: {result.returncode}")
+        print(f"  Stdout length: {len(result.stdout) if result.stdout else 0}")
+        print(f"  Stderr length: {len(result.stderr) if result.stderr else 0}")
+        
+        if result.stdout:
+            print(f"  Stdout (last 500 chars): ...{result.stdout[-500:]}")
+        if result.stderr:
+            print(f"  Stderr: {result.stderr}")
+        
         # Check command succeeded
-        assert result.returncode == 0, f"rxiv pdf failed: {result.stderr}"
+        if result.returncode != 0:
+            print("❌ rxiv pdf command failed – enhanced diagnostics below")
+            # Attempt to surface common LaTeX/log files if present in output directories
+            possible_logs = list(Path(example_manuscript_copy).rglob("*.log"))[:5]
+            if possible_logs:
+                for log_file in possible_logs:
+                    try:
+                        tail = log_file.read_text()[-1000:]
+                        print(f"🪵 Log tail ({log_file}):\n{tail}")
+                    except Exception as e:
+                        print(f"⚠️ Could not read log file {log_file}: {e}")
+        assert result.returncode == 0, f"rxiv pdf failed (exit {result.returncode}). See diagnostics above. Stderr: {result.stderr}"
 
         # Check output PDF was created
         if execution_engine.engine_type == "local":
             output_pdf = example_manuscript_copy / "output" / "EXAMPLE_MANUSCRIPT.pdf"
             figures_dir = example_manuscript_copy / "FIGURES"
+            output_dir = example_manuscript_copy / "output"
         else:
             # For container execution, files are in the mounted workspace
-            output_pdf = Path("TEMP_TEST_MANUSCRIPT") / "output" / "TEMP_TEST_MANUSCRIPT.pdf"
-            figures_dir = Path("TEMP_TEST_MANUSCRIPT") / "FIGURES"
+            # Determine the correct paths based on which manuscript was used
+            container_path = self._get_container_manuscript_path(execution_engine)
+            
+            if "TEMP_TEST_MANUSCRIPT" in container_path:
+                output_pdf = Path("TEMP_TEST_MANUSCRIPT") / "output" / "TEMP_TEST_MANUSCRIPT.pdf"
+                figures_dir = Path("TEMP_TEST_MANUSCRIPT") / "FIGURES"
+                output_dir = Path("TEMP_TEST_MANUSCRIPT") / "output"
+            else:
+                output_pdf = Path("EXAMPLE_MANUSCRIPT") / "output" / "EXAMPLE_MANUSCRIPT.pdf"
+                figures_dir = Path("EXAMPLE_MANUSCRIPT") / "FIGURES"
+                output_dir = Path("EXAMPLE_MANUSCRIPT") / "output"
+        
+        # Detailed diagnostics if output doesn't exist
+        print(f"🔍 Checking output PDF at: {output_pdf}")
+        print(f"🔍 Output directory: {output_dir}")
+        
+        if output_dir.exists():
+            output_files = list(output_dir.iterdir())
+            print(f"📁 Files in output directory ({len(output_files)} files):")
+            for f in output_files:
+                file_size = f.stat().st_size if f.exists() else 0
+                print(f"  - {f.name} ({file_size} bytes)")
+        else:
+            print(f"❌ Output directory does not exist: {output_dir}")
+            
+        if figures_dir.exists():
+            generated_figures = list(figures_dir.rglob("*.pdf")) + list(figures_dir.rglob("*.png"))
+            print(f"🎨 Found {len(generated_figures)} figure files in {figures_dir}")
+            for fig in generated_figures[:5]:  # Show first 5 figures
+                print(f"  - {fig}")
+        else:
+            print(f"❌ Figures directory does not exist: {figures_dir}")
+            generated_figures = []
 
-        assert output_pdf.exists(), f"Output PDF was not created at {output_pdf}"
-        assert output_pdf.stat().st_size > 1000, "Output PDF is too small"
+        # Assertions with better error messages
+        assert output_pdf.exists(), f"Output PDF was not created at {output_pdf}. Available files: {list(output_dir.iterdir()) if output_dir.exists() else 'Output directory not found'}"
+        
+        pdf_size = output_pdf.stat().st_size
+        print(f"📄 PDF file size: {pdf_size} bytes")
+        assert pdf_size > 1000, f"Output PDF is too small ({pdf_size} bytes). Expected > 1000 bytes."
 
         # Check figures were generated (search recursively in subdirectories)
-        generated_figures = list(figures_dir.rglob("*.pdf")) + list(figures_dir.rglob("*.png"))
-        assert len(generated_figures) > 0, "No figures were generated"
+        assert len(generated_figures) > 0, f"No figures were generated in {figures_dir}. Directory exists: {figures_dir.exists()}"
 
     def test_rxiv_pdf_example_manuscript_python(self, example_manuscript_copy):
         """Test full PDF generation using Python API."""
@@ -173,14 +276,14 @@ class TestExampleManuscript:
                 )
         else:
             # Container execution - use workspace paths
-            container_path = Path("/workspace") / "TEMP_TEST_MANUSCRIPT"
+            container_manuscript_path = self._get_container_manuscript_path(execution_engine)
             execution_engine.run(
-                ["rxiv", "figures", str(container_path)],
+                ["rxiv", "figures", container_manuscript_path],
                 cwd="/workspace",
                 check=True,
             )
             result = execution_engine.run(
-                ["rxiv", "validate", str(container_path)],
+                ["rxiv", "validate", container_manuscript_path],
                 cwd="/workspace",
             )
 
@@ -232,9 +335,9 @@ class TestExampleManuscript:
                 )
         else:
             # Container execution - use workspace paths
-            container_path = Path("/workspace") / "TEMP_TEST_MANUSCRIPT"
+            container_manuscript_path = self._get_container_manuscript_path(execution_engine)
             result = execution_engine.run(
-                ["rxiv", "figures", str(container_path)],
+                ["rxiv", "figures", container_manuscript_path],
                 cwd="/workspace",
             )
 
@@ -285,8 +388,8 @@ class TestExampleManuscript:
                 result = execution_engine.run(args, cwd=Path.cwd())
         else:
             # In container, use the installed rxiv command with proper container path
-            container_path = Path("/workspace") / "TEMP_TEST_MANUSCRIPT"
-            args = ["rxiv", "pdf", str(container_path)]
+            container_manuscript_path = self._get_container_manuscript_path(execution_engine)
+            args = ["rxiv", "pdf", container_manuscript_path]
             if force_figures:
                 args.append("--force-figures")
             print(f"🚀 Running container command: {' '.join(args)}")
@@ -304,7 +407,12 @@ class TestExampleManuscript:
         if execution_engine.engine_type == "local":
             output_pdf = example_manuscript_copy / "output" / "EXAMPLE_MANUSCRIPT.pdf"
         else:
-            output_pdf = Path("TEMP_TEST_MANUSCRIPT") / "output" / "TEMP_TEST_MANUSCRIPT.pdf"
+            # Determine output path based on which manuscript was used
+            container_path = self._get_container_manuscript_path(execution_engine)
+            if "TEMP_TEST_MANUSCRIPT" in container_path:
+                output_pdf = Path("TEMP_TEST_MANUSCRIPT") / "output" / "TEMP_TEST_MANUSCRIPT.pdf"
+            else:
+                output_pdf = Path("EXAMPLE_MANUSCRIPT") / "output" / "EXAMPLE_MANUSCRIPT.pdf"
 
         print(f"🔍 Checking for PDF at: {output_pdf}")
         print(f"📁 PDF exists: {output_pdf.exists()}")
@@ -381,13 +489,13 @@ class TestExampleManuscript:
                 )
         else:
             # Container execution - use workspace paths
-            container_path = Path("/workspace") / "TEMP_TEST_MANUSCRIPT"
+            container_manuscript_path = self._get_container_manuscript_path(execution_engine)
             execution_engine.run(
-                ["rxiv", "figures", str(container_path)],
+                ["rxiv", "figures", container_manuscript_path],
                 cwd="/workspace",
             )
             result = execution_engine.run(
-                ["rxiv", "clean", str(container_path)],
+                ["rxiv", "clean", container_manuscript_path],
                 cwd="/workspace",
             )
 

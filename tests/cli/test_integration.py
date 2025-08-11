@@ -223,7 +223,7 @@ authors:
         with tempfile.TemporaryDirectory() as tmpdir:
             manuscript_dir = Path(tmpdir) / "MANUSCRIPT"
             manuscript_dir.mkdir()
-            output_dir = Path(tmpdir) / "output"
+            output_dir = manuscript_dir / "output"  # Output should be inside manuscript
             output_dir.mkdir()
 
             # Create minimal manuscript files
@@ -236,19 +236,21 @@ authors:
             (manuscript_dir / "01_MAIN.md").write_text("# Test\n\nContent")
             (manuscript_dir / "03_REFERENCES.bib").write_text("")
 
-            # Create fake PDF
+            # Create fake PDF and LaTeX file that arxiv command expects
             (output_dir / "MANUSCRIPT.pdf").write_text("fake pdf content")
+            (output_dir / "MANUSCRIPT.tex").write_text("\\documentclass{article}\\begin{document}Test\\end{document}")
 
             # Test arxiv command
-            with patch("rxiv_maker.engine.prepare_arxiv.main") as mock_arxiv:
+            with patch("rxiv_maker.cli.commands.arxiv.prepare_arxiv_main") as mock_arxiv:
                 mock_arxiv.return_value = None
 
                 self.runner.invoke(
                     main,
-                    ["arxiv", str(manuscript_dir), "--output-dir", str(output_dir)],
+                    ["arxiv", str(manuscript_dir)],  # Remove output-dir to use default
                     obj={"verbose": False, "engine": "local"},
                 )
 
+                # The mock should be called regardless of later file operations failing
                 mock_arxiv.assert_called_once()
 
     def test_setup_command(self):

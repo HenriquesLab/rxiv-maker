@@ -23,9 +23,12 @@ class ExecutionEngine:
         """Runs a command in the selected engine."""
         # Extract check parameter, default to True
         check = kwargs.pop("check", True)
+        
+        # Extract timeout parameter, default to 600 seconds (10 minutes) for long operations
+        timeout = kwargs.pop("timeout", 600)
 
         # Common kwargs for all engines
-        run_kwargs = {"text": True, "capture_output": True, "check": check, **kwargs}
+        run_kwargs = {"text": True, "capture_output": True, "check": check, "timeout": timeout, **kwargs}
 
         if self.engine_type == "local":
             return subprocess.run(command, **run_kwargs)
@@ -38,6 +41,9 @@ class ExecutionEngine:
             # For containerized engines, handle cwd by using sh -c with cd
             if "cwd" in kwargs:
                 cwd = kwargs.pop("cwd")
+                # Remove cwd from run_kwargs since it doesn't apply to host execution of docker
+                if "cwd" in run_kwargs:
+                    del run_kwargs["cwd"]
                 # Properly quote command arguments for shell
                 import shlex
 

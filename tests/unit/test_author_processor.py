@@ -72,7 +72,7 @@ class TestAuthorProcessor:
         result = generate_corresponding_authors(yaml_metadata)
         assert "john" in result.lower()
         # Check for LaTeX formatted email (@ is escaped as \at in LaTeX)
-        assert ("john@test.com" in result or "john\\at test.com" in result)
+        assert "john@test.com" in result or "john\\at test.com" in result
 
     def test_extended_author_info(self):
         """Test extended author information generation."""

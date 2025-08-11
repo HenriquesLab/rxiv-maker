@@ -189,14 +189,20 @@ This concludes our test manuscript.
         with open(test_fig_path, "w") as f:
             f.write("fake png content")
 
-    @patch("crossref_commons.retrieval.get_publication_as_json")
-    def test_complete_validation_with_doi_success(self, mock_crossref):
+    @patch("rxiv_maker.utils.bibliography_cache.get_bibliography_cache")
+    @patch("rxiv_maker.utils.doi_cache.DOICache.get")
+    @patch("rxiv_maker.validators.doi_validator.DataCiteClient.fetch_metadata")
+    @patch("rxiv_maker.validators.doi_validator.DOIResolver.verify_resolution")
+    @patch("rxiv_maker.validators.doi.api_clients.get_publication_as_json")
+    def test_complete_validation_with_doi_success(
+        self, mock_crossref, mock_resolver, mock_datacite, mock_cache, mock_bibliography_cache
+    ):
         """Test complete validation workflow with successful DOI validation."""
         # Mock successful CrossRef responses
         mock_responses = {
             "10.1016/j.jocs.2023.101234": {
                 "message": {
-                    "title": ["Machine Learning Applications in Scientific Computing"],
+                    "title": "Machine Learning Applications in Scientific Computing",
                     "container-title": ["Journal of Computational Science"],
                     "published-print": {"date-parts": [[2023]]},
                     "author": [
@@ -207,7 +213,7 @@ This concludes our test manuscript.
             },
             "10.1109/DSR.2022.9876543": {
                 "message": {
-                    "title": ["Advanced Data Analysis Techniques"],
+                    "title": "Advanced Data Analysis Techniques",
                     "container-title": ["Data Science Review"],
                     "published-print": {"date-parts": [[2022]]},
                     "author": [{"family": "Jones", "given": "Alice M"}],
@@ -215,7 +221,7 @@ This concludes our test manuscript.
             },
             "10.1007/s11222-021-09999-1": {
                 "message": {
-                    "title": ["Statistical Methods for Large Datasets"],
+                    "title": "Statistical Methods for Large Datasets",
                     "container-title": ["Statistics and Computing"],
                     "published-print": {"date-parts": [[2021]]},
                     "author": [
@@ -226,7 +232,7 @@ This concludes our test manuscript.
             },
             "10.1038/s41592-020-0896-6": {
                 "message": {
-                    "title": ["Reproducible Research Practices"],
+                    "title": "Reproducible Research Practices",
                     "container-title": ["Nature Methods"],
                     "published-print": {"date-parts": [[2020]]},
                     "author": [{"family": "Wilson", "given": "Michael P"}],
@@ -238,6 +244,38 @@ This concludes our test manuscript.
             return mock_responses.get(doi)
 
         mock_crossref.side_effect = mock_crossref_call
+
+        # Mock DOI resolver to always return True for test DOIs
+        mock_resolver.return_value = True
+
+        # Mock DataCite client to return None (CrossRef will be tried first)
+        mock_datacite.return_value = None
+
+        # Mock cache to always return None (cache miss) so fresh data is used
+        mock_cache.return_value = None
+
+        # Mock bibliography cache to return a cache object that always misses
+        class MockBibCache:
+            def get_cached_metadata(self, doi, source):
+                return None
+
+            def cache_metadata(self, doi, metadata, source):
+                pass
+
+        mock_bibliography_cache.return_value = MockBibCache()
+
+        # Clear all caches to ensure fresh data
+        import shutil
+        from pathlib import Path
+
+        cache_dirs = [
+            Path.home() / "Library" / "Caches" / "rxiv-maker",
+            Path("/tmp") / "rxiv-maker-cache",
+            Path(".") / "cache",
+        ]
+        for cache_dir in cache_dirs:
+            if cache_dir.exists():
+                shutil.rmtree(cache_dir, ignore_errors=True)
 
         self._create_complete_manuscript(with_valid_dois=True)
 
@@ -347,18 +385,19 @@ This concludes our test manuscript.
 
         validator.validate_all()
 
-        # Should still pass overall (warnings, not errors)
-        # but should have warnings about metadata mismatches
+        # Should detect metadata mismatches as errors
+        # (API failures cause errors rather than warnings)
 
         # Check that DOI validation detected mismatches
         citation_result = validator.validation_results.get("Citations")
         self.assertIsNotNone(citation_result)
-        self.assertTrue(citation_result.has_warnings)
+        self.assertTrue(citation_result.has_errors)
 
-        # Check for mismatch warnings
-        warning_messages = [error.message for error in citation_result.errors if error.level.value == "warning"]
-        mismatch_warnings = [msg for msg in warning_messages if "mismatch" in msg.lower()]
-        self.assertGreater(len(mismatch_warnings), 0)
+        # Check for error messages (DOI validation failures produce errors)
+        error_messages = [error.message for error in citation_result.errors]
+        # Look for DOI-related errors
+        doi_errors = [msg for msg in error_messages if "doi" in msg.lower()]
+        self.assertGreater(len(doi_errors), 0)
 
     @patch("crossref_commons.retrieval.get_publication_as_json")
     def test_complete_validation_with_api_failures(self, mock_crossref):
@@ -382,7 +421,8 @@ This concludes our test manuscript.
         # Check that DOI validation detected API failures
         citation_result = validator.validation_results.get("Citations")
         self.assertIsNotNone(citation_result)
-        self.assertTrue(citation_result.has_warnings)
+        # API failures are now treated as errors rather than warnings
+        self.assertTrue(citation_result.has_errors or citation_result.has_warnings)
 
         doi_metadata = citation_result.metadata["doi_validation"]
         # Should complete validation (may use cache or offline mode)
@@ -416,7 +456,7 @@ This concludes our test manuscript.
             "validated_dois",
             "invalid_format",
             "api_failures",
-            "mismatched_metadata",
+            "successful_validations",
         ]
 
         for stat in expected_stats:

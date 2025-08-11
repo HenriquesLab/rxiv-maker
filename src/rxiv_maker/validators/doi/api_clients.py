@@ -41,15 +41,32 @@ class CrossRefClient(BaseDOIClient):
 
     def fetch_metadata(self, doi: str) -> dict[str, Any] | None:
         """Fetch metadata from CrossRef API."""
+        # Primary attempt: crossref-commons helper (handles polite pool / rate limiting)
         try:
-            # Use crossref-commons library which handles rate limiting
             data = get_publication_as_json(doi)
-            if data and "message" in data:
+            if data and isinstance(data, dict) and "message" in data:
                 return data["message"]
-            return None
         except Exception as e:
-            logger.debug(f"CrossRef fetch failed for {doi}: {e}")
-            return None
+            logger.debug(f"CrossRef (library) fetch failed for {doi}: {e}")
+
+        # Fallback: direct REST API call (sometimes library helper can fail silently for some DOIs)
+        try:
+            url = f"https://api.crossref.org/works/{doi}"
+            headers = {"Accept": "application/json"}
+            resp = self.session.get(url, headers=headers, timeout=self.timeout)
+            if resp.status_code == 200:
+                json_data = resp.json()
+                if isinstance(json_data, dict) and "message" in json_data:
+                    return json_data["message"]
+                logger.debug(f"CrossRef REST response missing 'message' field for {doi}")
+            else:
+                logger.debug(f"CrossRef REST fetch non-200 ({resp.status_code}) for {doi}")
+        except Exception as e:
+            logger.debug(f"CrossRef REST fetch failed for {doi}: {e}")
+
+        # If both attempts failed, log at error level once (so it's visible in non-debug runs)
+        logger.error(f"All CrossRef metadata fetch attempts failed for {doi}")
+        return None
 
 
 class DataCiteClient(BaseDOIClient):
