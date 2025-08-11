@@ -4,7 +4,7 @@
 # Paths to exclude from scanning
 exclude_dirs = [
     "tests",
-    "docs", 
+    "docs",
     "build",
     "dist",
     ".git",
@@ -24,7 +24,7 @@ skips = [
 # Confidence levels: LOW, MEDIUM, HIGH
 confidence = "MEDIUM"
 
-# Security issue levels: LOW, MEDIUM, HIGH  
+# Security issue levels: LOW, MEDIUM, HIGH
 level = "LOW"
 
 # Output format options: csv, custom, html, json, screen, txt, xml, yaml

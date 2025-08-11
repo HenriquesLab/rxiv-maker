@@ -16,26 +16,26 @@ from ..conftest import requires_latex
 @requires_latex
 class TestExampleManuscript:
     """Test the full pipeline for EXAMPLE_MANUSCRIPT."""
-    
+
     def _get_container_manuscript_path(self, execution_engine):
         """Get the correct manuscript path for container execution."""
         if execution_engine.engine_type == "local":
             return None
-            
+
         # For container execution, check if TEMP_TEST_MANUSCRIPT was created on host
         # and should exist in the container's workspace
         temp_path = "/workspace/TEMP_TEST_MANUSCRIPT"
         fallback_path = "/workspace/EXAMPLE_MANUSCRIPT"
-        
+
         try:
             # Check if TEMP_TEST_MANUSCRIPT exists in container
             ls_result = execution_engine.run(
                 ["ls", "-d", temp_path],
                 cwd="/workspace",
                 check=False,
-                timeout=30  # Short timeout for this check
+                timeout=30,  # Short timeout for this check
             )
-            
+
             if ls_result.returncode == 0:
                 return temp_path
             else:
@@ -93,6 +93,7 @@ class TestExampleManuscript:
         print(f"📁 Test manuscript copy path: {example_manuscript_copy}")
 
         import time
+
         start_time = time.time()
 
         # Execute build depending on engine type
@@ -128,23 +129,25 @@ class TestExampleManuscript:
             try:
                 result = execution_engine.run(cmd, cwd="/workspace", timeout=1200, check=False)
             except subprocess.TimeoutExpired as e:
-                raise pytest.fail(f"Container PDF generation timed out after {e.timeout} seconds. Command: {' '.join(cmd)}")
+                raise pytest.fail(
+                    f"Container PDF generation timed out after {e.timeout} seconds. Command: {' '.join(cmd)}"
+                )
 
         # Calculate execution time
         execution_time = time.time() - start_time
         print(f"⏱️ PDF generation took {execution_time:.2f} seconds")
-        
+
         # Debug output
-        print(f"📄 Command output:")
+        print("📄 Command output:")
         print(f"  Return code: {result.returncode}")
         print(f"  Stdout length: {len(result.stdout) if result.stdout else 0}")
         print(f"  Stderr length: {len(result.stderr) if result.stderr else 0}")
-        
+
         if result.stdout:
             print(f"  Stdout (last 500 chars): ...{result.stdout[-500:]}")
         if result.stderr:
             print(f"  Stderr: {result.stderr}")
-        
+
         # Check command succeeded
         if result.returncode != 0:
             print("❌ rxiv pdf command failed – enhanced diagnostics below")
@@ -157,7 +160,9 @@ class TestExampleManuscript:
                         print(f"🪵 Log tail ({log_file}):\n{tail}")
                     except Exception as e:
                         print(f"⚠️ Could not read log file {log_file}: {e}")
-        assert result.returncode == 0, f"rxiv pdf failed (exit {result.returncode}). See diagnostics above. Stderr: {result.stderr}"
+        assert result.returncode == 0, (
+            f"rxiv pdf failed (exit {result.returncode}). See diagnostics above. Stderr: {result.stderr}"
+        )
 
         # Check output PDF was created
         if execution_engine.engine_type == "local":
@@ -168,7 +173,7 @@ class TestExampleManuscript:
             # For container execution, files are in the mounted workspace
             # Determine the correct paths based on which manuscript was used
             container_path = self._get_container_manuscript_path(execution_engine)
-            
+
             if "TEMP_TEST_MANUSCRIPT" in container_path:
                 output_pdf = Path("TEMP_TEST_MANUSCRIPT") / "output" / "TEMP_TEST_MANUSCRIPT.pdf"
                 figures_dir = Path("TEMP_TEST_MANUSCRIPT") / "FIGURES"
@@ -177,11 +182,11 @@ class TestExampleManuscript:
                 output_pdf = Path("EXAMPLE_MANUSCRIPT") / "output" / "EXAMPLE_MANUSCRIPT.pdf"
                 figures_dir = Path("EXAMPLE_MANUSCRIPT") / "FIGURES"
                 output_dir = Path("EXAMPLE_MANUSCRIPT") / "output"
-        
+
         # Detailed diagnostics if output doesn't exist
         print(f"🔍 Checking output PDF at: {output_pdf}")
         print(f"🔍 Output directory: {output_dir}")
-        
+
         if output_dir.exists():
             output_files = list(output_dir.iterdir())
             print(f"📁 Files in output directory ({len(output_files)} files):")
@@ -190,7 +195,7 @@ class TestExampleManuscript:
                 print(f"  - {f.name} ({file_size} bytes)")
         else:
             print(f"❌ Output directory does not exist: {output_dir}")
-            
+
         if figures_dir.exists():
             generated_figures = list(figures_dir.rglob("*.pdf")) + list(figures_dir.rglob("*.png"))
             print(f"🎨 Found {len(generated_figures)} figure files in {figures_dir}")
@@ -201,14 +206,18 @@ class TestExampleManuscript:
             generated_figures = []
 
         # Assertions with better error messages
-        assert output_pdf.exists(), f"Output PDF was not created at {output_pdf}. Available files: {list(output_dir.iterdir()) if output_dir.exists() else 'Output directory not found'}"
-        
+        assert output_pdf.exists(), (
+            f"Output PDF was not created at {output_pdf}. Available files: {list(output_dir.iterdir()) if output_dir.exists() else 'Output directory not found'}"
+        )
+
         pdf_size = output_pdf.stat().st_size
         print(f"📄 PDF file size: {pdf_size} bytes")
         assert pdf_size > 1000, f"Output PDF is too small ({pdf_size} bytes). Expected > 1000 bytes."
 
         # Check figures were generated (search recursively in subdirectories)
-        assert len(generated_figures) > 0, f"No figures were generated in {figures_dir}. Directory exists: {figures_dir.exists()}"
+        assert len(generated_figures) > 0, (
+            f"No figures were generated in {figures_dir}. Directory exists: {figures_dir.exists()}"
+        )
 
     def test_rxiv_pdf_example_manuscript_python(self, example_manuscript_copy):
         """Test full PDF generation using Python API."""

@@ -23,7 +23,7 @@ class ExecutionEngine:
         """Runs a command in the selected engine."""
         # Extract check parameter, default to True
         check = kwargs.pop("check", True)
-        
+
         # Extract timeout parameter, default to 600 seconds (10 minutes) for long operations
         timeout = kwargs.pop("timeout", 600)
 
