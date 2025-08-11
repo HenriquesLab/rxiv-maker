@@ -275,12 +275,13 @@ class BuildManager:
                 os.chdir(manuscript_path.parent)
 
                 # Run validation with proper arguments
+                # DOI validation setting will be read from config automatically
                 result = validate_manuscript(
                     manuscript_path=manuscript_abs_path,
                     verbose=self.verbose,
                     include_info=False,
                     check_latex=True,
-                    enable_doi_validation=True,
+                    enable_doi_validation=None,  # Read from config
                     detailed=True,
                 )
 

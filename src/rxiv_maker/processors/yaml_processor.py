@@ -102,6 +102,31 @@ def extract_yaml_metadata(md_file):
         return {}
 
 
+def get_doi_validation_setting(metadata: dict) -> bool:
+    """Extract DOI validation setting from metadata with default fallback.
+
+    Args:
+        metadata: Parsed YAML metadata dictionary
+
+    Returns:
+        bool: True if DOI validation should be enabled, False otherwise
+    """
+    if not metadata:
+        return True  # Default to enabled
+
+    doi_setting = metadata.get("enable_doi_validation")
+
+    if doi_setting is None:
+        return True  # Default to enabled if not specified
+
+    # Handle string representations of booleans
+    if isinstance(doi_setting, str):
+        return doi_setting.lower() in ("true", "yes", "1", "on")
+
+    # Handle boolean values
+    return bool(doi_setting)
+
+
 def parse_yaml_simple(yaml_content):
     """Simple YAML parser for basic key-value pairs."""
     metadata = {}

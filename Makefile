@@ -192,13 +192,13 @@ check-deps-verbose:
 .PHONY: pdf
 pdf:
 	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.cli pdf "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) $(if $(FORCE_FIGURES),--force-figures) || \
-	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.commands.build_manager --manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --verbose $(if $(FORCE_FIGURES),--force-figures)
+	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.engine.build_manager --manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --verbose $(if $(FORCE_FIGURES),--force-figures)
 
 # Generate PDF without validation (for debugging)
 .PHONY: pdf-no-validate
 pdf-no-validate:
 	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.cli pdf "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --skip-validation $(if $(FORCE_FIGURES),--force-figures) || \
-	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.commands.build_manager --manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --skip-validation $(if $(FORCE_FIGURES),--force-figures)
+	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.engine.build_manager --manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --skip-validation $(if $(FORCE_FIGURES),--force-figures)
 
 # Generate PDF with change tracking against a git tag
 .PHONY: pdf-track-changes
@@ -208,7 +208,7 @@ ifndef TAG
 endif
 	@echo "🔍 Generating PDF with change tracking against tag: $(TAG)"
 	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.cli track-changes "$(MANUSCRIPT_PATH)" $(TAG) --output-dir $(OUTPUT_DIR) --verbose || \
-	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.commands.build_manager \
+	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.engine.build_manager \
 		--manuscript-path "$(MANUSCRIPT_PATH)" \
 		--output-dir $(OUTPUT_DIR) \
 		--track-changes $(TAG) \

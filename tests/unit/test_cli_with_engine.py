@@ -68,14 +68,14 @@ def test_init_command(execution_engine, temp_dir):
                 "rxiv_maker.cli",
                 "init",
                 manuscript_name,
-                "--no-interrupt",
+                "--no-interactive",
             ],
             cwd=str(temp_dir),
             check=False,
         )
     else:
         result = execution_engine.run(
-            ["rxiv", "init", manuscript_name, "--no-interrupt"],
+            ["rxiv", "init", manuscript_name, "--no-interactive"],
             cwd=str(temp_dir),
             check=False,
         )

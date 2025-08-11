@@ -104,7 +104,9 @@ class TestExampleManuscript:
                 print(f"▶️ Command: {' '.join(cmd)}")
                 result = execution_engine.run(cmd, cwd=Path.cwd(), timeout=1200, check=False)
             except subprocess.TimeoutExpired as e:
-                raise pytest.fail(f"PDF generation timed out after {e.timeout} seconds. Command: {' '.join(cmd)}")
+                raise pytest.fail(
+                    f"PDF generation timed out after {e.timeout} seconds. Command: {' '.join(cmd)}"
+                ) from e
             except (subprocess.CalledProcessError, FileNotFoundError) as e:
                 print(f"⚠️ uv run failed ({e}), falling back to python module...")
                 cmd = [
@@ -118,7 +120,9 @@ class TestExampleManuscript:
                 try:
                     result = execution_engine.run(cmd, cwd=Path.cwd(), timeout=1200, check=False)
                 except subprocess.TimeoutExpired as e:
-                    raise pytest.fail(f"PDF generation timed out after {e.timeout} seconds. Command: {' '.join(cmd)}")
+                    raise pytest.fail(
+                        f"PDF generation timed out after {e.timeout} seconds. Command: {' '.join(cmd)}"
+                    ) from e
         else:
             container_manuscript_path = self._get_container_manuscript_path(execution_engine)
             ls_result = execution_engine.run(["ls", "-la", "/workspace/"], cwd="/workspace", check=False)
@@ -131,7 +135,7 @@ class TestExampleManuscript:
             except subprocess.TimeoutExpired as e:
                 raise pytest.fail(
                     f"Container PDF generation timed out after {e.timeout} seconds. Command: {' '.join(cmd)}"
-                )
+                ) from e
 
         # Calculate execution time
         execution_time = time.time() - start_time

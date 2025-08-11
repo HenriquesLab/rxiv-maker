@@ -262,7 +262,7 @@ class CleanupManager:
         """Clean cache files."""
         self.log("Cleaning cache files...", "STEP")
 
-        cache_dirs = [Path(".cache"), Path("__pycache__"), Path(".pytest_cache")]
+        cache_dirs = [Path(".cache"), Path(".rxiv_cache"), Path("__pycache__"), Path(".pytest_cache")]
 
         # Add Python cache directories
         for py_dir in Path("src/py").rglob("__pycache__"):

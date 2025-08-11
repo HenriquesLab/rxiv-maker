@@ -69,7 +69,7 @@ class DOIValidator(BaseValidator):
         self.max_workers = max_workers
 
         # Initialize cache
-        cache_dir = cache_dir or Path(manuscript_path).parent / "cache" / "doi"
+        cache_dir = cache_dir or Path(manuscript_path).parent / ".rxiv_cache" / "doi"
         self.cache = DOICache(cache_dir)
 
         # Initialize API clients

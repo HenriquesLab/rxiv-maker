@@ -116,7 +116,7 @@ class TestDOIValidator(unittest.TestCase):
         """Set up test fixtures."""
         self.temp_dir = tempfile.mkdtemp()
         self.manuscript_dir = os.path.join(self.temp_dir, "manuscript")
-        self.cache_dir = os.path.join(self.temp_dir, "cache")
+        self.cache_dir = os.path.join(self.temp_dir, ".rxiv_cache")
         os.makedirs(self.manuscript_dir)
         os.makedirs(self.cache_dir)
 
@@ -265,7 +265,7 @@ class TestDOIValidator(unittest.TestCase):
         # Create unique temp directories for this test
         unique_temp = tempfile.mkdtemp()
         unique_manuscript = os.path.join(unique_temp, "manuscript")
-        unique_cache = os.path.join(unique_temp, "cache")
+        unique_cache = os.path.join(unique_temp, ".rxiv_cache")
         os.makedirs(unique_manuscript)
         os.makedirs(unique_cache)
 
@@ -461,7 +461,7 @@ class TestDOIValidator(unittest.TestCase):
         # Create unique temp directories for this test to avoid shared state
         unique_temp = tempfile.mkdtemp()
         unique_manuscript = os.path.join(unique_temp, "manuscript")
-        unique_cache = os.path.join(unique_temp, "cache")
+        unique_cache = os.path.join(unique_temp, ".rxiv_cache")
         os.makedirs(unique_manuscript)
         os.makedirs(unique_cache)
 
@@ -600,6 +600,31 @@ This cites @integrated_test and other references.
 
         # Should not include DOI validation metadata
         self.assertNotIn("doi_validation", result_no_doi.metadata)
+
+    def test_citation_validator_config_based_doi_validation(self):
+        """Test that citation validator respects config file DOI validation setting."""
+        # Create config with DOI validation disabled
+        config_content = """
+title: "Test Article"
+enable_doi_validation: false
+bibliography: 03_REFERENCES.bib
+"""
+        config_path = os.path.join(self.manuscript_dir, "00_CONFIG.yml")
+        with open(config_path, "w") as f:
+            f.write(config_content)
+
+        # Create main markdown file
+        main_content = "# Test\n\nCitations: @valid_doi"
+        main_path = os.path.join(self.manuscript_dir, "01_MAIN.md")
+        with open(main_path, "w") as f:
+            f.write(main_content)
+
+        # Test that validator reads config setting (DOI validation should be disabled)
+        validator = DOIValidator(self.manuscript_dir, enable_online_validation=None)
+        result = validator.validate()
+
+        # Should not include DOI validation metadata when disabled via config
+        self.assertNotIn("doi_validation", result.metadata)
 
 
 class TestNetworkOperationTimeouts(unittest.TestCase):

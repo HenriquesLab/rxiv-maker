@@ -8,6 +8,7 @@ date: "2025-06-20"
 use_line_numbers: false
 license: "CC BY 4.0"
 acknowledge_rxiv_maker: false
+enable_doi_validation: true            # Enable DOI validation against CrossRef/DataCite APIs
 
 keywords:
   - "article template"

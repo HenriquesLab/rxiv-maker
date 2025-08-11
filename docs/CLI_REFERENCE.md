@@ -42,6 +42,8 @@ rxiv pdf [OPTIONS] [MANUSCRIPT_PATH]
 - `--debug, -d`: Enable debug output
 - `--output-dir PATH, -o PATH`: Custom output directory
 
+**Note:** PDF generation includes validation step which respects DOI validation settings in `00_CONFIG.yml`
+
 **Examples:**
 ```bash
 rxiv pdf                          # Build from MANUSCRIPT/
@@ -63,14 +65,20 @@ rxiv validate [OPTIONS] [MANUSCRIPT_PATH]
 - `MANUSCRIPT_PATH`: Path to manuscript directory (default: MANUSCRIPT/)
 
 **Options:**
-- `--no-doi`: Skip DOI validation
+- `--no-doi`: Skip DOI validation (overrides config setting)
 - `--detailed, -d`: Show detailed validation report
+
+**DOI Validation:**
+DOI validation is enabled by default but can be controlled via:
+1. Configuration file: Set `enable_doi_validation: false` in `00_CONFIG.yml`
+2. CLI override: Use `--no-doi` flag to disable for a single run
+3. Priority: CLI flag > config file > default (enabled)
 
 **Examples:**
 ```bash
-rxiv validate                     # Validate MANUSCRIPT/
+rxiv validate                     # Validate MANUSCRIPT/ (uses config setting)
 rxiv validate MY_PAPER/           # Validate custom directory
-rxiv validate --no-doi            # Skip DOI checks
+rxiv validate --no-doi            # Skip DOI checks (overrides config)
 rxiv validate --detailed          # Get comprehensive feedback
 ```
 
@@ -398,6 +406,33 @@ features:
   auto_validate: true
   rich_output: true
 ```
+
+## Manuscript Configuration
+
+Each manuscript can have its own configuration file `00_CONFIG.yml` containing metadata and build settings:
+
+```yaml
+# DOI Validation Settings
+enable_doi_validation: true  # Enable DOI validation against CrossRef/DataCite APIs
+                            # Set to false to skip DOI validation (useful for offline work)
+                            # Can be overridden with --no-doi CLI flag
+
+# Other manuscript settings
+title: "Your Paper Title"
+authors:
+  - name: "Author Name"
+    email: "author@example.com"
+bibliography: 03_REFERENCES.bib
+date: "2025-01-01"
+```
+
+**DOI Validation Configuration:**
+- **Default**: `enable_doi_validation: true` (enabled)
+- **Purpose**: Controls whether DOI validation occurs during manuscript validation
+- **Override**: CLI `--no-doi` flag takes precedence over config setting
+- **Use cases**: 
+  - Set to `false` for offline work or when DOI APIs are unavailable
+  - Leave as `true` for complete manuscript validation
 
 ## Exit Codes
 

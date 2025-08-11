@@ -87,6 +87,7 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
+.rxiv_cache/
 nosetests.xml
 coverage.xml
 coverage-*.xml

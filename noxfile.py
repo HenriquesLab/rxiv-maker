@@ -422,6 +422,194 @@ def test_cross_backend(session, backend):
     )
 
 
+# PDF Generation Testing
+@nox.session(python="3.11", reuse_venv=True)
+@nox.parametrize("manuscript_path", ["MANUSCRIPT", "EXAMPLE_MANUSCRIPT"])
+def pdf_generation(session, manuscript_path):
+    """Test PDF generation using both rxiv CLI and make for different manuscripts.
+
+    This session tests both the modern rxiv CLI command and legacy make command
+    on both MANUSCRIPT and EXAMPLE_MANUSCRIPT directories to ensure consistency
+    and catch regressions in either interface.
+
+    Examples:
+        nox -s pdf_generation                                    # Test both manuscripts
+        nox -s 'pdf_generation(manuscript_path="MANUSCRIPT")'    # Test specific manuscript
+    """
+    install_deps(session)
+
+    session.log(f"Testing PDF generation for {manuscript_path}")
+
+    import time
+    from pathlib import Path
+
+    # Setup paths
+    manuscript_dir = Path(manuscript_path)
+    output_dir = manuscript_dir / "output"
+    expected_pdf = output_dir / f"{manuscript_path}.pdf"
+
+    # Ensure manuscript directory exists
+    if not manuscript_dir.exists():
+        session.error(f"Manuscript directory {manuscript_path} does not exist")
+
+    session.log(f"Expected PDF output: {expected_pdf}")
+
+    # Test results tracking
+    results = {"rxiv_cli": None, "make_command": None}
+
+    # Clean up any existing output first
+    def cleanup_output():
+        """Clean up generated files."""
+        if output_dir.exists():
+            try:
+                session.run("rm", "-rf", str(output_dir), external=True)
+                session.log(f"Cleaned up {output_dir}")
+            except Exception as e:
+                session.log(f"Warning: Could not clean {output_dir}: {e}")
+
+    # Test 1: rxiv CLI command
+    session.log("=" * 60)
+    session.log("Testing rxiv CLI command")
+    session.log("=" * 60)
+
+    cleanup_output()
+    start_time = time.time()
+
+    try:
+        session.run(
+            "python",
+            "-m",
+            "rxiv_maker.cli",
+            "pdf",
+            manuscript_path,
+            "--output-dir",
+            "output",
+            external=False,
+        )
+        rxiv_time = time.time() - start_time
+
+        # Verify PDF was created
+        if expected_pdf.exists() and expected_pdf.stat().st_size > 0:
+            pdf_size = expected_pdf.stat().st_size
+            session.log(f"✅ rxiv CLI: PDF created successfully ({pdf_size} bytes, {rxiv_time:.2f}s)")
+            results["rxiv_cli"] = {"success": True, "time": rxiv_time, "size": pdf_size}
+        else:
+            session.log("❌ rxiv CLI: PDF not created or empty")
+            results["rxiv_cli"] = {"success": False, "time": rxiv_time, "size": 0}
+
+    except Exception as e:
+        rxiv_time = time.time() - start_time
+        session.log(f"❌ rxiv CLI failed after {rxiv_time:.2f}s: {e}")
+        results["rxiv_cli"] = {"success": False, "time": rxiv_time, "error": str(e)}
+
+    # Save rxiv output for comparison if successful
+    rxiv_pdf_backup = None
+    if results["rxiv_cli"] and results["rxiv_cli"]["success"] and expected_pdf.exists():
+        rxiv_pdf_backup = output_dir / f"{manuscript_path}_rxiv.pdf"
+        try:
+            session.run("cp", str(expected_pdf), str(rxiv_pdf_backup), external=True)
+        except Exception as e:
+            session.log(f"Warning: Could not backup rxiv PDF: {e}")
+
+    # Test 2: make command
+    session.log("=" * 60)
+    session.log("Testing make pdf command")
+    session.log("=" * 60)
+
+    cleanup_output()
+    start_time = time.time()
+
+    try:
+        session.run(
+            "make",
+            "pdf",
+            f"MANUSCRIPT_PATH={manuscript_path}",
+            external=True,
+        )
+        make_time = time.time() - start_time
+
+        # Verify PDF was created
+        if expected_pdf.exists() and expected_pdf.stat().st_size > 0:
+            pdf_size = expected_pdf.stat().st_size
+            session.log(f"✅ make: PDF created successfully ({pdf_size} bytes, {make_time:.2f}s)")
+            results["make_command"] = {"success": True, "time": make_time, "size": pdf_size}
+        else:
+            session.log("❌ make: PDF not created or empty")
+            results["make_command"] = {"success": False, "time": make_time, "size": 0}
+
+    except Exception as e:
+        make_time = time.time() - start_time
+        session.log(f"❌ make failed after {make_time:.2f}s: {e}")
+        results["make_command"] = {"success": False, "time": make_time, "error": str(e)}
+
+    # Comparison and summary
+    session.log("=" * 60)
+    session.log(f"SUMMARY for {manuscript_path}")
+    session.log("=" * 60)
+
+    both_successful = (
+        results["rxiv_cli"]
+        and results["rxiv_cli"]["success"]
+        and results["make_command"]
+        and results["make_command"]["success"]
+    )
+
+    if both_successful:
+        rxiv_stats = results["rxiv_cli"]
+        make_stats = results["make_command"]
+
+        session.log("✅ Both methods successful!")
+        session.log(f"   rxiv CLI: {rxiv_stats['time']:.2f}s, {rxiv_stats['size']} bytes")
+        session.log(f"   make:     {make_stats['time']:.2f}s, {make_stats['size']} bytes")
+
+        # Performance comparison
+        faster_method = "rxiv CLI" if rxiv_stats["time"] < make_stats["time"] else "make"
+        time_diff = abs(rxiv_stats["time"] - make_stats["time"])
+        size_diff = abs(rxiv_stats["size"] - make_stats["size"])
+
+        session.log(f"   {faster_method} was faster by {time_diff:.2f}s")
+        if size_diff > 1000:  # Only report if significant difference
+            session.log(f"   PDF size difference: {size_diff} bytes")
+
+        # Compare PDF files if both exist and backup was created
+        if rxiv_pdf_backup and rxiv_pdf_backup.exists() and expected_pdf.exists():
+            try:
+                diff_result = session.run("diff", str(rxiv_pdf_backup), str(expected_pdf), external=True, silent=True)
+                if diff_result is None:  # No differences
+                    session.log("   📊 PDFs are identical")
+                else:
+                    session.log("   ⚠️  PDFs differ (expected for different timestamps)")
+            except Exception:
+                session.log("   📊 PDF comparison completed (files may differ due to timestamps)")
+
+    else:
+        session.log("❌ One or both methods failed:")
+        for method, result in results.items():
+            if result and result["success"]:
+                session.log(f"   ✅ {method}: SUCCESS")
+            else:
+                error_msg = result.get("error", "Unknown error") if result else "No result"
+                session.log(f"   ❌ {method}: FAILED - {error_msg}")
+
+    # Final cleanup
+    cleanup_output()
+    if rxiv_pdf_backup and rxiv_pdf_backup.exists():
+        try:
+            rxiv_pdf_backup.unlink()
+        except Exception:
+            pass
+
+    # Fail session if both methods failed
+    if (
+        not both_successful
+        and not (results["rxiv_cli"] and results["rxiv_cli"]["success"])
+        and not (results["make_command"] and results["make_command"]["success"])
+    ):
+        session.error(f"Both rxiv CLI and make commands failed for {manuscript_path}")
+
+    session.log(f"✅ PDF generation testing completed for {manuscript_path}")
+
+
 # Advanced Features
 @nox.session(python="3.11", reuse_venv=True)
 def coverage(session):

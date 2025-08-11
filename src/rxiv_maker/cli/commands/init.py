@@ -114,8 +114,12 @@ affiliations:
     city: ""
     country: ""
 
-# Manuscript metadata
-date: "{today}"
+# Publication metadata
+date: "{today}"                      # Publication date (YYYY-MM-DD format)
+status: "draft"                      # Status: draft, submitted, accepted, published
+enable_doi_validation: true         # Enable DOI validation against CrossRef/DataCite APIs
+
+# Keywords and abstract
 keywords: ["keyword1", "keyword2", "keyword3"]
 abstract: |
   This is the abstract of your manuscript. Replace this text with your actual abstract.
@@ -275,6 +279,7 @@ FIGURES/*.eps
 
 # Cache files
 .cache/
+.rxiv_cache/
 __pycache__/
 *.pyc
 

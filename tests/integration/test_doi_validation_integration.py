@@ -271,7 +271,7 @@ This concludes our test manuscript.
         cache_dirs = [
             Path.home() / "Library" / "Caches" / "rxiv-maker",
             Path("/tmp") / "rxiv-maker-cache",
-            Path(".") / "cache",
+            Path(".") / ".rxiv_cache",
         ]
         for cache_dir in cache_dirs:
             if cache_dir.exists():

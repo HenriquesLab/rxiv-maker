@@ -14,6 +14,7 @@ status: "draft"                         # Status: draft, submitted, accepted, pu
 use_line_numbers: true                  # Enable line numbers for manuscript review
 license: "CC BY 4.0"                    # Creative Commons license (CC BY 4.0, CC BY-SA 4.0, etc.)
 acknowledge_rxiv_maker: true            # Include Rxiv-Maker acknowledgement and citation
+enable_doi_validation: true             # Enable DOI validation against CrossRef/DataCite APIs
 
 # Keywords for manuscript indexing and discovery
 keywords:

@@ -234,6 +234,10 @@ rxiv config get key                 # Get configuration value
 rxiv config reset                   # Reset to defaults
 ```
 
+**Manuscript-level configuration** (`00_CONFIG.yml`):
+- `enable_doi_validation: true/false` - Control DOI validation (default: true)
+- Override with `rxiv validate --no-doi` for single runs
+
 #### 🔧 System
 ```bash
 rxiv setup                          # Setup development environment
