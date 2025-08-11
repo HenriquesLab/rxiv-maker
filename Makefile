@@ -193,7 +193,7 @@ check-deps:
 .PHONY: check-deps-verbose
 check-deps-verbose:
 	@echo "🔍 Checking system dependencies (verbose)..."
-	$(call RXIV_RUN,setup --check-deps-only --verbose,engine.setup_environment,--check-deps-only --verbose)
+	@PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.engine.setup_environment --check-deps-only --verbose
 
 # Generate PDF with validation (requires LaTeX installation)
 .PHONY: pdf
