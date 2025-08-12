@@ -211,6 +211,7 @@ class TestDOIValidator(unittest.TestCase):
             self.manuscript_dir,
             enable_online_validation=False,
             cache_dir=self.cache_dir,
+            ignore_ci_environment=True,
         )
         result = validator.validate()
 
@@ -245,6 +246,7 @@ class TestDOIValidator(unittest.TestCase):
             self.manuscript_dir,
             enable_online_validation=False,
             cache_dir=self.cache_dir,
+            ignore_ci_environment=True,
         )
         result = validator.validate()
 
@@ -297,6 +299,7 @@ class TestDOIValidator(unittest.TestCase):
                 unique_manuscript,
                 enable_online_validation=False,
                 cache_dir=unique_cache,
+                ignore_ci_environment=True,
             )
             result = validator.validate()
 
@@ -321,14 +324,16 @@ class TestDOIValidator(unittest.TestCase):
     def test_validation_with_api_error(self, mock_validate_metadata):
         """Test validation when metadata validation fails for all sources."""
         # Mock metadata validation to return error indicating no sources available
-        from rxiv_maker.core.error_codes import ErrorCode, create_validation_error
+
+        from rxiv_maker.validators.base_validator import ValidationError, ValidationLevel
 
         mock_validate_metadata.return_value = [
-            create_validation_error(
-                ErrorCode.METADATA_UNAVAILABLE,
-                "Could not validate metadata for DOI 10.1000/test.2023.001 from any source",
+            ValidationError(
+                level=ValidationLevel.ERROR,
+                message="Could not validate metadata for DOI 10.1000/test.2023.001 from any source",
                 file_path="03_REFERENCES.bib",
                 context="Entry: test1",
+                error_code="E1004",
             )
         ]
 
@@ -481,7 +486,9 @@ class TestDOIValidator(unittest.TestCase):
                 f.write(bib_content)
 
             # Test with offline validation to avoid network issues in parallel tests
-            validator1 = DOIValidator(unique_manuscript, enable_online_validation=False, cache_dir=unique_cache)
+            validator1 = DOIValidator(
+                unique_manuscript, enable_online_validation=False, cache_dir=unique_cache, ignore_ci_environment=True
+            )
             result1 = validator1.validate()
 
             # Should find 1 DOI and validate format (but not online)
@@ -489,7 +496,9 @@ class TestDOIValidator(unittest.TestCase):
             self.assertEqual(result1.metadata["invalid_format"], 0)  # DOI format is valid
 
             # Create second validator - should behave consistently
-            validator2 = DOIValidator(unique_manuscript, enable_online_validation=False, cache_dir=unique_cache)
+            validator2 = DOIValidator(
+                unique_manuscript, enable_online_validation=False, cache_dir=unique_cache, ignore_ci_environment=True
+            )
             result2 = validator2.validate()
 
             # Should get the same results
