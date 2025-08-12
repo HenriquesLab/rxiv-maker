@@ -112,14 +112,35 @@ jobs:
 
       - name: Prepare container image
         run: |
-          # Check if Docker-related files changed
+          echo "🔍 Checking if Docker image build is needed..."
+          
+          # Check if Docker-related files changed (with better error handling)
           DOCKER_FILES_CHANGED=false
-          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '^src/docker/images/base/Dockerfile$|^pyproject.toml$|^src/docker/images/base/build\.sh$'; then
-            echo "🔧 Docker-related files changed - will build locally"
-            DOCKER_FILES_CHANGED=true
+          
+          # Handle PR context where base_ref might not be available
+          if [ "${{ github.event_name }}" == "pull_request" ] && [ -n "${{ github.base_ref }}" ]; then
+            echo "Checking for changes against base ref: ${{ github.base_ref }}"
+            if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '^src/docker/images/base/Dockerfile$|^pyproject.toml$|^src/docker/images/base/build\.sh$'; then
+              echo "🔧 Docker-related files changed - will build locally"
+              DOCKER_FILES_CHANGED=true
+            else
+              echo "📦 No Docker changes detected"
+              DOCKER_FILES_CHANGED=false
+            fi
           else
-            echo "📦 No Docker changes - will pull existing image"
-            DOCKER_FILES_CHANGED=false
+            echo "⚠️ Not a PR or base_ref not available - checking against HEAD~1"
+            if git rev-parse HEAD~1 >/dev/null 2>&1; then
+              if git diff --name-only HEAD~1 HEAD | grep -E '^src/docker/images/base/Dockerfile$|^pyproject.toml$|^src/docker/images/base/build\.sh$'; then
+                echo "🔧 Docker-related files changed - will build locally"
+                DOCKER_FILES_CHANGED=true
+              else
+                echo "📦 No Docker changes detected"
+                DOCKER_FILES_CHANGED=false
+              fi
+            else
+              echo "⚠️ Cannot determine changes - will try to pull existing image"
+              DOCKER_FILES_CHANGED=false
+            fi
           fi
 
           if [ "$DOCKER_FILES_CHANGED" == "true" ] && [ "${{ github.event_name }}" == "pull_request" ]; then
@@ -145,7 +166,47 @@ jobs:
             echo "✅ Local Docker image built and tagged"
           else
             echo "🐳 Pulling rxiv-maker base image with ${{ matrix.engine }}..."
-            ${{ matrix.engine }} pull henriqueslab/rxiv-maker-base:latest
+            if ! ${{ matrix.engine }} pull henriqueslab/rxiv-maker-base:latest; then
+              echo "❌ Failed to pull henriqueslab/rxiv-maker-base:latest"
+              echo "This might be because:"
+              echo "1. The image doesn't exist yet (first build)"
+              echo "2. Network connectivity issues"
+              echo "3. Docker Hub rate limiting"
+              echo ""
+              echo "Will attempt to build locally instead..."
+              
+              # Emergency local build
+              echo "🏗️ Building local Docker image as fallback..."
+              if [ "${{ matrix.engine }}" == "docker" ]; then
+                if ! docker buildx version >/dev/null 2>&1; then
+                  echo "Setting up Docker buildx..."
+                  docker buildx create --use
+                fi
+                
+                docker buildx build \
+                  --load \
+                  --platform linux/amd64 \
+                  --tag henriqueslab/rxiv-maker-base:latest \
+                  --file src/docker/images/base/Dockerfile \
+                  .
+              else
+                echo "❌ Cannot build with Podman in this context"
+                exit 1
+              fi
+            else
+              echo "✅ Successfully pulled henriqueslab/rxiv-maker-base:latest"
+            fi
+          fi
+          
+          # Final validation that we have an image
+          echo "🔍 Verifying Docker image availability..."
+          if ! ${{ matrix.engine }} image inspect henriqueslab/rxiv-maker-base:latest >/dev/null 2>&1; then
+            echo "❌ henriqueslab/rxiv-maker-base:latest not available"
+            echo "Available images:"
+            ${{ matrix.engine }} images
+            exit 1
+          else
+            echo "✅ henriqueslab/rxiv-maker-base:latest is available"
           fi
 
       - name: Test container engine availability

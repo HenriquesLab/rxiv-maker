@@ -253,14 +253,14 @@ class BuildManager:
                 self.log("Container validation completed successfully")
                 return True
             else:
-                self.log(f"Container validation failed, falling back to local validation", "WARNING")
+                self.log("Container validation failed, falling back to local validation", "WARNING")
                 if self.verbose and result.stderr:
                     self.log(f"Container validation errors: {result.stderr}", "WARNING")
                 return self._validate_manuscript_local()
 
         except Exception as e:
             self.log(f"{self.engine.title()} validation error: {e}", "WARNING")
-            self.log(f"Falling back to local validation", "WARNING")
+            self.log("Falling back to local validation", "WARNING")
             return self._validate_manuscript_local()
 
     def _validate_manuscript_local(self) -> bool:
