@@ -1,0 +1,445 @@
+name: Docker Build & Release
+
+on:
+  push:
+    branches: [main, dev]
+    paths:
+      - 'src/docker/images/base/Dockerfile'
+      - 'pyproject.toml'
+      - 'src/docker/images/base/build.sh'
+      - 'src/docker/images/base/Makefile'
+      - '.github/workflows/docker-build.yml'
+  
+  pull_request:
+    branches: [main, dev]
+    paths:
+      - 'src/docker/images/base/Dockerfile'
+      - 'pyproject.toml'
+      - 'src/docker/images/base/build.sh'
+      - 'src/docker/images/base/Makefile'
+      - '.github/workflows/docker-build.yml'
+  
+  release:
+    types: [published]
+  
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'Platforms to build for'
+        required: false
+        default: 'linux/amd64,linux/arm64'
+        type: string
+      push_to_registry:
+        description: 'Push to Docker Hub'
+        required: false
+        default: false
+        type: boolean
+      test_only:
+        description: 'Build and test only (no push)'
+        required: false
+        default: false
+        type: boolean
+
+# Minimal permissions
+permissions:
+  contents: read
+  packages: write  # For Docker registry if needed
+
+# Cancel previous runs on same PR
+concurrency:
+  group: docker-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: 1
+  DOCKER_BUILDKIT: 1
+  REGISTRY: docker.io
+  IMAGE_NAME: henriqueslab/rxiv-maker-base
+
+jobs:
+  # Detect changes and set build strategy
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      dockerfile-changed: ${{ steps.changes.outputs.dockerfile }}
+      dependencies-changed: ${{ steps.changes.outputs.dependencies }}
+      build-scripts-changed: ${{ steps.changes.outputs.build-scripts }}
+      should-build: ${{ steps.decision.outputs.should-build }}
+      dependency-hash: ${{ steps.hash.outputs.dependency-hash }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Need previous commit for comparison
+      
+      - name: Detect file changes
+        id: changes
+        run: |
+          echo "Checking for relevant file changes..."
+          
+          if git diff --name-only HEAD~1 HEAD | grep -E '^src/docker/images/base/Dockerfile$'; then
+            echo "dockerfile=true" >> $GITHUB_OUTPUT
+            echo "📝 Dockerfile changed"
+          else
+            echo "dockerfile=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if git diff --name-only HEAD~1 HEAD | grep -E '^pyproject.toml$'; then
+            echo "dependencies=true" >> $GITHUB_OUTPUT
+            echo "📦 Dependencies changed"
+          else
+            echo "dependencies=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if git diff --name-only HEAD~1 HEAD | grep -E '^src/docker/images/base/(build\.sh|Makefile)$'; then
+            echo "build-scripts=true" >> $GITHUB_OUTPUT
+            echo "🔧 Build scripts changed"
+          else
+            echo "build-scripts=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Generate dependency hash
+        id: hash
+        run: |
+          # Create hash of Python dependencies for cache key
+          python3 << 'EOF'
+          import hashlib
+          import re
+          
+          with open('pyproject.toml', 'r') as f:
+              content = f.read()
+          
+          # Extract dependencies section
+          deps_match = re.search(r'dependencies\s*=\s*\[(.*?)\]', content, re.DOTALL)
+          if deps_match:
+              deps_content = deps_match.group(1)
+              # Create hash of dependency content
+              dep_hash = hashlib.sha256(deps_content.encode()).hexdigest()[:16]
+              print(f"dependency-hash={dep_hash}")
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write(f"dependency-hash={dep_hash}\n")
+          else:
+              print("dependency-hash=unknown")
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write("dependency-hash=unknown\n")
+          EOF
+      
+      - name: Build decision
+        id: decision
+        run: |
+          # Determine if we should build
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "should-build=true" >> $GITHUB_OUTPUT
+            echo "🚀 Manual trigger - will build"
+          elif [ "${{ github.event_name }}" == "release" ]; then
+            echo "should-build=true" >> $GITHUB_OUTPUT
+            echo "🏷️ Release trigger - will build"
+          elif [ "${{ steps.changes.outputs.dockerfile }}" == "true" ] || \
+               [ "${{ steps.changes.outputs.dependencies }}" == "true" ] || \
+               [ "${{ steps.changes.outputs.build-scripts }}" == "true" ]; then
+            echo "should-build=true" >> $GITHUB_OUTPUT
+            echo "📋 Relevant changes detected - will build"
+          else
+            echo "should-build=false" >> $GITHUB_OUTPUT
+            echo "⏭️ No relevant changes - skipping build"
+          fi
+
+  # Build and test Docker image
+  build-and-test:
+    name: Build & Test Docker Image
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.should-build == 'true'
+    timeout-minutes: 60
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: ${{ matrix.platform }}
+      
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=Rxiv-Maker Base
+            org.opencontainers.image.description=Base Docker image for rxiv-maker with LaTeX, Python, R, and system dependencies
+            org.opencontainers.image.vendor=Rxiv-Maker Project
+            org.opencontainers.image.dependency-hash=${{ needs.detect-changes.outputs.dependency-hash }}
+      
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: src/docker/images/base/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: false  # Don't push yet, test first
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          outputs: type=docker,dest=/tmp/image-${{ strategy.job-index }}.tar
+      
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-${{ strategy.job-index }}
+          path: /tmp/image-${{ strategy.job-index }}.tar
+          retention-days: 1
+
+  # Test the built images
+  test-images:
+    name: Test Docker Images
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build-and-test]
+    if: needs.detect-changes.outputs.should-build == 'true'
+    timeout-minutes: 20
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        test-type: [base-deps, runtime-injection, full-workflow]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download image artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: docker-image-*
+          merge-multiple: true
+      
+      - name: Load Docker images
+        run: |
+          # Load all built images
+          for image in /tmp/image-*.tar; do
+            if [ -f "$image" ]; then
+              echo "Loading $image..."
+              docker load --input "$image"
+            fi
+          done
+          
+          # List loaded images
+          docker images | grep henriqueslab/rxiv-maker-base || echo "No images found"
+      
+      - name: Test base dependencies
+        if: matrix.test-type == 'base-deps'
+        run: |
+          echo "🧪 Testing base dependencies in built image..."
+          docker run --rm henriqueslab/rxiv-maker-base:latest python3 -c "
+          import sys
+          print(f'Python version: {sys.version}')
+          
+          # Test essential dependencies that were missing before
+          essential_deps = ['platformdirs', 'click', 'rich', 'packaging', 'tomli_w', 'typing_extensions']
+          for dep in essential_deps:
+              try:
+                  __import__(dep)
+                  print(f'✅ {dep}')
+              except ImportError as e:
+                  print(f'❌ {dep}: {e}')
+                  exit(1)
+          
+          print('✅ All base dependencies available!')
+          "
+      
+      - name: Test runtime dependency injection
+        if: matrix.test-type == 'runtime-injection'
+        run: |
+          echo "🧪 Testing runtime dependency injection..."
+          docker run --rm -v $PWD:/workspace henriqueslab/rxiv-maker-base:latest bash -c "
+          echo 'Testing runtime dependency injection scripts...'
+          
+          # Test install-project-deps.sh exists and is executable
+          if [ -x /usr/local/bin/install-project-deps.sh ]; then
+              echo '✅ install-project-deps.sh is executable'
+          else
+              echo '❌ install-project-deps.sh not found or not executable'
+              exit 1
+          fi
+          
+          # Test dev-mode.sh exists and is executable
+          if [ -x /usr/local/bin/dev-mode.sh ]; then
+              echo '✅ dev-mode.sh is executable'
+          else
+              echo '❌ dev-mode.sh not found or not executable'
+              exit 1
+          fi
+          
+          # Test dependency installation
+          /usr/local/bin/install-project-deps.sh
+          
+          # Test critical imports after installation
+          python3 -c '
+          import sys
+          sys.path.insert(0, \"/workspace/src\")
+          try:
+              from rxiv_maker.utils.cache_utils import get_cache_dir
+              from rxiv_maker.validators.doi_validator import DOIValidator
+              print(\"✅ Runtime dependency injection successful!\")
+          except ImportError as e:
+              print(f\"❌ Import error after injection: {e}\")
+              exit(1)
+          '
+          "
+      
+      - name: Test full workflow
+        if: matrix.test-type == 'full-workflow'
+        run: |
+          echo "🧪 Testing full Docker workflow..."
+          
+          # Test usage script
+          docker run --rm henriqueslab/rxiv-maker-base:latest usage.sh
+          
+          # Test verification script
+          docker run --rm henriqueslab/rxiv-maker-base:latest verify-python-deps.sh
+          
+          # Test with mounted project
+          docker run --rm -v $PWD:/workspace henriqueslab/rxiv-maker-base:latest python3 /workspace/validate-container-imports.py
+      
+      - name: Test summary
+        run: |
+          echo "## Docker Image Test Results (${{ matrix.test-type }})" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Test completed successfully" >> $GITHUB_STEP_SUMMARY
+
+  # Push to Docker Hub (only on main branch or releases)
+  push-to-registry:
+    name: Push to Docker Hub
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build-and-test, test-images]
+    if: |
+      needs.detect-changes.outputs.should-build == 'true' && 
+      (github.ref == 'refs/heads/main' || github.event_name == 'release') &&
+      github.event.inputs.test_only != 'true'
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+      
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=Rxiv-Maker Base
+            org.opencontainers.image.description=Base Docker image for rxiv-maker with runtime dependency injection
+            org.opencontainers.image.vendor=Rxiv-Maker Project
+            org.opencontainers.image.dependency-hash=${{ needs.detect-changes.outputs.dependency-hash }}
+      
+      - name: Build and push multi-platform image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: src/docker/images/base/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Create release summary
+        run: |
+          echo "## 🐳 Docker Image Released" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:** ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Platforms:** linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
+          echo "**Dependency Hash:** ${{ needs.detect-changes.outputs.dependency-hash }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Usage:**" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "# Development mode with runtime dependency injection" >> $GITHUB_STEP_SUMMARY
+          echo "docker run -it --rm -v \$PWD:/workspace ${{ env.IMAGE_NAME }}:latest dev-mode.sh" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  # Summary job
+  build-summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build-and-test, test-images, push-to-registry]
+    if: always()
+    timeout-minutes: 5
+    
+    steps:
+      - name: Build summary
+        run: |
+          echo "## Docker Build & Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.detect-changes.outputs.should-build }}" == "true" ]; then
+            echo "**Build Triggered:** ✅ Yes" >> $GITHUB_STEP_SUMMARY
+            echo "**Dockerfile Changed:** ${{ needs.detect-changes.outputs.dockerfile-changed }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Dependencies Changed:** ${{ needs.detect-changes.outputs.dependencies-changed }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Build Scripts Changed:** ${{ needs.detect-changes.outputs.build-scripts-changed }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Dependency Hash:** ${{ needs.detect-changes.outputs.dependency-hash }}" >> $GITHUB_STEP_SUMMARY
+            
+            if [ "${{ needs.build-and-test.result }}" == "success" ]; then
+              echo "**Build Status:** ✅ Success" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "**Build Status:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            if [ "${{ needs.test-images.result }}" == "success" ]; then
+              echo "**Tests Status:** ✅ Passed" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "**Tests Status:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            if [ "${{ needs.push-to-registry.result }}" == "success" ]; then
+              echo "**Registry Push:** ✅ Success" >> $GITHUB_STEP_SUMMARY
+            elif [ "${{ needs.push-to-registry.result }}" == "skipped" ]; then
+              echo "**Registry Push:** ⏭️ Skipped (PR or test-only)" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "**Registry Push:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "**Build Triggered:** ⏭️ No (no relevant changes)" >> $GITHUB_STEP_SUMMARY
+          fi

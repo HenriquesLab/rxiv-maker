@@ -1,0 +1,238 @@
+name: Container Engines Test
+
+on:
+  # Manual trigger for container engine testing
+  workflow_dispatch:
+    inputs:
+      test_podman:
+        description: 'Test Podman engine'
+        required: false
+        default: true
+        type: boolean
+      test_docker:
+        description: 'Test Docker engine'
+        required: false
+        default: true
+        type: boolean
+  
+  # Also run on changes to container engine code
+  pull_request:
+    branches: [main, dev]
+    paths:
+      - 'src/rxiv_maker/engines/**'
+      - 'src/rxiv_maker/docker/**'
+      - 'tests/integration/**'
+      - '.github/workflows/container-engines.yml'
+
+# Minimal permissions
+permissions:
+  contents: read
+
+# Cancel previous runs on same PR
+concurrency:
+  group: container-engines-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: 1
+  UV_SYSTEM_PYTHON: 1
+  PYTHONIOENCODING: utf-8
+
+jobs:
+  container-test:
+    name: Container Engine Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [docker, podman]
+        
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: 'latest'
+          enable-cache: true
+
+      - name: Setup Docker
+        if: matrix.engine == 'docker' && (github.event_name == 'workflow_dispatch' && inputs.test_docker || github.event_name == 'pull_request')
+        run: |
+          echo "🐳 Docker is pre-installed on GitHub Actions runners"
+          docker --version
+
+      - name: Setup Podman
+        if: matrix.engine == 'podman' && (github.event_name == 'workflow_dispatch' && inputs.test_podman || github.event_name == 'pull_request')
+        run: |
+          echo "🐳 Installing Podman..."
+          sudo apt-get update -qq
+          sudo apt-get install -y podman
+          
+          # Configure podman for rootless operation
+          podman --version
+          
+          # Test podman works
+          podman run --rm hello-world || echo "Podman basic test completed"
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: container-${{ runner.os }}-${{ matrix.engine }}-${{ hashFiles('**/uv.lock') }}
+          restore-keys: |
+            container-${{ runner.os }}-${{ matrix.engine }}-
+            container-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen
+          uv pip install nox
+
+      - name: Cache nox environments  
+        uses: actions/cache@v4
+        with:
+          path: .nox
+          key: nox-container-${{ runner.os }}-${{ matrix.engine }}-${{ hashFiles('noxfile.py', 'pyproject.toml') }}
+          restore-keys: |
+            nox-container-${{ runner.os }}-${{ matrix.engine }}-
+            nox-container-${{ runner.os }}-
+
+      - name: Prepare container image
+        run: |
+          # Check if Docker-related files changed
+          DOCKER_FILES_CHANGED=false
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '^src/docker/images/base/Dockerfile$|^pyproject.toml$|^src/docker/images/base/build\.sh$'; then
+            echo "🔧 Docker-related files changed - will build locally"
+            DOCKER_FILES_CHANGED=true
+          else
+            echo "📦 No Docker changes - will pull existing image"
+            DOCKER_FILES_CHANGED=false
+          fi
+          
+          if [ "$DOCKER_FILES_CHANGED" == "true" ] && [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "🏗️ Building local Docker image for testing..."
+            
+            # Set up buildx if not already available
+            if ! docker buildx version >/dev/null 2>&1; then
+              echo "Setting up Docker buildx..."
+              docker buildx create --use
+            fi
+            
+            # Build image locally for testing (single platform for speed)
+            docker buildx build \
+              --load \
+              --platform linux/amd64 \
+              --tag henriqueslab/rxiv-maker-base:pr-test \
+              --file src/docker/images/base/Dockerfile \
+              .
+            
+            # Tag as latest for compatibility with existing tests
+            docker tag henriqueslab/rxiv-maker-base:pr-test henriqueslab/rxiv-maker-base:latest
+            
+            echo "✅ Local Docker image built and tagged"
+          else
+            echo "🐳 Pulling rxiv-maker base image with ${{ matrix.engine }}..."
+            ${{ matrix.engine }} pull henriqueslab/rxiv-maker-base:latest
+          fi
+
+      - name: Test container engine availability
+        run: |
+          echo "🔍 Testing ${{ matrix.engine }} engine availability..."
+          uv run python -c "
+          from src.rxiv_maker.engines.factory import get_container_engine
+          engine = get_container_engine('${{ matrix.engine }}')
+          print(f'✅ {engine.engine_name} engine created successfully')
+          print(f'Available: {engine.check_available()}')
+          "
+
+      - name: Validate container dependencies
+        run: |
+          echo "🧪 Validating dependencies in ${{ matrix.engine }} container..."
+          
+          # Test 1: Base image dependencies (current approach)
+          echo "Testing base image dependencies..."
+          ${{ matrix.engine }} run --rm henriqueslab/rxiv-maker-base:latest python3 -c "
+          import sys
+          print(f'Python version: {sys.version}')
+          try:
+              import platformdirs, click, rich, packaging, tomli_w
+              print('✅ Base dependencies available')
+          except ImportError as e:
+              print(f'❌ Base dependency error: {e}')
+              exit(1)
+          "
+          
+          # Test 2: Runtime dependency injection (new approach)
+          echo "Testing runtime dependency injection..."
+          ${{ matrix.engine }} run --rm -v $PWD:/workspace henriqueslab/rxiv-maker-base:latest bash -c "
+          install-project-deps.sh && python3 -c '
+          import sys
+          sys.path.insert(0, \"/workspace/src\")
+          try:
+              from rxiv_maker.utils.cache_utils import get_cache_dir
+              from rxiv_maker.validators.doi_validator import DOIValidator  
+              from rxiv_maker.utils.platform import platform_detector
+              print(\"✅ Runtime dependency injection successful!\")
+          except ImportError as e:
+              print(f\"❌ Runtime injection error: {e}\")
+              exit(1)
+          '
+          "
+          
+          echo "✅ All dependency validation tests passed!"
+
+      - name: Run container engine tests
+        run: |
+          echo "🧪 Running ${{ matrix.engine }} engine tests..."
+          nox -s test_${{ matrix.engine }}
+
+      - name: Test PDF generation with container engine
+        run: |
+          echo "📄 Testing PDF generation with ${{ matrix.engine }} engine..."
+          # Use environment variable to set engine
+          export RXIV_ENGINE=${{ matrix.engine }}
+          nox -s pdf -- ${{ matrix.engine }}
+
+      - name: Verify outputs
+        run: |
+          echo "✅ Verifying generated outputs..."
+          ls -la output/ || echo "No output directory found"
+          find . -name "*.pdf" -ls || echo "No PDF files found"
+
+      - name: Container cleanup
+        if: always()
+        run: |
+          echo "🧹 Cleaning up containers..."
+          # Clean up any running containers
+          ${{ matrix.engine }} ps -q | xargs -r ${{ matrix.engine }} stop || true
+          ${{ matrix.engine }} system prune -f || true
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## ${{ matrix.engine }} Engine Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ **${{ matrix.engine }} engine tests passed**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **${{ matrix.engine }} engine tests failed**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Debug commands:" >> $GITHUB_STEP_SUMMARY
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            echo "nox -s test_${{ matrix.engine }}  # Run ${{ matrix.engine }} tests" >> $GITHUB_STEP_SUMMARY
+            echo "RXIV_ENGINE=${{ matrix.engine }} nox -s pdf  # Test PDF generation" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi

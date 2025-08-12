@@ -309,7 +309,15 @@ RUN uv pip install --system --no-cache-dir \
 # Utility and application-specific libraries (higher change frequency)
 RUN uv pip install --system --no-cache-dir \
     "python-dotenv>=1.0.0,<2.0.0" \
-    "crossref-commons>=0.0.7,<1.0.0"
+    "crossref-commons>=0.0.7,<1.0.0" \
+    "platformdirs>=4.0.0,<5.0.0" \
+    "click>=8.0.0,<9.0.0" \
+    "rich>=13.0.0,<14.0.0" \
+    "rich-click>=1.6.0,<2.0.0" \
+    "typing-extensions>=4.0.0,<5.0.0" \
+    "packaging>=21.0.0,<25.0.0" \
+    "tomli-w>=1.0.0,<2.0.0" \
+    "tomli>=2.0.0,<3.0.0"
 
 # Essential development tools only (removed testing frameworks)
 RUN uv pip install --system --no-cache-dir \
@@ -394,6 +402,93 @@ RUN printf '#!/bin/bash\n/usr/local/bin/verify-python-deps.sh\n' > /usr/local/bi
 
 # Run dependency verification during build to catch issues early
 RUN /usr/local/bin/verify-python-deps.sh
+
+# ======================================================================
+# Runtime Dependency Injection Support
+# ======================================================================
+# This enables the "development mode" pattern where Python dependencies
+# are installed at runtime from the mounted pyproject.toml, ensuring
+# perfect synchronization between local and container environments.
+
+# Create runtime dependency installation script
+RUN cat > /usr/local/bin/install-project-deps.sh << 'INSTALL_SCRIPT'
+#!/bin/bash
+set -e
+
+# Colors for output
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+echo -e "${BLUE}[INFO]${NC} Installing project dependencies from pyproject.toml..."
+
+# Check if pyproject.toml exists in workspace
+if [ ! -f "/workspace/pyproject.toml" ]; then
+    echo -e "${YELLOW}[WARNING]${NC} No pyproject.toml found in /workspace"
+    echo -e "${YELLOW}[WARNING]${NC} Mount your project directory to /workspace to enable runtime dependency injection"
+    exit 0
+fi
+
+# Install project in editable mode with all dependencies
+echo -e "${BLUE}[INFO]${NC} Installing project dependencies with uv..."
+cd /workspace
+
+# Install the project in editable mode
+uv pip install --system -e . --no-cache-dir
+
+echo -e "${GREEN}[SUCCESS]${NC} Project dependencies installed successfully!"
+
+# Verify critical imports work
+echo -e "${BLUE}[INFO]${NC} Verifying imports..."
+python3 -c "
+import sys
+sys.path.insert(0, '/workspace/src')
+try:
+    from rxiv_maker.utils.cache_utils import get_cache_dir
+    from rxiv_maker.validators.doi_validator import DOIValidator
+    print('✅ Runtime dependency injection successful!')
+except ImportError as e:
+    print(f'❌ Import error: {e}')
+    exit(1)
+"
+INSTALL_SCRIPT
+RUN chmod +x /usr/local/bin/install-project-deps.sh
+
+# Create development mode startup script
+RUN cat > /usr/local/bin/dev-mode.sh << 'DEV_SCRIPT'
+#!/bin/bash
+# Development mode: Install dependencies and start interactive shell
+echo "🔧 Starting Rxiv-Maker development mode..."
+/usr/local/bin/install-project-deps.sh
+echo "🚀 Ready for development! Project dependencies are synchronized."
+exec /bin/bash "$@"
+DEV_SCRIPT
+RUN chmod +x /usr/local/bin/dev-mode.sh
+
+# Add usage instructions as a script
+RUN cat > /usr/local/bin/usage.sh << 'USAGE_SCRIPT'
+#!/bin/bash
+echo "=========================================="
+echo "   Rxiv-Maker Docker Usage Instructions"
+echo "=========================================="
+echo ""
+echo "DEVELOPMENT MODE (recommended):"
+echo "  Mount your project and use runtime dependency injection:"
+echo "  $ docker run -v \$PWD:/workspace henriqueslab/rxiv-maker-base:latest dev-mode.sh"
+echo ""
+echo "MANUAL DEPENDENCY INSTALLATION:"
+echo "  $ docker run -v \$PWD:/workspace henriqueslab/rxiv-maker-base:latest install-project-deps.sh"
+echo ""
+echo "PRODUCTION MODE:"
+echo "  Use the pre-installed base dependencies (may have version drift)"
+echo "  $ docker run henriqueslab/rxiv-maker-base:latest"
+echo ""
+echo "VERIFY DEPENDENCIES:"
+echo "  $ docker run henriqueslab/rxiv-maker-base:latest verify-python-deps.sh"
+echo ""
+USAGE_SCRIPT
+RUN chmod +x /usr/local/bin/usage.sh
 
 # Add labels for metadata
 LABEL maintainer="Rxiv-Maker Project"

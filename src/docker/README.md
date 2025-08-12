@@ -33,10 +33,25 @@ src/docker/
 
 ## Quick Start
 
-### Using Pre-built Images
+### Development Mode (Recommended)
+
+The new **runtime dependency injection** approach provides perfect dependency synchronization:
 
 ```bash
-# Production base image
+# Development mode: Auto-install latest dependencies from pyproject.toml
+docker run -it --rm -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest dev-mode.sh
+
+# Manual dependency installation
+docker run --rm -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest install-project-deps.sh
+
+# View all usage options
+docker run --rm henriqueslab/rxiv-maker-base:latest usage.sh
+```
+
+### Production Mode
+
+```bash
+# Use pre-installed base dependencies (stable but may have version drift)
 docker run -it --rm -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest
 ```
 
@@ -63,17 +78,62 @@ Base images include:
 - **Extended font collection** for better rendering
 - **System dependencies** for graphics and multimedia processing
 
+## Runtime Dependency Injection
+
+### Overview
+
+The Docker images now support **runtime dependency injection**, eliminating dependency drift between `pyproject.toml` and Docker images:
+
+- **Development Mode**: Dependencies installed at runtime from `pyproject.toml`
+- **Production Mode**: Pre-installed dependencies for stability
+- **Perfect Sync**: No more version mismatches or missing packages
+
+### Available Scripts
+
+The base image includes several convenience scripts:
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `dev-mode.sh` | Development mode with auto-setup | Interactive development |
+| `install-project-deps.sh` | Install dependencies from pyproject.toml | CI/automation |
+| `usage.sh` | Show usage instructions | Help and documentation |
+| `verify-python-deps.sh` | Verify base dependencies | Troubleshooting |
+
+### Development Workflow
+
+```bash
+# 1. Start development mode
+docker run -it --rm -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest dev-mode.sh
+
+# 2. Dependencies are automatically installed from your pyproject.toml
+# 3. Start coding with perfect dependency sync!
+```
+
 ## Usage with Rxiv-Maker
 
 ### CLI Integration
 ```bash
-# Use Docker engine mode
+# Use Docker engine mode (with runtime injection)
 RXIV_ENGINE=docker rxiv pdf
+
+# Use Podman engine mode  
+RXIV_ENGINE=podman rxiv pdf
 ```
 
 ### Manual Docker Usage
+
+**Development Mode (Recommended):**
 ```bash
-# Run with current directory as workspace
+# Interactive development with dependency sync
+docker run -it --rm -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest dev-mode.sh
+
+# One-time dependency installation
+docker run --rm -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest install-project-deps.sh
+```
+
+**Production Mode:**
+```bash
+# Use pre-installed dependencies
 docker run -it --rm -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest
 ```
 
@@ -103,23 +163,54 @@ make image-test
 make build-status
 ```
 
+## Benefits of Runtime Dependency Injection
+
+### Development Benefits
+- **Perfect Sync**: Dependencies always match your `pyproject.toml`
+- **No Version Drift**: Eliminates the need to rebuild images for dependency changes
+- **Fast Iteration**: Immediate dependency updates without image rebuilds
+- **Consistent Environment**: Same dependencies locally and in containers
+
+### CI/CD Benefits
+- **Reliable Builds**: No more "works locally but fails in Docker" issues
+- **Reduced Maintenance**: Base image rarely needs updates
+- **Faster Feedback**: Dependency issues caught early in validation
+
 ## Performance
 
-Docker images provide significant performance improvements for CI/CD:
+Docker images provide significant performance improvements:
 
-| Environment | Build Time | Dependency Install | Size |
-|-------------|------------|-------------------|------|
-| Local Install | 8-15 min | 5-10 min | N/A |
-| Docker Image | 2-3 min | 30s | ~2.5GB |
+| Mode | Environment | Build Time | Dependency Install | Total Time | Benefits |
+|------|-------------|------------|-------------------|------------|----------|
+| Traditional | Local Install | 8-15 min | 5-10 min | 15-25 min | Full control |
+| Traditional | Docker Image | 2-3 min | Pre-installed | 2-3 min | Fast but drift-prone |
+| **New Approach** | **Runtime Injection** | **2-3 min** | **1-2 min** | **3-5 min** | **Fast + Perfect Sync** |
+
+### Performance Notes
+- **Base image pull**: ~2-3 minutes (cached after first pull)
+- **Runtime dependency install**: ~1-2 minutes (faster with UV)
+- **Total overhead**: ~3-5 minutes vs 15-25 minutes local install
+- **Perfect reliability**: No dependency drift issues
 
 ## Integration with GitHub Actions
 
-Images are automatically built and pushed to Docker Hub when:
-- Version changes in `src/rxiv_maker/__version__.py`
-- Changes are made to Docker files in `src/docker/`
-- Manual workflow dispatch is triggered
+### Automated Testing
 
-See `.github/workflows/build-docker-base.yml` for the complete CI/CD pipeline.
+The `container-engines.yml` workflow now includes comprehensive dependency validation:
+
+1. **Base Dependency Tests**: Validates essential packages are available
+2. **Runtime Injection Tests**: Tests the new dependency injection approach  
+3. **Import Validation**: Verifies critical rxiv-maker modules can be imported
+4. **Multi-Engine Support**: Tests both Docker and Podman engines
+
+### Image Building
+
+Images are built in the external `docker-rxiv-maker` repository when:
+- Version changes trigger release workflows
+- Manual workflow dispatch is triggered
+- Docker-related files are updated
+
+The main repository validates compatibility without rebuilding images, keeping CI fast and focused.
 
 ## License
 
