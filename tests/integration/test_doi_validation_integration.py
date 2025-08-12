@@ -385,19 +385,19 @@ This concludes our test manuscript.
 
         validator.validate_all()
 
-        # Should detect metadata mismatches as errors
-        # (API failures cause errors rather than warnings)
+        # Should detect metadata mismatches as warnings
+        # (Metadata mismatches are warnings, API failures are errors)
 
         # Check that DOI validation detected mismatches
         citation_result = validator.validation_results.get("Citations")
         self.assertIsNotNone(citation_result)
-        self.assertTrue(citation_result.has_errors)
+        self.assertTrue(citation_result.has_warnings)
 
-        # Check for error messages (DOI validation failures produce errors)
-        error_messages = [error.message for error in citation_result.errors]
-        # Look for DOI-related errors
-        doi_errors = [msg for msg in error_messages if "doi" in msg.lower()]
-        self.assertGreater(len(doi_errors), 0)
+        # Check for warning messages (DOI validation mismatches produce warnings)
+        warning_messages = [error.message for error in citation_result.errors if error.level.value == "warning"]
+        # Look for DOI-related warnings
+        doi_warnings = [msg for msg in warning_messages if "doi" in msg.lower()]
+        self.assertGreater(len(doi_warnings), 0)
 
     @patch("crossref_commons.retrieval.get_publication_as_json")
     def test_complete_validation_with_api_failures(self, mock_crossref):

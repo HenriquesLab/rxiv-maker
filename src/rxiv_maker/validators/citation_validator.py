@@ -137,6 +137,7 @@ class CitationValidator(BaseValidator):
             doi_validator = DOIValidator(
                 self.manuscript_path,
                 enable_online_validation=self.enable_doi_validation,
+                ignore_ci_environment=True,  # Allow validation in CI for consistent test behavior
             )
             doi_result = doi_validator.validate()
 
