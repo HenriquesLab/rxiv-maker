@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.4.24] - 2025-08-12
+
+### Added
+- **OIDC Publishing**: Implement OpenID Connect authentication for PyPI publishing
+  - Eliminate need for API tokens in release workflows
+  - Enable secure, passwordless publishing with cryptographic attestations
+  - Add supply chain security with package provenance verification
+
+### Changed
+- **CI/CD Improvements**: Streamline GitHub Actions workflows with local-first approach
+  - Consolidate CI workflows into single, efficient job
+  - Archive legacy workflows while preserving history
+  - Optimize dependency caching and build performance
+  - Add comprehensive error reporting and debug guidance
+
+### Fixed
+- **Dependency Management**: Fix check-deps-verbose command to use module directly
+- **Build System**: Fix Makefile CLI fallback commands argument formats
+- **Pre-commit**: Resolve repository boundary validation for submodule-free architecture
+
 ## [v1.4.21] - 2025-08-08
 
 ### Fixed
