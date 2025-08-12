@@ -221,8 +221,41 @@ jobs:
 
           echo "✅ Build environment validation complete"
 
-      - name: Log in to Docker Hub
+      - name: Validate Docker Hub credentials
+        id: check-creds
         if: github.event_name != 'pull_request'
+        run: |
+          # Only attempt login if we're on main branch or manual trigger with push enabled
+          SHOULD_LOGIN=false
+
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "🔑 Main branch detected - credentials required for push"
+            SHOULD_LOGIN=true
+          elif [ "${{ github.event_name }}" == "release" ]; then
+            echo "🔑 Release event - credentials required for push"
+            SHOULD_LOGIN=true
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ "${{ inputs.push_to_registry }}" == "true" ]; then
+            echo "🔑 Manual trigger with push enabled - credentials required"
+            SHOULD_LOGIN=true
+          else
+            echo "🔓 Dev branch or test-only mode - skipping Docker Hub authentication"
+            SHOULD_LOGIN=false
+          fi
+
+          echo "should-login=$SHOULD_LOGIN" >> $GITHUB_OUTPUT
+
+          if [ "$SHOULD_LOGIN" == "true" ]; then
+            if [ -z "${{ secrets.DOCKER_USERNAME }}" ] || [ -z "${{ secrets.DOCKER_PASSWORD }}" ]; then
+              echo "❌ Docker Hub credentials not available"
+              echo "This build will proceed without registry push capability"
+              echo "should-login=false" >> $GITHUB_OUTPUT
+            else
+              echo "✅ Docker Hub credentials available"
+            fi
+          fi
+
+      - name: Log in to Docker Hub
+        if: steps.check-creds.outputs.should-login == 'true'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -389,8 +422,12 @@ jobs:
     needs: [detect-changes, build-and-test, test-images]
     if: |
       needs.detect-changes.outputs.should-build == 'true' &&
-      (github.ref == 'refs/heads/main' || github.event_name == 'release') &&
-      github.event.inputs.test_only != 'true'
+      (
+        github.ref == 'refs/heads/main' ||
+        github.event_name == 'release' ||
+        (github.event_name == 'workflow_dispatch' && inputs.push_to_registry == true)
+      ) &&
+      inputs.test_only != 'true'
     timeout-minutes: 30
 
     steps:
@@ -403,7 +440,10 @@ jobs:
           platforms: linux/amd64,linux/arm64
 
       - name: Validate Docker Hub credentials
-        if: github.ref == 'refs/heads/main' || github.event_name == 'release'
+        if: |
+          github.ref == 'refs/heads/main' ||
+          github.event_name == 'release' ||
+          (github.event_name == 'workflow_dispatch' && inputs.push_to_registry == true)
         run: |
           if [ -z "${{ secrets.DOCKER_USERNAME }}" ]; then
             echo "❌ DOCKER_USERNAME secret not set"
