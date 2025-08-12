@@ -62,38 +62,33 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --frozen
-          uv pip install pre-commit
+          uv pip install nox
 
-      - name: Run pre-commit checks
+      - name: Cache nox environments
+        uses: actions/cache@v4
+        with:
+          path: .nox
+          key: nox-${{ runner.os }}-${{ hashFiles('noxfile.py', 'pyproject.toml') }}
+          restore-keys: |
+            nox-${{ runner.os }}-
+
+      - name: Run linting
         run: |
-          echo "🔍 Running pre-commit checks..."
-          pre-commit run --all-files --show-diff-on-failure
-          if [ $? -ne 0 ]; then
-            echo ""
-            echo "❌ Pre-commit checks failed!"
-            echo "💡 To fix locally, run:"
-            echo "   pre-commit install"
-            echo "   pre-commit run --all-files"
-            exit 1
-          fi
-          echo "✅ Pre-commit checks passed"
+          echo "🔍 Running linting checks..."
+          nox -s lint
+          echo "✅ Linting checks passed"
 
       - name: Run tests
         run: |
           echo "🧪 Running tests..."
-          uv run pytest tests/unit/ \
-            --ignore=tests/unit/test_docker_engine_mode.py \
-            -v \
-            --tb=short \
-            --maxfail=3 \
-            --timeout=60
+          nox -s test
           echo "✅ Tests passed"
 
       - name: Check package build
         run: |
-          echo "📦 Building package..."
-          uv build --wheel --out-dir dist/
-          echo "✅ Package builds successfully"
+          echo "📦 Building and validating package..."
+          nox -s build
+          echo "✅ Package builds and validates successfully"
 
       - name: Summary
         if: always()
@@ -107,8 +102,9 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "Run these commands locally to debug:" >> $GITHUB_STEP_SUMMARY
             echo '```bash' >> $GITHUB_STEP_SUMMARY
-            echo "pre-commit install" >> $GITHUB_STEP_SUMMARY
-            echo "pre-commit run --all-files" >> $GITHUB_STEP_SUMMARY
-            echo "uv run pytest tests/unit/" >> $GITHUB_STEP_SUMMARY
+            echo "nox -s lint    # Run linting checks" >> $GITHUB_STEP_SUMMARY
+            echo "nox -s test    # Run tests" >> $GITHUB_STEP_SUMMARY
+            echo "nox -s build   # Build and validate package" >> $GITHUB_STEP_SUMMARY
+            echo "nox -s test_fast  # Quick development feedback" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
           fi

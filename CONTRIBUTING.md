@@ -148,19 +148,30 @@ For complete Docker setup instructions, see the [Docker Engine Mode guide](docs/
 
 3. **Test Your Changes**
    ```bash
-   # Run tests
-   pytest                                      # Unit tests
-   nox -s tests                               # Test multiple Python versions
-   hatch run test                             # Alternative test runner
+   # Quick development feedback (<2 min)
+   nox -s test_fast                           # Fast tests only
+   
+   # Full test suite (<10 min, matches CI)
+   nox -s test                                # Unit + integration tests
+   
+   # Cross-version testing (for releases)  
+   nox -s test_cross                          # Test Python 3.11, 3.12, 3.13
+   
+   # Specialized testing
+   nox -s test_docker                         # Docker engine tests
+   nox -s pdf                                 # PDF generation (local + docker engines)
+   
+   # Code quality checks
+   nox -s lint                                # Linting (ruff + mypy)
+   nox -s format                              # Auto-format code
+   
+   # Build validation
+   nox -s build                               # Package build + validation
    
    # Test with manuscripts using modern CLI
    rxiv validate EXAMPLE_MANUSCRIPT/          # Validate manuscript
    rxiv pdf EXAMPLE_MANUSCRIPT/               # Build PDF
-   rxiv pdf EXAMPLE_MANUSCRIPT/ --engine docker  # Build in Docker
-   
-   # Or use legacy commands
-   MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT make pdf  # Add RXIV_ENGINE=DOCKER for Docker
-   make validate                              # Add RXIV_ENGINE=DOCKER for Docker
+   RXIV_ENGINE=DOCKER rxiv pdf EXAMPLE_MANUSCRIPT/  # Build in Docker
    ```
 
 4. **Submit Your Contribution**
@@ -173,8 +184,9 @@ For complete Docker setup instructions, see the [Docker Engine Mode guide](docs/
 ## 📝 Pull Request Guidelines
 
 ### Before Submitting
-- [ ] Tests pass locally (`pytest`)
-- [ ] Code follows project style (`pre-commit run --all-files`)
+- [ ] Tests pass locally (`nox -s test_fast` or `nox -s test`)
+- [ ] Code follows project style (`nox -s lint` and `nox -s format`)
+- [ ] Package builds successfully (`nox -s build`)
 - [ ] Documentation updated if needed
 - [ ] CHANGELOG.md updated for significant changes
 - [ ] Pull request template filled out
