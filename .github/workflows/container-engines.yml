@@ -113,10 +113,10 @@ jobs:
       - name: Prepare container image
         run: |
           echo "🔍 Checking if Docker image build is needed..."
-          
+
           # Check if Docker-related files changed (with better error handling)
           DOCKER_FILES_CHANGED=false
-          
+
           # Handle PR context where base_ref might not be available
           if [ "${{ github.event_name }}" == "pull_request" ] && [ -n "${{ github.base_ref }}" ]; then
             echo "Checking for changes against base ref: ${{ github.base_ref }}"
@@ -174,7 +174,7 @@ jobs:
               echo "3. Docker Hub rate limiting"
               echo ""
               echo "Will attempt to build locally instead..."
-              
+
               # Emergency local build
               echo "🏗️ Building local Docker image as fallback..."
               if [ "${{ matrix.engine }}" == "docker" ]; then
@@ -182,7 +182,7 @@ jobs:
                   echo "Setting up Docker buildx..."
                   docker buildx create --use
                 fi
-                
+
                 docker buildx build \
                   --load \
                   --platform linux/amd64 \
@@ -197,7 +197,7 @@ jobs:
               echo "✅ Successfully pulled henriqueslab/rxiv-maker-base:latest"
             fi
           fi
-          
+
           # Final validation that we have an image
           echo "🔍 Verifying Docker image availability..."
           if ! ${{ matrix.engine }} image inspect henriqueslab/rxiv-maker-base:latest >/dev/null 2>&1; then

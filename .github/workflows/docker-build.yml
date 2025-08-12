@@ -197,28 +197,28 @@ jobs:
       - name: Validate build environment
         run: |
           echo "🔍 Validating build environment..."
-          
+
           # Check Docker buildx
           if ! docker buildx version >/dev/null 2>&1; then
             echo "❌ Docker buildx not available"
             exit 1
           fi
           echo "✅ Docker buildx: $(docker buildx version)"
-          
+
           # Check Dockerfile exists
           if [ ! -f "src/docker/images/base/Dockerfile" ]; then
             echo "❌ Dockerfile not found at src/docker/images/base/Dockerfile"
             exit 1
           fi
           echo "✅ Dockerfile found"
-          
+
           # Check pyproject.toml exists (for dependency validation)
           if [ ! -f "pyproject.toml" ]; then
             echo "❌ pyproject.toml not found"
             exit 1
           fi
           echo "✅ pyproject.toml found"
-          
+
           echo "✅ Build environment validation complete"
 
       - name: Log in to Docker Hub
@@ -410,13 +410,13 @@ jobs:
             echo "Please configure Docker Hub credentials in repository secrets"
             exit 1
           fi
-          
+
           if [ -z "${{ secrets.DOCKER_PASSWORD }}" ]; then
             echo "❌ DOCKER_PASSWORD secret not set"
             echo "Please configure Docker Hub credentials in repository secrets"
             exit 1
           fi
-          
+
           echo "✅ Docker Hub credentials configured"
 
       - name: Log in to Docker Hub
