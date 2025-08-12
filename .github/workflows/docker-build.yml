@@ -181,6 +181,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set platform slug
         id: platform
         run: |
@@ -334,6 +337,16 @@ jobs:
 
           # List loaded images
           docker images | grep henriqueslab/rxiv-maker-base || echo "No images found"
+
+          # Ensure a :latest tag exists for tests irrespective of metadata-action tags
+          # Tag the most recently built image as :latest if not present
+          if ! docker images --format '{{.Repository}}:{{.Tag}}' | grep -q '^henriqueslab/rxiv-maker-base:latest$'; then
+            most_recent=$(docker images --format '{{.Repository}}:{{.Tag}} {{.CreatedAt}}' | awk '/^henriqueslab\/rxiv-maker-base:/ {print $1"|"$2" "$3" "$4" "$5" "$6}' | sort -rk2 | head -n1 | cut -d'|' -f1)
+            if [ -n "$most_recent" ]; then
+              echo "Tagging $most_recent as henriqueslab/rxiv-maker-base:latest for tests"
+              docker tag "$most_recent" henriqueslab/rxiv-maker-base:latest
+            fi
+          fi
 
       - name: Test base dependencies
         if: matrix.test-type == 'base-deps'

@@ -111,6 +111,7 @@ jobs:
             nox-container-${{ runner.os }}-
 
       - name: Prepare container image
+        id: prepare
         run: |
           echo "🔍 Determining Docker image strategy..."
 
@@ -305,16 +306,16 @@ jobs:
             echo "❌ henriqueslab/rxiv-maker-base:latest not available"
             echo "Available images:"
             ${{ matrix.engine }} images
-            echo "IMAGE_READY=false" >> $GITHUB_ENV
+            echo "image_ready=false" >> $GITHUB_OUTPUT
             echo "::warning::Docker image preparation failed - tests will be skipped"
           else
             echo "✅ henriqueslab/rxiv-maker-base:latest is available"
-            echo "IMAGE_READY=true" >> $GITHUB_ENV
+            echo "image_ready=true" >> $GITHUB_OUTPUT
           fi
 
       - name: Show image preparation status
         run: |
-          if [ "${{ env.IMAGE_READY }}" == "true" ]; then
+          if [ "${{ steps.prepare.outputs.image_ready }}" == "true" ]; then
             echo "✅ Docker image is ready - proceeding with tests"
           else
             echo "⚠️ Docker image is not ready - skipping container tests"
@@ -327,18 +328,19 @@ jobs:
           fi
 
       - name: Test container engine availability
-        if: env.IMAGE_READY == 'true'
+        if: ${{ steps.prepare.outputs.image_ready == 'true' }}
         run: |
           echo "🔍 Testing ${{ matrix.engine }} engine availability..."
           uv run python -c "
-          from src.rxiv_maker.engines.factory import get_container_engine
+          import sys; sys.path.insert(0, 'src')
+          from rxiv_maker.engines.factory import get_container_engine
           engine = get_container_engine('${{ matrix.engine }}')
           print(f'✅ {engine.engine_name} engine created successfully')
           print(f'Available: {engine.check_available()}')
           "
 
       - name: Validate container dependencies
-        if: env.IMAGE_READY == 'true'
+        if: ${{ steps.prepare.outputs.image_ready == 'true' }}
         run: |
           echo "🧪 Validating dependencies in ${{ matrix.engine }} container..."
 
@@ -375,13 +377,13 @@ jobs:
           echo "✅ All dependency validation tests passed!"
 
       - name: Run container engine tests
-        if: env.IMAGE_READY == 'true'
+        if: ${{ steps.prepare.outputs.image_ready == 'true' }}
         run: |
           echo "🧪 Running ${{ matrix.engine }} engine tests..."
           nox -s test_${{ matrix.engine }}
 
       - name: Test PDF generation with container engine
-        if: env.IMAGE_READY == 'true'
+        if: ${{ steps.prepare.outputs.image_ready == 'true' }}
         run: |
           echo "📄 Testing PDF generation with ${{ matrix.engine }} engine..."
           # Use environment variable to set engine
@@ -389,7 +391,7 @@ jobs:
           nox -s pdf -- ${{ matrix.engine }}
 
       - name: Verify outputs
-        if: env.IMAGE_READY == 'true'
+        if: ${{ steps.prepare.outputs.image_ready == 'true' }}
         run: |
           echo "✅ Verifying generated outputs..."
           ls -la output/ || echo "No output directory found"
