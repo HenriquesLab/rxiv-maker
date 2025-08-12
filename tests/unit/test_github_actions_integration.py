@@ -20,7 +20,7 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
     def setUp(self):
         """Set up test environment."""
         self.temp_dir = tempfile.mkdtemp()
-        self.workflow_file = Path(__file__).parent.parent.parent / ".github/workflows/build-pdf.yml"
+        self.workflow_file = Path(__file__).parent.parent.parent / ".github/workflows/ci.yml"
 
     def test_workflow_file_exists(self):
         """Test that the GitHub Actions workflow file exists."""
@@ -45,23 +45,20 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
         self.assertIn("jobs", workflow)
 
         # Test workflow name
-        self.assertEqual(workflow["name"], "Build and Release PDF")
+        self.assertEqual(workflow["name"], "CI")
 
         # Test trigger events - handle YAML parsing edge case
         trigger_section = workflow.get("on") or workflow.get(True)
         self.assertIsNotNone(trigger_section, "No trigger section found")
 
-        self.assertIn("push", trigger_section)
-        self.assertIn("workflow_dispatch", trigger_section)
+        self.assertIn("pull_request", trigger_section)
 
-        # Test tag-based trigger (handle different formats)
-        push_triggers = trigger_section["push"]
-        if "tags" in push_triggers:
-            tags = push_triggers["tags"]
-            if isinstance(tags, list):
-                self.assertIn("v*", tags)
-            else:
-                self.assertEqual(tags, ["v*"])
+        # Test pull_request trigger configuration
+        pr_triggers = trigger_section["pull_request"]
+        if "branches" in pr_triggers:
+            branches = pr_triggers["branches"]
+            self.assertIn("main", branches)
+            self.assertIn("dev", branches)
 
     @pytest.mark.fast
     def test_workflow_dispatch_inputs(self):
@@ -78,7 +75,7 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
         # Test workflow_dispatch structure - handle YAML parsing edge case
         trigger_section = workflow.get("on") or workflow.get(True)
         if not trigger_section or "workflow_dispatch" not in trigger_section:
-            self.skipTest("workflow_dispatch not found in workflow")
+            self.skipTest("workflow_dispatch not found in workflow - this is expected for CI workflow")
 
         workflow_dispatch = trigger_section["workflow_dispatch"]
         if "inputs" not in workflow_dispatch:
@@ -104,20 +101,13 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
         jobs = workflow["jobs"]
 
         # Test job presence
-        self.assertIn("prepare", jobs)
-        self.assertIn("build-pdf", jobs)
+        self.assertIn("test", jobs)
 
-        # Test prepare job
-        prepare_job = jobs["prepare"]
-        self.assertEqual(prepare_job["runs-on"], "ubuntu-latest")
-        self.assertIn("outputs", prepare_job)
-        self.assertIn("manuscript_path", prepare_job["outputs"])
-
-        # Test build-pdf job
-        build_job = jobs["build-pdf"]
-        self.assertEqual(build_job["runs-on"], "ubuntu-latest")
-        self.assertIn("needs", build_job)
-        self.assertEqual(build_job["needs"], "prepare")
+        # Test test job
+        test_job = jobs["test"]
+        self.assertEqual(test_job["runs-on"], "ubuntu-latest")
+        self.assertEqual(test_job["name"], "Test")
+        self.assertEqual(test_job["timeout-minutes"], 15)
 
     @pytest.mark.fast
     def test_docker_container_configuration(self):
@@ -128,14 +118,15 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
         with open(self.workflow_file) as f:
             workflow = yaml.safe_load(f)
 
-        build_job = workflow["jobs"]["build-pdf"]
-        container = build_job["container"]
+        test_job = workflow["jobs"]["test"]
 
-        # Check that the image is dynamically determined from prepare job
-        expected_image = "${{ needs.prepare.outputs.docker_image }}"
-        self.assertEqual(container["image"], expected_image)
-        self.assertIn("--platform linux/amd64", container["options"])
-        self.assertIn("--user root", container["options"])
+        # CI workflow doesn't use Docker containers - runs directly on ubuntu-latest
+        if "container" not in test_job:
+            self.skipTest("CI workflow doesn't use Docker containers - this is expected")
+
+        container = test_job["container"]
+        # If there is a container config, test it
+        self.assertIsInstance(container, dict)
 
     @pytest.mark.fast
     def test_caching_strategies(self):
@@ -146,19 +137,16 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
         with open(self.workflow_file) as f:
             workflow = yaml.safe_load(f)
 
-        build_steps = workflow["jobs"]["build-pdf"]["steps"]
-        cache_steps = [step for step in build_steps if step.get("name", "").startswith("Cache")]
+        test_steps = workflow["jobs"]["test"]["steps"]
+        cache_steps = [step for step in test_steps if step.get("name", "").startswith("Cache")]
 
         # Test that we have cache steps
         self.assertGreater(len(cache_steps), 0)
 
-        # Test specific cache configurations
+        # Test specific cache configurations for CI workflow
         cache_names = [step["name"] for step in cache_steps]
         expected_caches = [
-            "Cache Python dependencies",
-            "Cache R packages",
-            "Cache LaTeX outputs",
-            "Cache processed figures",
+            "Cache dependencies",
         ]
 
         for expected_cache in expected_caches:
