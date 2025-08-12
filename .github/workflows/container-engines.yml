@@ -125,6 +125,8 @@ jobs:
             echo "🔧 Dev branch detected - building locally for self-sufficiency"
             BUILD_LOCALLY=true
             IMAGE_TAG="dev-latest"
+            # Force clean build on dev to ensure latest dependencies
+            echo "🧹 Forcing clean build on dev branch to ensure latest dependencies"
           else
             # Enhanced change detection for other branches
             DOCKER_FILES_CHANGED=false
@@ -231,19 +233,40 @@ jobs:
                   docker buildx create --use
                 fi
 
-                docker buildx build \
-                  --load \
-                  --platform linux/amd64 \
-                  --tag henriqueslab/rxiv-maker-base:$tag \
-                  --file src/docker/images/base/Dockerfile \
-                  .
+                # Force clean build on dev branch to ensure latest dependencies
+                if [ "$tag" == "dev-latest" ]; then
+                  echo "🧹 Forcing clean build with --no-cache for dev branch"
+                  docker buildx build \
+                    --load \
+                    --platform linux/amd64 \
+                    --no-cache \
+                    --tag henriqueslab/rxiv-maker-base:$tag \
+                    --file src/docker/images/base/Dockerfile \
+                    .
+                else
+                  docker buildx build \
+                    --load \
+                    --platform linux/amd64 \
+                    --tag henriqueslab/rxiv-maker-base:$tag \
+                    --file src/docker/images/base/Dockerfile \
+                    .
+                fi
               else
                 # Podman build (simpler, no buildx needed)
                 echo "Building with Podman..."
-                podman build \
-                  --tag henriqueslab/rxiv-maker-base:$tag \
-                  --file src/docker/images/base/Dockerfile \
-                  .
+                if [ "$tag" == "dev-latest" ]; then
+                  echo "🧹 Forcing clean build with --no-cache for dev branch"
+                  podman build \
+                    --no-cache \
+                    --tag henriqueslab/rxiv-maker-base:$tag \
+                    --file src/docker/images/base/Dockerfile \
+                    .
+                else
+                  podman build \
+                    --tag henriqueslab/rxiv-maker-base:$tag \
+                    --file src/docker/images/base/Dockerfile \
+                    .
+                fi
               fi
             }
 
@@ -344,16 +367,33 @@ jobs:
         run: |
           echo "🧪 Validating dependencies in ${{ matrix.engine }} container..."
 
+          # Debug: Check what images are available
+          echo "📋 Available images:"
+          ${{ matrix.engine }} images | grep rxiv-maker || echo "No rxiv-maker images found"
+
+          # Debug: Check image details
+          echo "🔍 Inspecting image details:"
+          ${{ matrix.engine }} image inspect henriqueslab/rxiv-maker-base:latest --format '{{.Created}} {{.Id}}' || echo "Failed to inspect image"
+
           # Test 1: Base image dependencies (current approach)
           echo "Testing base image dependencies..."
           ${{ matrix.engine }} run --rm henriqueslab/rxiv-maker-base:latest python3 -c "
           import sys
           print(f'Python version: {sys.version}')
+          print(f'Python executable: {sys.executable}')
+          print(f'Python path: {sys.path[:3]}')  # Show first 3 entries
           try:
               import platformdirs, click, rich, packaging, tomli_w
               print('✅ Base dependencies available')
+              print(f'platformdirs version: {platformdirs.__version__}')
+              print(f'click version: {click.__version__}')
           except ImportError as e:
               print(f'❌ Base dependency error: {e}')
+              print('Checking what packages are installed...')
+              import subprocess
+              result = subprocess.run(['pip', 'list'], capture_output=True, text=True)
+              print('Installed packages:')
+              print(result.stdout[:1000])  # First 1000 chars
               exit(1)
           "
 
