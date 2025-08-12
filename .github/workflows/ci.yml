@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, dev]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.github/workflows/ci.yml'
+      - '.pre-commit-config.yaml'
+
+# Minimal permissions by default
+permissions:
+  contents: read
+
+# Cancel previous runs on same PR
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: 1
+  UV_SYSTEM_PYTHON: 1
+  PYTHONIOENCODING: utf-8
+
+jobs:
+  # Single job for all checks - simpler and faster
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for pre-commit
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: 'latest'
+          enable-cache: true
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: ci-${{ runner.os }}-${{ hashFiles('**/uv.lock') }}
+          restore-keys: |
+            ci-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen
+          uv pip install pre-commit
+
+      - name: Run pre-commit checks
+        run: |
+          echo "🔍 Running pre-commit checks..."
+          pre-commit run --all-files --show-diff-on-failure
+          if [ $? -ne 0 ]; then
+            echo ""
+            echo "❌ Pre-commit checks failed!"
+            echo "💡 To fix locally, run:"
+            echo "   pre-commit install"
+            echo "   pre-commit run --all-files"
+            exit 1
+          fi
+          echo "✅ Pre-commit checks passed"
+
+      - name: Run tests
+        run: |
+          echo "🧪 Running tests..."
+          uv run pytest tests/unit/ \
+            --ignore=tests/unit/test_docker_engine_mode.py \
+            -v \
+            --tb=short \
+            --maxfail=3 \
+            --timeout=60
+          echo "✅ Tests passed"
+
+      - name: Check package build
+        run: |
+          echo "📦 Building package..."
+          uv build --wheel --out-dir dist/
+          echo "✅ Package builds successfully"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## CI Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ **All checks passed**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Checks failed**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Run these commands locally to debug:" >> $GITHUB_STEP_SUMMARY
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            echo "pre-commit install" >> $GITHUB_STEP_SUMMARY
+            echo "pre-commit run --all-files" >> $GITHUB_STEP_SUMMARY
+            echo "uv run pytest tests/unit/" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi

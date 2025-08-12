@@ -2,6 +2,14 @@
 
 Welcome to Rxiv-Maker! We're thrilled that you're interested in contributing to our project. This guide will help you get started with contributing to Rxiv-Maker, whether you're fixing bugs, adding features, improving documentation, or helping in other ways.
 
+## 🎯 Local-First Development Philosophy
+
+We follow a **local-first validation** approach to ensure code quality while minimizing CI/CD complexity:
+- **Faster feedback**: Catch issues in seconds, not minutes
+- **Reduced CI costs**: GitHub Actions runs only essential checks on PRs
+- **Better security**: Minimal external dependencies and API calls
+- **Developer experience**: Fix issues before pushing
+
 ## 🌟 Ways to Contribute
 
 ### 🐛 Bug Reports
@@ -96,7 +104,22 @@ For complete Docker setup instructions, see the [Docker Engine Mode guide](docs/
    
    </details>
 
-3. **Verify Setup**
+3. **Install Pre-commit Hooks (MANDATORY)**
+   
+   ```bash
+   # Install pre-commit if not already installed
+   pip install pre-commit
+   
+   # Install the git hooks
+   pre-commit install
+   
+   # Run once to verify setup
+   pre-commit run --all-files
+   ```
+   
+   **IMPORTANT**: Pre-commit hooks are mandatory. CI will reject PRs that fail these checks.
+
+4. **Verify Setup**
    
    ```bash
    # Test your setup with modern CLI
