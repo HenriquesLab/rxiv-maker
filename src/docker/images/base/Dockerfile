@@ -493,7 +493,7 @@ RUN chmod +x /usr/local/bin/usage.sh
 # Add labels for metadata
 LABEL maintainer="Rxiv-Maker Project"
 LABEL description="Lightweight base image for Rxiv-Maker with mermaid.ink API integration"
-LABEL version="2.0-mermaid-api"
+LABEL version="2.0.1-mermaid-api"
 LABEL org.opencontainers.image.source="https://github.com/henriqueslab/rxiv-maker"
 LABEL org.opencontainers.image.description="Ubuntu-based image with LaTeX, Python, R, and mermaid.ink API support"
 LABEL org.opencontainers.image.licenses="MIT"
