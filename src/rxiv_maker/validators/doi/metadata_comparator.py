@@ -205,8 +205,11 @@ class MetadataComparator:
         if author_diff:
             differences.append(f"Author mismatch (DataCite): {author_diff}")
 
-        # Compare publisher (for DataCite, this is often the journal)
-        journal_diff = self._compare_journals(bib_entry.get("journal", ""), datacite_metadata.get("publisher", ""))
+        # Compare publisher vs journal with relaxed matching
+        # DataCite often returns the parent publisher while bib has specific journal name
+        journal_diff = self._compare_publisher_journal(
+            bib_entry.get("journal", ""), datacite_metadata.get("publisher", "")
+        )
         if journal_diff:
             differences.append(f"Publisher/Journal mismatch (DataCite): {journal_diff}")
 
@@ -216,3 +219,43 @@ class MetadataComparator:
             differences.append(f"Year mismatch (DataCite): {year_diff}")
 
         return differences
+
+    def _compare_publisher_journal(self, bib_journal: str, datacite_publisher: str) -> str | None:
+        """Compare journal name against publisher with relaxed matching for common patterns."""
+        if not bib_journal or not datacite_publisher:
+            return None
+
+        # Clean names for comparison
+        bib_clean = self._clean_journal_name(bib_journal).lower()
+        pub_clean = self._clean_journal_name(datacite_publisher).lower()
+
+        # Check for known publisher-journal relationships that should not be flagged
+        publisher_journal_mappings = {
+            # Common publishers and their journal patterns
+            "springer": ["springer", "nature", "bmr", "biomed"],
+            "ieee": ["ieee", "computer", "engineering", "science"],
+            "acm": ["acm", "computing", "machine", "computer"],
+            "elsevier": ["elsevier", "science", "cell", "lancet"],
+            "oxford": ["oxford", "oup", "journal", "university"],
+            "cambridge": ["cambridge", "university", "press"],
+            "wiley": ["wiley", "journal", "science"],
+            "plos": ["plos", "public", "library", "science", "one", "computational", "biology"],
+            "mit": ["mit", "press", "quantitative", "science"],
+            "open journal": ["joss", "open", "source", "software"],
+        }
+
+        # Check if this looks like a publisher-journal relationship
+        for publisher_key, journal_patterns in publisher_journal_mappings.items():
+            if publisher_key in pub_clean:
+                # If publisher matches and journal contains related terms, it's probably valid
+                if any(pattern in bib_clean for pattern in journal_patterns):
+                    return None  # Don't report this as a mismatch
+
+        # Use more relaxed similarity threshold for publisher-journal comparisons (0.4 instead of 0.8)
+        from difflib import SequenceMatcher
+
+        similarity = SequenceMatcher(None, bib_clean, pub_clean).ratio()
+        if similarity < 0.4:  # Much more relaxed for publisher/journal mismatches
+            return f"'{bib_journal}' vs '{datacite_publisher}' (similarity: {similarity:.2f})"
+
+        return None

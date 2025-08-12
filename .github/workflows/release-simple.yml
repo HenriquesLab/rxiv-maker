@@ -256,17 +256,17 @@ jobs:
         run: |
           echo "🧪 Testing released Docker image..."
           VERSION="${{ needs.build.outputs.version }}"
-          
+
           # Test the versioned image
           docker run --rm henriqueslab/rxiv-maker-base:${VERSION} python3 -c "
           import sys
           print(f'✅ Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')
-          
+
           # Test essential dependencies
           import platformdirs, click, rich, packaging
           print('✅ Essential dependencies available')
           "
-          
+
           # Test runtime dependency injection
           docker run --rm -v $PWD:/workspace henriqueslab/rxiv-maker-base:${VERSION} bash -c "
           if [ -x /usr/local/bin/install-project-deps.sh ]; then
@@ -276,7 +276,7 @@ jobs:
               exit 1
           fi
           "
-          
+
           echo "✅ Docker image tests passed"
 
   # Publish to PyPI using OIDC (no API tokens!)

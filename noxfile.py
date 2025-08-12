@@ -13,7 +13,7 @@ nox.options.sessions = ["lint", "test_fast"]
 
 # Configuration constants
 PYTHON_VERSIONS = ["3.11", "3.12", "3.13"]
-ENGINES = ["local", "docker"]
+ENGINES = ["local", "docker", "podman"]
 
 # Common dependencies
 TEST_DEPS = [
@@ -38,9 +38,12 @@ def check_engine_availability(session, engine):
     """Check if the specified engine is available on the system."""
     if engine != "local":
         try:
+            # Check if binary exists
             session.run(engine, "--version", external=True, silent=True)
+            # Check if daemon/service is running
+            session.run(engine, "ps", external=True, silent=True)
         except Exception:
-            session.skip(f"{engine.capitalize()} is not available on this system")
+            session.skip(f"{engine.capitalize()} is not available or daemon not running")
 
 
 # Core Development Sessions
@@ -170,6 +173,24 @@ def test_docker(session):
         "tests/unit/test_docker_engine_mode.py",
         "-m",
         "docker",
+        "--tb=short",
+        *session.posargs,
+    )
+
+
+@nox.session(python="3.11", reuse_venv=True)
+def test_podman(session):
+    """Podman engine testing (manual trigger only)."""
+    check_engine_availability(session, "podman")
+    install_project_deps(session)
+
+    # Run with podman engine using existing integration tests
+    session.run(
+        "pytest",
+        "tests/integration/",
+        "--engine=podman",
+        "-m",
+        "not slow",
         "--tb=short",
         *session.posargs,
     )

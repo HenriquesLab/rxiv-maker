@@ -76,7 +76,7 @@ class DOIValidator(BaseValidator):
         self.crossref_client = CrossRefClient()
         self.datacite_client = DataCiteClient()
         self.joss_client = JOSSClient()
-        self.doi_resolver = DOIResolver()
+        self.doi_resolver = DOIResolver(cache=self.cache)
 
         # Initialize metadata comparator
         self.comparator = MetadataComparator(similarity_threshold=similarity_threshold)
@@ -106,6 +106,23 @@ class DOIValidator(BaseValidator):
         ]
         return any(os.environ.get(indicator) for indicator in ci_indicators)
 
+    def _check_network_connectivity(self) -> bool:
+        """Check if network connectivity is available for DOI validation."""
+        try:
+            # Try a quick HEAD request to a reliable service with short timeout
+            import requests
+
+            response = requests.head("https://httpbin.org/status/200", timeout=3)
+            return response.status_code == 200
+        except Exception:
+            # Try an alternative service
+            try:
+                response = requests.head("https://doi.org", timeout=3)
+                return response.status_code in [200, 301, 302]
+            except Exception:
+                logger.debug("Network connectivity check failed")
+                return False
+
     def validate(self) -> ValidationResult:
         """Validate DOIs in bibliography files."""
         errors = []
@@ -121,6 +138,11 @@ class DOIValidator(BaseValidator):
         if self._is_ci_environment() and not self.force_validation:
             logger.info("Skipping DOI validation in CI environment (use --force-validation to override)")
             return ValidationResult(self.name, errors, metadata)
+
+        # Check network connectivity before attempting online validation
+        if self.enable_online_validation and not self._check_network_connectivity():
+            logger.warning("Network connectivity unavailable, skipping online DOI validation")
+            self.enable_online_validation = False
 
         if not self.enable_online_validation:
             logger.info("Online DOI validation is disabled")

@@ -143,12 +143,14 @@ class TestPyPIPackageIntegration:
                 # Check that init was successful
                 assert init_result.returncode == 0, f"Init failed: {init_result.stderr}"
 
-                # For Docker, check the directory in the original working directory
+                # For container engines (Docker/Podman), check the directory in the original working directory
                 # For local, check in the temp directory
-                if execution_engine.engine_type == "docker":
-                    docker_manuscript_dir = Path(original_cwd) / "TEST_MANUSCRIPT"
-                    assert docker_manuscript_dir.exists(), "Manuscript directory not created in Docker workspace"
-                    check_dir = docker_manuscript_dir
+                if execution_engine.engine_type in ["docker", "podman"]:
+                    container_manuscript_dir = Path(original_cwd) / "TEST_MANUSCRIPT"
+                    assert container_manuscript_dir.exists(), (
+                        f"Manuscript directory not created in {execution_engine.engine_type} workspace"
+                    )
+                    check_dir = container_manuscript_dir
                 else:
                     assert manuscript_dir.exists(), "Manuscript directory not created"
                     check_dir = manuscript_dir
@@ -194,7 +196,7 @@ class TestPyPIPackageIntegration:
                             cwd=original_cwd,
                         )
                 else:
-                    # For Docker, use the rxiv command with the correct path
+                    # For container engines (Docker/Podman), use the rxiv command with the correct path
                     validate_result = execution_engine.run(
                         [
                             "rxiv",
@@ -247,7 +249,7 @@ class TestPyPIPackageIntegration:
                             cwd=original_cwd,
                         )
                 else:
-                    # For Docker, use the rxiv command with the correct path
+                    # For container engines (Docker/Podman), use the rxiv command with the correct path
                     pdf_result = execution_engine.run(
                         [
                             "rxiv",
@@ -299,6 +301,14 @@ class TestPyPIPackageIntegration:
 
             finally:
                 os.chdir(original_cwd)
+
+                # Clean up TEST_MANUSCRIPT directory created by container engines
+                if execution_engine.engine_type in ["docker", "podman"]:
+                    container_manuscript_dir = Path(original_cwd) / "TEST_MANUSCRIPT"
+                    if container_manuscript_dir.exists():
+                        import shutil
+
+                        shutil.rmtree(container_manuscript_dir)
 
     @pytest.mark.skipif("CI" not in os.environ, reason="Only run in CI environment")
     @pytest.mark.timeout(300)  # Allow 5 minutes for full PDF build in CI

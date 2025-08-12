@@ -584,10 +584,10 @@ For LaTeX compilation errors after building, check the .log file in output/
             cmd = [
                 sys.executable,
                 "-m",
-                "rxiv_maker.commands.validate",
+                "rxiv_maker.cli",
+                "validate",
                 args.manuscript_path,
                 "--detailed",
-                "--verbose",
             ]
             result = subprocess.run(cmd, check=False, env=env)
             sys.exit(result.returncode)

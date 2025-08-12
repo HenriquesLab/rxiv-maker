@@ -83,7 +83,7 @@ except ImportError as e:
 
 try:
     from rxiv_maker.utils.cache_utils import get_cache_dir
-    print('✅ cache_utils import successful') 
+    print('✅ cache_utils import successful')
 except ImportError as e:
     print(f'❌ cache_utils import failed: {e}')
     exit(1)
@@ -110,7 +110,7 @@ print_info "Test 4: Validating Docker command syntax..."
 
 # Check that the Docker commands from the workflow are syntactically correct
 DOCKER_CMD_BASE="docker run --rm henriqueslab/rxiv-maker-base:latest python3 -c \"import platformdirs, click, rich; print('✅ Dependencies OK')\""
-DOCKER_CMD_RUNTIME="docker run --rm -v \$PWD:/workspace henriqueslab/rxiv-maker-base:latest bash -c \"install-project-deps.sh && python3 -c 'print(\\\"✅ Runtime injection OK\\\")'\"" 
+DOCKER_CMD_RUNTIME="docker run --rm -v \$PWD:/workspace henriqueslab/rxiv-maker-base:latest bash -c \"install-project-deps.sh && python3 -c 'print(\\\"✅ Runtime injection OK\\\")'\""
 
 print_success "Base dependency validation command:"
 echo "  $DOCKER_CMD_BASE"
@@ -124,12 +124,12 @@ print_info "Test 5: Validating UV installation command..."
 # Test that uv can parse our pyproject.toml
 if command -v uv >/dev/null 2>&1; then
     print_info "UV available, testing dependency resolution..."
-    
+
     # Dry run to test dependency resolution without actually installing
     uv pip install --dry-run -e . || {
         print_warning "UV dry run failed, but this may be due to environment differences"
     }
-    
+
     print_success "UV command validation completed"
 else
     print_warning "UV not available in current environment, skipping detailed validation"
@@ -172,7 +172,7 @@ echo "========================================================================"
 echo "   Runtime Dependency Injection Test Results"
 echo "========================================================================"
 echo "✅ pyproject.toml validation: PASSED"
-echo "✅ Essential dependencies check: PASSED" 
+echo "✅ Essential dependencies check: PASSED"
 echo "✅ Critical imports validation: PASSED"
 echo "✅ Docker command syntax: PASSED"
 echo "✅ UV installation logic: PASSED"

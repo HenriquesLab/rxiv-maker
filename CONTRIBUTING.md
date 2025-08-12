@@ -58,6 +58,25 @@ make test RXIV_ENGINE=DOCKER
 
 For complete Docker setup instructions, see the [Docker Engine Mode guide](docs/docker-engine-mode.md).
 
+### 🔄 Container Engine Reliability (v1.4.24)
+
+Recent improvements ensure robust container engine support with graceful fallbacks:
+
+**Enhanced Engine Detection:**
+- Docker and Podman engines now verify both binary availability and daemon/service status
+- Better error messages when container engines are unavailable
+- Nox sessions properly detect running container services
+
+**Graceful Fallback Logic:**
+- Container validation automatically falls back to local validation when needed
+- Clear warning messages inform users of fallback behavior  
+- No breaking errors when Docker/Podman daemons are not running
+
+**Improved Developer Experience:**
+- Seamless operation regardless of container engine availability
+- All engines (local, Docker, Podman) tested and verified working
+- Backward compatibility maintained with existing workflows
+
 ---
 
 ## 🚀 Getting Started

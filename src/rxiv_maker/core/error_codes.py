@@ -306,16 +306,26 @@ def create_validation_error(
     level = ValidationLevel.ERROR
     if error_code.category in [ErrorCategory.NETWORK, ErrorCategory.DEPENDENCY]:
         level = ValidationLevel.WARNING  # These are often recoverable
-    # Treat missing external metadata as a warning (non-blocking) so temporary API outages don't fail builds
-    if error_code == ErrorCode.METADATA_UNAVAILABLE:
-        # Treat metadata unavailability as a non-blocking warning by default so transient
-        # API outages don't fail builds. However, if the message explicitly indicates
-        # that validation failed across ALL sources ("from any source"), escalate to
-        # an error to surface persistent/complete failures (matches unit test expectations).
-        if message and "from any source" in message.lower():
-            level = ValidationLevel.ERROR
-        else:
+
+    # Treat DOI resolution failures as warnings (non-blocking) - these are often network issues
+    elif error_code == ErrorCode.DOI_NOT_RESOLVABLE:
+        level = ValidationLevel.WARNING  # Network issues shouldn't block builds
+
+    # Treat metadata mismatches as warnings when they're similarity-based comparison issues
+    elif error_code == ErrorCode.METADATA_MISMATCH:
+        # Publisher/journal mismatches and similarity issues should be warnings, not errors
+        if message and any(
+            keyword in message.lower() for keyword in ["similarity:", "mismatch", "publisher/journal", "vs"]
+        ):
             level = ValidationLevel.WARNING
+        else:
+            level = ValidationLevel.ERROR  # Keep genuine metadata errors as errors
+
+    # Treat missing external metadata as a warning (non-blocking) so temporary API outages don't fail builds
+    elif error_code == ErrorCode.METADATA_UNAVAILABLE:
+        # Treat metadata unavailability as a non-blocking warning to ensure builds don't fail
+        # due to temporary API outages or network issues. This prioritizes build reliability.
+        level = ValidationLevel.WARNING
     elif error_code == ErrorCode.CITATION_NOT_FOUND and "Unused bibliography entry" in (message or ""):
         level = ValidationLevel.WARNING  # Unused entries are warnings, not errors
 

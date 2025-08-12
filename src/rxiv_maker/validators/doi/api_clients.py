@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class BaseDOIClient:
     """Base class for DOI API clients."""
 
-    def __init__(self, timeout: int = 30, max_retries: int = 3):
+    def __init__(self, timeout: int = 10, max_retries: int = 3):
         self.timeout = timeout
         self.max_retries = max_retries
         self.session = requests.Session()
@@ -192,12 +192,43 @@ class JOSSClient(BaseDOIClient):
 class DOIResolver(BaseDOIClient):
     """Client for verifying DOI resolution."""
 
+    def __init__(self, cache=None, timeout: int = 10, max_retries: int = 3):
+        super().__init__(timeout=timeout, max_retries=max_retries)
+        self.cache = cache
+
     def verify_resolution(self, doi: str) -> bool:
         """Verify that a DOI resolves correctly."""
-        try:
-            url = f"https://doi.org/{doi}"
-            response = self.session.head(url, timeout=self.timeout, allow_redirects=True)
-            return response.status_code == 200
-        except Exception as e:
-            logger.debug(f"DOI resolution failed for {doi}: {e}")
-            return False
+        # Check cache first if available
+        if self.cache:
+            cached_status = self.cache.get_resolution_status(doi)
+            if cached_status is not None:
+                logger.debug(f"Using cached resolution status for {doi}: {cached_status['resolves']}")
+                return cached_status["resolves"]
+
+        # Attempt resolution with retry logic
+        resolves = False
+        error_message = None
+
+        for attempt in range(self.max_retries):
+            try:
+                url = f"https://doi.org/{doi}"
+                response = self.session.head(url, timeout=self.timeout, allow_redirects=True)
+                resolves = response.status_code == 200
+                if resolves:
+                    break
+                else:
+                    error_message = f"HTTP {response.status_code}"
+            except Exception as e:
+                error_message = str(e)
+                logger.debug(f"DOI resolution attempt {attempt + 1} failed for {doi}: {e}")
+                if attempt < self.max_retries - 1:
+                    time.sleep(2**attempt)  # Exponential backoff
+                else:
+                    logger.debug(f"All resolution attempts failed for {doi}")
+
+        # Cache the result (including failures) if cache is available
+        if self.cache:
+            self.cache.set_resolution_status(doi, resolves, error_message)
+            logger.debug(f"Cached resolution status for {doi}: {resolves}")
+
+        return resolves

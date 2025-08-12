@@ -71,10 +71,16 @@ class DockerEngine(AbstractContainerEngine):
         return "docker"
 
     def check_available(self) -> bool:
-        """Check if Docker is available and running."""
+        """Check if Docker is available and daemon is running."""
         try:
-            result = subprocess.run(["docker", "--version"], capture_output=True, text=True, timeout=5)
-            return result.returncode == 0
+            # First check if docker binary exists
+            version_result = subprocess.run(["docker", "--version"], capture_output=True, text=True, timeout=5)
+            if version_result.returncode != 0:
+                return False
+
+            # Then check if Docker daemon is actually running
+            ps_result = subprocess.run(["docker", "ps"], capture_output=True, text=True, timeout=10)
+            return ps_result.returncode == 0
         except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
             return False
 

@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 from ..core.logging_config import get_logger, set_log_directory
-from ..docker.manager import get_docker_manager
+from ..engines.factory import get_container_engine
 from ..utils.figure_checksum import get_figure_checksum_manager
 from ..utils.operation_ids import create_operation
 from ..utils.performance import get_performance_tracker
@@ -66,10 +66,17 @@ class BuildManager:
         self.engine = engine
         self.platform = platform_detector
 
-        # Initialize Docker manager if using docker engine
-        self.docker_manager = None
-        if self.engine == "docker":
-            self.docker_manager = get_docker_manager(workspace_dir=Path.cwd().resolve())
+        # Initialize container engine if using container engine
+        self.container_engine = None
+        if self.engine in ["docker", "podman"]:
+            try:
+                self.container_engine = get_container_engine(
+                    engine_type=self.engine, workspace_dir=Path.cwd().resolve()
+                )
+            except RuntimeError as e:
+                # Container engine not available, will fall back to local execution
+                logger.warning(f"{self.engine.title()} engine not available: {e}")
+                self.container_engine = None
 
         # Set up paths
         self.manuscript_dir = self.manuscript_dir_path
@@ -212,19 +219,21 @@ class BuildManager:
 
         self.log("Running manuscript validation...", "STEP")
 
-        if self.engine == "docker":
-            return self._validate_manuscript_docker()
+        if self.engine in ["docker", "podman"] and self.container_engine is not None:
+            return self._validate_manuscript_container()
         else:
+            if self.engine in ["docker", "podman"] and self.container_engine is None:
+                self.log(f"{self.engine.title()} engine not available, using local validation", "WARNING")
             return self._validate_manuscript_local()
 
-    def _validate_manuscript_docker(self) -> bool:
-        """Run manuscript validation using Docker."""
+    def _validate_manuscript_container(self) -> bool:
+        """Run manuscript validation using container engine."""
         try:
             manuscript_path = Path(self.manuscript_path)
 
             # Convert to absolute path, then make relative to workspace directory
             manuscript_abs = manuscript_path.resolve()
-            workspace_dir = self.docker_manager.workspace_dir
+            workspace_dir = self.container_engine.workspace_dir
 
             try:
                 manuscript_rel = manuscript_abs.relative_to(workspace_dir)
@@ -232,32 +241,27 @@ class BuildManager:
                 # If manuscript is not within workspace, use just the name
                 manuscript_rel = manuscript_path.name
 
-            # Build validation command for Docker
-            validation_cmd = [
-                "python",
-                "/workspace/src/rxiv_maker/commands/validate.py",
-                str(manuscript_rel),
-                "--detailed",
-                "--check-latex",
-            ]
+            # Build validation command for container using installed CLI
+            validation_cmd = ["rxiv", "validate", str(manuscript_rel), "--detailed"]
 
             if self.verbose:
                 validation_cmd.append("--verbose")
 
-            result = self.docker_manager.run_command(command=validation_cmd, session_key="validation")
+            result = self.container_engine.run_command(command=validation_cmd, session_key="validation")
 
             if result.returncode == 0:
-                self.log("Validation completed successfully")
+                self.log("Container validation completed successfully")
                 return True
             else:
-                self.log("Validation failed", "ERROR")
+                self.log(f"Container validation failed, falling back to local validation", "WARNING")
                 if self.verbose and result.stderr:
-                    self.log(f"Validation errors: {result.stderr}", "WARNING")
-                return False
+                    self.log(f"Container validation errors: {result.stderr}", "WARNING")
+                return self._validate_manuscript_local()
 
         except Exception as e:
-            self.log(f"Docker validation error: {e}", "ERROR")
-            return False
+            self.log(f"{self.engine.title()} validation error: {e}", "WARNING")
+            self.log(f"Falling back to local validation", "WARNING")
+            return self._validate_manuscript_local()
 
     def _validate_manuscript_local(self) -> bool:
         """Run manuscript validation using local installation."""
@@ -582,18 +586,18 @@ class BuildManager:
         """Compile LaTeX to PDF."""
         self.log("Compiling LaTeX to PDF...", "STEP")
 
-        if self.engine == "docker":
-            return self._compile_pdf_docker()
+        if self.engine in ["docker", "podman"]:
+            return self._compile_pdf_container()
         else:
             return self._compile_pdf_local()
 
-    def _compile_pdf_docker(self) -> bool:
-        """Compile LaTeX to PDF using Docker."""
+    def _compile_pdf_container(self) -> bool:
+        """Compile LaTeX to PDF using container engine."""
         try:
             tex_file = self.output_dir / f"{self.manuscript_name}.tex"
 
             # Run LaTeX compilation with multiple passes
-            results = self.docker_manager.run_latex_compilation(
+            results = self.container_engine.run_latex_compilation(
                 tex_file=tex_file, working_dir=self.output_dir, passes=3
             )
 
@@ -610,7 +614,7 @@ class BuildManager:
                 return False
 
         except Exception as e:
-            self.log(f"Error compiling PDF with Docker: {e}", "ERROR")
+            self.log(f"Error compiling PDF with {self.engine}: {e}", "ERROR")
             return False
 
     def _compile_pdf_local(self) -> bool:
@@ -805,16 +809,16 @@ class BuildManager:
 
         self.log("Running PDF validation...", "STEP")
 
-        if self.engine == "docker":
-            return self._run_pdf_validation_docker()
+        if self.engine in ["docker", "podman"]:
+            return self._run_pdf_validation_container()
         else:
             return self._run_pdf_validation_local()
 
-    def _run_pdf_validation_docker(self) -> bool:
-        """Run PDF validation using Docker."""
+    def _run_pdf_validation_container(self) -> bool:
+        """Run PDF validation using container engine."""
         try:
-            # Convert paths to be relative to Docker workspace
-            workspace_dir = self.docker_manager.workspace_dir
+            # Convert paths to be relative to container workspace
+            workspace_dir = self.container_engine.workspace_dir
 
             # Handle manuscript path
             manuscript_path = Path(self.manuscript_path)
@@ -832,7 +836,7 @@ class BuildManager:
                 # Fallback to output directory relative path
                 pdf_rel = Path("output") / self.output_pdf.name
 
-            # Build PDF validation command for Docker
+            # Build PDF validation command for container
             pdf_validation_cmd = [
                 "python",
                 "/workspace/src/rxiv_maker/validators/pdf_validator.py",
@@ -841,7 +845,7 @@ class BuildManager:
                 f"/workspace/{pdf_rel}",
             ]
 
-            result = self.docker_manager.run_command(command=pdf_validation_cmd, session_key="pdf_validation")
+            result = self.container_engine.run_command(command=pdf_validation_cmd, session_key="pdf_validation")
 
             if result.returncode == 0:
                 self.log("PDF validation completed successfully")
@@ -857,7 +861,7 @@ class BuildManager:
                 return True  # Don't fail the build on PDF validation warnings
 
         except Exception as e:
-            self.log(f"Error running PDF validation with Docker: {e}", "WARNING")
+            self.log(f"Error running PDF validation with {self.engine}: {e}", "WARNING")
             return True  # Don't fail the build on PDF validation errors
 
     def _run_pdf_validation_local(self) -> bool:

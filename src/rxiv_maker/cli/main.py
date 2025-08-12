@@ -138,13 +138,16 @@ class UpdateCheckGroup(click.Group):
             # Always re-raise exceptions from commands
             raise
         finally:
-            # Clean up Docker sessions if Docker engine was used
+            # Clean up container sessions if container engine was used
             engine = ctx.obj.get("engine") if ctx.obj else None
-            if engine == "docker":
+            if engine in ["docker", "podman"]:
                 try:
-                    from ..docker import cleanup_global_docker_manager
+                    # For now, we'll keep the existing docker cleanup for backward compatibility
+                    # TODO: Implement proper container engine cleanup once we fully migrate
+                    if engine == "docker":
+                        from ..docker import cleanup_global_docker_manager
 
-                    cleanup_global_docker_manager()
+                        cleanup_global_docker_manager()
                 except Exception:
                     # Ignore cleanup errors to avoid masking original exceptions
                     pass
@@ -155,9 +158,9 @@ class UpdateCheckGroup(click.Group):
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.option(
     "--engine",
-    type=click.Choice(["local", "docker"]),
+    type=click.Choice(["local", "docker", "podman"]),
     default=lambda: os.environ.get("RXIV_ENGINE", "local").lower(),
-    help="Engine to use for processing (local or docker). Can be set with RXIV_ENGINE environment variable.",
+    help="Engine to use for processing (local, docker, or podman). Can be set with RXIV_ENGINE environment variable.",
 )
 @click.option("--no-update-check", is_flag=True, help="Skip update check for this command")
 @click.pass_context
@@ -218,21 +221,21 @@ def main(
     ctx.obj["engine"] = engine
     ctx.obj["no_update_check"] = no_update_check
 
-    # Docker engine optimization: check Docker availability early
-    if engine == "docker":
-        from ..docker.manager import get_docker_manager
+    # Container engine optimization: check availability early for container engines
+    if engine in ["docker", "podman"]:
+        from ..engines.factory import get_container_engine
 
         try:
             if verbose:
-                console.print("🐳 Creating Docker manager...", style="blue")
+                console.print(f"🐳 Creating {engine} engine...", style="blue")
             # Use current working directory as workspace for consistency
             workspace_dir = Path.cwd().resolve()
-            docker_manager = get_docker_manager(workspace_dir=workspace_dir)
+            container_engine = get_container_engine(engine_type=engine, workspace_dir=workspace_dir)
             if verbose:
-                console.print("🐳 Checking Docker availability...", style="blue")
-            if not docker_manager.check_docker_available():
+                console.print(f"🐳 Checking {engine} availability...", style="blue")
+            if not container_engine.check_available():
                 console.print(
-                    "❌ Docker is not available or not running. Please start Docker and try again.",
+                    f"❌ {engine.title()} is not available or not running. Please start {engine} and try again.",
                     style="red",
                 )
                 console.print(
@@ -242,11 +245,11 @@ def main(
                 ctx.exit(1)
 
             if verbose:
-                console.print("🐳 Docker is ready!", style="green")
+                console.print(f"🐳 {engine.title()} is ready!", style="green")
 
         except Exception as e:
             if verbose:
-                console.print(f"⚠️ Docker setup warning: {e}", style="yellow")
+                console.print(f"⚠️ {engine.title()} setup warning: {e}", style="yellow")
 
     # Set environment variables
     os.environ["RXIV_ENGINE"] = engine.upper()

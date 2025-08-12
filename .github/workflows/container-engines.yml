@@ -14,7 +14,7 @@ on:
         required: false
         default: true
         type: boolean
-  
+
   # Also run on changes to container engine code
   pull_request:
     branches: [main, dev]
@@ -43,12 +43,12 @@ jobs:
     name: Container Engine Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    
+
     strategy:
       fail-fast: false
       matrix:
         engine: [docker, podman]
-        
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -78,10 +78,10 @@ jobs:
           echo "🐳 Installing Podman..."
           sudo apt-get update -qq
           sudo apt-get install -y podman
-          
+
           # Configure podman for rootless operation
           podman --version
-          
+
           # Test podman works
           podman run --rm hello-world || echo "Podman basic test completed"
 
@@ -101,7 +101,7 @@ jobs:
           uv sync --frozen
           uv pip install nox
 
-      - name: Cache nox environments  
+      - name: Cache nox environments
         uses: actions/cache@v4
         with:
           path: .nox
@@ -121,16 +121,16 @@ jobs:
             echo "📦 No Docker changes - will pull existing image"
             DOCKER_FILES_CHANGED=false
           fi
-          
+
           if [ "$DOCKER_FILES_CHANGED" == "true" ] && [ "${{ github.event_name }}" == "pull_request" ]; then
             echo "🏗️ Building local Docker image for testing..."
-            
+
             # Set up buildx if not already available
             if ! docker buildx version >/dev/null 2>&1; then
               echo "Setting up Docker buildx..."
               docker buildx create --use
             fi
-            
+
             # Build image locally for testing (single platform for speed)
             docker buildx build \
               --load \
@@ -138,10 +138,10 @@ jobs:
               --tag henriqueslab/rxiv-maker-base:pr-test \
               --file src/docker/images/base/Dockerfile \
               .
-            
+
             # Tag as latest for compatibility with existing tests
             docker tag henriqueslab/rxiv-maker-base:pr-test henriqueslab/rxiv-maker-base:latest
-            
+
             echo "✅ Local Docker image built and tagged"
           else
             echo "🐳 Pulling rxiv-maker base image with ${{ matrix.engine }}..."
@@ -161,7 +161,7 @@ jobs:
       - name: Validate container dependencies
         run: |
           echo "🧪 Validating dependencies in ${{ matrix.engine }} container..."
-          
+
           # Test 1: Base image dependencies (current approach)
           echo "Testing base image dependencies..."
           ${{ matrix.engine }} run --rm henriqueslab/rxiv-maker-base:latest python3 -c "
@@ -174,7 +174,7 @@ jobs:
               print(f'❌ Base dependency error: {e}')
               exit(1)
           "
-          
+
           # Test 2: Runtime dependency injection (new approach)
           echo "Testing runtime dependency injection..."
           ${{ matrix.engine }} run --rm -v $PWD:/workspace henriqueslab/rxiv-maker-base:latest bash -c "
@@ -183,7 +183,7 @@ jobs:
           sys.path.insert(0, \"/workspace/src\")
           try:
               from rxiv_maker.utils.cache_utils import get_cache_dir
-              from rxiv_maker.validators.doi_validator import DOIValidator  
+              from rxiv_maker.validators.doi_validator import DOIValidator
               from rxiv_maker.utils.platform import platform_detector
               print(\"✅ Runtime dependency injection successful!\")
           except ImportError as e:
@@ -191,7 +191,7 @@ jobs:
               exit(1)
           '
           "
-          
+
           echo "✅ All dependency validation tests passed!"
 
       - name: Run container engine tests
