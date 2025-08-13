@@ -187,13 +187,11 @@ choco install -y miktex
 
 **Alternative Make installation methods:**
 ```powershell
-# Option 1: Via Scoop (lighter package manager)
-Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-irm get.scoop.sh | iex
-scoop install make
-
-# Option 2: Via Visual Studio Build Tools (if using VS)
+# Option 1: Via Visual Studio Build Tools (if using VS)
 # Make is included with "Desktop development with C++" workload
+
+# Option 2: Via Git Bash (includes make)
+# Download Git for Windows which includes make in Git Bash
 ```
 
 

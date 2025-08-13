@@ -45,7 +45,7 @@
 
 ## High Priority Items
 
-- [ ] Implement proper container engine cleanup in CLI main (src/rxiv_maker/cli/main.py:146)
+- [x] Implement proper container engine cleanup in CLI main (src/rxiv_maker/cli/main.py:146) ✅
 - [ ] Add comprehensive type annotations to fix mypy errors (287 issues found)
 - [ ] Improve error handling in Docker/Podman engines for better user experience
 - [ ] Add unit tests for new DOI validation fallback system
