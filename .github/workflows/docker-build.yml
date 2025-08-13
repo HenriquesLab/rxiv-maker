@@ -192,10 +192,10 @@ jobs:
             echo "⏭️ Skip directive found in commit message or PR title - skipping Docker build"
           # Determine if we should build based on event type
           elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            if [ "${{ inputs.force_build }}" == "true" ]; then
+            if [ "${{ inputs.force_build || false }}" == "true" ]; then
               echo "should-build=true" >> $GITHUB_OUTPUT
               echo "🚀 Manual trigger with force_build - will build"
-            elif [ "${{ inputs.skip_dependency_analysis }}" == "true" ]; then
+            elif [ "${{ inputs.skip_dependency_analysis || false }}" == "true" ]; then
               echo "should-build=true" >> $GITHUB_OUTPUT
               echo "🚀 Manual trigger skipping dependency analysis - will build"
             else
@@ -310,7 +310,7 @@ jobs:
           elif [ "${{ github.event_name }}" == "release" ]; then
             echo "🔑 Release event - credentials required for push"
             SHOULD_LOGIN=true
-          elif [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ "${{ inputs.push_to_registry }}" == "true" ]; then
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ "${{ inputs.push_to_registry || false }}" == "true" ]; then
             echo "🔑 Manual trigger with push enabled - credentials required"
             SHOULD_LOGIN=true
           else
@@ -537,9 +537,9 @@ jobs:
       (
         github.ref == 'refs/heads/main' ||
         github.event_name == 'release' ||
-        (github.event_name == 'workflow_dispatch' && inputs.push_to_registry == true)
+        (github.event_name == 'workflow_dispatch' && (inputs.push_to_registry || false) == true)
       ) &&
-      inputs.test_only != 'true'
+      (inputs.test_only || 'false') != 'true'
     timeout-minutes: 30
 
     steps:
@@ -555,7 +555,7 @@ jobs:
         if: |
           github.ref == 'refs/heads/main' ||
           github.event_name == 'release' ||
-          (github.event_name == 'workflow_dispatch' && inputs.push_to_registry == true)
+          (github.event_name == 'workflow_dispatch' && (inputs.push_to_registry || false) == true)
         run: |
           if [ -z "${{ secrets.DOCKER_USERNAME }}" ]; then
             echo "❌ DOCKER_USERNAME secret not set"
