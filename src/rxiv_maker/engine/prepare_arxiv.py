@@ -418,15 +418,37 @@ def create_zip_package(arxiv_path, zip_filename="for_arxiv.zip", manuscript_path
 
     zip_path = Path(zip_filename).resolve()
 
+    # Define auxiliary files that should be excluded from arXiv submission
+    # These are temporary build artifacts that arXiv regenerates automatically
+    auxiliary_extensions = {".aux", ".blg", ".log", ".pdf", ".out", ".fls", ".fdb_latexmk", ".synctex.gz"}
+
     print(f"\n📁 Creating ZIP package: {zip_path}")
+
+    excluded_files = []
+    included_files = []
 
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
         for file_path in arxiv_path.rglob("*"):
             if file_path.is_file():
+                # Check if file should be excluded (auxiliary files)
+                if file_path.suffix.lower() in auxiliary_extensions:
+                    excluded_files.append(file_path.name)
+                    continue
+
                 # Store files with relative paths
                 arcname = file_path.relative_to(arxiv_path)
                 zipf.write(file_path, arcname)
-                print(f"  Added: {arcname}")
+                included_files.append(str(arcname))
+
+    # Report what was included and excluded
+    print(f"  📦 Added {len(included_files)} files:")
+    for file_name in sorted(included_files):
+        print(f"    ✓ {file_name}")
+
+    if excluded_files:
+        print(f"  🗑️ Excluded {len(excluded_files)} auxiliary files:")
+        for file_name in sorted(excluded_files):
+            print(f"    ✗ {file_name} (build artifact)")
 
     print(f"✅ ZIP package created: {zip_path}")
     print("📤 Ready for arXiv submission!")
