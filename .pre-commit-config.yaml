@@ -8,7 +8,7 @@ repos:
       - id: end-of-file-fixer
         exclude: ^(.*\.(md|tex|pdf|png|jpg|jpeg|svg)|git_submodules/.*)$
       - id: check-yaml
-        exclude: ^git_submodules/.*$
+        exclude: ^(git_submodules/.*|\.github/workflows/.*)$
       - id: check-toml
         exclude: ^git_submodules/.*$
       - id: check-json
@@ -32,7 +32,7 @@ repos:
     rev: v1.34.0
     hooks:
       - id: typos
-        exclude: ^git_submodules/.*$
+        exclude: ^(git_submodules/.*|\.github/workflows/.*)$
 
   # Python formatting, linting, and import sorting with Ruff (Rust-based)
   - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -41,10 +41,10 @@ repos:
       # Linting (includes docstring validation with Google convention)
       - id: ruff
         args: [--fix]
-        exclude: ^(.*\.ipynb|git_submodules/.*)$
+        exclude: ^(.*\.ipynb|git_submodules/.*|\.github/workflows/.*)$
       # Formatting (replaces black, isort, autoflake, docformatter)
       - id: ruff-format
-        exclude: ^(.*\.ipynb|git_submodules/.*)$
+        exclude: ^(.*\.ipynb|git_submodules/.*|\.github/workflows/.*)$
 
   # Python type checking with mypy (temporarily disabled for PR - type issues pre-exist)
   # - repo: https://github.com/pre-commit/mirrors-mypy

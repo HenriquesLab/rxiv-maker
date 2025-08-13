@@ -31,7 +31,7 @@ class BaseDOIClient:
                 if attempt < self.max_retries - 1:
                     time.sleep(2**attempt)  # Exponential backoff
                 else:
-                    logger.error(f"All attempts failed for {url}: {e}")
+                    logger.debug(f"All attempts failed for {url}: {e}")
                     return None
         return None
 
@@ -64,8 +64,8 @@ class CrossRefClient(BaseDOIClient):
         except Exception as e:
             logger.debug(f"CrossRef REST fetch failed for {doi}: {e}")
 
-        # If both attempts failed, log at error level once (so it's visible in non-debug runs)
-        logger.error(f"All CrossRef metadata fetch attempts failed for {doi}")
+        # If both attempts failed, log at debug level to avoid confusing users
+        logger.debug(f"All CrossRef metadata fetch attempts failed for {doi} - trying other sources")
         return None
 
 
@@ -232,3 +232,223 @@ class DOIResolver(BaseDOIClient):
             logger.debug(f"Cached resolution status for {doi}: {resolves}")
 
         return resolves
+
+
+class OpenAlexClient(BaseDOIClient):
+    """Client for OpenAlex API - comprehensive academic database."""
+
+    def fetch_metadata(self, doi: str) -> dict[str, Any] | None:
+        """Fetch metadata from OpenAlex API."""
+        try:
+            # OpenAlex accepts DOI with or without doi: prefix
+            clean_doi = doi.replace("doi:", "")
+            url = f"https://api.openalex.org/works/doi:{clean_doi}"
+            
+            response_data = self._make_request(url)
+            
+            if response_data:
+                return response_data
+            return None
+            
+        except Exception as e:
+            logger.debug(f"OpenAlex fetch failed for {doi}: {e}")
+            return None
+
+    def normalize_metadata(self, openalex_data: dict[str, Any]) -> dict[str, Any]:
+        """Normalize OpenAlex metadata to common format."""
+        normalized = {}
+
+        # Extract title
+        title = openalex_data.get("title")
+        if title:
+            normalized["title"] = title.strip()
+
+        # Extract authors
+        authorships = openalex_data.get("authorships", [])
+        authors = []
+        for authorship in authorships:
+            author_info = authorship.get("author", {})
+            display_name = author_info.get("display_name", "")
+            if display_name:
+                # Split display name into given and family names (basic approach)
+                name_parts = display_name.split()
+                if len(name_parts) > 1:
+                    given_name = " ".join(name_parts[:-1])
+                    family_name = name_parts[-1]
+                else:
+                    given_name = ""
+                    family_name = display_name
+                authors.append({"family": family_name, "given": given_name})
+        normalized["author"] = authors
+
+        # Extract year
+        publication_year = openalex_data.get("publication_year")
+        if publication_year:
+            normalized["year"] = str(publication_year)
+
+        # Extract journal/venue
+        primary_location = openalex_data.get("primary_location", {})
+        source = primary_location.get("source", {})
+        journal_name = source.get("display_name")
+        if journal_name:
+            normalized["journal"] = journal_name
+
+        # Extract publisher
+        host_organization = openalex_data.get("host_organization")
+        if host_organization and host_organization.get("display_name"):
+            normalized["publisher"] = host_organization["display_name"]
+
+        # Extract DOI
+        doi_url = openalex_data.get("doi")
+        if doi_url and doi_url.startswith("https://doi.org/"):
+            normalized["DOI"] = doi_url.replace("https://doi.org/", "")
+
+        return normalized
+
+
+class SemanticScholarClient(BaseDOIClient):
+    """Client for Semantic Scholar API - AI-powered research database."""
+
+    def fetch_metadata(self, doi: str) -> dict[str, Any] | None:
+        """Fetch metadata from Semantic Scholar API."""
+        try:
+            # Semantic Scholar accepts DOI without prefix
+            clean_doi = doi.replace("doi:", "")
+            url = f"https://api.semanticscholar.org/graph/v1/paper/DOI:{clean_doi}"
+            
+            # Semantic Scholar API requires specific fields to be requested
+            params = {
+                "fields": "title,authors,year,journal,doi,venue,publicationDate,publisher"
+            }
+            
+            for attempt in range(self.max_retries):
+                try:
+                    response = self.session.get(url, params=params, timeout=self.timeout)
+                    if response.status_code == 200:
+                        return response.json()
+                    elif response.status_code == 429:  # Rate limited
+                        logger.debug(f"Semantic Scholar rate limited for {doi}, attempt {attempt + 1}")
+                        if attempt < self.max_retries - 1:
+                            time.sleep(2 ** attempt)
+                        continue
+                    else:
+                        logger.debug(f"Semantic Scholar returned {response.status_code} for {doi}")
+                        return None
+                except requests.RequestException as e:
+                    logger.debug(f"Semantic Scholar request failed for {doi}, attempt {attempt + 1}: {e}")
+                    if attempt < self.max_retries - 1:
+                        time.sleep(2 ** attempt)
+                    else:
+                        return None
+            
+            return None
+            
+        except Exception as e:
+            logger.debug(f"Semantic Scholar fetch failed for {doi}: {e}")
+            return None
+
+    def normalize_metadata(self, ss_data: dict[str, Any]) -> dict[str, Any]:
+        """Normalize Semantic Scholar metadata to common format."""
+        normalized = {}
+
+        # Extract title
+        title = ss_data.get("title")
+        if title:
+            normalized["title"] = title.strip()
+
+        # Extract authors
+        authors_list = ss_data.get("authors", [])
+        authors = []
+        for author in authors_list:
+            name = author.get("name", "")
+            if name:
+                # Basic name splitting (Semantic Scholar usually provides full names)
+                name_parts = name.split()
+                if len(name_parts) > 1:
+                    given_name = " ".join(name_parts[:-1])
+                    family_name = name_parts[-1]
+                else:
+                    given_name = ""
+                    family_name = name
+                authors.append({"family": family_name, "given": given_name})
+        normalized["author"] = authors
+
+        # Extract year
+        year = ss_data.get("year")
+        if year:
+            normalized["year"] = str(year)
+
+        # Extract journal/venue
+        venue = ss_data.get("venue") or ss_data.get("journal", {}).get("name")
+        if venue:
+            normalized["journal"] = venue
+
+        # Extract publisher (if available)
+        journal_info = ss_data.get("journal", {})
+        publisher = journal_info.get("publisher")
+        if publisher:
+            normalized["publisher"] = publisher
+
+        # Extract DOI
+        doi = ss_data.get("doi")
+        if doi:
+            normalized["DOI"] = doi
+
+        return normalized
+
+
+class HandleSystemClient(BaseDOIClient):
+    """Client for Handle System direct resolution - the underlying DOI infrastructure."""
+
+    def __init__(self, timeout: int = 15, max_retries: int = 3):
+        # Handle System may need longer timeouts
+        super().__init__(timeout=timeout, max_retries=max_retries)
+
+    def fetch_metadata(self, doi: str) -> dict[str, Any] | None:
+        """Fetch basic resolution metadata from Handle System."""
+        try:
+            # Handle System API endpoint
+            clean_doi = doi.replace("doi:", "")
+            url = f"https://hdl.handle.net/api/handles/{clean_doi}"
+            
+            headers = {"Accept": "application/json"}
+            response_data = self._make_request(url, headers)
+            
+            if response_data and "values" in response_data:
+                return response_data
+            return None
+            
+        except Exception as e:
+            logger.debug(f"Handle System fetch failed for {doi}: {e}")
+            return None
+
+    def normalize_metadata(self, handle_data: dict[str, Any]) -> dict[str, Any]:
+        """Normalize Handle System metadata to common format."""
+        normalized = {}
+
+        # Handle System provides basic resolution info, not bibliographic metadata
+        # We mainly use this for verification that the DOI exists and resolves
+        values = handle_data.get("values", [])
+        
+        for value in values:
+            if value.get("type") == "URL":
+                url_value = value.get("data", {}).get("value")
+                if url_value:
+                    normalized["resolved_url"] = url_value
+                    break
+
+        # Extract DOI from handle if available
+        handle = handle_data.get("handle")
+        if handle:
+            normalized["DOI"] = handle
+            
+        # Mark this as Handle System resolved for identification
+        normalized["_source"] = "handle_system"
+        normalized["_resolved"] = True
+
+        return normalized
+
+    def verify_resolution(self, doi: str) -> bool:
+        """Verify DOI resolution via Handle System."""
+        metadata = self.fetch_metadata(doi)
+        return metadata is not None and metadata.get("values") is not None

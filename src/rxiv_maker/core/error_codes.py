@@ -288,7 +288,7 @@ class ErrorCode(Enum):
             ],
         }
 
-        return actions.get(self.value, ["Contact support for assistance"])
+        return actions.get(self.value, ["Check documentation at https://github.com/HenriquesLab/rxiv-maker", "Open an issue on GitHub if problem persists"])
 
 
 def create_validation_error(
