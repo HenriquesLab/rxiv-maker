@@ -8,7 +8,13 @@ on:
       - 'pyproject.toml'
       - 'src/docker/images/base/build.sh'
       - 'src/docker/images/base/Makefile'
-      - '.github/workflows/docker-build.yml'
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'tests/**'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/container-engines.yml'
+      - '.github/workflows/release-simple.yml'
 
   pull_request:
     branches: [main, dev]
@@ -17,7 +23,13 @@ on:
       - 'pyproject.toml'
       - 'src/docker/images/base/build.sh'
       - 'src/docker/images/base/Makefile'
-      - '.github/workflows/docker-build.yml'
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'tests/**'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/container-engines.yml'
+      - '.github/workflows/release-simple.yml'
 
   release:
     types: [published]
@@ -36,6 +48,16 @@ on:
         type: boolean
       test_only:
         description: 'Build and test only (no push)'
+        required: false
+        default: false
+        type: boolean
+      force_build:
+        description: 'Force build even if no significant changes detected'
+        required: false
+        default: false
+        type: boolean
+      skip_dependency_analysis:
+        description: 'Skip smart dependency analysis and always build'
         required: false
         default: false
         type: boolean
@@ -101,10 +123,55 @@ jobs:
             echo "dockerfile=false" >> $GITHUB_OUTPUT
           fi
 
-          # Check for dependency changes
+          # Smart dependency change analysis
           if echo "$CHANGED_FILES" | grep -E '^pyproject.toml$'; then
-            echo "dependencies=true" >> $GITHUB_OUTPUT
-            echo "📦 Dependencies changed"
+            if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ "${{ inputs.skip_dependency_analysis }}" == "true" ]; then
+              echo "dependencies=true" >> $GITHUB_OUTPUT
+              echo "📦 pyproject.toml changed - skipping analysis due to workflow input"
+            else
+              echo "📦 pyproject.toml changed - analyzing dependency impact..."
+
+            # Define dev-only dependencies that don't affect Docker container
+            DEV_ONLY_DEPS="pytest|mypy|ruff|black|pre-commit|coverage|pytest-cov|pytest-xdist|pytest-timeout|sphinx|twine|build|nox"
+            RUNTIME_IMPACT=false
+
+            # Get the actual diff content to analyze specific changes
+            if git rev-parse HEAD~1 >/dev/null 2>&1; then
+              DIFF_CONTENT=$(git diff HEAD~1 HEAD pyproject.toml || echo "")
+            else
+              # For initial commits, assume runtime impact
+              echo "⚠️ Initial commit - assuming runtime impact"
+              RUNTIME_IMPACT=true
+            fi
+
+            if [ -n "$DIFF_CONTENT" ]; then
+              echo "Analyzing dependency changes:"
+              echo "$DIFF_CONTENT" | grep -E '^[+-]' | head -10
+
+              # Check if changes are only to dev dependencies
+              if echo "$DIFF_CONTENT" | grep -E '^[+-].*(' | grep -vE "($DEV_ONLY_DEPS)" | grep -E '^[+-].*"' >/dev/null; then
+                echo "🔥 Runtime dependencies changed - Docker rebuild required"
+                RUNTIME_IMPACT=true
+              elif echo "$DIFF_CONTENT" | grep -E '^[+-].*dependencies.*=' >/dev/null; then
+                echo "🔥 Main dependencies section changed - Docker rebuild required"
+                RUNTIME_IMPACT=true
+              elif echo "$DIFF_CONTENT" | grep -vE "($DEV_ONLY_DEPS|optional-dependencies|test|dev|lint|docs)" | grep -E '^[+-]' >/dev/null; then
+                echo "🔥 Non-dev dependency changes detected - Docker rebuild required"
+                RUNTIME_IMPACT=true
+              else
+                echo "✅ Only dev/test dependencies changed - skipping Docker rebuild"
+                RUNTIME_IMPACT=false
+              fi
+            fi
+
+              if [ "$RUNTIME_IMPACT" = true ]; then
+                echo "dependencies=true" >> $GITHUB_OUTPUT
+                echo "📦 Runtime dependencies changed"
+              else
+                echo "dependencies=false" >> $GITHUB_OUTPUT
+                echo "📦 Only dev dependencies changed - no Docker rebuild needed"
+              fi
+            fi
           else
             echo "dependencies=false" >> $GITHUB_OUTPUT
           fi
@@ -155,10 +222,31 @@ jobs:
       - name: Build decision
         id: decision
         run: |
-          # Determine if we should build
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "should-build=true" >> $GITHUB_OUTPUT
-            echo "🚀 Manual trigger - will build"
+          # Check for skip directives in commit messages or PR title
+          COMMIT_MSG="${{ github.event.head_commit.message || '' }}"
+          PR_TITLE="${{ github.event.pull_request.title || '' }}"
+
+          echo "Analyzing commit message: '$COMMIT_MSG'"
+          echo "Analyzing PR title: '$PR_TITLE'"
+
+          # Check for skip patterns
+          SKIP_PATTERNS="(\[skip docker\]|\[no docker\]|\[skip ci:docker\]|chore\(deps\).*pytest|chore\(deps\).*mypy|chore\(deps\).*ruff)"
+
+          if echo "$COMMIT_MSG $PR_TITLE" | grep -iE "$SKIP_PATTERNS" >/dev/null; then
+            echo "should-build=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Skip directive found in commit message or PR title - skipping Docker build"
+          # Determine if we should build based on event type
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            if [ "${{ inputs.force_build }}" == "true" ]; then
+              echo "should-build=true" >> $GITHUB_OUTPUT
+              echo "🚀 Manual trigger with force_build - will build"
+            elif [ "${{ inputs.skip_dependency_analysis }}" == "true" ]; then
+              echo "should-build=true" >> $GITHUB_OUTPUT
+              echo "🚀 Manual trigger skipping dependency analysis - will build"
+            else
+              echo "should-build=true" >> $GITHUB_OUTPUT
+              echo "🚀 Manual trigger - will build"
+            fi
           elif [ "${{ github.event_name }}" == "release" ]; then
             echo "should-build=true" >> $GITHUB_OUTPUT
             echo "🏷️ Release trigger - will build"

@@ -7,16 +7,37 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "04:00"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     groups:
-      python-dependencies:
+      # Group dev/test dependencies that don't affect Docker
+      dev-dependencies:
         patterns:
-          - "*"
-        exclude-patterns:
           - "pytest*"
           - "mypy*"
+          - "ruff*"
+          - "black*"
+          - "pre-commit*"
+          - "coverage*"
+          - "sphinx*"
+          - "twine*"
+          - "build*"
+          - "nox*"
+        exclude-patterns: []
+      # Group runtime dependencies that may affect Docker
+      runtime-dependencies:
+        patterns:
+          - "click*"
+          - "rich*"
+          - "platformdirs*"
+          - "packaging*"
+          - "tomli*"
+          - "typing-extensions*"
+          - "pydantic*"
+          - "requests*"
+        exclude-patterns: []
     commit-message:
       prefix: "chore(deps)"
+      prefix-development: "chore(deps:dev)"
       include: "scope"
     labels:
       - "dependencies"
@@ -28,10 +49,16 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
       day: "monday"
       time: "04:00"
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 2
+    groups:
+      # Group GitHub Actions updates to reduce individual PRs
+      actions-dependencies:
+        patterns:
+          - "*"
+        exclude-patterns: []
     commit-message:
       prefix: "ci(deps)"
       include: "scope"
@@ -41,12 +68,18 @@ updates:
 
   # Docker dependencies (if Dockerfile exists)
   - package-ecosystem: "docker"
-    directory: "/"
+    directory: "src/docker/images/base/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
       day: "monday"
       time: "04:00"
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 1
+    groups:
+      # Group Docker base image updates
+      docker-base-images:
+        patterns:
+          - "*"
+        exclude-patterns: []
     commit-message:
       prefix: "build(deps)"
       include: "scope"
@@ -57,3 +90,6 @@ updates:
       # Ignore major Python version updates in Docker
       - dependency-name: "python"
         update-types: ["version-update:semver-major"]
+      # Ignore minor Ubuntu updates unless security
+      - dependency-name: "ubuntu"
+        update-types: ["version-update:semver-minor"]
