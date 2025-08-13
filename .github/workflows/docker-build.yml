@@ -200,7 +200,7 @@ jobs:
           driver-opts: |
             network=host
             image=moby/buildkit:v0.12.4
-          config-inline: |
+          buildkitd-config-inline: |
             [worker.oci]
               max-parallelism = 8
             [worker.containerd]
@@ -306,15 +306,13 @@ jobs:
           push: false  # Don't push yet, test first
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # 🚀 PHASE 4: Enhanced BuildKit caching with multiple cache sources
+          # 🚀 PHASE 4: Enhanced BuildKit caching (GitHub Actions cache only for now)
           cache-from: |
             type=gha,scope=build-${{ matrix.platform }}
             type=gha,scope=build-shared
-            type=registry,ref=${{ env.IMAGE_NAME }}:buildcache-${{ matrix.platform }}
           cache-to: |
             type=gha,scope=build-${{ matrix.platform }},mode=max
             type=gha,scope=build-shared,mode=max
-            type=registry,ref=${{ env.IMAGE_NAME }}:buildcache-${{ matrix.platform }},mode=max
           # 🚀 PHASE 4: Enhanced build arguments for maximum acceleration
           build-args: |
             USE_EATMYDATA=true
@@ -531,17 +529,13 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # 🚀 PHASE 4: Multi-platform enhanced caching strategy
+          # 🚀 PHASE 4: Multi-platform enhanced caching strategy (GitHub Actions cache)
           cache-from: |
             type=gha,scope=build-linux-amd64
             type=gha,scope=build-linux-arm64
             type=gha,scope=build-shared
-            type=registry,ref=${{ env.IMAGE_NAME }}:buildcache-linux-amd64
-            type=registry,ref=${{ env.IMAGE_NAME }}:buildcache-linux-arm64
-            type=registry,ref=${{ env.IMAGE_NAME }}:buildcache-shared
           cache-to: |
             type=gha,scope=build-shared,mode=max
-            type=registry,ref=${{ env.IMAGE_NAME }}:buildcache-shared,mode=max
           # 🚀 PHASE 4: Production build arguments
           build-args: |
             USE_EATMYDATA=true
