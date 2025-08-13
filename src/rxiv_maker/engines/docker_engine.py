@@ -197,7 +197,9 @@ class DockerEngine(AbstractContainerEngine):
             raise ContainerTimeoutError("docker", f"pull image {target_image}", 300) from e
         except subprocess.CalledProcessError as e:
             logger.debug(f"Docker pull failed with exit code {e.returncode}")
-            raise ContainerImagePullError("docker", target_image, f"Pull command failed with exit code {e.returncode}") from e
+            raise ContainerImagePullError(
+                "docker", target_image, f"Pull command failed with exit code {e.returncode}"
+            ) from e
 
     def run_command(
         self,
