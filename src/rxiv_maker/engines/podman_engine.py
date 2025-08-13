@@ -7,13 +7,6 @@ from pathlib import Path
 from typing import List, Optional
 
 from .abstract import AbstractContainerEngine, ContainerSession
-from .exceptions import (
-    ContainerEngineNotFoundError,
-    ContainerEngineNotRunningError,
-    ContainerImagePullError,
-    ContainerPermissionError,
-    ContainerTimeoutError,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -40,128 +33,9 @@ class PodmanEngine(AbstractContainerEngine):
         """Return the name of the container engine."""
         return "podman"
 
-    def check_available(self) -> bool:
-        """Check if Podman is available and service is running.
+    # Note: check_available() method is now inherited from AbstractContainerEngine base class
 
-        Returns:
-            True if Podman is available and running, False otherwise.
-
-        Raises:
-            ContainerEngineNotFoundError: If Podman binary is not found
-            ContainerEngineNotRunningError: If Podman service is not running
-            ContainerPermissionError: If permission denied accessing Podman
-            ContainerTimeoutError: If Podman commands timeout
-        """
-        try:
-            # First check if podman binary exists
-            version_result = subprocess.run(["podman", "--version"], capture_output=True, text=True, timeout=5)
-
-            if version_result.returncode != 0:
-                if "permission denied" in version_result.stderr.lower():
-                    raise ContainerPermissionError("podman", "check Podman version")
-                else:
-                    logger.debug(f"Podman version check failed: {version_result.stderr}")
-                    return False
-
-        except FileNotFoundError as e:
-            raise ContainerEngineNotFoundError("podman") from e
-        except subprocess.TimeoutExpired as e:
-            raise ContainerTimeoutError("podman", "version check", 5) from e
-
-        try:
-            # Then check if Podman service is actually running
-            ps_result = subprocess.run(["podman", "ps"], capture_output=True, text=True, timeout=10)
-
-            if ps_result.returncode != 0:
-                stderr_lower = ps_result.stderr.lower()
-                if "permission denied" in stderr_lower or "access denied" in stderr_lower:
-                    raise ContainerPermissionError("podman", "list containers")
-                elif "cannot connect" in stderr_lower or "connection refused" in stderr_lower:
-                    raise ContainerEngineNotRunningError("podman")
-                elif "service" in stderr_lower and "not running" in stderr_lower:
-                    raise ContainerEngineNotRunningError("podman")
-                elif "machine" in stderr_lower and ("not running" in stderr_lower or "stopped" in stderr_lower):
-                    raise ContainerEngineNotRunningError("podman")
-                else:
-                    logger.debug(f"Podman ps failed: {ps_result.stderr}")
-                    return False
-
-            return True
-
-        except subprocess.TimeoutExpired as e:
-            raise ContainerTimeoutError("podman", "service connectivity check", 10) from e
-        except subprocess.CalledProcessError as e:
-            logger.debug(f"Podman ps command failed with exit code {e.returncode}")
-            return False
-
-    def pull_image(self, image: Optional[str] = None, force_pull: bool = False) -> bool:
-        """Pull the Podman image if not already available or force_pull is True.
-
-        Args:
-            image: Image name to pull (defaults to default_image)
-            force_pull: Force pull even if image exists locally
-
-        Returns:
-            True if image is available after operation, False otherwise
-
-        Raises:
-            ContainerImagePullError: If image pull fails with details
-            ContainerTimeoutError: If pull operation times out
-            ContainerPermissionError: If permission denied during pull
-        """
-        target_image = image or self.default_image
-
-        # If force_pull is False, check if image is already available locally
-        if not force_pull:
-            try:
-                result = subprocess.run(
-                    ["podman", "image", "inspect", target_image],
-                    capture_output=True,
-                    text=True,
-                    timeout=10,
-                )
-                if result.returncode == 0:
-                    logger.debug(f"Podman image {target_image} already available locally")
-                    return True  # Image already available locally
-            except subprocess.TimeoutExpired:
-                logger.debug(f"Timeout checking local image {target_image}, proceeding with pull")
-            except subprocess.CalledProcessError:
-                logger.debug(f"Image {target_image} not available locally, proceeding with pull")
-
-        # Pull the latest version of the image
-        logger.info(f"Pulling Podman image: {target_image}")
-        try:
-            result = subprocess.run(
-                ["podman", "pull", target_image],
-                capture_output=True,
-                text=True,
-                timeout=300,  # 5 minutes
-            )
-
-            if result.returncode == 0:
-                logger.info(f"Successfully pulled Podman image: {target_image}")
-                return True
-            else:
-                # Analyze the error to provide helpful feedback
-                stderr_lower = result.stderr.lower()
-                if "permission denied" in stderr_lower:
-                    raise ContainerPermissionError("podman", f"pull image {target_image}")
-                elif "not found" in stderr_lower or "no such image" in stderr_lower:
-                    raise ContainerImagePullError("podman", target_image, "Image not found in registry")
-                elif "network" in stderr_lower or "connection" in stderr_lower:
-                    raise ContainerImagePullError("podman", target_image, "Network connectivity issue")
-                elif "unauthorized" in stderr_lower or "authentication" in stderr_lower:
-                    raise ContainerImagePullError("podman", target_image, "Authentication required for private image")
-                else:
-                    raise ContainerImagePullError("podman", target_image, result.stderr.strip())
-
-        except subprocess.TimeoutExpired as e:
-            raise ContainerTimeoutError("podman", f"pull image {target_image}", 300) from e
-        except subprocess.CalledProcessError as e:
-            logger.debug(f"Podman pull failed with exit code {e.returncode}")
-            raise ContainerImagePullError(
-                "podman", target_image, f"Command failed with exit code {e.returncode}"
-            ) from e
+    # Note: pull_image() method is now inherited from AbstractContainerEngine base class
 
     def _build_container_command(
         self,
@@ -371,30 +245,4 @@ class PodmanEngine(AbstractContainerEngine):
             logger.debug(f"Unexpected error executing Podman command '{cmd_preview}': {e}")
             raise e
 
-    def _cleanup_expired_sessions(self, force: bool = False) -> None:
-        """Clean up expired or inactive Podman sessions."""
-        current_time = time.time()
-
-        # Only run cleanup every 30 seconds unless forced
-        if not force and current_time - self._last_cleanup < 30:
-            return
-
-        self._last_cleanup = current_time
-        expired_keys = []
-
-        for key, session in self._active_sessions.items():
-            session_age = current_time - (session.created_at or 0.0)
-            if session_age > self._session_timeout or not session.is_active():
-                session.cleanup()
-                expired_keys.append(key)
-
-        for key in expired_keys:
-            del self._active_sessions[key]
-
-        # If we have too many sessions, cleanup the oldest ones
-        if len(self._active_sessions) > self._max_sessions:
-            sorted_sessions = sorted(self._active_sessions.items(), key=lambda x: x[1].created_at or 0.0)
-            excess_count = len(self._active_sessions) - self._max_sessions
-            for key, session in sorted_sessions[:excess_count]:
-                session.cleanup()
-                del self._active_sessions[key]
+    # Note: _cleanup_expired_sessions() method is now inherited from AbstractContainerEngine base class

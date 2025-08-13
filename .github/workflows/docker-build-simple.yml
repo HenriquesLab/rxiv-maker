@@ -1,0 +1,89 @@
+name: Docker Build Simple
+
+on:
+  push:
+    branches: [main, dev]
+    paths:
+      - 'src/docker/images/base/Dockerfile'
+      - 'pyproject.toml'
+      - 'src/docker/images/base/build.sh'
+      - 'src/docker/images/base/Makefile'
+
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'Platforms to build for'
+        required: false
+        default: 'linux/amd64'
+        type: string
+      push_to_registry:
+        description: 'Push to Docker Hub'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  FORCE_COLOR: 1
+  DOCKER_BUILDKIT: 1
+  REGISTRY: docker.io
+  IMAGE_NAME: henriqueslab/rxiv-maker-base
+
+jobs:
+  build-docker:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix=sha-
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        timeout-minutes: 45
+        with:
+          context: .
+          file: src/docker/images/base/Dockerfile
+          platforms: ${{ github.event.inputs.platforms || 'linux/amd64' }}
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=docker,dest=/tmp/image.tar
+
+      - name: Load and test image
+        run: |
+          echo "Loading built image..."
+          docker load --input /tmp/image.tar
+
+          echo "Testing Docker image..."
+          IMAGE_TAG=$(docker images --format '{{.Repository}}:{{.Tag}}' | head -n 1)
+          echo "Testing image: $IMAGE_TAG"
+
+          docker run --rm "$IMAGE_TAG" python3 -c "
+          import sys
+          print(f'Python version: {sys.version}')
+          print('✅ Docker image test successful!')
+          "
+
+      - name: Push to registry (if enabled)
+        if: github.event.inputs.push_to_registry == 'true' && github.ref == 'refs/heads/main'
+        run: |
+          echo "Would push to registry here (requires secrets setup)"
+          echo "Skipping push for now"
