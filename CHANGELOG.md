@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.4.25] - 2025-08-13
+
+### Fixed
+- **🔧 Critical Docker Build Failure**: Resolve persistent fc-cache exit code 127 error blocking GitHub Actions builds
+  - **Root Cause**: BuildKit cache mounts created isolation between RUN commands, causing fontconfig installation and fc-cache execution inconsistency
+  - **Solution**: Consolidated font installation and fc-cache into single RUN command ensuring same execution context
+  - **Impact**: Complete elimination of "command not found" errors in Docker builds across all platforms
+  - Enhanced BuildKit cache mount strategy with reduced parallelism (8→2) for improved stability
+  - Added comprehensive font configuration validation with error recovery mechanisms
+  - Removed redundant fc-cache command from final-runtime stage to prevent conflicts
+- **Docker Workflow Reliability**: Optimize GitHub Actions Docker build pipeline
+  - Enhanced buildkitd configuration for consistent multi-platform builds
+  - Improved error handling and debugging capabilities in build process
+  - Streamlined workflow execution with better resource management
+- **Container Engine Error Handling**: Implement comprehensive exception system
+  - New exceptions.py module with detailed error messages and platform-specific troubleshooting
+  - Enhanced Docker and Podman engine error detection with proper exception chaining
+  - Improved user experience with actionable error messages and installation guidance
+- **GitHub Actions Integration Tests**: Fix outdated test expectations
+  - Updated job references from deprecated "test" to current "unit-tests"
+  - Fixed workflow_dispatch input validation to match current CI configuration
+  - Ensured test suite accurately reflects current GitHub Actions workflow structure
+
 ### Added
 - **Multi-Stage CI Workflow**: Implement intelligent 3-stage GitHub Actions pipeline
   - Stage 1: Fast unit tests with no external dependencies (10min timeout)
@@ -18,21 +41,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Dependency markers: `requires_latex`, `requires_docker`, `requires_podman`, `requires_r`
   - Performance markers: `fast`, `slow`, `ci_exclude`
   - Smart dependency detection based on test names and file patterns
+- **Container Session Management**: Enhanced cleanup system for Docker and Podman engines
+  - Global engine registry with weak references to track active container instances
+  - Automatic cleanup on program termination through atexit handlers
+  - Improved resource management preventing container session leaks
 
-### Fixed
-- **DOI Validation in CI**: Fix CI environment detection logic that was incorrectly skipping all validation
+### Changed
+- **DOI Validation in CI**: Improve CI environment detection logic
   - CI environments now disable online validation but still perform offline format validation
-  - Tests now properly validate DOI formats even in GitHub Actions environments
+  - Tests properly validate DOI formats even in GitHub Actions environments
   - Maintains backward compatibility while enabling proper validation testing
-- **Test Infrastructure Robustness**: Fix hardcoded assumptions causing CI test failures
-  - Update LaTeX installation verification tests to accept multiple valid error message formats
-  - Fix test mocking to properly simulate both `shutil.which()` and `subprocess.run()` calls
-  - Improve error message flexibility across different testing environments
-- **Container Engine Cleanup**: Implement proper unified cleanup system for Docker and Podman engines
-  - Replace legacy Docker-only cleanup with unified ContainerEngineFactory.manual_cleanup()
-  - Add global engine registry with weak references to track active container instances
-  - Ensure automatic cleanup on program termination through atexit handlers
-  - Improve resource management and prevent container session leaks across both Docker and Podman engines
+- **Test Infrastructure**: Enhanced robustness for different testing environments
+  - Accept multiple valid error message formats in LaTeX installation verification
+  - Improved test mocking for both `shutil.which()` and `subprocess.run()` calls
+  - Better error message flexibility across different testing environments
 
 ## [v1.4.24] - 2025-08-12
 
