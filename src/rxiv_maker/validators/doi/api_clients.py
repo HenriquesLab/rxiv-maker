@@ -243,13 +243,13 @@ class OpenAlexClient(BaseDOIClient):
             # OpenAlex accepts DOI with or without doi: prefix
             clean_doi = doi.replace("doi:", "")
             url = f"https://api.openalex.org/works/doi:{clean_doi}"
-            
+
             response_data = self._make_request(url)
-            
+
             if response_data:
                 return response_data
             return None
-            
+
         except Exception as e:
             logger.debug(f"OpenAlex fetch failed for {doi}: {e}")
             return None
@@ -315,12 +315,10 @@ class SemanticScholarClient(BaseDOIClient):
             # Semantic Scholar accepts DOI without prefix
             clean_doi = doi.replace("doi:", "")
             url = f"https://api.semanticscholar.org/graph/v1/paper/DOI:{clean_doi}"
-            
+
             # Semantic Scholar API requires specific fields to be requested
-            params = {
-                "fields": "title,authors,year,journal,doi,venue,publicationDate,publisher"
-            }
-            
+            params = {"fields": "title,authors,year,journal,doi,venue,publicationDate,publisher"}
+
             for attempt in range(self.max_retries):
                 try:
                     response = self.session.get(url, params=params, timeout=self.timeout)
@@ -329,7 +327,7 @@ class SemanticScholarClient(BaseDOIClient):
                     elif response.status_code == 429:  # Rate limited
                         logger.debug(f"Semantic Scholar rate limited for {doi}, attempt {attempt + 1}")
                         if attempt < self.max_retries - 1:
-                            time.sleep(2 ** attempt)
+                            time.sleep(2**attempt)
                         continue
                     else:
                         logger.debug(f"Semantic Scholar returned {response.status_code} for {doi}")
@@ -337,12 +335,12 @@ class SemanticScholarClient(BaseDOIClient):
                 except requests.RequestException as e:
                     logger.debug(f"Semantic Scholar request failed for {doi}, attempt {attempt + 1}: {e}")
                     if attempt < self.max_retries - 1:
-                        time.sleep(2 ** attempt)
+                        time.sleep(2**attempt)
                     else:
                         return None
-            
+
             return None
-            
+
         except Exception as e:
             logger.debug(f"Semantic Scholar fetch failed for {doi}: {e}")
             return None
@@ -410,14 +408,14 @@ class HandleSystemClient(BaseDOIClient):
             # Handle System API endpoint
             clean_doi = doi.replace("doi:", "")
             url = f"https://hdl.handle.net/api/handles/{clean_doi}"
-            
+
             headers = {"Accept": "application/json"}
             response_data = self._make_request(url, headers)
-            
+
             if response_data and "values" in response_data:
                 return response_data
             return None
-            
+
         except Exception as e:
             logger.debug(f"Handle System fetch failed for {doi}: {e}")
             return None
@@ -429,7 +427,7 @@ class HandleSystemClient(BaseDOIClient):
         # Handle System provides basic resolution info, not bibliographic metadata
         # We mainly use this for verification that the DOI exists and resolves
         values = handle_data.get("values", [])
-        
+
         for value in values:
             if value.get("type") == "URL":
                 url_value = value.get("data", {}).get("value")
@@ -441,7 +439,7 @@ class HandleSystemClient(BaseDOIClient):
         handle = handle_data.get("handle")
         if handle:
             normalized["DOI"] = handle
-            
+
         # Mark this as Handle System resolved for identification
         normalized["_source"] = "handle_system"
         normalized["_resolved"] = True

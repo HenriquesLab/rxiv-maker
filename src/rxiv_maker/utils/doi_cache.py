@@ -117,22 +117,22 @@ class DOICache:
         try:
             # Ensure cache directory exists
             self.cache_dir.mkdir(parents=True, exist_ok=True)
-            
+
             # Verify directory is writable
             if not os.access(self.cache_dir, os.W_OK):
                 logger.warning(f"Cache directory {self.cache_dir} is not writable, skipping cache save")
                 return
-            
+
             # Use atomic write for better reliability
-            temp_file = self.cache_file.with_suffix('.tmp')
+            temp_file = self.cache_file.with_suffix(".tmp")
             try:
                 with open(temp_file, "w", encoding="utf-8") as f:
                     json.dump(self._cache, f, indent=2, ensure_ascii=False)
-                
+
                 # Atomic move (works on most filesystems)
                 temp_file.replace(self.cache_file)
                 logger.debug(f"Successfully saved cache to {self.cache_file}")
-                
+
             except Exception as write_error:
                 # Clean up temp file if something went wrong
                 if temp_file.exists():
@@ -141,7 +141,7 @@ class DOICache:
                     except Exception:
                         pass
                 raise write_error
-                
+
         except PermissionError as e:
             logger.warning(f"Permission denied saving cache file {self.cache_file}: {e}")
         except OSError as e:
@@ -374,21 +374,21 @@ class DOICache:
 
     def set_api_failure(self, doi: str, api_name: str, error_message: str) -> None:
         """Cache API failure for temporary negative caching.
-        
+
         Args:
             doi: DOI that failed to validate
             api_name: Name of the API that failed
             error_message: Error message from the API
         """
         normalized_doi = doi.lower().strip()
-        
+
         failure_data = {
             "api_name": api_name,
             "error_message": error_message,
             "failed": True,
             "timestamp": time.time(),
         }
-        
+
         # If we already have cached data, add failure info, otherwise create new entry
         if normalized_doi in self._cache:
             if "failures" not in self._cache[normalized_doi]:
@@ -400,32 +400,32 @@ class DOICache:
                 "failures": {api_name: failure_data},
                 "timestamp": time.time(),
             }
-        
+
         self._save_cache()
         logger.debug(f"Cached API failure for {api_name} on DOI {doi}")
 
     def get_api_failure(self, doi: str, api_name: str) -> dict[str, Any] | None:
         """Get cached API failure information.
-        
+
         Args:
             doi: DOI to check
             api_name: Name of the API to check
-            
+
         Returns:
             Failure information if cached and not expired, None otherwise
         """
         normalized_doi = doi.lower().strip()
-        
+
         if normalized_doi in self._cache:
             entry = self._cache[normalized_doi]
             failures = entry.get("failures", {})
-            
+
             if api_name in failures:
                 failure_data = failures[api_name]
                 if "timestamp" in failure_data:
                     current_time = time.time()
                     failure_time = failure_data["timestamp"]
-                    
+
                     # Check if failure is still within negative cache period
                     if (current_time - failure_time) < (self.negative_cache_hours * 3600):
                         logger.debug(f"Found cached failure for {api_name} on DOI {doi}")
@@ -437,91 +437,86 @@ class DOICache:
                         if not failures:
                             del entry["failures"]
                         self._save_cache()
-        
+
         return None
 
     def is_extended_cache_period(self) -> bool:
         """Check if we should use extended cache period due to API outages.
-        
+
         Returns:
             True if multiple APIs are failing and we should extend cache period
         """
         current_time = time.time()
         recent_failures = {}
         total_dois_checked = 0
-        
+
         # Count recent failures by API across all DOI entries
         for entry in self._cache.values():
             failures = entry.get("failures", {})
             if failures:  # Only count entries that have had validation attempts
                 total_dois_checked += 1
-                
+
             for api_name, failure_data in failures.items():
                 if "timestamp" in failure_data:
                     failure_time = failure_data["timestamp"]
                     # Count failures in the last 2 hours (more generous for detection)
                     if (current_time - failure_time) < 7200:
                         recent_failures[api_name] = recent_failures.get(api_name, 0) + 1
-        
+
         # If we have at least some DOIs checked and multiple APIs are failing
         if total_dois_checked == 0:
             return False  # No validation attempts yet
-            
+
         # Calculate failure rates for primary APIs
         primary_apis = ["CrossRef", "DataCite", "JOSS"]
         failing_primary_apis = 0
-        
+
         for api in primary_apis:
             failure_count = recent_failures.get(api, 0)
             # Consider API as failing if it has failures for >50% of recent attempts
             if failure_count >= max(1, total_dois_checked * 0.5):
                 failing_primary_apis += 1
-        
+
         # Also check fallback APIs
         fallback_apis = ["OpenAlex", "SemanticScholar", "HandleSystem"]
         failing_fallback_apis = sum(1 for api in fallback_apis if recent_failures.get(api, 0) >= 1)
-        
+
         # Trigger extended cache if:
         # 1. At least 2 primary APIs are failing, OR
         # 2. At least 1 primary API + 2 fallback APIs are failing
-        is_extended = (
-            failing_primary_apis >= 2 or 
-            (failing_primary_apis >= 1 and failing_fallback_apis >= 2)
-        )
-        
+        is_extended = failing_primary_apis >= 2 or (failing_primary_apis >= 1 and failing_fallback_apis >= 2)
+
         if is_extended:
             logger.debug(
                 f"Extended cache period active: {failing_primary_apis} primary APIs failing, "
                 f"{failing_fallback_apis} fallback APIs failing (checked {total_dois_checked} DOIs)"
             )
-        
+
         return is_extended
 
     def get_with_extended_cache(self, doi: str) -> dict[str, Any] | None:
         """Get cached metadata with extended cache period during API outages.
-        
+
         Args:
             doi: DOI to look up
-            
+
         Returns:
             Cached metadata if available (with extended expiry during outages)
         """
         normalized_doi = doi.lower().strip()
-        
+
         if normalized_doi in self._cache:
             entry = self._cache[normalized_doi]
-            
+
             if "timestamp" in entry and entry.get("metadata"):
                 current_time = time.time()
                 entry_time = entry["timestamp"]
-                
+
                 # Use extended cache period if we're in an outage scenario
                 cache_period_days = (
-                    self.cache_expiry_days_extended 
-                    if self.is_extended_cache_period() 
-                    else self.cache_expiry_days
+                    self.cache_expiry_days_extended if self.is_extended_cache_period() else self.cache_expiry_days
                 )
-                
+
                 if (current_time - entry_time) < (cache_period_days * 24 * 3600):
                     logger.debug(f"Cache hit for DOI (extended: {cache_period_days} days): {doi}")
                     self._stats["hits"] += 1
@@ -529,7 +524,7 @@ class DOICache:
                 else:
                     logger.debug(f"Cache entry expired for DOI: {doi}")
                     self._stats["expires"] += 1
-        
+
         logger.debug(f"Cache miss for DOI: {doi}")
         self._stats["misses"] += 1
         return None

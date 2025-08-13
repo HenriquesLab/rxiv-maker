@@ -434,8 +434,8 @@ fi
 echo -e "${BLUE}[INFO]${NC} Installing project dependencies with uv..."
 cd /workspace
 
-# Install the project in editable mode
-uv pip install --system -e . --no-cache-dir
+# Install the project in editable mode (use --force-reinstall to ensure all deps)
+uv pip install --system -e . --no-cache-dir --force-reinstall
 
 echo -e "${GREEN}[SUCCESS]${NC} Project dependencies installed successfully!"
 

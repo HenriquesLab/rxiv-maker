@@ -279,31 +279,32 @@ def class_example_manuscript_copy(example_manuscript_template, class_temp_dir):
     return dst
 
 
-def copy_manuscript_optimized(src: Path, dst: Path):
-    """Optimized copying using hardlinks for static files where possible."""
-    import os
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    """Auto-mark tests based on path patterns to simplify selection and CI runtime."""
+    from pathlib import PurePath
 
-    dst.mkdir(parents=True, exist_ok=True)
-    for item in src.rglob("*"):
-        if item.is_file():
-            rel_path = item.relative_to(src)
-            dst_item = dst / rel_path
-            dst_item.parent.mkdir(parents=True, exist_ok=True)
+    for item in items:
+        p = PurePath(item.nodeid)
 
-            # Use hardlinks for static files, copy for files that might be modified
-            if item.suffix in {
-                ".md",
-                ".yml",
-                ".yaml",
-                ".bib",
-            }:  # Text files that might be modified
-                shutil.copy2(item, dst_item)
-            else:  # Binary files and other static files can use hardlinks
-                try:
-                    os.link(item, dst_item)
-                except (OSError, AttributeError):
-                    # Fallback to copy if hardlink fails
-                    shutil.copy2(item, dst_item)
+        # Mark binary tests
+        if "tests/binary/" in item.nodeid:
+            item.add_marker(pytest.mark.binary)
+            item.add_marker(pytest.mark.ci_exclude)
+
+        # Heavier or brittle unit tests to exclude by default in CI
+        heavy_unit_files = {
+            "tests/unit/test_docker_engine_mode.py",
+            "tests/unit/test_platform_detector.py",
+            "tests/unit/test_figure_generator.py",
+            "tests/unit/test_github_actions_integration.py",
+            "tests/unit/test_error_handling_scenarios.py",
+        }
+        if any(str(p).endswith(name) for name in heavy_unit_files):
+            item.add_marker(pytest.mark.ci_exclude)
+
+        # Ensure integration folder tests are marked as integration
+        if "tests/integration/" in item.nodeid:
+            item.add_marker(pytest.mark.integration)
 
 
 def copy_tree_optimized(src: Path, dst: Path, use_hardlinks: bool = True):

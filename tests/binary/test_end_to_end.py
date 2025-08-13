@@ -6,6 +6,9 @@ from pathlib import Path
 import pytest
 import requests
 
+# Exclude from default CI run; exercise external GitHub API and release assets
+pytestmark = pytest.mark.ci_exclude
+
 
 class TestBinaryDistributionWorkflow:
     """Test the complete binary distribution workflow."""

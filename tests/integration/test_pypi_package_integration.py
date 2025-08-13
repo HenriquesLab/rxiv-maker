@@ -78,6 +78,7 @@ class TestPyPIPackageIntegration:
         assert len(cls_files) > 0, f"No .cls style files found. Package path: {package_path}"
 
     @requires_latex
+    @pytest.mark.slow
     def test_cli_init_and_build_workflow(self, execution_engine):
         """Test full CLI workflow: init -> validate -> build."""
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -11,6 +11,11 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
+import pytest
+
+# Exclude from default CI run; relies on external tools (R, mermaid), can be flaky
+pytestmark = pytest.mark.ci_exclude
+
 # Mock the imports to avoid dependency issues during testing
 with patch.dict(
     "sys.modules",

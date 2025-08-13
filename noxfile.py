@@ -89,15 +89,9 @@ def test(session):
     # Run unit and light integration tests, excluding slow/docker tests
     session.run(
         "pytest",
-        "tests/unit/",
-        "tests/integration/",
-        "--ignore=tests/unit/test_docker_engine_mode.py",
-        "--ignore=tests/unit/test_platform_detector.py",
-        "--ignore=tests/unit/test_figure_generator.py",
-        "--ignore=tests/unit/test_github_actions_integration.py",
-        "--ignore=tests/unit/test_error_handling_scenarios.py",
+        "tests",
         "-m",
-        "not slow and not docker",
+        "not slow and not docker and not ci_exclude",
         "--cov=src",
         "--cov-report=term-missing:skip-covered",
         "--maxfail=5",
@@ -223,7 +217,8 @@ def docs(session):
 @nox.session(python=False)
 def clean(session):
     """Clean up nox environments to free disk space."""
-    session.run("nox", "--stop-on-first-error", "-s", "clean", external=True)
+    session.run("rm", "-rf", ".nox/", external=True)
+    session.log("Nox environments removed.")
 
 
 @nox.session(python=False)

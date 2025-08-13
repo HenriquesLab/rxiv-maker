@@ -346,8 +346,14 @@ This concludes our test manuscript.
         doi_metadata = citation_result.metadata["doi_validation"]
         self.assertGreater(doi_metadata["invalid_format"], 0)
 
+    @patch("rxiv_maker.utils.bibliography_cache.get_bibliography_cache")
+    @patch("rxiv_maker.utils.doi_cache.DOICache.get")
+    @patch("rxiv_maker.validators.doi_validator.DataCiteClient.fetch_metadata")
+    @patch("rxiv_maker.validators.doi_validator.DOIResolver.verify_resolution")
     @patch("crossref_commons.retrieval.get_publication_as_json")
-    def test_complete_validation_with_metadata_mismatches(self, mock_crossref):
+    def test_complete_validation_with_metadata_mismatches(
+        self, mock_crossref, mock_resolver, mock_datacite, mock_cache, mock_bibliography_cache
+    ):
         """Test complete validation workflow with metadata mismatches."""
         # Mock CrossRef responses with mismatched metadata
         mock_responses = {
@@ -373,6 +379,38 @@ This concludes our test manuscript.
             return mock_responses.get(doi)
 
         mock_crossref.side_effect = mock_crossref_call
+
+        # Mock DOI resolver to always return True for test DOIs
+        mock_resolver.return_value = True
+
+        # Mock DataCite client to return None (CrossRef will be tried first)
+        mock_datacite.return_value = None
+
+        # Mock cache to always return None (cache miss) so fresh data is used
+        mock_cache.return_value = None
+
+        # Mock bibliography cache to return a cache object that always misses
+        class MockBibCache:
+            def get_cached_metadata(self, doi, source):
+                return None
+
+            def cache_metadata(self, doi, metadata, source):
+                pass
+
+        mock_bibliography_cache.return_value = MockBibCache()
+
+        # Clear all caches to ensure fresh data
+        import shutil
+        from pathlib import Path
+
+        cache_dirs = [
+            Path.home() / "Library" / "Caches" / "rxiv-maker",
+            Path("/tmp") / "rxiv-maker-cache",
+            Path(".") / ".rxiv_cache",
+        ]
+        for cache_dir in cache_dirs:
+            if cache_dir.exists():
+                shutil.rmtree(cache_dir, ignore_errors=True)
 
         self._create_complete_manuscript(with_valid_dois=True)
 

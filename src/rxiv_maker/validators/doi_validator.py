@@ -80,7 +80,7 @@ class DOIValidator(BaseValidator):
         self.force_validation = force_validation
         self.ignore_ci_environment = ignore_ci_environment
         self.max_workers = max_workers
-        
+
         # Fallback configuration
         self.enable_fallback_apis = enable_fallback_apis
         self.enable_openalex = enable_openalex
@@ -96,6 +96,7 @@ class DOIValidator(BaseValidator):
             logger.warning(f"Failed to initialize DOI cache: {cache_error}. Using memory-only cache.")
             # Create a temporary cache directory as fallback
             import tempfile
+
             temp_cache_dir = Path(tempfile.mkdtemp(prefix="rxiv_doi_cache_"))
             self.cache = DOICache(temp_cache_dir)
 
@@ -104,12 +105,16 @@ class DOIValidator(BaseValidator):
         self.datacite_client = DataCiteClient()
         self.joss_client = JOSSClient()
         self.doi_resolver = DOIResolver(cache=self.cache)
-        
+
         # Initialize fallback API clients with configuration
         if self.enable_fallback_apis:
             self.openalex_client = OpenAlexClient(timeout=self.fallback_timeout) if self.enable_openalex else None
-            self.semantic_scholar_client = SemanticScholarClient(timeout=self.fallback_timeout) if self.enable_semantic_scholar else None
-            self.handle_system_client = HandleSystemClient(timeout=self.fallback_timeout) if self.enable_handle_system else None
+            self.semantic_scholar_client = (
+                SemanticScholarClient(timeout=self.fallback_timeout) if self.enable_semantic_scholar else None
+            )
+            self.handle_system_client = (
+                HandleSystemClient(timeout=self.fallback_timeout) if self.enable_handle_system else None
+            )
         else:
             self.openalex_client = None
             self.semantic_scholar_client = None
@@ -301,7 +306,9 @@ class DOIValidator(BaseValidator):
             return [], metadata
 
         metadata["total_dois"] = len(doi_entries)
-        logger.info(f"Validating {len(doi_entries)} DOI entries in {bib_file.name} using resilient validation with fallback sources")
+        logger.info(
+            f"Validating {len(doi_entries)} DOI entries in {bib_file.name} using resilient validation with fallback sources"
+        )
 
         # Validate DOI entries in parallel
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
@@ -449,7 +456,7 @@ class DOIValidator(BaseValidator):
         # Check DOI resolution with fallback
         doi_resolves = False
         resolution_errors = []
-        
+
         # Try primary DOI resolver first
         try:
             doi_resolves = self.doi_resolver.verify_resolution(doi)
@@ -458,7 +465,7 @@ class DOIValidator(BaseValidator):
         except Exception as e:
             resolution_errors.append(f"Primary resolver: {str(e)}")
             logger.debug(f"Primary DOI resolver failed for {doi}: {e}")
-        
+
         # If primary resolver fails, try Handle System as fallback (if enabled)
         if not doi_resolves and self.enable_fallback_apis and self.handle_system_client:
             try:
@@ -468,7 +475,7 @@ class DOIValidator(BaseValidator):
             except Exception as e:
                 resolution_errors.append(f"Handle System: {str(e)}")
                 logger.debug(f"Handle System resolver failed for {doi}: {e}")
-        
+
         if not doi_resolves:
             error_detail = "; ".join(resolution_errors) if resolution_errors else "Unknown error"
             errors.append(
@@ -519,7 +526,7 @@ class DOIValidator(BaseValidator):
             (self.joss_client, "JOSS"),  # For JOSS DOIs
             (self.datacite_client, "DataCite"),
         ]
-        
+
         # Fallback sources (new resilient alternatives) - only if enabled
         fallback_sources = []
         if self.enable_fallback_apis:
@@ -529,7 +536,7 @@ class DOIValidator(BaseValidator):
                 fallback_sources.append((self.semantic_scholar_client, "SemanticScholar"))
             if self.handle_system_client:
                 fallback_sources.append((self.handle_system_client, "HandleSystem"))
-        
+
         # Combine all sources in priority order
         all_sources = primary_sources + fallback_sources
 
@@ -539,12 +546,14 @@ class DOIValidator(BaseValidator):
         for client, source_name in all_sources:
             try:
                 external_metadata = None
-                
+
                 # Check for recent API failures first (negative caching)
                 try:
                     cached_failure = self.cache.get_api_failure(doi, source_name)
                     if cached_failure:
-                        logger.debug(f"Skipping {source_name} for {doi} due to recent failure: {cached_failure.get('error_message', 'Unknown error')}")
+                        logger.debug(
+                            f"Skipping {source_name} for {doi} due to recent failure: {cached_failure.get('error_message', 'Unknown error')}"
+                        )
                         api_failures.append(f"{source_name}: {cached_failure.get('error_message', 'Recent failure')}")
                         continue
                 except Exception as cache_read_error:
@@ -571,17 +580,17 @@ class DOIValidator(BaseValidator):
                                     logger.debug(f"Using regular cache for {source_name}: {doi}")
                             except Exception:
                                 cached_metadata = None
-                    
+
                     if not external_metadata:
                         # Fetch fresh metadata from API
                         logger.debug(f"Attempting to fetch metadata from {source_name} for {doi}")
-                        
+
                         if source_name == "CrossRef":
                             # Use legacy method for CrossRef for backward compatibility
                             external_metadata = self._fetch_crossref_metadata(doi)
                         else:
                             external_metadata = client.fetch_metadata(doi)
-                            
+
                         if external_metadata:
                             # Cache successful results with improved error handling
                             try:
@@ -590,12 +599,14 @@ class DOIValidator(BaseValidator):
                                 logger.debug(f"Successfully cached metadata from {source_name} for {doi}")
                             except Exception as cache_error:
                                 logger.debug(f"Failed to cache metadata in DOI cache from {source_name}: {cache_error}")
-                            
+
                             try:
                                 self.bib_cache.cache_doi_metadata(doi, external_metadata, source_name.lower())
                                 logger.debug(f"Successfully cached in bibliography cache from {source_name} for {doi}")
                             except Exception as bib_cache_error:
-                                logger.debug(f"Failed to cache in bibliography cache from {source_name}: {bib_cache_error}")
+                                logger.debug(
+                                    f"Failed to cache in bibliography cache from {source_name}: {bib_cache_error}"
+                                )
 
                 if external_metadata:
                     # Normalize metadata if needed
@@ -607,6 +618,7 @@ class DOIValidator(BaseValidator):
                         if external_metadata.get("_resolved"):
                             # Successfully resolved via Handle System
                             from ..validators.base_validator import ValidationError, ValidationLevel
+
                             errors.append(
                                 ValidationError(
                                     level=ValidationLevel.SUCCESS,
@@ -642,6 +654,7 @@ class DOIValidator(BaseValidator):
                         else:
                             # Add success message when validation passes
                             from ..validators.base_validator import ValidationError, ValidationLevel
+
                             errors.append(
                                 ValidationError(
                                     level=ValidationLevel.SUCCESS,
@@ -658,20 +671,20 @@ class DOIValidator(BaseValidator):
             except Exception as e:
                 error_message = str(e)
                 api_failures.append(f"{source_name}: {error_message}")
-                
+
                 # Cache API failures for negative caching with error handling
                 try:
                     self.cache.set_api_failure(doi, source_name, error_message)
                 except Exception as cache_write_error:
                     logger.debug(f"Failed to cache API failure for {source_name}: {cache_write_error}")
-                
+
                 logger.debug(f"Unable to validate {doi} via {source_name}: {e} (trying next source)")
                 continue
 
         if not validation_successful:
             # Provide detailed information about what was tried
             failure_detail = "; ".join(api_failures) if api_failures else "All APIs unavailable"
-            
+
             errors.append(
                 create_validation_error(
                     ErrorCode.METADATA_UNAVAILABLE,

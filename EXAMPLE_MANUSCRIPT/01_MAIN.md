@@ -8,7 +8,7 @@ Preprint servers have become central to research communication, but authors stil
 
 <!-- Introduction -->
 
-Preprint servers like arXiv, bioRxiv, and medRxiv have become central to research communication [@beck2020;@levchenk2024;@Fraser2020_preprint_growth]. As submission rates climb (@sfig:arxiv_growth, @sfig:preprint_trends), researchers now handle tasks once managed by journal production teams [@Vale2019_preprints;@Tenant2016_academic_publishing]. Most manuscript preparation workflows use proprietary formats that work poorly with version control systems, making collaborative research more difficult [@lin2020].
+Preprint servers like arXiv, bioRxiv, and medRxiv have become central to research communication [@beck2020;@levchenk2024;@Fraser2020_preprint_growth]. As submission rates climb (@sfig:arxiv_growth, @sfig:preprint_trends), researchers now handle tasks once managed by journal production teams [@Vale2015_preprints;@Tenant2016_academic_publishing]. Most manuscript preparation workflows use proprietary formats that work poorly with version control systems, making collaborative research more difficult [@lin2020].
 
 Computational research faces particular challenges because algorithms, analysis methods, and processing pipelines change frequently. In computational biology, researchers struggle to keep manuscripts synchronized with evolving analysis code, leading to publications that don't accurately describe the methods used. Bioimage analysis shows these problems clearly—collaborative frameworks [@biaflows2024] and containerized analysis environments [@dl4miceverywhere2024] highlight how important reproducible computational workflows are for scientific publishing.
 

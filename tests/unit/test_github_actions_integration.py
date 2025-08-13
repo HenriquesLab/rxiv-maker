@@ -13,6 +13,9 @@ from unittest.mock import Mock, patch
 import pytest
 import yaml
 
+# Exclude from default CI run (parses workflow files and can be brittle)
+pytestmark = pytest.mark.ci_exclude
+
 
 class TestGitHubActionsWorkflow(unittest.TestCase):
     """Test GitHub Actions workflow configuration and behavior."""
