@@ -10,7 +10,7 @@ This module provides commands for:
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import click
 
@@ -216,7 +216,7 @@ def _print_stats_table(stats: Dict[str, Any]) -> None:
                     safe_console_print(console, f"\n  📁 {cache_name}")
 
                     # Key metrics to display
-                    key_metrics = [
+                    key_metrics: List[Tuple[str, str, Callable[[Any], str]]] = [
                         ("hit_rate", "Hit Rate", lambda x: f"{x:.1%}"),
                         ("memory_entries", "Memory Entries", str),
                         ("disk_size_mb", "Disk Size (MB)", lambda x: f"{x:.1f}"),
@@ -227,7 +227,7 @@ def _print_stats_table(stats: Dict[str, Any]) -> None:
                     ]
 
                     for key, label, formatter in key_metrics:
-                        if key in cache_stats:
+                        if key in cache_stats and cache_stats[key] is not None:
                             try:
                                 value = formatter(cache_stats[key])
                                 safe_console_print(console, f"    {label}: {value}")
