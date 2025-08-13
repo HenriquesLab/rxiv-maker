@@ -437,115 +437,40 @@ RUN mkdir -p /home/rxivmaker/.R/library /home/rxivmaker/.cache /tmp/fontconfig-c
 RUN fc-cache -fv
 
 # Create comprehensive dependency verification script
-RUN cat > /usr/local/bin/verify-python-deps.sh << 'VERIFY_SCRIPT'
-#!/bin/bash
-echo "Verifying Python dependencies..."
-
-# Test mermaid.ink integration (requests library)
-echo "Testing requests library for mermaid.ink API..."
-python3 -c "
-import sys
-import requests
-import base64
-
-print(f'Python path: {sys.executable}')
-print(f'Python version: {sys.version}')
-print(f'Requests version: {requests.__version__}')
-
-# Test mermaid.ink API connection
-test_diagram = 'graph TD; A-->B'
-encoded = base64.b64encode(test_diagram.encode('utf-8')).decode('ascii')
-api_url = f'https://mermaid.ink/svg/{encoded}'
-print(f'Testing mermaid.ink API: {api_url[:50]}...')
-print('✅ Mermaid.ink API integration ready!')
-"
-
-# Test other critical dependencies
-echo "Testing other Python dependencies..."
-python3 -c "
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
-import yaml
-import subprocess
-print('✅ Core scientific libraries verified!')
-"
-
-# Test R system packages
-echo "Testing R system packages..."
-R -e "
-cat('Verifying R system packages...\\n')
-system_packages <- c('dplyr', 'ggplot2', 'scales', 'readr', 'tidyr', 'svglite')
-for (pkg in system_packages) {
-  if (require(pkg, character.only = TRUE, quietly = TRUE)) {
-    cat('✅ R package available:', pkg, '\\n')
-  } else {
-    cat('❌ R package missing:', pkg, '\\n')
-    quit(status = 1)
-  }
-}
-cat('✅ All R system packages verified!\\n')
-"
-
-echo "All dependencies (Python + R) verified successfully!"
-VERIFY_SCRIPT
+RUN echo '#!/bin/bash' > /usr/local/bin/verify-python-deps.sh && \
+    echo 'echo "Verifying Python dependencies..."' >> /usr/local/bin/verify-python-deps.sh && \
+    echo 'echo "Testing requests library for mermaid.ink API..."' >> /usr/local/bin/verify-python-deps.sh && \
+    echo 'python3 -c "import sys, requests, base64; print(f\"Python: {sys.version}\"); print(f\"Requests: {requests.__version__}\"); print(\"✅ Mermaid.ink API integration ready!\")"' >> /usr/local/bin/verify-python-deps.sh && \
+    echo 'echo "Testing other Python dependencies..."' >> /usr/local/bin/verify-python-deps.sh && \
+    echo 'python3 -c "import matplotlib.pyplot, numpy, pandas, seaborn, yaml; print(\"✅ Core scientific libraries verified!\")"' >> /usr/local/bin/verify-python-deps.sh && \
+    echo 'echo "Testing R system packages..."' >> /usr/local/bin/verify-python-deps.sh && \
+    echo 'R -e "system_packages <- c(\"dplyr\", \"ggplot2\", \"scales\", \"readr\", \"tidyr\", \"svglite\"); for (pkg in system_packages) { if (require(pkg, character.only = TRUE, quietly = TRUE)) { cat(\"✅ R package:\", pkg, \"\\n\") } else { cat(\"❌ Missing:\", pkg, \"\\n\"); quit(status = 1) } }"' >> /usr/local/bin/verify-python-deps.sh && \
+    echo 'echo "All dependencies (Python + R) verified successfully!"' >> /usr/local/bin/verify-python-deps.sh
 RUN chmod +x /usr/local/bin/verify-python-deps.sh
 
 # Create runtime dependency installation script for development mode
-RUN cat > /usr/local/bin/install-project-deps.sh << 'INSTALL_SCRIPT'
-#!/bin/bash
-set -e
-
-# Colors for output
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
-echo -e "${BLUE}[INFO]${NC} Installing project dependencies from pyproject.toml..."
-
-# Check if pyproject.toml exists in workspace
-if [ ! -f "/workspace/pyproject.toml" ]; then
-    echo -e "${YELLOW}[WARNING]${NC} No pyproject.toml found in /workspace"
-    echo -e "${YELLOW}[WARNING]${NC} Mount your project directory to /workspace to enable runtime dependency injection"
-    exit 0
-fi
-
-# Install project in editable mode with all dependencies
-echo -e "${BLUE}[INFO]${NC} Installing project dependencies with uv..."
-cd /workspace
-
-# Install the project in editable mode
-uv pip install --system -e . --no-cache-dir --force-reinstall
-
-echo -e "${GREEN}[SUCCESS]${NC} Project dependencies installed successfully!"
-
-# Verify critical imports work
-echo -e "${BLUE}[INFO]${NC} Verifying imports..."
-python3 -c "
-import sys
-sys.path.insert(0, '/workspace/src')
-try:
-    from rxiv_maker.utils.cache_utils import get_cache_dir
-    from rxiv_maker.validators.doi_validator import DOIValidator
-    print('✅ Runtime dependency injection successful!')
-except ImportError as e:
-    print(f'❌ Import error: {e}')
-    exit(1)
-"
-INSTALL_SCRIPT
+RUN echo '#!/bin/bash' > /usr/local/bin/install-project-deps.sh && \
+    echo 'set -e' >> /usr/local/bin/install-project-deps.sh && \
+    echo 'echo "[INFO] Installing project dependencies from pyproject.toml..."' >> /usr/local/bin/install-project-deps.sh && \
+    echo 'if [ ! -f "/workspace/pyproject.toml" ]; then' >> /usr/local/bin/install-project-deps.sh && \
+    echo '    echo "[WARNING] No pyproject.toml found in /workspace"' >> /usr/local/bin/install-project-deps.sh && \
+    echo '    echo "[WARNING] Mount your project directory to /workspace to enable runtime dependency injection"' >> /usr/local/bin/install-project-deps.sh && \
+    echo '    exit 0' >> /usr/local/bin/install-project-deps.sh && \
+    echo 'fi' >> /usr/local/bin/install-project-deps.sh && \
+    echo 'echo "[INFO] Installing project dependencies with uv..."' >> /usr/local/bin/install-project-deps.sh && \
+    echo 'cd /workspace' >> /usr/local/bin/install-project-deps.sh && \
+    echo 'uv pip install --system -e . --no-cache-dir --force-reinstall' >> /usr/local/bin/install-project-deps.sh && \
+    echo 'echo "[SUCCESS] Project dependencies installed successfully!"' >> /usr/local/bin/install-project-deps.sh && \
+    echo 'echo "[INFO] Verifying imports..."' >> /usr/local/bin/install-project-deps.sh && \
+    echo 'python3 -c "import sys; sys.path.insert(0, \"/workspace/src\"); from rxiv_maker.utils.cache_utils import get_cache_dir; from rxiv_maker.validators.doi_validator import DOIValidator; print(\"✅ Runtime dependency injection successful!\")"' >> /usr/local/bin/install-project-deps.sh
 RUN chmod +x /usr/local/bin/install-project-deps.sh
 
 # Create development mode startup script
-RUN cat > /usr/local/bin/dev-mode.sh << 'DEV_SCRIPT'
-#!/bin/bash
-# Development mode: Install dependencies and start interactive shell
-echo "🔧 Starting Rxiv-Maker development mode..."
-/usr/local/bin/install-project-deps.sh
-echo "🚀 Ready for development! Project dependencies are synchronized."
-exec /bin/bash "$@"
-DEV_SCRIPT
+RUN echo '#!/bin/bash' > /usr/local/bin/dev-mode.sh && \
+    echo 'echo "Starting Rxiv-Maker development mode..."' >> /usr/local/bin/dev-mode.sh && \
+    echo '/usr/local/bin/install-project-deps.sh' >> /usr/local/bin/dev-mode.sh && \
+    echo 'echo "Ready for development! Project dependencies are synchronized."' >> /usr/local/bin/dev-mode.sh && \
+    echo 'exec /bin/bash "$@"' >> /usr/local/bin/dev-mode.sh
 RUN chmod +x /usr/local/bin/dev-mode.sh
 
 # Run dependency verification during build to catch issues early
