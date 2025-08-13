@@ -131,38 +131,38 @@ jobs:
             else
               echo "📦 pyproject.toml changed - analyzing dependency impact..."
 
-            # Define dev-only dependencies that don't affect Docker container
-            DEV_ONLY_DEPS="pytest|mypy|ruff|black|pre-commit|coverage|pytest-cov|pytest-xdist|pytest-timeout|sphinx|twine|build|nox"
-            RUNTIME_IMPACT=false
+              # Define dev-only dependencies that don't affect Docker container
+              DEV_ONLY_DEPS="pytest|mypy|ruff|black|pre-commit|coverage|pytest-cov|pytest-xdist|pytest-timeout|sphinx|twine|build|nox"
+              RUNTIME_IMPACT=false
 
-            # Get the actual diff content to analyze specific changes
-            if git rev-parse HEAD~1 >/dev/null 2>&1; then
-              DIFF_CONTENT=$(git diff HEAD~1 HEAD pyproject.toml || echo "")
-            else
-              # For initial commits, assume runtime impact
-              echo "⚠️ Initial commit - assuming runtime impact"
-              RUNTIME_IMPACT=true
-            fi
-
-            if [ -n "$DIFF_CONTENT" ]; then
-              echo "Analyzing dependency changes:"
-              echo "$DIFF_CONTENT" | grep -E '^[+-]' | head -10
-
-              # Check if changes are only to dev dependencies
-              if echo "$DIFF_CONTENT" | grep -E '^[+-].*(' | grep -vE "($DEV_ONLY_DEPS)" | grep -E '^[+-].*"' >/dev/null; then
-                echo "🔥 Runtime dependencies changed - Docker rebuild required"
-                RUNTIME_IMPACT=true
-              elif echo "$DIFF_CONTENT" | grep -E '^[+-].*dependencies.*=' >/dev/null; then
-                echo "🔥 Main dependencies section changed - Docker rebuild required"
-                RUNTIME_IMPACT=true
-              elif echo "$DIFF_CONTENT" | grep -vE "($DEV_ONLY_DEPS|optional-dependencies|test|dev|lint|docs)" | grep -E '^[+-]' >/dev/null; then
-                echo "🔥 Non-dev dependency changes detected - Docker rebuild required"
-                RUNTIME_IMPACT=true
+              # Get the actual diff content to analyze specific changes
+              if git rev-parse HEAD~1 >/dev/null 2>&1; then
+                DIFF_CONTENT=$(git diff HEAD~1 HEAD pyproject.toml || echo "")
               else
-                echo "✅ Only dev/test dependencies changed - skipping Docker rebuild"
-                RUNTIME_IMPACT=false
+                # For initial commits, assume runtime impact
+                echo "⚠️ Initial commit - assuming runtime impact"
+                RUNTIME_IMPACT=true
               fi
-            fi
+
+              if [ -n "$DIFF_CONTENT" ]; then
+                echo "Analyzing dependency changes:"
+                echo "$DIFF_CONTENT" | grep -E '^[+-]' | head -10
+
+                # Check if changes are only to dev dependencies
+                if echo "$DIFF_CONTENT" | grep -E '^[+-].*(' | grep -vE "($DEV_ONLY_DEPS)" | grep -E '^[+-].*"' >/dev/null; then
+                  echo "🔥 Runtime dependencies changed - Docker rebuild required"
+                  RUNTIME_IMPACT=true
+                elif echo "$DIFF_CONTENT" | grep -E '^[+-].*dependencies.*=' >/dev/null; then
+                  echo "🔥 Main dependencies section changed - Docker rebuild required"
+                  RUNTIME_IMPACT=true
+                elif echo "$DIFF_CONTENT" | grep -vE "($DEV_ONLY_DEPS|optional-dependencies|test|dev|lint|docs)" | grep -E '^[+-]' >/dev/null; then
+                  echo "🔥 Non-dev dependency changes detected - Docker rebuild required"
+                  RUNTIME_IMPACT=true
+                else
+                  echo "✅ Only dev/test dependencies changed - skipping Docker rebuild"
+                  RUNTIME_IMPACT=false
+                fi
+              fi
 
               if [ "$RUNTIME_IMPACT" = true ]; then
                 echo "dependencies=true" >> $GITHUB_OUTPUT
