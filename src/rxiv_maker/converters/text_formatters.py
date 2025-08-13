@@ -308,10 +308,6 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
         # Simple approach: find texttt blocks with listings and replace with verb
         import re
 
-        # Debug output
-        if "\\texttt{" in text and "\\begin{lstlisting}" in text:
-            print("DEBUG: escape_special_characters found texttt with listings in text")
-
         # Find all \texttt{...} blocks
         def process_texttt_block(match):
             full_content = match.group(1)
@@ -338,7 +334,6 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
                     if d not in full_content:
                         delimiter = d
                         break
-                print(f"DEBUG: Converting texttt with listings to verb: {full_content[:50]}...")
                 return f"\\verb{delimiter}{full_content}{delimiter}"
             else:
                 # Return unchanged
@@ -352,6 +347,37 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
         return text
 
     text = replace_listings_texttt(text)
+
+    # IMPORTANT: Protect LaTeX commands FIRST before any underscore escaping
+    # Protect LaTeX reference commands that should not have underscores escaped
+    # These commands use identifiers that often contain underscores (like fig:name_with_underscores)
+    protected_latex_commands: dict[str, str] = {}
+
+    def protect_latex_command(match: re.Match[str]) -> str:
+        """Replace LaTeX command with placeholder."""
+        command = match.group(0)
+        placeholder = f"XXPROTECTEDLATEXCOMMANDXX{len(protected_latex_commands)}XXPROTECTEDLATEXCOMMANDXX"
+        protected_latex_commands[placeholder] = command
+        return placeholder
+
+    # Protect \includegraphics{} commands
+    text = re.sub(r"\\includegraphics\[[^\]]*\]\{[^}]*\}", protect_latex_command, text)
+
+    latex_ref_commands = [
+        r"\\ref\{[^}]*\}",  # \ref{fig:name_with_underscores}
+        r"\\eqref\{[^}]*\}",  # \eqref{eq:name_with_underscores}
+        r"\\label\{[^}]*\}",  # \label{fig:name_with_underscores}
+        r"\\pageref\{[^}]*\}",  # \pageref{sec:name_with_underscores}
+        r"\\cite\{[^}]*\}",  # \cite{author_2024}
+        r"\\citep\{[^}]*\}",  # \citep{author_2024}
+        r"\\citet\{[^}]*\}",  # \citet{author_2024}
+        r"\\citealt\{[^}]*\}",  # \citealt{author_2024}
+        r"\\cref\{[^}]*\}",  # \cref{fig:name_with_underscores} (cleveref)
+        r"\\Cref\{[^}]*\}",  # \Cref{fig:name_with_underscores} (cleveref)
+    ]
+
+    for pattern in latex_ref_commands:
+        text = re.sub(pattern, protect_latex_command, text)
 
     # Then apply the general function for other cases
     # Escape special characters in texttt commands
@@ -434,19 +460,6 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
         return match.group(0)
 
     text = re.sub(r"\(([^)]+)\)", escape_file_paths_in_parens, text)
-
-    # Protect LaTeX commands (like \includegraphics{}) from underscore escaping
-    protected_latex_commands: dict[str, str] = {}
-
-    def protect_latex_command(match: re.Match[str]) -> str:
-        """Replace LaTeX command with placeholder."""
-        command = match.group(0)
-        placeholder = f"XXPROTECTEDLATEXCOMMANDXX{len(protected_latex_commands)}XXPROTECTEDLATEXCOMMANDXX"
-        protected_latex_commands[placeholder] = command
-        return placeholder
-
-    # Protect \includegraphics{} commands
-    text = re.sub(r"\\includegraphics\[[^\]]*\]\{[^}]*\}", protect_latex_command, text)
 
     # Handle remaining underscores in file names and paths
     # Match common filename patterns: WORD_WORD.ext, word_word.ext, etc.
