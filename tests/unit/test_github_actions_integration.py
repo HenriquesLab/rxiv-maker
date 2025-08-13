@@ -85,12 +85,12 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
             self.skipTest("inputs not found in workflow_dispatch")
 
         dispatch_inputs = workflow_dispatch["inputs"]
-        self.assertIn("manuscript_path", dispatch_inputs)
+        self.assertIn("run_system_tests", dispatch_inputs)
 
-        manuscript_input = dispatch_inputs["manuscript_path"]
-        self.assertEqual(manuscript_input["default"], "MANUSCRIPT")
-        self.assertEqual(manuscript_input["type"], "string")
-        self.assertFalse(manuscript_input["required"])
+        system_tests_input = dispatch_inputs["run_system_tests"]
+        self.assertEqual(system_tests_input["default"], True)
+        self.assertEqual(system_tests_input["type"], "boolean")
+        self.assertFalse(system_tests_input["required"])
 
     @pytest.mark.fast
     def test_jobs_configuration(self):
@@ -103,14 +103,14 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
 
         jobs = workflow["jobs"]
 
-        # Test job presence
-        self.assertIn("test", jobs)
+        # Test job presence - check for unit-tests job
+        self.assertIn("unit-tests", jobs)
 
-        # Test test job
-        test_job = jobs["test"]
+        # Test unit-tests job
+        test_job = jobs["unit-tests"]
         self.assertEqual(test_job["runs-on"], "ubuntu-latest")
-        self.assertEqual(test_job["name"], "Test")
-        self.assertEqual(test_job["timeout-minutes"], 15)
+        self.assertEqual(test_job["name"], "Unit Tests (Fast)")
+        self.assertEqual(test_job["timeout-minutes"], 10)
 
     @pytest.mark.fast
     def test_docker_container_configuration(self):
@@ -121,7 +121,7 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
         with open(self.workflow_file) as f:
             workflow = yaml.safe_load(f)
 
-        test_job = workflow["jobs"]["test"]
+        test_job = workflow["jobs"]["unit-tests"]
 
         # CI workflow doesn't use Docker containers - runs directly on ubuntu-latest
         if "container" not in test_job:
@@ -140,7 +140,7 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
         with open(self.workflow_file) as f:
             workflow = yaml.safe_load(f)
 
-        test_steps = workflow["jobs"]["test"]["steps"]
+        test_steps = workflow["jobs"]["unit-tests"]["steps"]
         cache_steps = [step for step in test_steps if step.get("name", "").startswith("Cache")]
 
         # Test that we have cache steps

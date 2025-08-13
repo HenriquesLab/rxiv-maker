@@ -205,19 +205,14 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           platforms: ${{ matrix.platform }}
-          # 🚀 PHASE 4: Simplified Buildx configuration for stability
+          # 🔧 Simplified Buildx configuration for fc-cache stability
           driver-opts: |
             network=host
-            image=moby/buildkit:v0.12.4
           buildkitd-config-inline: |
             [worker.oci]
-              max-parallelism = 4
+              max-parallelism = 2
             [worker.containerd]
-              max-parallelism = 4
-            # Enable experimental features for multi-stage parallel builds
-            [feature-gates]
-              "multi-platform" = true
-              "cache-backend" = true
+              max-parallelism = 2
 
       - name: Validate build environment
         run: |
@@ -230,12 +225,25 @@ jobs:
           fi
           echo "✅ Docker buildx: $(docker buildx version)"
 
+          # Check BuildKit version for fc-cache compatibility
+          buildkit_version=$(docker buildx inspect --bootstrap 2>/dev/null | grep "Driver:" -A5 | grep "Version:" | head -n1 | awk '{print $2}' || echo "unknown")
+          echo "ℹ️ BuildKit version: $buildkit_version"
+
           # Check Dockerfile exists
           if [ ! -f "src/docker/images/base/Dockerfile" ]; then
             echo "❌ Dockerfile not found at src/docker/images/base/Dockerfile"
             exit 1
           fi
           echo "✅ Dockerfile found"
+
+          # Validate font-base stage structure for fc-cache fix
+          if grep -q "fc-cache -fv" src/docker/images/base/Dockerfile; then
+            if grep -A5 -B5 "fc-cache -fv" src/docker/images/base/Dockerfile | grep -q "RUN.*fontconfig.*fc-cache"; then
+              echo "✅ fc-cache consolidated in single RUN command"
+            else
+              echo "⚠️ fc-cache may still have BuildKit isolation issues"
+            fi
+          fi
 
           # Check pyproject.toml exists (for dependency validation)
           if [ ! -f "pyproject.toml" ]; then
@@ -317,10 +325,9 @@ jobs:
           # 🚀 PHASE 4: Simplified BuildKit caching (single scope per platform)
           cache-from: type=gha,scope=build-${{ matrix.platform }}
           cache-to: type=gha,scope=build-${{ matrix.platform }},mode=max
-          # 🚀 PHASE 4: Enhanced build arguments for stability (disabled eatmydata for timing fix)
+          # 🔧 Simplified build arguments for fc-cache stability
           build-args: |
             USE_EATMYDATA=false
-            BUILDKIT_INLINE_CACHE=1
           # 🚀 PHASE 4: Enable detailed build progress for debugging
           outputs: type=docker,dest=/tmp/image-${{ steps.platform.outputs.slug }}.tar
 
@@ -396,6 +403,26 @@ jobs:
                   exit(1)
 
           print('✅ All base dependencies available!')
+          "
+
+          echo "🧪 Testing font configuration and fc-cache..."
+          docker run --rm henriqueslab/rxiv-maker-base:latest bash -c "
+          echo 'Testing fc-cache command availability...'
+          if command -v fc-cache >/dev/null 2>&1; then
+              echo '✅ fc-cache command found'
+              echo 'Testing font cache functionality...'
+              fc-cache -fv >/dev/null 2>&1 && echo '✅ fc-cache executed successfully' || echo '❌ fc-cache execution failed'
+          else
+              echo '❌ fc-cache command not found'
+              exit 1
+          fi
+
+          echo 'Testing fontconfig package installation...'
+          dpkg -l | grep -q fontconfig && echo '✅ fontconfig package installed' || { echo '❌ fontconfig package missing'; exit 1; }
+
+          echo 'Testing font directory structure...'
+          ls -la /usr/share/fonts/ | head -10
+          echo '✅ Font configuration test completed successfully!'
           "
 
       - name: Test runtime dependency injection
@@ -538,10 +565,9 @@ jobs:
             type=gha,scope=build-linux-amd64
             type=gha,scope=build-linux-arm64
           cache-to: type=gha,scope=build-multi-platform,mode=max
-          # 🚀 PHASE 4: Production build arguments (disabled eatmydata for stability)
+          # 🔧 Simplified production build arguments for fc-cache stability
           build-args: |
             USE_EATMYDATA=false
-            BUILDKIT_INLINE_CACHE=1
           # 🚀 PHASE 4: Enable attestations for enhanced security and traceability
           provenance: true
           sbom: true

@@ -241,8 +241,8 @@ RUN --mount=type=cache,target=/root/.cache/R,sharing=locked \
 
 FROM base AS font-base
 
-# Install fonts (can build in parallel with R)
-# 🚀 BuildKit cache mount for font packages
+# Install fonts and configure in single RUN to avoid BuildKit cache mount isolation issues
+# 🚀 BuildKit cache mount for font packages with consolidated fc-cache execution
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
@@ -258,19 +258,21 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     # Font configuration tools
     fontconfig \
     fontconfig-config \
-    && dpkg --configure -a
-
-# Rebuild font cache in separate step with error handling
-RUN fc-cache -fv || { \
-    echo "❌ fc-cache failed, diagnosing..."; \
-    echo "PATH: $PATH"; \
-    which fc-cache || echo "fc-cache not found in PATH"; \
-    dpkg -l | grep fontconfig || echo "fontconfig not properly installed"; \
-    echo "Attempting fontconfig reinstall..."; \
-    apt-get update && apt-get install --reinstall -y fontconfig fontconfig-config; \
-    echo "Retrying fc-cache..."; \
-    fc-cache -fv; \
-}
+    && dpkg --configure -a \
+    && echo "🔍 Validating fontconfig installation..." \
+    && which fc-cache || { echo "❌ fc-cache not found after installation"; exit 1; } \
+    && dpkg -l | grep -q fontconfig || { echo "❌ fontconfig package not properly installed"; exit 1; } \
+    && echo "✅ fontconfig validation passed, building font cache..." \
+    && fc-cache -fv || { \
+        echo "❌ fc-cache failed, attempting recovery..."; \
+        echo "PATH: $PATH"; \
+        echo "Attempting fontconfig reinstall within same layer..."; \
+        apt-get install --reinstall -y fontconfig fontconfig-config \
+        && dpkg --configure -a \
+        && echo "Retrying fc-cache after reinstall..."; \
+        fc-cache -fv || { echo "❌ fc-cache failed even after reinstall"; exit 1; }; \
+    } \
+    && echo "✅ Font cache built successfully"
 
 # ======================================================================
 # LaTeX Base Stage - LaTeX installation (PHASE 3)
@@ -413,6 +415,11 @@ COPY --from=latex-base /usr/bin/latexdiff /usr/bin/latexdiff
 # Copy font configuration from latex-base (which includes font-base)
 COPY --from=latex-base /usr/share/fonts /usr/share/fonts
 COPY --from=latex-base /etc/fonts /etc/fonts
+COPY --from=latex-base /usr/bin/fc-cache /usr/bin/fc-cache
+COPY --from=latex-base /usr/bin/fc-list /usr/bin/fc-list
+# Copy fontconfig library dependencies for fc-cache to work
+COPY --from=latex-base /usr/lib/x86_64-linux-gnu/libfontconfig.so.1* /usr/lib/x86_64-linux-gnu/
+COPY --from=latex-base /usr/lib/x86_64-linux-gnu/libfreetype.so.6* /usr/lib/x86_64-linux-gnu/
 
 # Create a non-root user for security (but allow GitHub Actions to work)
 RUN groupadd -r rxivmaker && useradd -r -g rxivmaker -d /home/rxivmaker -s /bin/bash rxivmaker \
@@ -444,8 +451,8 @@ RUN mkdir -p /home/rxivmaker/.R/library /home/rxivmaker/.cache /tmp/fontconfig-c
     && chown -R rxivmaker:rxivmaker /home/rxivmaker/.R /home/rxivmaker/.cache /tmp/fontconfig-cache \
     && chmod -R 777 /tmp/fontconfig-cache
 
-# Update font cache after copying from latex-base
-RUN fc-cache -fv
+# Font cache was already built in font-base stage and copied via latex-base
+# No need to rebuild it here as fonts are already cached
 
 # Create comprehensive dependency verification script
 RUN echo '#!/bin/bash' > /usr/local/bin/verify-python-deps.sh && \

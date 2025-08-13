@@ -9,6 +9,7 @@ from typing import Dict, Optional, Set, Type
 
 from .abstract import AbstractContainerEngine
 from .docker_engine import DockerEngine
+from .exceptions import ContainerEngineError
 from .podman_engine import PodmanEngine
 
 logger = logging.getLogger(__name__)
@@ -74,11 +75,19 @@ class ContainerEngineFactory:
             **kwargs,
         )
 
-        # Check if engine is available
-        if not engine.check_available():
-            raise RuntimeError(
-                f"{engine_type.title()} is not available. Please ensure {engine_type} is installed and running."
-            )
+        # Check if engine is available with detailed error handling
+        try:
+            if not engine.check_available():
+                raise RuntimeError(
+                    f"{engine_type.title()} is not available. Please ensure {engine_type} is installed and running."
+                )
+        except ContainerEngineError:
+            # Re-raise our custom exceptions with their helpful error messages
+            raise
+        except Exception as e:
+            # Catch any other unexpected errors
+            logger.debug(f"Unexpected error checking {engine_type} availability: {e}")
+            raise RuntimeError(f"Failed to check {engine_type.title()} availability: {e}") from e
 
         # Register engine for cleanup
         cls._register_engine_instance(engine)

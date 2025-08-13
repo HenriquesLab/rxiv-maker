@@ -1,11 +1,14 @@
 """Podman container engine implementation."""
 
+import logging
 import subprocess
 import time
 from pathlib import Path
 from typing import List, Optional
 
 from .abstract import AbstractContainerEngine, ContainerSession
+
+logger = logging.getLogger(__name__)
 
 
 class PodmanSession(ContainerSession):
