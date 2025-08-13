@@ -338,7 +338,7 @@ class ConfigManager:
             "validation": {"enabled": True, "strict": False, "skip_doi_check": False},
             "figures": {"directory": "FIGURES", "generate": True, "formats": ["png", "svg"]},
             "bibliography": {"file": "03_REFERENCES.bib", "style": "nature"},
-            "cache": {"enabled": True, "ttl_hours": 24, "directory": ".cache"},
+            "cache": {"enabled": True, "ttl_hours": 24, "directory": ".rxiv_cache"},
             "version": "1.0",
             "acknowledge_rxiv_maker": True,
         }

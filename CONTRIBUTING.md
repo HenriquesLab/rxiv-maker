@@ -2,6 +2,14 @@
 
 Welcome to Rxiv-Maker! We're thrilled that you're interested in contributing to our project. This guide will help you get started with contributing to Rxiv-Maker, whether you're fixing bugs, adding features, improving documentation, or helping in other ways.
 
+## 🎯 Local-First Development Philosophy
+
+We follow a **local-first validation** approach to ensure code quality while minimizing CI/CD complexity:
+- **Faster feedback**: Catch issues in seconds, not minutes
+- **Reduced CI costs**: GitHub Actions runs only essential checks on PRs
+- **Better security**: Minimal external dependencies and API calls
+- **Developer experience**: Fix issues before pushing
+
 ## 🌟 Ways to Contribute
 
 ### 🐛 Bug Reports
@@ -50,6 +58,25 @@ make test RXIV_ENGINE=DOCKER
 
 For complete Docker setup instructions, see the [Docker Engine Mode guide](docs/docker-engine-mode.md).
 
+### 🔄 Container Engine Reliability (v1.4.24)
+
+Recent improvements ensure robust container engine support with graceful fallbacks:
+
+**Enhanced Engine Detection:**
+- Docker and Podman engines now verify both binary availability and daemon/service status
+- Better error messages when container engines are unavailable
+- Nox sessions properly detect running container services
+
+**Graceful Fallback Logic:**
+- Container validation automatically falls back to local validation when needed
+- Clear warning messages inform users of fallback behavior  
+- No breaking errors when Docker/Podman daemons are not running
+
+**Improved Developer Experience:**
+- Seamless operation regardless of container engine availability
+- All engines (local, Docker, Podman) tested and verified working
+- Backward compatibility maintained with existing workflows
+
 ---
 
 ## 🚀 Getting Started
@@ -96,7 +123,22 @@ For complete Docker setup instructions, see the [Docker Engine Mode guide](docs/
    
    </details>
 
-3. **Verify Setup**
+3. **Install Pre-commit Hooks (MANDATORY)**
+   
+   ```bash
+   # Install pre-commit if not already installed
+   pip install pre-commit
+   
+   # Install the git hooks
+   pre-commit install
+   
+   # Run once to verify setup
+   pre-commit run --all-files
+   ```
+   
+   **IMPORTANT**: Pre-commit hooks are mandatory. CI will reject PRs that fail these checks.
+
+4. **Verify Setup**
    
    ```bash
    # Test your setup with modern CLI
@@ -125,19 +167,30 @@ For complete Docker setup instructions, see the [Docker Engine Mode guide](docs/
 
 3. **Test Your Changes**
    ```bash
-   # Run tests
-   pytest                                      # Unit tests
-   nox -s tests                               # Test multiple Python versions
-   hatch run test                             # Alternative test runner
+   # Quick development feedback (<2 min)
+   nox -s test_fast                           # Fast tests only
+   
+   # Full test suite (<10 min, matches CI)
+   nox -s test                                # Unit + integration tests
+   
+   # Cross-version testing (for releases)  
+   nox -s test_cross                          # Test Python 3.11, 3.12, 3.13
+   
+   # Specialized testing
+   nox -s test_docker                         # Docker engine tests
+   nox -s pdf                                 # PDF generation (local + docker engines)
+   
+   # Code quality checks
+   nox -s lint                                # Linting (ruff + mypy)
+   nox -s format                              # Auto-format code
+   
+   # Build validation
+   nox -s build                               # Package build + validation
    
    # Test with manuscripts using modern CLI
    rxiv validate EXAMPLE_MANUSCRIPT/          # Validate manuscript
    rxiv pdf EXAMPLE_MANUSCRIPT/               # Build PDF
-   rxiv pdf EXAMPLE_MANUSCRIPT/ --engine docker  # Build in Docker
-   
-   # Or use legacy commands
-   MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT make pdf  # Add RXIV_ENGINE=DOCKER for Docker
-   make validate                              # Add RXIV_ENGINE=DOCKER for Docker
+   RXIV_ENGINE=DOCKER rxiv pdf EXAMPLE_MANUSCRIPT/  # Build in Docker
    ```
 
 4. **Submit Your Contribution**
@@ -150,8 +203,9 @@ For complete Docker setup instructions, see the [Docker Engine Mode guide](docs/
 ## 📝 Pull Request Guidelines
 
 ### Before Submitting
-- [ ] Tests pass locally (`pytest`)
-- [ ] Code follows project style (`pre-commit run --all-files`)
+- [ ] Tests pass locally (`nox -s test_fast` or `nox -s test`)
+- [ ] Code follows project style (`nox -s lint` and `nox -s format`)
+- [ ] Package builds successfully (`nox -s build`)
 - [ ] Documentation updated if needed
 - [ ] CHANGELOG.md updated for significant changes
 - [ ] Pull request template filled out

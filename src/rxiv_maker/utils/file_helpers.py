@@ -27,16 +27,22 @@ def find_manuscript_md() -> Path:
         FileNotFoundError: If the manuscript file cannot be found.
     """
     current_dir = Path.cwd()
+
+    # First try the current directory (for when we're already in the manuscript dir)
+    manuscript_md = current_dir / "01_MAIN.md"
+    if manuscript_md.exists():
+        return manuscript_md
+
+    # Then try the MANUSCRIPT_PATH subdirectory (for backward compatibility)
     manuscript_path = os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
     manuscript_md = current_dir / manuscript_path / "01_MAIN.md"
-
     if manuscript_md.exists():
         return manuscript_md
 
     raise FileNotFoundError(
         f"Main manuscript file 01_MAIN.md not found in "
-        f"{current_dir}/{manuscript_path}/. "
-        f"Make sure MANUSCRIPT_PATH environment variable points to the "
+        f"{current_dir}/ or {current_dir}/{manuscript_path}/. "
+        f"Make sure you're in the manuscript directory or MANUSCRIPT_PATH environment variable points to the "
         f"correct directory."
     )
 

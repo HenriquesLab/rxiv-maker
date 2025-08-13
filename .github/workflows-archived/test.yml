@@ -577,7 +577,7 @@ jobs:
           mkdir -p test-workspace && cd test-workspace
 
           # Test initialization (doesn't require LaTeX)
-          uv run rxiv init test-manuscript --no-interrupt || echo "Init command failed"
+          uv run rxiv init test-manuscript --no-interactive || echo "Init command failed"
 
           if [ -d "test-manuscript" ]; then
             echo "✅ Manuscript initialized successfully"

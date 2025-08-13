@@ -1,0 +1,415 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Dry run mode (skip PyPI publish)'
+        type: boolean
+        default: true
+      tag:
+        description: 'Tag to release (e.g., v1.4.23)'
+        required: false
+        type: string
+
+# Minimal permissions, elevated only where needed
+permissions:
+  contents: read
+
+jobs:
+  # Build and test release artifacts
+  build:
+    name: Build Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: 'latest'
+          enable-cache: true
+
+      - name: Extract version
+        id: version
+        run: |
+          # Get version from __version__.py
+          PACKAGE_VERSION=$(python -c "exec(open('src/rxiv_maker/__version__.py').read()); print(__version__)")
+          echo "Package version: $PACKAGE_VERSION"
+
+          # Determine tag based on trigger
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ -n "${{ inputs.tag }}" ]; then
+              TAG="${{ inputs.tag }}"
+            else
+              TAG="v${PACKAGE_VERSION}"
+            fi
+            echo "Using manual tag: $TAG"
+          else
+            TAG="${GITHUB_REF_NAME}"
+            echo "Using pushed tag: $TAG"
+          fi
+
+          VERSION="${TAG#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "📦 Building release for version: $VERSION (tag: $TAG)"
+
+      - name: Build package
+        run: |
+          echo "📦 Building Python package..."
+          uv build
+          echo "✅ Package built successfully"
+
+          # Display package info
+          ls -la dist/
+          echo ""
+          echo "Package contents:"
+          for file in dist/*; do
+            echo "  - $(basename $file): $(stat -c%s $file 2>/dev/null || stat -f%z $file) bytes"
+          done
+
+      - name: Check package
+        run: |
+          echo "🔍 Checking package integrity..."
+          pip install --upgrade twine
+          twine check dist/*
+          echo "✅ Package validation passed"
+
+      - name: Test package installation
+        run: |
+          echo "🧪 Testing package installation..."
+          python -m venv test-env
+          source test-env/bin/activate 2>/dev/null || test-env\\Scripts\\activate
+          pip install dist/*.whl
+          rxiv --version
+          echo "✅ Package installs and runs correctly"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  # Create GitHub release
+  github-release:
+    name: GitHub Release
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 10
+    permissions:
+      contents: write  # Required for creating releases
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Generate release notes
+        run: |
+          VERSION="${{ needs.build.outputs.version }}"
+          TAG="${{ needs.build.outputs.tag }}"
+
+          # Get commit messages since last tag
+          PREV_TAG=$(git tag --sort=-version:refname | grep -v "$TAG" | head -1 || echo "")
+
+          cat > release_notes.md << EOF
+          ## 🚀 Rxiv-Maker ${TAG}
+
+          ### 📦 Installation
+
+          \`\`\`bash
+          pip install rxiv-maker==${VERSION}
+          \`\`\`
+
+          ### 🔗 Quick Start
+          \`\`\`bash
+          rxiv init my-paper
+          cd my-paper
+          rxiv pdf
+          \`\`\`
+
+          ### 📝 Changes
+          EOF
+
+          if [ -n "$PREV_TAG" ]; then
+            echo "" >> release_notes.md
+            echo "Commits since $PREV_TAG:" >> release_notes.md
+            git log --oneline --no-merges ${PREV_TAG}..HEAD | head -20 >> release_notes.md
+          fi
+
+          cat >> release_notes.md << EOF
+
+          ### 📖 Documentation
+          - [Installation Guide](https://github.com/henriqueslab/rxiv-maker#installation)
+          - [User Guide](https://github.com/henriqueslab/rxiv-maker#usage)
+
+          ---
+          *This release was automatically created from tag ${TAG}*
+          EOF
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry-run }}" = "true" ]; then
+            echo "" >> release_notes.md
+            echo "**⚠️ This is a test release (dry-run mode)**" >> release_notes.md
+          fi
+
+      - name: Create or update release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.build.outputs.tag }}"
+
+          # Check if release already exists
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "📝 Updating existing release $TAG..."
+            gh release upload "$TAG" dist/* --clobber
+          else
+            echo "🎉 Creating new release $TAG..."
+            gh release create "$TAG" \
+              --title "Rxiv-Maker $TAG" \
+              --notes-file release_notes.md \
+              dist/*
+          fi
+
+  # Build and publish Docker images
+  docker:
+    name: Build & Publish Docker Images
+    runs-on: ubuntu-latest
+    needs: [build, github-release]
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tags: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PUSH }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: henriqueslab/rxiv-maker-base
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest
+          labels: |
+            org.opencontainers.image.title=Rxiv-Maker Base
+            org.opencontainers.image.description=Base Docker image for rxiv-maker with runtime dependency injection
+            org.opencontainers.image.vendor=Rxiv-Maker Project
+            org.opencontainers.image.version=${{ needs.build.outputs.version }}
+
+      - name: Build and push Docker images
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: src/docker/images/base/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test released Docker image
+        run: |
+          echo "🧪 Testing released Docker image..."
+          VERSION="${{ needs.build.outputs.version }}"
+
+          # Test the versioned image
+          docker run --rm henriqueslab/rxiv-maker-base:${VERSION} python3 -c "
+          import sys
+          print(f'✅ Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')
+
+          # Test essential dependencies
+          import platformdirs, click, rich, packaging
+          print('✅ Essential dependencies available')
+          "
+
+          # Test runtime dependency injection
+          docker run --rm -v $PWD:/workspace henriqueslab/rxiv-maker-base:${VERSION} bash -c "
+          if [ -x /usr/local/bin/install-project-deps.sh ]; then
+              echo '✅ Runtime dependency injection available'
+          else
+              echo '❌ Runtime dependency injection missing'
+              exit 1
+          fi
+          "
+
+          echo "✅ Docker image tests passed"
+
+  # Publish to PyPI using OIDC (no API tokens!)
+  pypi:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: [build, github-release]
+    # Only publish on tag push or when explicitly not in dry-run mode
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.dry-run == 'false')
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/project/rxiv-maker
+    permissions:
+      id-token: write  # Required for OIDC
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Display package info
+        run: |
+          echo "📦 Packages to publish:"
+          ls -la dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          attestations: true  # Enable attestations for supply chain security
+          verbose: true
+          skip-existing: true  # Don't fail if version already exists
+
+  # Summary
+  summary:
+    name: Release Summary
+    runs-on: ubuntu-latest
+    needs: [build, github-release, docker, pypi]
+    if: always()
+    timeout-minutes: 5
+
+    steps:
+      - name: Generate summary
+        run: |
+          VERSION="${{ needs.build.outputs.version }}"
+          TAG="${{ needs.build.outputs.tag }}"
+
+          echo "# 🚀 Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version**: ${TAG}" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry-run }}" = "true" ]; then
+            echo "**Mode**: 🧪 Dry-run (PyPI publish skipped)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Mode**: 🚀 Production release" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 Job Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check job statuses
+          if [ "${{ needs.build.result }}" == "success" ]; then
+            echo "✅ **Build**: Success" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Build**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.github-release.result }}" == "success" ]; then
+            echo "✅ **GitHub Release**: Created/Updated" >> $GITHUB_STEP_SUMMARY
+            echo "   - [View Release](https://github.com/${{ github.repository }}/releases/tag/${TAG})" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **GitHub Release**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.pypi.result }}" == "success" ]; then
+            echo "✅ **PyPI**: Published" >> $GITHUB_STEP_SUMMARY
+            echo "   - [View on PyPI](https://pypi.org/project/rxiv-maker/${VERSION}/)" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.pypi.result }}" == "skipped" ]; then
+            echo "⏭️ **PyPI**: Skipped (dry-run or not triggered)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **PyPI**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.docker.result }}" == "success" ]; then
+            echo "✅ **Docker**: Published to Docker Hub" >> $GITHUB_STEP_SUMMARY
+            echo "   - [View on Docker Hub](https://hub.docker.com/r/henriqueslab/rxiv-maker-base)" >> $GITHUB_STEP_SUMMARY
+            echo "   - Tags: \`henriqueslab/rxiv-maker-base:${VERSION}\`, \`henriqueslab/rxiv-maker-base:latest\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Docker**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📦 Installation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### Python Package" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.pypi.result }}" == "success" ]; then
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            echo "pip install rxiv-maker==${VERSION}" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Install from GitHub release:" >> $GITHUB_STEP_SUMMARY
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            echo "pip install https://github.com/${{ github.repository }}/releases/download/${TAG}/rxiv_maker-${VERSION}-py3-none-any.whl" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.docker.result }}" == "success" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Docker Image" >> $GITHUB_STEP_SUMMARY
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            echo "# Development mode with runtime dependency injection" >> $GITHUB_STEP_SUMMARY
+            echo "docker run -it --rm -v \$PWD:/workspace henriqueslab/rxiv-maker-base:${VERSION} dev-mode.sh" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "# Or use latest tag" >> $GITHUB_STEP_SUMMARY
+            echo "docker run -it --rm -v \$PWD:/workspace henriqueslab/rxiv-maker-base:latest dev-mode.sh" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔗 Links" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/${TAG})" >> $GITHUB_STEP_SUMMARY
+          echo "- [Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.pypi.result }}" == "success" ]; then
+            echo "- [PyPI Package](https://pypi.org/project/rxiv-maker/${VERSION}/)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.docker.result }}" == "success" ]; then
+            echo "- [Docker Hub](https://hub.docker.com/r/henriqueslab/rxiv-maker-base)" >> $GITHUB_STEP_SUMMARY
+          fi

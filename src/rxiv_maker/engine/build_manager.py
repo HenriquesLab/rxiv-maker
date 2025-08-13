@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 from ..core.logging_config import get_logger, set_log_directory
-from ..docker.manager import get_docker_manager
+from ..engines.factory import get_container_engine
 from ..utils.figure_checksum import get_figure_checksum_manager
 from ..utils.operation_ids import create_operation
 from ..utils.performance import get_performance_tracker
@@ -66,10 +66,17 @@ class BuildManager:
         self.engine = engine
         self.platform = platform_detector
 
-        # Initialize Docker manager if using docker engine
-        self.docker_manager = None
-        if self.engine == "docker":
-            self.docker_manager = get_docker_manager(workspace_dir=Path.cwd().resolve())
+        # Initialize container engine if using container engine
+        self.container_engine = None
+        if self.engine in ["docker", "podman"]:
+            try:
+                self.container_engine = get_container_engine(
+                    engine_type=self.engine, workspace_dir=Path.cwd().resolve()
+                )
+            except RuntimeError as e:
+                # Container engine not available, will fall back to local execution
+                logger.warning(f"{self.engine.title()} engine not available: {e}")
+                self.container_engine = None
 
         # Set up paths
         self.manuscript_dir = self.manuscript_dir_path
@@ -78,9 +85,6 @@ class BuildManager:
         # Find project root (where src directory is located)
         project_root = Path(__file__).resolve().parent.parent.parent.parent
         self.style_dir = project_root / "src" / "tex" / "style"
-        self.copy_pdf_script = project_root / "src" / "rxiv_maker" / "engine" / "copy_pdf.py"
-        self.analyze_word_count_script = project_root / "src" / "rxiv_maker" / "engine" / "analyze_word_count.py"
-        self.pdf_validator_script = project_root / "src" / "rxiv_maker" / "validators" / "pdf_validator.py"
 
         self.references_bib = self.manuscript_dir / "03_REFERENCES.bib"
 
@@ -215,19 +219,21 @@ class BuildManager:
 
         self.log("Running manuscript validation...", "STEP")
 
-        if self.engine == "docker":
-            return self._validate_manuscript_docker()
+        if self.engine in ["docker", "podman"] and self.container_engine is not None:
+            return self._validate_manuscript_container()
         else:
+            if self.engine in ["docker", "podman"] and self.container_engine is None:
+                self.log(f"{self.engine.title()} engine not available, using local validation", "WARNING")
             return self._validate_manuscript_local()
 
-    def _validate_manuscript_docker(self) -> bool:
-        """Run manuscript validation using Docker."""
+    def _validate_manuscript_container(self) -> bool:
+        """Run manuscript validation using container engine."""
         try:
             manuscript_path = Path(self.manuscript_path)
 
             # Convert to absolute path, then make relative to workspace directory
             manuscript_abs = manuscript_path.resolve()
-            workspace_dir = self.docker_manager.workspace_dir
+            workspace_dir = self.container_engine.workspace_dir
 
             try:
                 manuscript_rel = manuscript_abs.relative_to(workspace_dir)
@@ -235,32 +241,27 @@ class BuildManager:
                 # If manuscript is not within workspace, use just the name
                 manuscript_rel = manuscript_path.name
 
-            # Build validation command for Docker
-            validation_cmd = [
-                "python",
-                "/workspace/src/rxiv_maker/commands/validate.py",
-                str(manuscript_rel),
-                "--detailed",
-                "--check-latex",
-            ]
+            # Build validation command for container using installed CLI
+            validation_cmd = ["rxiv", "validate", str(manuscript_rel), "--detailed"]
 
             if self.verbose:
                 validation_cmd.append("--verbose")
 
-            result = self.docker_manager.run_command(command=validation_cmd, session_key="validation")
+            result = self.container_engine.run_command(command=validation_cmd, session_key="validation")
 
             if result.returncode == 0:
-                self.log("Validation completed successfully")
+                self.log("Container validation completed successfully")
                 return True
             else:
-                self.log("Validation failed", "ERROR")
+                self.log("Container validation failed, falling back to local validation", "WARNING")
                 if self.verbose and result.stderr:
-                    self.log(f"Validation errors: {result.stderr}", "WARNING")
-                return False
+                    self.log(f"Container validation errors: {result.stderr}", "WARNING")
+                return self._validate_manuscript_local()
 
         except Exception as e:
-            self.log(f"Docker validation error: {e}", "ERROR")
-            return False
+            self.log(f"{self.engine.title()} validation error: {e}", "WARNING")
+            self.log("Falling back to local validation", "WARNING")
+            return self._validate_manuscript_local()
 
     def _validate_manuscript_local(self) -> bool:
         """Run manuscript validation using local installation."""
@@ -278,12 +279,13 @@ class BuildManager:
                 os.chdir(manuscript_path.parent)
 
                 # Run validation with proper arguments
+                # DOI validation setting will be read from config automatically
                 result = validate_manuscript(
                     manuscript_path=manuscript_abs_path,
                     verbose=self.verbose,
                     include_info=False,
                     check_latex=True,
-                    enable_doi_validation=True,
+                    enable_doi_validation=None,  # Read from config
                     detailed=True,
                 )
 
@@ -584,18 +586,18 @@ class BuildManager:
         """Compile LaTeX to PDF."""
         self.log("Compiling LaTeX to PDF...", "STEP")
 
-        if self.engine == "docker":
-            return self._compile_pdf_docker()
+        if self.engine in ["docker", "podman"]:
+            return self._compile_pdf_container()
         else:
             return self._compile_pdf_local()
 
-    def _compile_pdf_docker(self) -> bool:
-        """Compile LaTeX to PDF using Docker."""
+    def _compile_pdf_container(self) -> bool:
+        """Compile LaTeX to PDF using container engine."""
         try:
             tex_file = self.output_dir / f"{self.manuscript_name}.tex"
 
             # Run LaTeX compilation with multiple passes
-            results = self.docker_manager.run_latex_compilation(
+            results = self.container_engine.run_latex_compilation(
                 tex_file=tex_file, working_dir=self.output_dir, passes=3
             )
 
@@ -612,7 +614,7 @@ class BuildManager:
                 return False
 
         except Exception as e:
-            self.log(f"Error compiling PDF with Docker: {e}", "ERROR")
+            self.log(f"Error compiling PDF with {self.engine}: {e}", "ERROR")
             return False
 
     def _compile_pdf_local(self) -> bool:
@@ -730,37 +732,39 @@ class BuildManager:
     def copy_pdf_to_manuscript(self) -> bool:
         """Copy generated PDF to manuscript directory with custom name."""
         try:
-            # Use the existing copy_pdf command
-            python_parts = self.platform.python_cmd.split()
-            cmd = [
-                python_parts[0] if python_parts else "python",
-                str(self.copy_pdf_script),
-                "--output-dir",
-                str(self.output_dir),
-            ]
+            # Import and call the copy_pdf function directly instead of subprocess
+            from ..engine.copy_pdf import copy_pdf_with_custom_filename
 
-            if "uv run" in self.platform.python_cmd:
-                cmd = ["uv", "run", "python"] + cmd[1:]
+            # Set environment variables that the function expects
+            env_backup = {}
+            if "MANUSCRIPT_PATH" not in os.environ:
+                env_backup["MANUSCRIPT_PATH"] = os.environ.get("MANUSCRIPT_PATH")
+                os.environ["MANUSCRIPT_PATH"] = self.manuscript_path
 
-            # Set environment variables
-            env = os.environ.copy()
-            env["MANUSCRIPT_PATH"] = self.manuscript_path
+            # Change to the manuscript directory for the copy operation
+            original_cwd = os.getcwd()
+            os.chdir(Path(self.manuscript_path))
 
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                env=env,
-                encoding="utf-8",
-                errors="replace",
-            )
+            try:
+                # Call the function directly
+                success = copy_pdf_with_custom_filename(str(self.output_dir.name))
 
-            if result.returncode == 0:
-                self.log("PDF copied to manuscript directory")
-                return True
-            else:
-                self.log(f"Failed to copy PDF: {result.stderr}", "ERROR")
-                return False
+                if success:
+                    self.log("PDF copied to manuscript directory")
+                    return True
+                else:
+                    self.log("❌ Failed to copy PDF to manuscript directory", level="ERROR")
+                    return False
+            finally:
+                # Restore original working directory
+                os.chdir(original_cwd)
+
+                # Restore environment variables
+                for key, value in env_backup.items():
+                    if value is None and key in os.environ:
+                        del os.environ[key]
+                    elif value is not None:
+                        os.environ[key] = value
 
         except Exception as e:
             self.log(f"Error copying PDF: {e}", "ERROR")
@@ -769,36 +773,28 @@ class BuildManager:
     def run_word_count_analysis(self) -> bool:
         """Run word count analysis on the manuscript."""
         try:
-            # Use the existing word count analysis command
-            python_parts = self.platform.python_cmd.split()
-            cmd = [
-                python_parts[0] if python_parts else "python",
-                str(self.analyze_word_count_script),
-            ]
+            # Import and call the analyze_manuscript_word_count function directly
+            from .analyze_word_count import analyze_manuscript_word_count
 
-            if "uv run" in self.platform.python_cmd:
-                cmd = ["uv", "run", "python"] + cmd[1:]
+            # Find the manuscript file
+            manuscript_md = None
+            for md_file in ["01_MAIN.md", "MAIN.md", "manuscript.md"]:
+                md_path = Path(self.manuscript_path) / md_file
+                if md_path.exists():
+                    manuscript_md = str(md_path)
+                    break
 
-            # Set environment variables
-            env = os.environ.copy()
-            env["MANUSCRIPT_PATH"] = self.manuscript_path
+            if not manuscript_md:
+                self.log("Could not find manuscript markdown file for word count analysis", "WARNING")
+                return False
 
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                env=env,
-                encoding="utf-8",
-                errors="replace",
-            )
+            # Call the word count analysis function directly
+            result = analyze_manuscript_word_count(manuscript_md)
 
-            if result.returncode == 0:
-                # Print the word count analysis output
-                if result.stdout:
-                    print(result.stdout)
+            if result == 0:
                 return True
             else:
-                self.log(f"Word count analysis failed: {result.stderr}", "WARNING")
+                self.log("Word count analysis completed with warnings", "WARNING")
                 return False
 
         except Exception as e:
@@ -813,16 +809,16 @@ class BuildManager:
 
         self.log("Running PDF validation...", "STEP")
 
-        if self.engine == "docker":
-            return self._run_pdf_validation_docker()
+        if self.engine in ["docker", "podman"]:
+            return self._run_pdf_validation_container()
         else:
             return self._run_pdf_validation_local()
 
-    def _run_pdf_validation_docker(self) -> bool:
-        """Run PDF validation using Docker."""
+    def _run_pdf_validation_container(self) -> bool:
+        """Run PDF validation using container engine."""
         try:
-            # Convert paths to be relative to Docker workspace
-            workspace_dir = self.docker_manager.workspace_dir
+            # Convert paths to be relative to container workspace
+            workspace_dir = self.container_engine.workspace_dir
 
             # Handle manuscript path
             manuscript_path = Path(self.manuscript_path)
@@ -840,7 +836,7 @@ class BuildManager:
                 # Fallback to output directory relative path
                 pdf_rel = Path("output") / self.output_pdf.name
 
-            # Build PDF validation command for Docker
+            # Build PDF validation command for container
             pdf_validation_cmd = [
                 "python",
                 "/workspace/src/rxiv_maker/validators/pdf_validator.py",
@@ -849,7 +845,7 @@ class BuildManager:
                 f"/workspace/{pdf_rel}",
             ]
 
-            result = self.docker_manager.run_command(command=pdf_validation_cmd, session_key="pdf_validation")
+            result = self.container_engine.run_command(command=pdf_validation_cmd, session_key="pdf_validation")
 
             if result.returncode == 0:
                 self.log("PDF validation completed successfully")
@@ -865,41 +861,48 @@ class BuildManager:
                 return True  # Don't fail the build on PDF validation warnings
 
         except Exception as e:
-            self.log(f"Error running PDF validation with Docker: {e}", "WARNING")
+            self.log(f"Error running PDF validation with {self.engine}: {e}", "WARNING")
             return True  # Don't fail the build on PDF validation errors
 
     def _run_pdf_validation_local(self) -> bool:
         """Run PDF validation using local installation."""
         try:
-            # Use the existing PDF validation command
-            python_parts = self.platform.python_cmd.split()
-            cmd = [
-                python_parts[0] if python_parts else "python",
-                str(self.pdf_validator_script),
-                self.manuscript_path,
-                "--pdf-path",
-                str(self.output_pdf),
-            ]
+            # Import and call the validate_pdf function directly
+            from ..validators.pdf_validator import validate_pdf
 
-            if "uv run" in self.platform.python_cmd:
-                cmd = ["uv", "run", "python"] + cmd[1:]
+            # Call the PDF validation function directly
+            result = validate_pdf(self.manuscript_path, str(self.output_pdf))
 
-            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+            # Print validation results
+            if result.errors:
+                print(f"\nPDF Validation Results for {self.manuscript_path}")
+                print("=" * 60)
+                for error in result.errors:
+                    level_str = error.level.name
+                    print(f"[{level_str}] {error.message}")
+                    if error.context:
+                        print(f"  Context: {error.context}")
+                    if error.suggestion:
+                        print(f"  Suggestion: {error.suggestion}")
+                print()
 
-            if result.returncode == 0:
-                self.log("PDF validation completed successfully")
-                # Print validation output if available
-                if result.stdout:
-                    print(result.stdout)
-                return True
-            else:
-                self.log("PDF validation found issues", "WARNING")
-                if result.stderr:
-                    print(result.stderr)
-                if result.stdout:
-                    print(result.stdout)
-                # Don't fail the build on PDF validation warnings
-                return True
+            # Show key statistics
+            if result.metadata:
+                total_pages = result.metadata.get("total_pages", "unknown")
+                total_words = result.metadata.get("total_words", "unknown")
+                citations_found = result.metadata.get("citations_found", 0)
+                figure_references = result.metadata.get("figure_references", 0)
+
+                print(
+                    f"📄 {total_pages} pages, {total_words} words, {citations_found} citations, {figure_references} figure references"
+                )
+                if result.errors:
+                    print("💡 Check the generated PDF visually to confirm all content appears correctly")
+
+            print()
+
+            self.log("PDF validation completed successfully")
+            return True
 
         except Exception as e:
             self.log(f"Error running PDF validation: {e}", "WARNING")

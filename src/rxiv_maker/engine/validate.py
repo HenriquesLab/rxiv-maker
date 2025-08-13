@@ -17,6 +17,8 @@ import os
 from typing import Any
 
 try:
+    from ..processors.yaml_processor import extract_yaml_metadata, get_doi_validation_setting
+    from ..utils.file_helpers import find_manuscript_md
     from ..validators.base_validator import ValidationLevel
     from ..validators.citation_validator import CitationValidator
     from ..validators.figure_validator import FigureValidator
@@ -27,15 +29,20 @@ try:
 
     VALIDATORS_AVAILABLE = True
 except ImportError:
+    # Try absolute import when run as script
     try:
-        # Try absolute import when run as script
-        from rxiv_maker.validators.base_validator import ValidationLevel
-        from rxiv_maker.validators.citation_validator import CitationValidator
-        from rxiv_maker.validators.figure_validator import FigureValidator
-        from rxiv_maker.validators.latex_error_parser import LaTeXErrorParser
-        from rxiv_maker.validators.math_validator import MathValidator
-        from rxiv_maker.validators.reference_validator import ReferenceValidator
-        from rxiv_maker.validators.syntax_validator import SyntaxValidator
+        from rxiv_maker.processors.yaml_processor import (  # type: ignore
+            extract_yaml_metadata,
+            get_doi_validation_setting,
+        )
+        from rxiv_maker.utils.file_helpers import find_manuscript_md  # type: ignore
+        from rxiv_maker.validators.base_validator import ValidationLevel  # type: ignore
+        from rxiv_maker.validators.citation_validator import CitationValidator  # type: ignore
+        from rxiv_maker.validators.figure_validator import FigureValidator  # type: ignore
+        from rxiv_maker.validators.latex_error_parser import LaTeXErrorParser  # type: ignore
+        from rxiv_maker.validators.math_validator import MathValidator  # type: ignore
+        from rxiv_maker.validators.reference_validator import ReferenceValidator  # type: ignore
+        from rxiv_maker.validators.syntax_validator import SyntaxValidator  # type: ignore
 
         VALIDATORS_AVAILABLE = True
     except ImportError:
@@ -352,7 +359,7 @@ def validate_manuscript(
     verbose: bool = False,
     include_info: bool = False,
     check_latex: bool = True,
-    enable_doi_validation: bool = True,
+    enable_doi_validation: bool | None = None,
     detailed: bool = False,
 ) -> bool:
     """Validate manuscript with comprehensive checks.
@@ -362,12 +369,22 @@ def validate_manuscript(
         verbose: Show detailed validation progress and statistics
         include_info: Include informational messages in output
         check_latex: Skip LaTeX compilation error parsing
-        enable_doi_validation: Skip DOI validation against CrossRef API
+        enable_doi_validation: Enable/disable DOI validation. If None, reads from config
         detailed: Show detailed error report with context and suggestions
 
     Returns:
         True if validation passed, False otherwise
     """
+    # Determine DOI validation setting from config if not explicitly provided
+    if enable_doi_validation is None:
+        try:
+            manuscript_file = find_manuscript_md()
+            metadata = extract_yaml_metadata(str(manuscript_file))
+            enable_doi_validation = get_doi_validation_setting(metadata)
+        except Exception:
+            # Fall back to default if config reading fails
+            enable_doi_validation = True
+
     # Create and run validator
     validator = UnifiedValidator(
         manuscript_path=manuscript_path,
@@ -406,6 +423,9 @@ def main():
 
     args = parser.parse_args()
 
+    # Determine DOI validation setting: CLI flag overrides config
+    enable_doi_validation = None if not args.no_doi else False
+
     # Run validation
     success = validate_manuscript(
         manuscript_path=args.manuscript_path,
@@ -413,7 +433,7 @@ def main():
         verbose=args.verbose,
         include_info=args.include_info,
         check_latex=args.check_latex,
-        enable_doi_validation=not args.no_doi,
+        enable_doi_validation=enable_doi_validation,
     )
 
     if not success:

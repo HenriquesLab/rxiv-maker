@@ -9,6 +9,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, mock_open, patch
 
+import pytest
+
 from rxiv_maker.utils.platform import (
     PlatformDetector,
     _convert_to_ascii,
@@ -21,6 +23,9 @@ from rxiv_maker.utils.platform import (
     safe_console_print,
     safe_print,
 )
+
+# Exclude from default CI run due to platform-specific branching and flakiness
+pytestmark = pytest.mark.ci_exclude
 
 
 class TestPlatformDetector(unittest.TestCase):

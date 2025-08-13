@@ -15,6 +15,7 @@
 | **Rxiv-Maker** | Pipeline | Excellent | Preprint servers | GitHub Actions integration, automated workflows | Yes |
 | **Overleaf** [@Overleaf2024] | Web Editor | Limited | Academic publishing | Real-time collaboration, rich templates | Freemium |
 | **Quarto** [@Quarto2024] | Publisher | Native | Multi-format publishing | Polyglot support, multiple outputs | Yes |
+| **Manubot** [@himmelstein2019] | Collaborative | Native | Version-controlled writing | Automated citations, transparent collaboration | Yes |
 | **Pandoc** [@pandoc2020] | Converter | Excellent | Format conversion | Universal format support, extensible | Yes |
 | **Typst** [@Typst2024] | Typesetter | Good | Modern typesetting | Fast compilation, modern syntax | Yes |
 | **Bookdown** [@Xie2016_bookdown] | Publisher | R Markdown | Academic books | Cross-references, multiple formats | Yes |

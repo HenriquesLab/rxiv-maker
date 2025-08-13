@@ -10,7 +10,7 @@ import sys
 try:
     from rich.console import Console
 except ImportError:
-    Console = None
+    Console = None  # type: ignore[assignment,misc]
 
 
 def supports_unicode() -> bool:

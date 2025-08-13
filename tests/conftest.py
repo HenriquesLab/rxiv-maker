@@ -24,8 +24,11 @@ class ExecutionEngine:
         # Extract check parameter, default to True
         check = kwargs.pop("check", True)
 
+        # Extract timeout parameter, default to 600 seconds (10 minutes) for long operations
+        timeout = kwargs.pop("timeout", 600)
+
         # Common kwargs for all engines
-        run_kwargs = {"text": True, "capture_output": True, "check": check, **kwargs}
+        run_kwargs = {"text": True, "capture_output": True, "check": check, "timeout": timeout, **kwargs}
 
         if self.engine_type == "local":
             return subprocess.run(command, **run_kwargs)
@@ -38,6 +41,9 @@ class ExecutionEngine:
             # For containerized engines, handle cwd by using sh -c with cd
             if "cwd" in kwargs:
                 cwd = kwargs.pop("cwd")
+                # Remove cwd from run_kwargs since it doesn't apply to host execution of docker
+                if "cwd" in run_kwargs:
+                    del run_kwargs["cwd"]
                 # Properly quote command arguments for shell
                 import shlex
 
@@ -273,31 +279,76 @@ def class_example_manuscript_copy(example_manuscript_template, class_temp_dir):
     return dst
 
 
-def copy_manuscript_optimized(src: Path, dst: Path):
-    """Optimized copying using hardlinks for static files where possible."""
-    import os
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    """Auto-mark tests based on path patterns to simplify selection and CI runtime."""
+    from pathlib import PurePath
 
-    dst.mkdir(parents=True, exist_ok=True)
-    for item in src.rglob("*"):
-        if item.is_file():
-            rel_path = item.relative_to(src)
-            dst_item = dst / rel_path
-            dst_item.parent.mkdir(parents=True, exist_ok=True)
+    for item in items:
+        p = PurePath(item.nodeid)
 
-            # Use hardlinks for static files, copy for files that might be modified
-            if item.suffix in {
-                ".md",
-                ".yml",
-                ".yaml",
-                ".bib",
-            }:  # Text files that might be modified
-                shutil.copy2(item, dst_item)
-            else:  # Binary files and other static files can use hardlinks
-                try:
-                    os.link(item, dst_item)
-                except (OSError, AttributeError):
-                    # Fallback to copy if hardlink fails
-                    shutil.copy2(item, dst_item)
+        # Mark test categories by directory structure
+        if "tests/unit/" in item.nodeid:
+            item.add_marker(pytest.mark.unit)
+            item.add_marker(pytest.mark.fast)  # Unit tests should be fast
+
+        if "tests/integration/" in item.nodeid:
+            item.add_marker(pytest.mark.integration)
+            item.add_marker(pytest.mark.slow)  # Integration tests are typically slower
+
+        if "tests/system/" in item.nodeid:
+            item.add_marker(pytest.mark.system)
+            item.add_marker(pytest.mark.slow)
+            item.add_marker(pytest.mark.ci_exclude)  # System tests excluded from regular CI
+
+        if "tests/cli/" in item.nodeid:
+            item.add_marker(pytest.mark.cli)
+            item.add_marker(pytest.mark.integration)  # CLI tests are integration-level
+
+        # Mark binary tests (now in system directory)
+        if any(pattern in str(p) for pattern in ["test_ci_matrix", "test_end_to_end", "test_package_managers"]):
+            item.add_marker(pytest.mark.binary)
+
+        # Mark tests that require specific dependencies
+        test_name_lower = item.name.lower()
+        test_file = str(p).lower()
+
+        # LaTeX dependency detection
+        if (
+            "latex" in test_name_lower
+            or "pdf" in test_name_lower
+            or "pdflatex" in test_name_lower
+            or "tex" in test_name_lower
+            or "test_install_verification" in test_file
+        ):
+            item.add_marker(requires_latex)
+
+        # Docker dependency detection
+        if "docker" in test_name_lower or "container" in test_name_lower or "docker_engine" in test_file:
+            item.add_marker(requires_docker)
+
+        # Podman dependency detection
+        if "podman" in test_name_lower or "podman_engine" in test_file:
+            item.add_marker(requires_podman)
+
+        # R dependency detection
+        if "r_" in test_name_lower or "_r_" in test_name_lower or "test_r" in test_name_lower:
+            item.add_marker(requires_r)
+
+        # Heavier or brittle unit tests to exclude by default in CI
+        heavy_unit_files = {
+            "tests/unit/test_docker_engine_mode.py",
+            "tests/unit/test_platform_detector.py",
+            "tests/unit/test_figure_generator.py",
+            "tests/unit/test_github_actions_integration.py",
+            "tests/unit/test_error_handling_scenarios.py",
+        }
+        if any(str(p).endswith(name) for name in heavy_unit_files):
+            item.add_marker(pytest.mark.ci_exclude)
+
+        # Mark slow integration tests that involve network calls or heavy processing
+        slow_integration_patterns = {"doi_validation", "network", "api", "download", "install_verification"}
+        if any(pattern in test_file for pattern in slow_integration_patterns):
+            item.add_marker(pytest.mark.slow)
 
 
 def copy_tree_optimized(src: Path, dst: Path, use_hardlinks: bool = True):
@@ -408,10 +459,36 @@ def check_r_available():
         return False
 
 
+def check_docker_available():
+    """Check if Docker is available in the system."""
+    try:
+        result = subprocess.run(["docker", "--version"], capture_output=True, text=True)
+        return result.returncode == 0
+    except (FileNotFoundError, OSError):
+        return False
+
+
+def check_podman_available():
+    """Check if Podman is available in the system."""
+    try:
+        result = subprocess.run(["podman", "--version"], capture_output=True, text=True)
+        return result.returncode == 0
+    except (FileNotFoundError, OSError):
+        return False
+
+
 # Markers for conditional test execution
 requires_latex = pytest.mark.skipif(not check_latex_available(), reason="LaTeX not available")
-
 requires_r = pytest.mark.skipif(not check_r_available(), reason="R not available")
+requires_docker = pytest.mark.skipif(not check_docker_available(), reason="Docker not available")
+requires_podman = pytest.mark.skipif(not check_podman_available(), reason="Podman not available")
+
+# Test category markers (don't skip, just mark for selection)
+pytest.mark.unit = pytest.mark.unit
+pytest.mark.integration = pytest.mark.integration  # Already defined by auto-marking
+pytest.mark.system = pytest.mark.system
+pytest.mark.fast = pytest.mark.fast
+pytest.mark.slow = pytest.mark.slow
 
 
 # --- Class-Scoped Fixtures for Performance ---

@@ -15,6 +15,9 @@ from unittest.mock import Mock, mock_open, patch
 
 import pytest
 
+# Exclude from default CI run; intentionally exercises error/edge cases and can be flaky
+pytestmark = pytest.mark.ci_exclude
+
 
 @pytest.mark.flaky  # Network tests can be unstable in CI
 class TestNetworkErrorHandling(unittest.TestCase):

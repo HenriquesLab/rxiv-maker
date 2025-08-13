@@ -200,7 +200,7 @@ class ConfigValidator:
         # Check required environment variables
         required_env_vars = {
             "MANUSCRIPT_PATH": {"required": False, "type": "path"},
-            "RXIV_ENGINE": {"required": False, "type": "choice", "choices": ["LOCAL", "DOCKER"]},
+            "RXIV_ENGINE": {"required": False, "type": "choice", "choices": ["LOCAL", "DOCKER", "PODMAN"]},
             "DOCKER_AVAILABLE": {"required": False, "type": "boolean"},
         }
 
@@ -385,7 +385,7 @@ class ConfigValidator:
                     "properties": {
                         "manuscript_path": {"type": "string"},
                         "output_dir": {"type": "string"},
-                        "engine": {"type": "string", "enum": ["local", "docker"]},
+                        "engine": {"type": "string", "enum": ["local", "docker", "podman"]},
                         "force_figures": {"type": "boolean"},
                         "skip_validation": {"type": "boolean"},
                         "verbose": {"type": "boolean"},

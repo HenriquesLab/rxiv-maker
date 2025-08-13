@@ -63,7 +63,7 @@ class AdvancedCache:
         # Initialize with cleanup
         self._cleanup_expired()
 
-    def _generate_key(self, key: str, content_hash: str = None) -> str:
+    def _generate_key(self, key: str, content_hash: str | None = None) -> str:
         """Generate cache key with optional content-based component."""
         if content_hash:
             return f"{key}_{content_hash}"
@@ -368,9 +368,9 @@ def cached_function(
             return result
 
         # Add cache management methods
-        wrapper.cache = cache
-        wrapper.clear_cache = cache.clear
-        wrapper.cache_stats = cache.get_stats
+        wrapper.cache = cache  # type: ignore[attr-defined]
+        wrapper.clear_cache = cache.clear  # type: ignore[attr-defined]
+        wrapper.cache_stats = cache.get_stats  # type: ignore[attr-defined]
 
         return wrapper
 

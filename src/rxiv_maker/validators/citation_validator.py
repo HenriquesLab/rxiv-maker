@@ -2,15 +2,19 @@
 
 import os
 import re
-from typing import Any
+from typing import Any, Dict
 
 try:
     from ..core.error_codes import ErrorCode, create_validation_error
+    from ..processors.yaml_processor import extract_yaml_metadata, get_doi_validation_setting
+    from ..utils.file_helpers import find_manuscript_md
     from .base_validator import BaseValidator, ValidationResult
     from .doi_validator import DOIValidator
 except ImportError:
     # Fallback for script execution
     from ..core.error_codes import ErrorCode, create_validation_error
+    from ..processors.yaml_processor import extract_yaml_metadata, get_doi_validation_setting
+    from ..utils.file_helpers import find_manuscript_md
     from .base_validator import (
         BaseValidator,
         ValidationResult,
@@ -31,23 +35,34 @@ class CitationValidator(BaseValidator):
     # Valid citation key pattern
     VALID_KEY_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 
-    def __init__(self, manuscript_path: str, enable_doi_validation: bool = True):
+    def __init__(self, manuscript_path: str, enable_doi_validation: bool | None = None):
         """Initialize citation validator.
 
         Args:
             manuscript_path: Path to the manuscript directory
-            enable_doi_validation: Whether to enable DOI validation
+            enable_doi_validation: Whether to enable DOI validation. If None, reads from config
         """
         super().__init__(manuscript_path)
         self.bib_keys: set[str] = set()
         self.bib_key_lines: dict[str, int] = {}  # Map from key to line number
         self.citations_found: dict[str, list[int]] = {}
-        self.enable_doi_validation = enable_doi_validation
+
+        # Determine DOI validation setting from config if not explicitly provided
+        if enable_doi_validation is None:
+            try:
+                manuscript_file = find_manuscript_md()
+                metadata = extract_yaml_metadata(str(manuscript_file))
+                self.enable_doi_validation = get_doi_validation_setting(metadata)
+            except Exception:
+                # Fall back to default if config reading fails
+                self.enable_doi_validation = True
+        else:
+            self.enable_doi_validation = enable_doi_validation
 
     def validate(self) -> ValidationResult:
         """Validate citations in manuscript files."""
         errors = []
-        metadata = {}
+        metadata: Dict[str, Any] = {}
 
         # Load bibliography keys
         bib_file_path = os.path.join(self.manuscript_path, "03_REFERENCES.bib")
@@ -122,6 +137,7 @@ class CitationValidator(BaseValidator):
             doi_validator = DOIValidator(
                 self.manuscript_path,
                 enable_online_validation=self.enable_doi_validation,
+                ignore_ci_environment=True,  # Allow validation in CI for consistent test behavior
             )
             doi_result = doi_validator.validate()
 

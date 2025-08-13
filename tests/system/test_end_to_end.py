@@ -6,6 +6,9 @@ from pathlib import Path
 import pytest
 import requests
 
+# Exclude from default CI run; exercise external GitHub API and release assets
+pytestmark = pytest.mark.ci_exclude
+
 
 class TestBinaryDistributionWorkflow:
     """Test the complete binary distribution workflow."""
@@ -275,7 +278,7 @@ class TestReleaseWorkflowIntegration:
         assert "create-release:" in content
 
         # Dependencies should be correct
-        assert "needs: test" in content  # build-binaries should need test
+        assert "needs: [setup, test, integrity-check, build-python]" in content  # build-binaries dependencies
         assert "needs: [" in content  # create-release should need multiple jobs
 
     def test_artifact_handling(self):

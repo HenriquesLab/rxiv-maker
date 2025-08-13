@@ -78,6 +78,7 @@ class TestPyPIPackageIntegration:
         assert len(cls_files) > 0, f"No .cls style files found. Package path: {package_path}"
 
     @requires_latex
+    @pytest.mark.slow
     def test_cli_init_and_build_workflow(self, execution_engine):
         """Test full CLI workflow: init -> validate -> build."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -132,6 +133,7 @@ class TestPyPIPackageIntegration:
                             "--template",
                             "basic",
                             "--no-interactive",
+                            "--force",
                         ],
                         cwd="/workspace",
                     )
@@ -141,46 +143,69 @@ class TestPyPIPackageIntegration:
 
                 # Check that init was successful
                 assert init_result.returncode == 0, f"Init failed: {init_result.stderr}"
-                assert manuscript_dir.exists(), "Manuscript directory not created"
+
+                # For container engines (Docker/Podman), check the directory in the original working directory
+                # For local, check in the temp directory
+                if execution_engine.engine_type in ["docker", "podman"]:
+                    container_manuscript_dir = Path(original_cwd) / "TEST_MANUSCRIPT"
+                    assert container_manuscript_dir.exists(), (
+                        f"Manuscript directory not created in {execution_engine.engine_type} workspace"
+                    )
+                    check_dir = container_manuscript_dir
+                else:
+                    assert manuscript_dir.exists(), "Manuscript directory not created"
+                    check_dir = manuscript_dir
 
                 # Verify essential files were created
                 required_files = ["00_CONFIG.yml", "01_MAIN.md", "03_REFERENCES.bib"]
 
                 for filename in required_files:
-                    file_path = manuscript_dir / filename
+                    file_path = check_dir / filename
                     assert file_path.exists(), f"Required file not created: {filename}"
                     assert file_path.stat().st_size > 0, f"Required file is empty: {filename}"
 
                 # Test 2: Validate manuscript
-                try:
-                    validate_result = subprocess.run(
+                if execution_engine.engine_type == "local":
+                    try:
+                        validate_result = subprocess.run(
+                            [
+                                "uv",
+                                "run",
+                                "python",
+                                "-m",
+                                "rxiv_maker.cli",
+                                "validate",
+                                str(check_dir),
+                            ],
+                            capture_output=True,
+                            text=True,
+                            timeout=30,
+                            cwd=original_cwd,
+                        )
+                    except FileNotFoundError:
+                        validate_result = subprocess.run(
+                            [
+                                "python",
+                                "-m",
+                                "rxiv_maker.cli",
+                                "validate",
+                                str(check_dir),
+                            ],
+                            capture_output=True,
+                            text=True,
+                            timeout=30,
+                            cwd=original_cwd,
+                        )
+                else:
+                    # For container engines (Docker/Podman), use the rxiv command with the correct path
+                    validate_result = execution_engine.run(
                         [
-                            "uv",
-                            "run",
-                            "python",
-                            "-m",
-                            "rxiv_maker.cli",
+                            "rxiv",
                             "validate",
-                            str(manuscript_dir),
+                            "/workspace/TEST_MANUSCRIPT",
                         ],
-                        capture_output=True,
-                        text=True,
-                        timeout=30,
-                        cwd=original_cwd,
-                    )
-                except FileNotFoundError:
-                    validate_result = subprocess.run(
-                        [
-                            "python",
-                            "-m",
-                            "rxiv_maker.cli",
-                            "validate",
-                            str(manuscript_dir),
-                        ],
-                        capture_output=True,
-                        text=True,
-                        timeout=30,
-                        cwd=original_cwd,
+                        cwd="/workspace",
+                        check=False,  # Allow non-zero exit codes
                     )
 
                 print("Validate STDOUT:", validate_result.stdout)
@@ -191,37 +216,51 @@ class TestPyPIPackageIntegration:
 
                 # Test 3: Attempt PDF build (this is the critical test)
                 # Use --skip-validation to avoid validation failures stopping the build
-                try:
-                    pdf_result = subprocess.run(
+                if execution_engine.engine_type == "local":
+                    try:
+                        pdf_result = subprocess.run(
+                            [
+                                "uv",
+                                "run",
+                                "python",
+                                "-m",
+                                "rxiv_maker.cli",
+                                "pdf",
+                                str(check_dir),
+                                "--skip-validation",
+                            ],
+                            capture_output=True,
+                            text=True,
+                            timeout=120,  # PDF building can take time
+                            cwd=original_cwd,
+                        )
+                    except FileNotFoundError:
+                        pdf_result = subprocess.run(
+                            [
+                                "python",
+                                "-m",
+                                "rxiv_maker.cli",
+                                "pdf",
+                                str(check_dir),
+                                "--skip-validation",
+                            ],
+                            capture_output=True,
+                            text=True,
+                            timeout=120,  # PDF building can take time
+                            cwd=original_cwd,
+                        )
+                else:
+                    # For container engines (Docker/Podman), use the rxiv command with the correct path
+                    pdf_result = execution_engine.run(
                         [
-                            "uv",
-                            "run",
-                            "python",
-                            "-m",
-                            "rxiv_maker.cli",
+                            "rxiv",
                             "pdf",
-                            str(manuscript_dir),
+                            "/workspace/TEST_MANUSCRIPT",
                             "--skip-validation",
                         ],
-                        capture_output=True,
-                        text=True,
+                        cwd="/workspace",
                         timeout=120,  # PDF building can take time
-                        cwd=original_cwd,
-                    )
-                except FileNotFoundError:
-                    pdf_result = subprocess.run(
-                        [
-                            "python",
-                            "-m",
-                            "rxiv_maker.cli",
-                            "pdf",
-                            str(manuscript_dir),
-                            "--skip-validation",
-                        ],
-                        capture_output=True,
-                        text=True,
-                        timeout=120,  # PDF building can take time
-                        cwd=original_cwd,
+                        check=False,  # Allow non-zero exit codes
                     )
 
                 print("PDF STDOUT:", pdf_result.stdout)
@@ -263,6 +302,14 @@ class TestPyPIPackageIntegration:
 
             finally:
                 os.chdir(original_cwd)
+
+                # Clean up TEST_MANUSCRIPT directory created by container engines
+                if execution_engine.engine_type in ["docker", "podman"]:
+                    container_manuscript_dir = Path(original_cwd) / "TEST_MANUSCRIPT"
+                    if container_manuscript_dir.exists():
+                        import shutil
+
+                        shutil.rmtree(container_manuscript_dir)
 
     @pytest.mark.skipif("CI" not in os.environ, reason="Only run in CI environment")
     @pytest.mark.timeout(300)  # Allow 5 minutes for full PDF build in CI

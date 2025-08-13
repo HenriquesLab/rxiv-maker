@@ -7,6 +7,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.4.25] - 2025-08-13
+
+### Fixed
+- **🔧 Critical Docker Build Failure**: Resolve persistent fc-cache exit code 127 error blocking GitHub Actions builds
+  - **Root Cause**: BuildKit cache mounts created isolation between RUN commands, causing fontconfig installation and fc-cache execution inconsistency
+  - **Solution**: Consolidated font installation and fc-cache into single RUN command ensuring same execution context
+  - **Impact**: Complete elimination of "command not found" errors in Docker builds across all platforms
+  - Enhanced BuildKit cache mount strategy with reduced parallelism (8→2) for improved stability
+  - Added comprehensive font configuration validation with error recovery mechanisms
+  - Removed redundant fc-cache command from final-runtime stage to prevent conflicts
+- **Docker Workflow Reliability**: Optimize GitHub Actions Docker build pipeline
+  - Enhanced buildkitd configuration for consistent multi-platform builds
+  - Improved error handling and debugging capabilities in build process
+  - Streamlined workflow execution with better resource management
+- **Container Engine Error Handling**: Implement comprehensive exception system
+  - New exceptions.py module with detailed error messages and platform-specific troubleshooting
+  - Enhanced Docker and Podman engine error detection with proper exception chaining
+  - Improved user experience with actionable error messages and installation guidance
+- **GitHub Actions Integration Tests**: Fix outdated test expectations
+  - Updated job references from deprecated "test" to current "unit-tests"
+  - Fixed workflow_dispatch input validation to match current CI configuration
+  - Ensured test suite accurately reflects current GitHub Actions workflow structure
+
+### Added
+- **Multi-Stage CI Workflow**: Implement intelligent 3-stage GitHub Actions pipeline
+  - Stage 1: Fast unit tests with no external dependencies (10min timeout)
+  - Stage 2: Integration tests with conditional dependency checking (20min timeout) 
+  - Stage 3: Package build and validation (10min timeout)
+  - Each stage runs only if the previous stage passes, optimizing CI resource usage
+- **Comprehensive Test Categorization**: Enhanced pytest marker system for better test organization
+  - Auto-marking by directory structure: `unit`, `integration`, `system`  
+  - Dependency markers: `requires_latex`, `requires_docker`, `requires_podman`, `requires_r`
+  - Performance markers: `fast`, `slow`, `ci_exclude`
+  - Smart dependency detection based on test names and file patterns
+- **Container Session Management**: Enhanced cleanup system for Docker and Podman engines
+  - Global engine registry with weak references to track active container instances
+  - Automatic cleanup on program termination through atexit handlers
+  - Improved resource management preventing container session leaks
+
+### Changed
+- **DOI Validation in CI**: Improve CI environment detection logic
+  - CI environments now disable online validation but still perform offline format validation
+  - Tests properly validate DOI formats even in GitHub Actions environments
+  - Maintains backward compatibility while enabling proper validation testing
+- **Test Infrastructure**: Enhanced robustness for different testing environments
+  - Accept multiple valid error message formats in LaTeX installation verification
+  - Improved test mocking for both `shutil.which()` and `subprocess.run()` calls
+  - Better error message flexibility across different testing environments
+
+## [v1.4.24] - 2025-08-12
+
+### Added
+- **OIDC Publishing**: Implement OpenID Connect authentication for PyPI publishing
+  - Eliminate need for API tokens in release workflows
+  - Enable secure, passwordless publishing with cryptographic attestations
+  - Add supply chain security with package provenance verification
+
+### Changed
+- **CI/CD Improvements**: Streamline GitHub Actions workflows with local-first approach
+  - Consolidate CI workflows into single, efficient job
+  - Archive legacy workflows while preserving history
+  - Optimize dependency caching and build performance
+  - Add comprehensive error reporting and debug guidance
+
+### Fixed
+- **Dependency Management**: Fix check-deps-verbose command to use module directly
+- **Build System**: Fix Makefile CLI fallback commands argument formats
+- **Pre-commit**: Resolve repository boundary validation for submodule-free architecture
+
+## [v1.4.21] - 2025-08-08
+
+### Fixed
+- **Script Execution**: Fix PDF validation and word count analysis subprocess failures in pipx/Homebrew installations
+  - Replace subprocess execution of PDF validator and word count scripts with direct function imports
+  - Resolve path resolution issues for validation scripts in virtual environments  
+  - Ensure PDF validation and word count analysis work correctly in all installation methods
+  - Fix "No such file or directory" errors for validation and analysis tools
+
+## [v1.4.20] - 2025-08-08
+
+### Fixed
+- **PDF Copying**: Fix copy_pdf script execution failure in pipx/Homebrew installations
+  - Replace subprocess execution of copy_pdf.py with direct function import and call
+  - Resolve path resolution issues in virtual environments
+  - Ensure PDF copying works correctly in all installation methods (pip, pipx, Homebrew)
+  - Fix "No such file or directory" error when copying generated PDF to manuscript directory
 ## [v1.4.19] - 2025-08-08
 
 ### Added

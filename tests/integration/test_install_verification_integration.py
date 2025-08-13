@@ -261,8 +261,9 @@ class TestInstallationVerificationWorkflow:
 
             diagnosis = diagnose_installation()
 
-            # Each component should report specific issues
-            assert "Error checking LaTeX" in diagnosis["latex"]["issues"][0]
+            # Each component should report specific issues (accept both error formats)
+            latex_error = diagnosis["latex"]["issues"][0]
+            assert "Error checking LaTeX" in latex_error or "pdflatex not found in PATH" in latex_error
             assert diagnosis["nodejs"]["installed"] is False
             assert "Error checking R" in diagnosis["r"]["issues"][0]
 
@@ -379,7 +380,7 @@ class TestInstallationVerificationEdgeCases:
     def test_partial_installation_scenarios(self):
         """Test scenarios where only some components are partially installed."""
         # Scenario: LaTeX installed but some packages missing
-        with patch("subprocess.run") as mock_run:
+        with patch("subprocess.run") as mock_run, patch("shutil.which") as mock_which:
 
             def run_side_effect(cmd, **kwargs):
                 if "pdflatex" in cmd and "--version" in cmd:
@@ -390,6 +391,14 @@ class TestInstallationVerificationEdgeCases:
                     return MagicMock(returncode=0)
 
             mock_run.side_effect = run_side_effect
+
+            # Mock shutil.which to return valid paths for tools we want to simulate as installed
+            def which_side_effect(cmd):
+                if cmd == "pdflatex":
+                    return "/usr/bin/pdflatex"  # Simulate pdflatex is available
+                return None  # Other commands not found
+
+            mock_which.side_effect = which_side_effect
 
             results = verify_installation()
             diagnosis = diagnose_installation()

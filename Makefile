@@ -34,27 +34,32 @@ export
 # 🌐 CROSS-PLATFORM COMPATIBILITY
 # ======================================================================
 
-# Detect operating system
+# Streamlined OS detection
 ifdef MAKEFILE_FORCE_UNIX
     DETECTED_OS := GitHub-Actions-Unix
     SHELL_NULL := /dev/null
     VENV_PYTHON := .venv/bin/python
+    DOCKER_PLATFORM := linux/amd64
 else ifeq ($(OS),Windows_NT)
     DETECTED_OS := Windows
     SHELL_NULL := nul
     VENV_PYTHON := .venv\Scripts\python.exe
+    DOCKER_PLATFORM := linux/amd64
 else
     UNAME_S := $(shell uname -s)
     DETECTED_OS := $(if $(findstring Linux,$(UNAME_S)),Linux,$(if $(findstring Darwin,$(UNAME_S)),macOS,Unix))
     SHELL_NULL := /dev/null
     VENV_PYTHON := .venv/bin/python
+    # Auto-detect Docker platform
+    UNAME_M := $(shell uname -m)
+    DOCKER_PLATFORM := $(if $(filter arm64 aarch64,$(UNAME_M)),linux/arm64,linux/amd64)
 endif
 
-# Cross-platform Python command selection (prefer uv, then venv, then system python)
+# Simplified cross-platform Python command selection
 ifeq ($(OS),Windows_NT)
-    PYTHON_CMD := $(shell where uv >nul 2>&1 && echo uv run python || (if exist "$(VENV_PYTHON)" (echo $(VENV_PYTHON)) else (echo python)))
+    PYTHON_EXEC := $(shell where uv >nul 2>&1 && echo uv run python || (if exist "$(VENV_PYTHON)" (echo $(VENV_PYTHON)) else (echo python)))
 else
-    PYTHON_CMD := $(shell command -v uv >$(SHELL_NULL) 2>&1 && echo "uv run python" || (test -f "$(VENV_PYTHON)" && echo "$(VENV_PYTHON)" || echo python3))
+    PYTHON_EXEC := $(shell command -v uv >$(SHELL_NULL) 2>&1 && echo "uv run python" || (test -f "$(VENV_PYTHON)" && echo "$(VENV_PYTHON)" || echo python3))
 endif
 
 # ======================================================================
@@ -82,33 +87,35 @@ DOCKER_IMAGE_FALLBACK := $(shell \
 DOCKER_IMAGE ?= $(DOCKER_IMAGE_FALLBACK)
 DOCKER_HUB_REPO ?= henriqueslab/rxiv-maker-base
 
-# Platform detection for Docker
-# Multi-architecture support: AMD64 and ARM64 both supported
-# Detect host architecture for native execution (no emulation needed)
-UNAME_M := $(shell uname -m)
-ifeq ($(UNAME_M),arm64)
-    DOCKER_PLATFORM := linux/arm64
-else ifeq ($(UNAME_M),aarch64)
-    DOCKER_PLATFORM := linux/arm64
-else ifeq ($(UNAME_M),x86_64)
-    DOCKER_PLATFORM := linux/amd64
-else
-    DOCKER_PLATFORM := linux/amd64
-endif
+# Platform detection moved to OS detection section above for consolidation
+
+# Docker base command for reuse
+DOCKER_BASE = docker run --rm --platform $(DOCKER_PLATFORM) -v $(PWD):/workspace -w /workspace $(DOCKER_IMAGE)
 
 # Engine-specific command configuration
 ifeq ($(RXIV_ENGINE),DOCKER)
-    # Docker mode: Run all commands inside containers with platform-specific image
-    DOCKER_RUN_CMD = docker run --rm --platform $(DOCKER_PLATFORM) -v $(PWD):/workspace -w /workspace
-    # Install package in editable mode and run python command
-    PYTHON_CMD = $(DOCKER_RUN_CMD) $(DOCKER_IMAGE) sh -c "pip install -e . >/dev/null 2>&1 && python"
-    DOCKER_MODE_ACTIVE = true
+    PYTHON_CMD = $(DOCKER_BASE) sh -c "pip install -e . >/dev/null 2>&1 && python"
     ENGINE_STATUS = 🐳 Docker ($(DOCKER_PLATFORM))
 else
-    # Local mode: Use local installations (existing behavior)
-    DOCKER_MODE_ACTIVE = false
+    PYTHON_CMD = $(PYTHON_EXEC)
     ENGINE_STATUS = 💻 Local
 endif
+
+# Helper function for rxiv CLI commands with fallback
+# Usage: $(call RXIV_RUN,cli-command,module-path,module-args)
+define RXIV_RUN
+	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.cli $(1) || \
+	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.$(2) $(3)
+endef
+
+# Error handling helper for validation failures
+define VALIDATION_ERROR
+	echo ""; \
+	echo "❌ Validation failed! Please fix the issues above before building PDF."; \
+	echo "💡 Run 'make validate' for detailed error analysis"; \
+	echo "💡 Use 'make pdf-no-validate' to skip validation and build anyway."; \
+	exit 1
+endef
 
 OUTPUT_DIR := output
 
@@ -180,25 +187,23 @@ install-deps-minimal:
 .PHONY: check-deps
 check-deps:
 	@echo "🔍 Checking system dependencies..."
-	@$(PYTHON_CMD) -m rxiv_maker.cli setup --check-deps-only || PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.setup_environment --check-deps-only
+	$(call RXIV_RUN,setup --check-deps-only,engine.setup_environment,--check-deps-only)
 
 # Check system dependencies (verbose)
 .PHONY: check-deps-verbose
 check-deps-verbose:
 	@echo "🔍 Checking system dependencies (verbose)..."
-	@$(PYTHON_CMD) -m rxiv_maker.cli setup --check-deps-only --verbose || PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.setup_environment --check-deps-only --verbose
+	@PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.engine.setup_environment --check-deps-only --verbose
 
 # Generate PDF with validation (requires LaTeX installation)
 .PHONY: pdf
 pdf:
-	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.cli pdf "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) $(if $(FORCE_FIGURES),--force-figures) || \
-	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.commands.build_manager --manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --verbose $(if $(FORCE_FIGURES),--force-figures)
+	$(call RXIV_RUN,pdf "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) $(if $(FORCE_FIGURES),--force-figures),engine.build_manager,--manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) $(if $(FORCE_FIGURES),--force-figures))
 
 # Generate PDF without validation (for debugging)
 .PHONY: pdf-no-validate
 pdf-no-validate:
-	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.cli pdf "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --skip-validation $(if $(FORCE_FIGURES),--force-figures) || \
-	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.commands.build_manager --manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --skip-validation $(if $(FORCE_FIGURES),--force-figures)
+	$(call RXIV_RUN,pdf "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --skip-validation $(if $(FORCE_FIGURES),--force-figures),engine.build_manager,--manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --skip-validation $(if $(FORCE_FIGURES),--force-figures))
 
 # Generate PDF with change tracking against a git tag
 .PHONY: pdf-track-changes
@@ -208,7 +213,7 @@ ifndef TAG
 endif
 	@echo "🔍 Generating PDF with change tracking against tag: $(TAG)"
 	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.cli track-changes "$(MANUSCRIPT_PATH)" $(TAG) --output-dir $(OUTPUT_DIR) --verbose || \
-	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.commands.build_manager \
+	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.engine.build_manager \
 		--manuscript-path "$(MANUSCRIPT_PATH)" \
 		--output-dir $(OUTPUT_DIR) \
 		--track-changes $(TAG) \
@@ -237,29 +242,14 @@ arxiv: pdf
 .PHONY: validate
 validate:
 	@echo "🔍 Running manuscript validation..."
-	@# Use command line variable or make variable with detailed and verbose output
-	@$(PYTHON_CMD) -m rxiv_maker.cli validate "$(MANUSCRIPT_PATH)" --detailed || \
-	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.validate "$(MANUSCRIPT_PATH)" --detailed || { \
-		echo ""; \
-		echo "❌ Validation failed! Please fix the issues above before building PDF."; \
-		echo "💡 Run 'make validate --help' for validation options"; \
-		echo "💡 Use 'make pdf-no-validate' to skip validation and build anyway."; \
-		exit 1; \
-	}
+	$(call RXIV_RUN,validate "$(MANUSCRIPT_PATH)" --detailed,engine.validate,"$(MANUSCRIPT_PATH)" --detailed) || { $(VALIDATION_ERROR); }
 	@echo "✅ Validation passed!"
 
 # Internal validation target for PDF build (quiet mode)
 .PHONY: _validate_quiet
 _validate_quiet:
 	@echo "🔍 Validating manuscript: $(MANUSCRIPT_PATH)"
-	@$(PYTHON_CMD) -m rxiv_maker.cli validate "$(MANUSCRIPT_PATH)" || \
-	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.validate "$(MANUSCRIPT_PATH)" || { \
-		echo ""; \
-		echo "❌ Validation failed! Please fix the issues above before building PDF."; \
-		echo "💡 Run 'make validate' for detailed error analysis"; \
-		echo "💡 Use 'make pdf-no-validate' to skip validation and build anyway."; \
-		exit 1; \
-	}
+	$(call RXIV_RUN,validate "$(MANUSCRIPT_PATH)",engine.validate,"$(MANUSCRIPT_PATH)") || { $(VALIDATION_ERROR); }
 
 # ======================================================================
 # 🧪 TESTING AND CODE QUALITY
@@ -335,21 +325,16 @@ check: lint typecheck
 .PHONY: fix-bibliography
 fix-bibliography:
 	@echo "🔧 Attempting to fix bibliography issues..."
-	@$(PYTHON_CMD) -m rxiv_maker.cli bibliography fix "$(MANUSCRIPT_PATH)" || \
-	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.fix_bibliography "$(MANUSCRIPT_PATH)" || { \
-		echo ""; \
+	$(call RXIV_RUN,bibliography fix "$(MANUSCRIPT_PATH)",engine.fix_bibliography,"$(MANUSCRIPT_PATH)") || { \
 		echo "❌ Bibliography fixing failed!"; \
 		echo "💡 Run with --dry-run to see potential fixes first"; \
-		echo "💡 Use --verbose for detailed logging"; \
-		exit 1; \
-	}
+		echo "💡 Use --verbose for detailed logging"; exit 1; }
 
 # Preview bibliography fixes without applying them
 .PHONY: fix-bibliography-dry-run
 fix-bibliography-dry-run:
 	@echo "🔍 Checking potential bibliography fixes..."
-	@$(PYTHON_CMD) -m rxiv_maker.cli bibliography fix "$(MANUSCRIPT_PATH)" --dry-run || \
-	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.fix_bibliography "$(MANUSCRIPT_PATH)" --dry-run
+	$(call RXIV_RUN,bibliography fix "$(MANUSCRIPT_PATH)" --dry-run,engine.fix_bibliography,"$(MANUSCRIPT_PATH)" --dry-run)
 
 # Add bibliography entries from DOI
 .PHONY: add-bibliography
@@ -386,41 +371,28 @@ add-bibliography:
 # 🧹 MAINTENANCE
 # ======================================================================
 
+# Consolidated cleaning targets using helper function
 # Clean output directory (cross-platform)
 .PHONY: clean
 clean:
-	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.cli clean "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) || \
-	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR)
+	$(call RXIV_RUN,clean "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR),engine.cleanup,--manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR))
 
-# Clean only output directory
-.PHONY: clean-output
+# Specialized cleaning targets
+.PHONY: clean-output clean-figures clean-arxiv clean-temp clean-cache
 clean-output:
-	@$(PYTHON_CMD) -m rxiv_maker.cli clean --output-only --output-dir $(OUTPUT_DIR) || \
-	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --output-only --output-dir $(OUTPUT_DIR)
+	$(call RXIV_RUN,clean --output-only --output-dir $(OUTPUT_DIR),engine.cleanup,--output-only --output-dir $(OUTPUT_DIR))
 
-# Clean only generated figures
-.PHONY: clean-figures
 clean-figures:
-	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.cli clean "$(MANUSCRIPT_PATH)" --figures-only || \
-	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --figures-only --manuscript-path "$(MANUSCRIPT_PATH)"
+	$(call RXIV_RUN,clean "$(MANUSCRIPT_PATH)" --figures-only,engine.cleanup,--figures-only --manuscript-path "$(MANUSCRIPT_PATH)")
 
-# Clean only arXiv files
-.PHONY: clean-arxiv
 clean-arxiv:
-	@$(PYTHON_CMD) -m rxiv_maker.cli clean --arxiv-only || \
-	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --arxiv-only
+	$(call RXIV_RUN,clean --arxiv-only,engine.cleanup,--arxiv-only)
 
-# Clean only temporary files
-.PHONY: clean-temp
 clean-temp:
-	@$(PYTHON_CMD) -m rxiv_maker.cli clean --temp-only || \
-	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --temp-only
+	$(call RXIV_RUN,clean --temp-only,engine.cleanup,--temp-only)
 
-# Clean only cache files
-.PHONY: clean-cache
 clean-cache:
-	@$(PYTHON_CMD) -m rxiv_maker.cli clean --cache-only || \
-	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.cleanup --cache-only
+	$(call RXIV_RUN,clean --cache-only,engine.cleanup,--cache-only)
 
 # ======================================================================
 # 🐳 DOCKER ENGINE MODE
@@ -429,32 +401,31 @@ clean-cache:
 # Note: Docker image management commands are in src/docker/images/base/Makefile for maintainers.
 # End users can use RXIV_ENGINE=DOCKER with any command for containerized execution.
 
-# Show help
+# ======================================================================
+# 📖 HELP AND DOCUMENTATION
+# ======================================================================
+
+# Show comprehensive help
 .PHONY: help
 help:
 	@VERSION=$$(PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -c "from rxiv_maker import __version__; print(__version__)" 2>/dev/null || echo "unknown"); \
-	echo "Rxiv-Maker v$$VERSION ($(DETECTED_OS))"; \
+	echo "🚀 Rxiv-Maker v$$VERSION ($(DETECTED_OS)) - $(ENGINE_STATUS)"; \
 	echo ""; \
-	echo "Essential Commands:"; \
-	echo "  make setup      - Install Python dependencies only"; \
+	echo "📋 Essential Commands:"; \
+	echo "  make setup        - Install Python dependencies"; \
 	echo "  make install-deps - Install system dependencies (LaTeX, etc.)"; \
-	echo "  make pdf        - Generate PDF with validation"; \
-	echo "  make validate   - Check manuscript for issues"; \
-	echo "  make validate-repo - Check repository integrity"; \
-	echo "  make validate-all  - Run all validation checks"; \
-	echo "  make test-safeguards - Test repository safeguards"; \
-	echo "  make test-submodule-guardrails - Test submodule guardrails"; \
-	echo "  make clean      - Remove output files"; \
-	echo "  make arxiv      - Prepare arXiv submission"; \
+	echo "  make pdf          - Generate PDF with validation"; \
+	echo "  make validate     - Check manuscript for issues"; \
+	echo "  make clean        - Remove output files"; \
+	echo "  make arxiv        - Prepare arXiv submission"; \
 	echo ""; \
-	echo "Docker Mode:"; \
-	echo "  make pdf RXIV_ENGINE=DOCKER      - Generate PDF in container"; \
-	echo "  make validate RXIV_ENGINE=DOCKER - Validate in container"; \
+	echo "🐳 Engine Modes:"; \
+	echo "  RXIV_ENGINE=LOCAL  (default) - Use local installations"; \
+	echo "  RXIV_ENGINE=DOCKER          - Use containerized execution"; \
 	echo ""; \
-	echo "Advanced Options:"; \
-	echo "  make pdf FORCE_FIGURES=true      - Force figure regeneration"; \
-	echo "  make pdf MANUSCRIPT_PATH=MY_PAPER - Use custom manuscript"; \
-	echo "  make pdf-track-changes TAG=v1.0.0 - Track changes vs git tag"; \
+	echo "⚙️  Common Options:"; \
+	echo "  FORCE_FIGURES=true           - Force figure regeneration"; \
+	echo "  MANUSCRIPT_PATH=MY_PAPER     - Use custom manuscript"; \
 	echo ""; \
-	echo "Directories: $(ARTICLE_DIR)/ → $(OUTPUT_DIR)/"; \
-	echo "Quick Start: make setup && make pdf"
+	echo "📁 Current: $(MANUSCRIPT_PATH)/ → $(OUTPUT_DIR)/"; \
+	echo "⚡ Quick Start: make setup && make pdf"
