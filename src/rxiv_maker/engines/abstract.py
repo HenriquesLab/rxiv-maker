@@ -27,12 +27,73 @@ class ContainerSession:
 
     def is_active(self) -> bool:
         """Check if the container is still running."""
-        return self._active
+        if not self._active:
+            return False
+
+        try:
+            result = subprocess.run(
+                [
+                    self.engine_type,
+                    "container",
+                    "inspect",
+                    self.container_id,
+                    "--format",
+                    "{{.State.Running}}",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if result.returncode == 0:
+                is_running = result.stdout.strip().lower() == "true"
+                if not is_running:
+                    self._active = False
+                return is_running
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+            self._active = False
+
+        return False
 
     def cleanup(self) -> bool:
         """Stop and remove the container."""
-        self._active = False
-        return True
+        if not self._active:
+            return True
+
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        try:
+            # Stop the container
+            stop_result = subprocess.run(
+                [self.engine_type, "stop", self.container_id], capture_output=True, text=True, timeout=10
+            )
+            if stop_result.returncode != 0:
+                logger.debug(
+                    f"Failed to stop {self.engine_type} container {self.container_id[:12]}: {stop_result.stderr}"
+                )
+
+            # Remove the container
+            rm_result = subprocess.run(
+                [self.engine_type, "rm", self.container_id], capture_output=True, text=True, timeout=10
+            )
+            if rm_result.returncode != 0:
+                logger.debug(
+                    f"Failed to remove {self.engine_type} container {self.container_id[:12]}: {rm_result.stderr}"
+                )
+
+            self._active = False
+            return True
+        except subprocess.TimeoutExpired:
+            logger.debug(f"Timeout during {self.engine_type} container {self.container_id[:12]} cleanup")
+            self._active = False  # Mark as inactive even if cleanup timed out
+            return False
+        except subprocess.CalledProcessError as e:
+            logger.debug(
+                f"Error during {self.engine_type} container {self.container_id[:12]} cleanup: exit code {e.returncode}"
+            )
+            self._active = False  # Mark as inactive even if cleanup failed
+            return False
 
 
 class AbstractContainerEngine(ABC):
@@ -414,3 +475,101 @@ if __name__ == "__main__":
             stats["session_details"].append(session_info)
 
         return stats
+
+    def _initialize_container(self, session: "ContainerSession") -> bool:
+        """Initialize a container with health checks and verification.
+
+        This method performs common initialization tasks for all container engines.
+        Subclasses can override this method to add engine-specific initialization.
+
+        Args:
+            session: Container session to initialize
+
+        Returns:
+            True if initialization successful, False otherwise
+        """
+        engine_type = session.engine_type
+        container_id = session.container_id
+
+        try:
+            # Basic connectivity test
+            exec_cmd = [
+                engine_type,
+                "exec",
+                container_id,
+                "echo",
+                "container_ready",
+            ]
+            result = subprocess.run(exec_cmd, capture_output=True, text=True, timeout=10)
+            if result.returncode != 0:
+                return False
+
+            # Test Python availability and basic imports
+            python_test = [
+                engine_type,
+                "exec",
+                container_id,
+                "python3",
+                "-c",
+                "import sys; print(f'Python {sys.version_info.major}.{sys.version_info.minor}')",
+            ]
+            result = subprocess.run(python_test, capture_output=True, text=True, timeout=15)
+            if result.returncode != 0:
+                return False
+
+            # Test critical Python dependencies
+            deps_test = [
+                engine_type,
+                "exec",
+                container_id,
+                "python3",
+                "-c",
+                """
+try:
+    import numpy, matplotlib, yaml, requests
+    print('Critical dependencies verified')
+except ImportError as e:
+    print(f'Dependency error: {e}')
+    exit(1)
+""",
+            ]
+            result = subprocess.run(deps_test, capture_output=True, text=True, timeout=20)
+            if result.returncode != 0:
+                return False
+
+            # Test R availability (non-blocking)
+            r_test = [
+                engine_type,
+                "exec",
+                container_id,
+                "sh",
+                "-c",
+                "which Rscript && Rscript --version || echo 'R not available'",
+            ]
+            subprocess.run(r_test, capture_output=True, text=True, timeout=10)
+
+            # Test LaTeX availability (non-blocking)
+            latex_test = [
+                engine_type,
+                "exec",
+                container_id,
+                "sh",
+                "-c",
+                "which pdflatex && echo 'LaTeX ready' || echo 'LaTeX not available'",
+            ]
+            subprocess.run(latex_test, capture_output=True, text=True, timeout=10)
+
+            # Set up workspace permissions
+            workspace_setup = [
+                engine_type,
+                "exec",
+                container_id,
+                "sh",
+                "-c",
+                "chmod -R 755 /workspace && mkdir -p /workspace/output",
+            ]
+            result = subprocess.run(workspace_setup, capture_output=True, text=True, timeout=10)
+            return result.returncode == 0
+
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+            return False

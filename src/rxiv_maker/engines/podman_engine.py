@@ -7,6 +7,13 @@ from pathlib import Path
 from typing import List, Optional
 
 from .abstract import AbstractContainerEngine, ContainerSession
+from .exceptions import (
+    ContainerEngineNotFoundError,
+    ContainerEngineNotRunningError,
+    ContainerImagePullError,
+    ContainerPermissionError,
+    ContainerTimeoutError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -18,51 +25,7 @@ class PodmanSession(ContainerSession):
         super().__init__(container_id, image, workspace_dir, "podman")
         self.created_at = time.time()
 
-    def is_active(self) -> bool:
-        """Check if the Podman container is still running."""
-        if not self._active:
-            return False
-
-        try:
-            result = subprocess.run(
-                [
-                    "podman",
-                    "container",
-                    "inspect",
-                    self.container_id,
-                    "--format",
-                    "{{.State.Running}}",
-                ],
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
-            if result.returncode == 0:
-                is_running = result.stdout.strip().lower() == "true"
-                if not is_running:
-                    self._active = False
-                return is_running
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
-            self._active = False
-
-        return False
-
-    def cleanup(self) -> bool:
-        """Stop and remove the Podman container."""
-        if not self._active:
-            return True
-
-        try:
-            # Stop the container
-            subprocess.run(["podman", "stop", self.container_id], capture_output=True, timeout=10)
-
-            # Remove the container
-            subprocess.run(["podman", "rm", self.container_id], capture_output=True, timeout=10)
-
-            self._active = False
-            return True
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
-            return False
+    # Note: is_active() and cleanup() methods are now inherited from ContainerSession base class
 
 
 class PodmanEngine(AbstractContainerEngine):
@@ -78,21 +41,74 @@ class PodmanEngine(AbstractContainerEngine):
         return "podman"
 
     def check_available(self) -> bool:
-        """Check if Podman is available and service is running."""
+        """Check if Podman is available and service is running.
+
+        Returns:
+            True if Podman is available and running, False otherwise.
+
+        Raises:
+            ContainerEngineNotFoundError: If Podman binary is not found
+            ContainerEngineNotRunningError: If Podman service is not running
+            ContainerPermissionError: If permission denied accessing Podman
+            ContainerTimeoutError: If Podman commands timeout
+        """
         try:
             # First check if podman binary exists
             version_result = subprocess.run(["podman", "--version"], capture_output=True, text=True, timeout=5)
-            if version_result.returncode != 0:
-                return False
 
+            if version_result.returncode != 0:
+                if "permission denied" in version_result.stderr.lower():
+                    raise ContainerPermissionError("podman", "check Podman version")
+                else:
+                    logger.debug(f"Podman version check failed: {version_result.stderr}")
+                    return False
+
+        except FileNotFoundError as e:
+            raise ContainerEngineNotFoundError("podman") from e
+        except subprocess.TimeoutExpired as e:
+            raise ContainerTimeoutError("podman", "version check", 5) from e
+
+        try:
             # Then check if Podman service is actually running
             ps_result = subprocess.run(["podman", "ps"], capture_output=True, text=True, timeout=10)
-            return ps_result.returncode == 0
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
+
+            if ps_result.returncode != 0:
+                stderr_lower = ps_result.stderr.lower()
+                if "permission denied" in stderr_lower or "access denied" in stderr_lower:
+                    raise ContainerPermissionError("podman", "list containers")
+                elif "cannot connect" in stderr_lower or "connection refused" in stderr_lower:
+                    raise ContainerEngineNotRunningError("podman")
+                elif "service" in stderr_lower and "not running" in stderr_lower:
+                    raise ContainerEngineNotRunningError("podman")
+                elif "machine" in stderr_lower and ("not running" in stderr_lower or "stopped" in stderr_lower):
+                    raise ContainerEngineNotRunningError("podman")
+                else:
+                    logger.debug(f"Podman ps failed: {ps_result.stderr}")
+                    return False
+
+            return True
+
+        except subprocess.TimeoutExpired as e:
+            raise ContainerTimeoutError("podman", "service connectivity check", 10) from e
+        except subprocess.CalledProcessError as e:
+            logger.debug(f"Podman ps command failed with exit code {e.returncode}")
             return False
 
     def pull_image(self, image: Optional[str] = None, force_pull: bool = False) -> bool:
-        """Pull the Podman image if not already available or force_pull is True."""
+        """Pull the Podman image if not already available or force_pull is True.
+
+        Args:
+            image: Image name to pull (defaults to default_image)
+            force_pull: Force pull even if image exists locally
+
+        Returns:
+            True if image is available after operation, False otherwise
+
+        Raises:
+            ContainerImagePullError: If image pull fails with details
+            ContainerTimeoutError: If pull operation times out
+            ContainerPermissionError: If permission denied during pull
+        """
         target_image = image or self.default_image
 
         # If force_pull is False, check if image is already available locally
@@ -105,11 +121,15 @@ class PodmanEngine(AbstractContainerEngine):
                     timeout=10,
                 )
                 if result.returncode == 0:
+                    logger.debug(f"Podman image {target_image} already available locally")
                     return True  # Image already available locally
-            except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
-                pass  # Image not available locally, proceed with pull
+            except subprocess.TimeoutExpired:
+                logger.debug(f"Timeout checking local image {target_image}, proceeding with pull")
+            except subprocess.CalledProcessError:
+                logger.debug(f"Image {target_image} not available locally, proceeding with pull")
 
         # Pull the latest version of the image
+        logger.info(f"Pulling Podman image: {target_image}")
         try:
             result = subprocess.run(
                 ["podman", "pull", target_image],
@@ -117,9 +137,31 @@ class PodmanEngine(AbstractContainerEngine):
                 text=True,
                 timeout=300,  # 5 minutes
             )
-            return result.returncode == 0
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
-            return False
+
+            if result.returncode == 0:
+                logger.info(f"Successfully pulled Podman image: {target_image}")
+                return True
+            else:
+                # Analyze the error to provide helpful feedback
+                stderr_lower = result.stderr.lower()
+                if "permission denied" in stderr_lower:
+                    raise ContainerPermissionError("podman", f"pull image {target_image}")
+                elif "not found" in stderr_lower or "no such image" in stderr_lower:
+                    raise ContainerImagePullError("podman", target_image, "Image not found in registry")
+                elif "network" in stderr_lower or "connection" in stderr_lower:
+                    raise ContainerImagePullError("podman", target_image, "Network connectivity issue")
+                elif "unauthorized" in stderr_lower or "authentication" in stderr_lower:
+                    raise ContainerImagePullError("podman", target_image, "Authentication required for private image")
+                else:
+                    raise ContainerImagePullError("podman", target_image, result.stderr.strip())
+
+        except subprocess.TimeoutExpired as e:
+            raise ContainerTimeoutError("podman", f"pull image {target_image}", 300) from e
+        except subprocess.CalledProcessError as e:
+            logger.debug(f"Podman pull failed with exit code {e.returncode}")
+            raise ContainerImagePullError(
+                "podman", target_image, f"Command failed with exit code {e.returncode}"
+            ) from e
 
     def _build_container_command(
         self,
@@ -222,99 +264,27 @@ class PodmanEngine(AbstractContainerEngine):
                 # Initialize container with health checks
                 if self._initialize_container(session):
                     self._active_sessions[session_key] = session
+                    logger.debug(f"Created new Podman session: {container_id[:12]}")
                     return session
                 else:
                     # Cleanup failed session
+                    logger.debug(f"Failed to initialize Podman session {container_id[:12]}, cleaning up")
                     session.cleanup()
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
-            pass
+            else:
+                # Log session creation failure details
+                error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+                logger.debug(f"Failed to create Podman session for {session_key}: {error_msg}")
+
+        except subprocess.TimeoutExpired:
+            logger.debug(f"Timeout creating Podman session for {session_key}")
+        except subprocess.CalledProcessError as e:
+            logger.debug(f"Command failed creating Podman session for {session_key}: exit code {e.returncode}")
+        except Exception as e:
+            logger.debug(f"Unexpected error creating Podman session for {session_key}: {e}")
 
         return None
 
-    def _initialize_container(self, session: ContainerSession) -> bool:
-        """Initialize a Podman container with health checks and verification."""
-        try:
-            # Basic connectivity test
-            exec_cmd = [
-                "podman",
-                "exec",
-                session.container_id,
-                "echo",
-                "container_ready",
-            ]
-            result = subprocess.run(exec_cmd, capture_output=True, text=True, timeout=10)
-            if result.returncode != 0:
-                return False
-
-            # Test Python availability and basic imports
-            python_test = [
-                "podman",
-                "exec",
-                session.container_id,
-                "python3",
-                "-c",
-                "import sys; print(f'Python {sys.version_info.major}.{sys.version_info.minor}')",
-            ]
-            result = subprocess.run(python_test, capture_output=True, text=True, timeout=15)
-            if result.returncode != 0:
-                return False
-
-            # Test critical Python dependencies
-            deps_test = [
-                "podman",
-                "exec",
-                session.container_id,
-                "python3",
-                "-c",
-                """
-try:
-    import numpy, matplotlib, yaml, requests
-    print('Critical dependencies verified')
-except ImportError as e:
-    print(f'Dependency error: {e}')
-    exit(1)
-""",
-            ]
-            result = subprocess.run(deps_test, capture_output=True, text=True, timeout=20)
-            if result.returncode != 0:
-                return False
-
-            # Test R availability (non-blocking)
-            r_test = [
-                "podman",
-                "exec",
-                session.container_id,
-                "sh",
-                "-c",
-                "which Rscript && Rscript --version || echo 'R not available'",
-            ]
-            subprocess.run(r_test, capture_output=True, text=True, timeout=10)
-
-            # Test LaTeX availability (non-blocking)
-            latex_test = [
-                "podman",
-                "exec",
-                session.container_id,
-                "sh",
-                "-c",
-                "which pdflatex && echo 'LaTeX ready' || echo 'LaTeX not available'",
-            ]
-            subprocess.run(latex_test, capture_output=True, text=True, timeout=10)
-
-            # Set up workspace permissions (important for Podman rootless)
-            workspace_setup = [
-                "podman",
-                "exec",
-                session.container_id,
-                "sh",
-                "-c",
-                "chmod -R 755 /workspace && mkdir -p /workspace/output",
-            ]
-            result = subprocess.run(workspace_setup, capture_output=True, text=True, timeout=10)
-            return result.returncode == 0
-
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
-            return False
+    # Note: _initialize_container() method is now inherited from AbstractContainerEngine base class
 
     def run_command(
         self,
@@ -367,14 +337,39 @@ except ImportError as e:
                 environment=environment,
             )
 
-        # Execute the command
-        return subprocess.run(
-            exec_cmd,
-            capture_output=capture_output,
-            text=True,
-            timeout=timeout,
-            **kwargs,
-        )
+        # Execute the command with enhanced error handling
+        try:
+            result = subprocess.run(
+                exec_cmd,
+                capture_output=capture_output,
+                text=True,
+                timeout=timeout,
+                **kwargs,
+            )
+
+            # If we used a session and the command failed, check if the session is still active
+            if session and result.returncode != 0:
+                if not session.is_active():
+                    logger.debug(f"Podman session {session.container_id[:12]} died during command execution")
+                    # Remove the dead session from our tracking
+                    if session_key in self._active_sessions:
+                        del self._active_sessions[session_key]
+
+            return result
+
+        except subprocess.TimeoutExpired as e:
+            # If using a session, check if it's still alive after timeout
+            if session:
+                if not session.is_active():
+                    logger.debug(f"Podman session {session.container_id[:12]} died during timeout")
+                    if session_key in self._active_sessions:
+                        del self._active_sessions[session_key]
+            raise e
+        except Exception as e:
+            # Log unexpected errors for debugging
+            cmd_preview = " ".join(exec_cmd[:5]) + ("..." if len(exec_cmd) > 5 else "")
+            logger.debug(f"Unexpected error executing Podman command '{cmd_preview}': {e}")
+            raise e
 
     def _cleanup_expired_sessions(self, force: bool = False) -> None:
         """Clean up expired or inactive Podman sessions."""

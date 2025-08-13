@@ -25,52 +25,6 @@ class DockerSession(ContainerSession):
         super().__init__(container_id, image, workspace_dir, "docker")
         self.created_at = time.time()
 
-    def is_active(self) -> bool:
-        """Check if the Docker container is still running."""
-        if not self._active:
-            return False
-
-        try:
-            result = subprocess.run(
-                [
-                    "docker",
-                    "container",
-                    "inspect",
-                    self.container_id,
-                    "--format",
-                    "{{.State.Running}}",
-                ],
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
-            if result.returncode == 0:
-                is_running = result.stdout.strip().lower() == "true"
-                if not is_running:
-                    self._active = False
-                return is_running
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
-            self._active = False
-
-        return False
-
-    def cleanup(self) -> bool:
-        """Stop and remove the Docker container."""
-        if not self._active:
-            return True
-
-        try:
-            # Stop the container
-            subprocess.run(["docker", "stop", self.container_id], capture_output=True, timeout=10)
-
-            # Remove the container
-            subprocess.run(["docker", "rm", self.container_id], capture_output=True, timeout=10)
-
-            self._active = False
-            return True
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
-            return False
-
 
 class DockerEngine(AbstractContainerEngine):
     """Docker container engine implementation."""
@@ -371,90 +325,7 @@ class DockerEngine(AbstractContainerEngine):
 
         return None
 
-    def _initialize_container(self, session: ContainerSession) -> bool:
-        """Initialize a Docker container with health checks and verification."""
-        try:
-            # Basic connectivity test
-            exec_cmd = [
-                "docker",
-                "exec",
-                session.container_id,
-                "echo",
-                "container_ready",
-            ]
-            result = subprocess.run(exec_cmd, capture_output=True, text=True, timeout=10)
-            if result.returncode != 0:
-                return False
-
-            # Test Python availability and basic imports
-            python_test = [
-                "docker",
-                "exec",
-                session.container_id,
-                "python3",
-                "-c",
-                "import sys; print(f'Python {sys.version_info.major}.{sys.version_info.minor}')",
-            ]
-            result = subprocess.run(python_test, capture_output=True, text=True, timeout=15)
-            if result.returncode != 0:
-                return False
-
-            # Test critical Python dependencies
-            deps_test = [
-                "docker",
-                "exec",
-                session.container_id,
-                "python3",
-                "-c",
-                """
-try:
-    import numpy, matplotlib, yaml, requests
-    print('Critical dependencies verified')
-except ImportError as e:
-    print(f'Dependency error: {e}')
-    exit(1)
-""",
-            ]
-            result = subprocess.run(deps_test, capture_output=True, text=True, timeout=20)
-            if result.returncode != 0:
-                return False
-
-            # Test R availability (non-blocking)
-            r_test = [
-                "docker",
-                "exec",
-                session.container_id,
-                "sh",
-                "-c",
-                "which Rscript && Rscript --version || echo 'R not available'",
-            ]
-            subprocess.run(r_test, capture_output=True, text=True, timeout=10)
-
-            # Test LaTeX availability (non-blocking)
-            latex_test = [
-                "docker",
-                "exec",
-                session.container_id,
-                "sh",
-                "-c",
-                "which pdflatex && echo 'LaTeX ready' || echo 'LaTeX not available'",
-            ]
-            subprocess.run(latex_test, capture_output=True, text=True, timeout=10)
-
-            # Set up workspace permissions
-            workspace_setup = [
-                "docker",
-                "exec",
-                session.container_id,
-                "sh",
-                "-c",
-                "chmod -R 755 /workspace && mkdir -p /workspace/output",
-            ]
-            result = subprocess.run(workspace_setup, capture_output=True, text=True, timeout=10)
-            return result.returncode == 0
-
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
-            return False
+    # Note: _initialize_container() method is now inherited from AbstractContainerEngine base class
 
     def _cleanup_expired_sessions(self, force: bool = False) -> None:
         """Clean up expired or inactive Docker sessions."""

@@ -1,0 +1,751 @@
+name: Docker Build & Release
+
+on:
+  push:
+    branches: [main, dev]
+    paths:
+      - 'src/docker/images/base/Dockerfile'
+      - 'pyproject.toml'
+      - 'src/docker/images/base/build.sh'
+      - 'src/docker/images/base/Makefile'
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'tests/**'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/container-engines.yml'
+      - '.github/workflows/release-simple.yml'
+
+  pull_request:
+    branches: [main, dev]
+    paths:
+      - 'src/docker/images/base/Dockerfile'
+      - 'pyproject.toml'
+      - 'src/docker/images/base/build.sh'
+      - 'src/docker/images/base/Makefile'
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'tests/**'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/container-engines.yml'
+      - '.github/workflows/release-simple.yml'
+
+  release:
+    types: [published]
+
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'Platforms to build for'
+        required: false
+        default: 'linux/amd64,linux/arm64'
+        type: string
+      push_to_registry:
+        description: 'Push to Docker Hub'
+        required: false
+        default: false
+        type: boolean
+      test_only:
+        description: 'Build and test only (no push)'
+        required: false
+        default: false
+        type: boolean
+      force_build:
+        description: 'Force build even if no significant changes detected'
+        required: false
+        default: false
+        type: boolean
+      skip_dependency_analysis:
+        description: 'Skip smart dependency analysis and always build'
+        required: false
+        default: false
+        type: boolean
+
+# Minimal permissions
+permissions:
+  contents: read
+  packages: write  # For Docker registry if needed
+
+# Cancel previous runs on same PR
+concurrency:
+  group: docker-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: 1
+  DOCKER_BUILDKIT: 1
+  REGISTRY: docker.io
+  IMAGE_NAME: henriqueslab/rxiv-maker-base
+
+jobs:
+  # Detect changes and set build strategy
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      dockerfile-changed: ${{ steps.changes.outputs.dockerfile }}
+      dependencies-changed: ${{ steps.changes.outputs.dependencies }}
+      build-scripts-changed: ${{ steps.changes.outputs.build-scripts }}
+      should-build: ${{ steps.decision.outputs.should-build }}
+      dependency-hash: ${{ steps.hash.outputs.dependency-hash }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Need previous commit for comparison
+
+      - name: Detect file changes
+        id: changes
+        run: |
+          echo "Checking for relevant file changes..."
+
+          # Handle initial commit case where HEAD~1 doesn't exist
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            # Normal case: compare with previous commit
+            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+          else
+            # Initial commit case: show all files in current commit
+            echo "⚠️ Initial commit detected, checking all files in current commit"
+            CHANGED_FILES=$(git show --name-only --pretty=format: HEAD)
+          fi
+
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          # Check for Dockerfile changes
+          if echo "$CHANGED_FILES" | grep -E '^src/docker/images/base/Dockerfile$'; then
+            echo "dockerfile=true" >> $GITHUB_OUTPUT
+            echo "📝 Dockerfile changed"
+          else
+            echo "dockerfile=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Simple dependency change analysis
+          if echo "$CHANGED_FILES" | grep -E '^pyproject.toml$'; then
+            echo "dependencies=true" >> $GITHUB_OUTPUT
+            echo "📦 pyproject.toml changed - will rebuild Docker image"
+          else
+            echo "dependencies=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Check for build script changes
+          if echo "$CHANGED_FILES" | grep -E '^src/docker/images/base/(build\.sh|Makefile)$'; then
+            echo "build-scripts=true" >> $GITHUB_OUTPUT
+            echo "🔧 Build scripts changed"
+          else
+            echo "build-scripts=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Check for workflow changes (for testing)
+          if echo "$CHANGED_FILES" | grep -E '^\.github/workflows/docker-build\.yml$'; then
+            echo "workflow=true" >> $GITHUB_OUTPUT
+            echo "🚀 Docker workflow changed - will test build"
+          else
+            echo "workflow=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate dependency hash
+        id: hash
+        run: |
+          # Create hash of Python dependencies for cache key
+          python3 << 'EOF'
+          import hashlib
+          import os
+          import re
+
+          with open('pyproject.toml', 'r') as f:
+              content = f.read()
+
+          # Extract dependencies section
+          deps_match = re.search(r'dependencies\s*=\s*\[(.*?)\]', content, re.DOTALL)
+          if deps_match:
+              deps_content = deps_match.group(1)
+              # Create hash of dependency content
+              dep_hash = hashlib.sha256(deps_content.encode()).hexdigest()[:16]
+              print(f"dependency-hash={dep_hash}")
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write(f"dependency-hash={dep_hash}\n")
+          else:
+              print("dependency-hash=unknown")
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write("dependency-hash=unknown\n")
+          EOF
+
+      - name: Build decision
+        id: decision
+        run: |
+          # Check for skip directives in commit messages or PR title
+          COMMIT_MSG="${{ github.event.head_commit.message || '' }}"
+          PR_TITLE="${{ github.event.pull_request.title || '' }}"
+
+          echo "Analyzing commit message: '$COMMIT_MSG'"
+          echo "Analyzing PR title: '$PR_TITLE'"
+
+          # Check for skip patterns
+          SKIP_PATTERNS="(\[skip docker\]|\[no docker\]|\[skip ci:docker\]|chore\(deps\).*pytest|chore\(deps\).*mypy|chore\(deps\).*ruff)"
+
+          if echo "$COMMIT_MSG $PR_TITLE" | grep -iE "$SKIP_PATTERNS" >/dev/null; then
+            echo "should-build=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Skip directive found in commit message or PR title - skipping Docker build"
+          # Determine if we should build based on event type
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            if [ "${{ inputs.force_build || false }}" == "true" ]; then
+              echo "should-build=true" >> $GITHUB_OUTPUT
+              echo "🚀 Manual trigger with force_build - will build"
+            elif [ "${{ inputs.skip_dependency_analysis || false }}" == "true" ]; then
+              echo "should-build=true" >> $GITHUB_OUTPUT
+              echo "🚀 Manual trigger skipping dependency analysis - will build"
+            else
+              echo "should-build=true" >> $GITHUB_OUTPUT
+              echo "🚀 Manual trigger - will build"
+            fi
+          elif [ "${{ github.event_name }}" == "release" ]; then
+            echo "should-build=true" >> $GITHUB_OUTPUT
+            echo "🏷️ Release trigger - will build"
+          elif [ "${{ steps.changes.outputs.dockerfile }}" == "true" ] || \
+               [ "${{ steps.changes.outputs.dependencies }}" == "true" ] || \
+               [ "${{ steps.changes.outputs.build-scripts }}" == "true" ] || \
+               [ "${{ steps.changes.outputs.workflow }}" == "true" ]; then
+            echo "should-build=true" >> $GITHUB_OUTPUT
+            echo "📋 Relevant changes detected - will build"
+          else
+            echo "should-build=false" >> $GITHUB_OUTPUT
+            echo "⏭️ No relevant changes - skipping build"
+          fi
+
+  # Build and test Docker image
+  build-and-test:
+    name: Build & Test Docker Image
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.should-build == 'true'
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set platform slug
+        id: platform
+        run: |
+          # Convert platform name to safe filename (e.g., linux/amd64 -> linux-amd64)
+          PLATFORM_SLUG=$(echo "${{ matrix.platform }}" | sed 's/\//-/g')
+          echo "slug=$PLATFORM_SLUG" >> $GITHUB_OUTPUT
+          echo "Platform: ${{ matrix.platform }} -> Slug: $PLATFORM_SLUG"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: ${{ matrix.platform }}
+          # 🔧 Simplified Buildx configuration for fc-cache stability
+          driver-opts: |
+            network=host
+          buildkitd-config-inline: |
+            [worker.oci]
+              max-parallelism = 2
+            [worker.containerd]
+              max-parallelism = 2
+
+      - name: Validate build environment
+        run: |
+          echo "🔍 Validating build environment..."
+
+          # Check Docker buildx
+          if ! docker buildx version >/dev/null 2>&1; then
+            echo "❌ Docker buildx not available"
+            exit 1
+          fi
+          echo "✅ Docker buildx: $(docker buildx version)"
+
+          # Check BuildKit version for fc-cache compatibility
+          buildkit_version=$(docker buildx inspect --bootstrap 2>/dev/null | grep "Driver:" -A5 | grep "Version:" | head -n1 | awk '{print $2}' || echo "unknown")
+          echo "ℹ️ BuildKit version: $buildkit_version"
+
+          # Check Dockerfile exists
+          if [ ! -f "src/docker/images/base/Dockerfile" ]; then
+            echo "❌ Dockerfile not found at src/docker/images/base/Dockerfile"
+            exit 1
+          fi
+          echo "✅ Dockerfile found"
+
+          # Validate font-base stage structure for fc-cache fix
+          if grep -q "fc-cache -fv" src/docker/images/base/Dockerfile; then
+            if grep -A5 -B5 "fc-cache -fv" src/docker/images/base/Dockerfile | grep -q "RUN.*fontconfig.*fc-cache"; then
+              echo "✅ fc-cache consolidated in single RUN command"
+            else
+              echo "⚠️ fc-cache may still have BuildKit isolation issues"
+            fi
+          fi
+
+          # Check pyproject.toml exists (for dependency validation)
+          if [ ! -f "pyproject.toml" ]; then
+            echo "❌ pyproject.toml not found"
+            exit 1
+          fi
+          echo "✅ pyproject.toml found"
+
+          echo "✅ Build environment validation complete"
+
+      - name: Validate Docker Hub credentials
+        id: check-creds
+        if: github.event_name != 'pull_request'
+        run: |
+          # Only attempt login if we're on main branch or manual trigger with push enabled
+          SHOULD_LOGIN=false
+
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "🔑 Main branch detected - credentials required for push"
+            SHOULD_LOGIN=true
+          elif [ "${{ github.event_name }}" == "release" ]; then
+            echo "🔑 Release event - credentials required for push"
+            SHOULD_LOGIN=true
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ "${{ inputs.push_to_registry || false }}" == "true" ]; then
+            echo "🔑 Manual trigger with push enabled - credentials required"
+            SHOULD_LOGIN=true
+          else
+            echo "🔓 Dev branch or test-only mode - skipping Docker Hub authentication"
+            SHOULD_LOGIN=false
+          fi
+
+          echo "should-login=$SHOULD_LOGIN" >> $GITHUB_OUTPUT
+
+          if [ "$SHOULD_LOGIN" == "true" ]; then
+            if [ -z "${{ secrets.DOCKER_USERNAME }}" ] || [ -z "${{ secrets.DOCKER_PUSH }}" ]; then
+              echo "❌ Docker Hub credentials not available"
+              echo "This build will proceed without registry push capability"
+              echo "should-login=false" >> $GITHUB_OUTPUT
+            else
+              echo "✅ Docker Hub credentials available"
+            fi
+          fi
+
+      - name: Log in to Docker Hub
+        if: steps.check-creds.outputs.should-login == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PUSH }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=Rxiv-Maker Base
+            org.opencontainers.image.description=Base Docker image for rxiv-maker with LaTeX, Python, R, and system dependencies
+            org.opencontainers.image.vendor=Rxiv-Maker Project
+            org.opencontainers.image.dependency-hash=${{ needs.detect-changes.outputs.dependency-hash }}
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        timeout-minutes: 45
+        with:
+          context: .
+          file: src/docker/images/base/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: false  # Don't push yet, test first
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # 🚀 PHASE 4: Simplified BuildKit caching (single scope per platform)
+          cache-from: type=gha,scope=build-${{ matrix.platform }}
+          cache-to: type=gha,scope=build-${{ matrix.platform }},mode=max
+          # 🔧 Simplified build arguments for fc-cache stability
+          build-args: |
+            USE_EATMYDATA=false
+          # 🚀 PHASE 4: Enable detailed build progress for debugging
+          outputs: type=docker,dest=/tmp/image-${{ steps.platform.outputs.slug }}.tar
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-${{ steps.platform.outputs.slug }}
+          path: /tmp/image-${{ steps.platform.outputs.slug }}.tar
+          retention-days: 1
+
+  # Test the built images
+  test-images:
+    name: Test Docker Images
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build-and-test]
+    if: needs.detect-changes.outputs.should-build == 'true'
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        test-type: [base-deps, runtime-injection, full-workflow]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download image artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: docker-image-*
+          merge-multiple: true
+
+      - name: Load Docker images
+        run: |
+          # Load all built images
+          for image in docker-image-*/image-*.tar; do
+            if [ -f "$image" ]; then
+              echo "Loading $image..."
+              docker load --input "$image"
+            fi
+          done
+
+          # List loaded images
+          docker images | grep henriqueslab/rxiv-maker-base || echo "No images found"
+
+          # Ensure a :latest tag exists for tests irrespective of metadata-action tags
+          # Tag the most recently built image as :latest if not present
+          if ! docker images --format '{{.Repository}}:{{.Tag}}' | grep -q '^henriqueslab/rxiv-maker-base:latest$'; then
+            most_recent=$(docker images --format '{{.Repository}}:{{.Tag}} {{.CreatedAt}}' | awk '/^henriqueslab\/rxiv-maker-base:/ {print $1"|"$2" "$3" "$4" "$5" "$6}' | sort -rk2 | head -n1 | cut -d'|' -f1)
+            if [ -n "$most_recent" ]; then
+              echo "Tagging $most_recent as henriqueslab/rxiv-maker-base:latest for tests"
+              docker tag "$most_recent" henriqueslab/rxiv-maker-base:latest
+            fi
+          fi
+
+      - name: Test base dependencies
+        if: matrix.test-type == 'base-deps'
+        run: |
+          echo "🧪 Testing base dependencies in built image..."
+          docker run --rm henriqueslab/rxiv-maker-base:latest python3 -c "
+          import sys
+          print(f'Python version: {sys.version}')
+
+          # Test essential dependencies that were missing before
+          essential_deps = ['platformdirs', 'click', 'rich', 'packaging', 'tomli_w', 'typing_extensions']
+          for dep in essential_deps:
+              try:
+                  __import__(dep)
+                  print(f'✅ {dep}')
+              except ImportError as e:
+                  print(f'❌ {dep}: {e}')
+                  exit(1)
+
+          print('✅ All base dependencies available!')
+          "
+
+          echo "🧪 Testing font configuration and fc-cache..."
+          docker run --rm henriqueslab/rxiv-maker-base:latest bash -c "
+          echo 'Testing fc-cache command availability...'
+          if command -v fc-cache >/dev/null 2>&1; then
+              echo '✅ fc-cache command found'
+              echo 'Testing font cache functionality...'
+              fc-cache -fv >/dev/null 2>&1 && echo '✅ fc-cache executed successfully' || echo '❌ fc-cache execution failed'
+          else
+              echo '❌ fc-cache command not found'
+              exit 1
+          fi
+
+          echo 'Testing fontconfig package installation...'
+          dpkg -l | grep -q fontconfig && echo '✅ fontconfig package installed' || { echo '❌ fontconfig package missing'; exit 1; }
+
+          echo 'Testing font directory structure...'
+          ls -la /usr/share/fonts/ | head -10
+          echo '✅ Font configuration test completed successfully!'
+          "
+
+      - name: Test runtime dependency injection
+        if: matrix.test-type == 'runtime-injection'
+        run: |
+          echo "🧪 Testing runtime dependency injection..."
+          docker run --rm -v $PWD:/workspace henriqueslab/rxiv-maker-base:latest bash -c "
+          echo 'Testing runtime dependency injection scripts...'
+
+          # Test install-project-deps.sh exists and is executable
+          if [ -x /usr/local/bin/install-project-deps.sh ]; then
+              echo '✅ install-project-deps.sh is executable'
+          else
+              echo '❌ install-project-deps.sh not found or not executable'
+              exit 1
+          fi
+
+          # Test dev-mode.sh exists and is executable
+          if [ -x /usr/local/bin/dev-mode.sh ]; then
+              echo '✅ dev-mode.sh is executable'
+          else
+              echo '❌ dev-mode.sh not found or not executable'
+              exit 1
+          fi
+
+          # Test dependency installation
+          /usr/local/bin/install-project-deps.sh
+
+          # Test critical imports after installation
+          python3 -c '
+          import sys
+          sys.path.insert(0, \"/workspace/src\")
+          try:
+              from rxiv_maker.utils.cache_utils import get_cache_dir
+              from rxiv_maker.validators.doi_validator import DOIValidator
+              print(\"✅ Runtime dependency injection successful!\")
+          except ImportError as e:
+              print(f\"❌ Import error after injection: {e}\")
+              exit(1)
+          '
+          "
+
+      - name: Test full workflow
+        if: matrix.test-type == 'full-workflow'
+        run: |
+          echo "🧪 Testing full Docker workflow..."
+
+          # Test usage script
+          docker run --rm henriqueslab/rxiv-maker-base:latest usage.sh
+
+          # Test verification script
+          docker run --rm henriqueslab/rxiv-maker-base:latest verify-python-deps.sh
+
+          # Test with mounted project
+          docker run --rm -v $PWD:/workspace henriqueslab/rxiv-maker-base:latest python3 /workspace/validate-container-imports.py
+
+      - name: Test summary
+        run: |
+          echo "## Docker Image Test Results (${{ matrix.test-type }})" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Test completed successfully" >> $GITHUB_STEP_SUMMARY
+
+  # Push to Docker Hub (only on main branch or releases)
+  push-to-registry:
+    name: Push to Docker Hub
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build-and-test, test-images]
+    if: |
+      needs.detect-changes.outputs.should-build == 'true' &&
+      (
+        github.ref == 'refs/heads/main' ||
+        github.event_name == 'release' ||
+        (github.event_name == 'workflow_dispatch' && (inputs.push_to_registry || false) == true)
+      ) &&
+      (inputs.test_only || 'false') != 'true'
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Validate Docker Hub credentials
+        if: |
+          github.ref == 'refs/heads/main' ||
+          github.event_name == 'release' ||
+          (github.event_name == 'workflow_dispatch' && (inputs.push_to_registry || false) == true)
+        run: |
+          if [ -z "${{ secrets.DOCKER_USERNAME }}" ]; then
+            echo "❌ DOCKER_USERNAME secret not set"
+            echo "Please configure Docker Hub credentials in repository secrets"
+            exit 1
+          fi
+
+          if [ -z "${{ secrets.DOCKER_PUSH }}" ]; then
+            echo "❌ DOCKER_PUSH secret not set"
+            echo "Please configure Docker Hub credentials in repository secrets"
+            exit 1
+          fi
+
+          echo "✅ Docker Hub credentials configured"
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PUSH }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=Rxiv-Maker Base
+            org.opencontainers.image.description=Base Docker image for rxiv-maker with runtime dependency injection
+            org.opencontainers.image.vendor=Rxiv-Maker Project
+            org.opencontainers.image.dependency-hash=${{ needs.detect-changes.outputs.dependency-hash }}
+
+      - name: Build and push multi-platform image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: src/docker/images/base/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # 🚀 PHASE 4: Simplified multi-platform caching strategy
+          cache-from: |
+            type=gha,scope=build-linux-amd64
+            type=gha,scope=build-linux-arm64
+          cache-to: type=gha,scope=build-multi-platform,mode=max
+          # 🔧 Simplified production build arguments for fc-cache stability
+          build-args: |
+            USE_EATMYDATA=false
+          # 🚀 PHASE 4: Enable attestations for enhanced security and traceability
+          provenance: true
+          sbom: true
+
+      - name: Create release summary
+        run: |
+          echo "## 🐳 Docker Image Released" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:** ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Platforms:** linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
+          echo "**Dependency Hash:** ${{ needs.detect-changes.outputs.dependency-hash }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Usage:**" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "# Development mode with runtime dependency injection" >> $GITHUB_STEP_SUMMARY
+          echo "docker run -it --rm -v \$PWD:/workspace ${{ env.IMAGE_NAME }}:latest dev-mode.sh" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  # Phase 4: Cache Management and Optimization
+  cache-management:
+    name: Cache Management (Phase 4)
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build-and-test]
+    if: needs.detect-changes.outputs.should-build == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache size analysis
+        run: |
+          echo "## 🚀 PHASE 4: Build Cache Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Analyze GitHub Actions cache usage
+          echo "**GitHub Actions Cache Usage:**" >> $GITHUB_STEP_SUMMARY
+          gh api repos/${{ github.repository }}/actions/caches --paginate | jq -r '
+            .actions_caches[] |
+            select(.key | contains("buildkit")) |
+            "| \(.key) | \(.size_in_bytes / 1024 / 1024 | round)MB | \(.created_at[:10]) |"
+          ' | head -20 >> $GITHUB_STEP_SUMMARY || echo "No buildkit caches found" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Cache Optimization Status:**" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Multi-source caching (GHA + Registry)" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Platform-specific cache scopes" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Enhanced BuildKit configuration" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Parallel multi-stage builds" >> $GITHUB_STEP_SUMMARY
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prune old caches
+        continue-on-error: true
+        run: |
+          echo "🧹 Pruning old Docker build caches..."
+
+          # Clean up old GitHub Actions caches (keep last 10 per scope)
+          gh api repos/${{ github.repository }}/actions/caches --paginate | jq -r '
+            .actions_caches[] |
+            select(.key | contains("buildkit")) |
+            select(.created_at < (now - 604800 | strftime("%Y-%m-%dT%H:%M:%SZ"))) |
+            .id
+          ' | head -20 | while read cache_id; do
+            if [ -n "$cache_id" ]; then
+              echo "Deleting cache ID: $cache_id"
+              gh api -X DELETE repos/${{ github.repository }}/actions/caches/$cache_id || true
+            fi
+          done
+
+          echo "✅ Cache cleanup completed"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Summary job
+  build-summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build-and-test, test-images, push-to-registry, cache-management]
+    if: always()
+    timeout-minutes: 5
+
+    steps:
+      - name: Build summary
+        run: |
+          echo "## Docker Build & Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.detect-changes.outputs.should-build }}" == "true" ]; then
+            echo "**Build Triggered:** ✅ Yes" >> $GITHUB_STEP_SUMMARY
+            echo "**Dockerfile Changed:** ${{ needs.detect-changes.outputs.dockerfile-changed }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Dependencies Changed:** ${{ needs.detect-changes.outputs.dependencies-changed }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Build Scripts Changed:** ${{ needs.detect-changes.outputs.build-scripts-changed }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Dependency Hash:** ${{ needs.detect-changes.outputs.dependency-hash }}" >> $GITHUB_STEP_SUMMARY
+
+            if [ "${{ needs.build-and-test.result }}" == "success" ]; then
+              echo "**Build Status:** ✅ Success" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "**Build Status:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            if [ "${{ needs.test-images.result }}" == "success" ]; then
+              echo "**Tests Status:** ✅ Passed" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "**Tests Status:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            if [ "${{ needs.push-to-registry.result }}" == "success" ]; then
+              echo "**Registry Push:** ✅ Success" >> $GITHUB_STEP_SUMMARY
+            elif [ "${{ needs.push-to-registry.result }}" == "skipped" ]; then
+              echo "**Registry Push:** ⏭️ Skipped (PR or test-only)" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "**Registry Push:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            if [ "${{ needs.cache-management.result }}" == "success" ]; then
+              echo "**Phase 4 Cache Management:** ✅ Success" >> $GITHUB_STEP_SUMMARY
+            elif [ "${{ needs.cache-management.result }}" == "skipped" ]; then
+              echo "**Phase 4 Cache Management:** ⏭️ Skipped (not main branch)" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "**Phase 4 Cache Management:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🚀 Phase 4 CI/CD Optimizations Active:" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Multi-source BuildKit caching (GHA + Registry)" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Platform-specific cache scopes" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Enhanced Buildx configuration (8x parallelism)" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Automatic cache cleanup and management" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ eatmydata filesystem acceleration" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Multi-stage parallel builds with enhanced layer ordering" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Build Triggered:** ⏭️ No (no relevant changes)" >> $GITHUB_STEP_SUMMARY
+          fi

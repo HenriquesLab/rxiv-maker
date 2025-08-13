@@ -16,6 +16,12 @@ if __name__ == "__main__":
 
 from crossref_commons.retrieval import get_publication_as_json
 
+try:
+    from ..utils.retry import get_with_retry
+except ImportError:
+    # Fallback when retry module isn't available
+    get_with_retry = None
+
 from rxiv_maker.utils.doi_cache import DOICache
 
 logger = logging.getLogger(__name__)
@@ -246,7 +252,11 @@ class BibliographyAdder:
         url = f"https://api.datacite.org/dois/{doi}"
         headers = {"Accept": "application/json"}
 
-        response = requests.get(url, headers=headers, timeout=10)
+        # Use retry logic for network requests
+        if get_with_retry:
+            response = get_with_retry(url, headers=headers, max_attempts=3, timeout=10)
+        else:
+            response = requests.get(url, headers=headers, timeout=10)
 
         if response.status_code == 200:
             data = response.json()

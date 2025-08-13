@@ -8,6 +8,13 @@ from typing import Any
 import requests
 from crossref_commons.retrieval import get_publication_as_json
 
+try:
+    from ...utils.retry import RetryableSession, RetryStrategy
+except ImportError:
+    # Fallback when retry module isn't available
+    RetryableSession = None
+    RetryStrategy = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,24 +24,48 @@ class BaseDOIClient(ABC):
     def __init__(self, timeout: int = 10, max_retries: int = 3):
         self.timeout = timeout
         self.max_retries = max_retries
-        self.session = requests.Session()
-        self.session.headers.update({"User-Agent": "rxiv-maker/1.0 (https://github.com/henriqueslab/rxiv-maker)"})
+
+        # Use enhanced RetryableSession if available, fallback to basic session
+        if RetryableSession:
+            self.session = RetryableSession(
+                max_attempts=max_retries,
+                strategy=RetryStrategy.EXPONENTIAL_BACKOFF,
+                base_delay=1.0,
+                max_delay=30.0,
+                timeout=timeout,
+                user_agent="rxiv-maker/1.0 (https://github.com/henriqueslab/rxiv-maker)",
+            )
+            self._use_retryable_session = True
+        else:
+            self.session = requests.Session()
+            self.session.headers.update({"User-Agent": "rxiv-maker/1.0 (https://github.com/henriqueslab/rxiv-maker)"})
+            self._use_retryable_session = False
 
     def _make_request(self, url: str, headers: dict[str, str] | None = None) -> dict[str, Any] | None:
         """Make HTTP request with retry logic."""
-        for attempt in range(self.max_retries):
+        if self._use_retryable_session:
+            # Use RetryableSession's built-in retry logic
             try:
-                response = self.session.get(url, headers=headers or {}, timeout=self.timeout)
-                response.raise_for_status()
+                response = self.session.get(url, headers=headers or {})
                 return response.json()
-            except requests.RequestException as e:
-                logger.debug(f"Request attempt {attempt + 1} failed: {e}")
-                if attempt < self.max_retries - 1:
-                    time.sleep(2**attempt)  # Exponential backoff
-                else:
-                    logger.debug(f"All attempts failed for {url}: {e}")
-                    return None
-        return None
+            except Exception as e:
+                logger.debug(f"RetryableSession request failed for {url}: {e}")
+                return None
+        else:
+            # Fallback to old retry logic
+            for attempt in range(self.max_retries):
+                try:
+                    response = self.session.get(url, headers=headers or {}, timeout=self.timeout)
+                    response.raise_for_status()
+                    return response.json()
+                except requests.RequestException as e:
+                    logger.debug(f"Request attempt {attempt + 1} failed: {e}")
+                    if attempt < self.max_retries - 1:
+                        time.sleep(2**attempt)  # Exponential backoff
+                    else:
+                        logger.debug(f"All attempts failed for {url}: {e}")
+                        return None
+            return None
 
     @abstractmethod
     def fetch_metadata(self, doi: str) -> dict[str, Any] | None:
@@ -59,14 +90,24 @@ class CrossRefClient(BaseDOIClient):
         try:
             url = f"https://api.crossref.org/works/{doi}"
             headers = {"Accept": "application/json"}
-            resp = self.session.get(url, headers=headers, timeout=self.timeout)
-            if resp.status_code == 200:
+
+            if self._use_retryable_session:
+                # Use RetryableSession for enhanced retry logic
+                resp = self.session.get(url, headers=headers)
                 json_data = resp.json()
                 if isinstance(json_data, dict) and "message" in json_data:
                     return json_data["message"]
                 logger.debug(f"CrossRef REST response missing 'message' field for {doi}")
             else:
-                logger.debug(f"CrossRef REST fetch non-200 ({resp.status_code}) for {doi}")
+                # Fallback to old logic
+                resp = self.session.get(url, headers=headers, timeout=self.timeout)
+                if resp.status_code == 200:
+                    json_data = resp.json()
+                    if isinstance(json_data, dict) and "message" in json_data:
+                        return json_data["message"]
+                    logger.debug(f"CrossRef REST response missing 'message' field for {doi}")
+                else:
+                    logger.debug(f"CrossRef REST fetch non-200 ({resp.status_code}) for {doi}")
         except Exception as e:
             logger.debug(f"CrossRef REST fetch failed for {doi}: {e}")
 
@@ -215,22 +256,37 @@ class DOIResolver(BaseDOIClient):
         resolves = False
         error_message = None
 
-        for attempt in range(self.max_retries):
+        if self._use_retryable_session:
+            # Use RetryableSession for enhanced retry with proper error handling
             try:
                 url = f"https://doi.org/{doi}"
-                response = self.session.head(url, timeout=self.timeout, allow_redirects=True)
+                # Use a direct session call since RetryableSession expects 200 responses
+                # For HEAD requests, we need to handle redirects and non-200 codes differently
+                response = self.session.session.head(url, timeout=self.timeout, allow_redirects=True)
                 resolves = response.status_code == 200
-                if resolves:
-                    break
-                else:
+                if not resolves:
                     error_message = f"HTTP {response.status_code}"
             except Exception as e:
                 error_message = str(e)
-                logger.debug(f"DOI resolution attempt {attempt + 1} failed for {doi}: {e}")
-                if attempt < self.max_retries - 1:
-                    time.sleep(2**attempt)  # Exponential backoff
-                else:
-                    logger.debug(f"All resolution attempts failed for {doi}")
+                logger.debug(f"DOI resolution failed for {doi}: {e}")
+        else:
+            # Fallback to old retry logic
+            for attempt in range(self.max_retries):
+                try:
+                    url = f"https://doi.org/{doi}"
+                    response = self.session.head(url, timeout=self.timeout, allow_redirects=True)
+                    resolves = response.status_code == 200
+                    if resolves:
+                        break
+                    else:
+                        error_message = f"HTTP {response.status_code}"
+                except Exception as e:
+                    error_message = str(e)
+                    logger.debug(f"DOI resolution attempt {attempt + 1} failed for {doi}: {e}")
+                    if attempt < self.max_retries - 1:
+                        time.sleep(2**attempt)  # Exponential backoff
+                    else:
+                        logger.debug(f"All resolution attempts failed for {doi}")
 
         # Cache the result (including failures) if cache is available
         if self.cache:
@@ -329,27 +385,41 @@ class SemanticScholarClient(BaseDOIClient):
             # Semantic Scholar API requires specific fields to be requested
             params = {"fields": "title,authors,year,journal,doi,venue,publicationDate,publisher"}
 
-            for attempt in range(self.max_retries):
+            if self._use_retryable_session:
+                # Use RetryableSession for enhanced retry logic
                 try:
-                    response = self.session.get(url, params=params, timeout=self.timeout)
-                    if response.status_code == 200:
-                        return response.json()
-                    elif response.status_code == 429:  # Rate limited
-                        logger.debug(f"Semantic Scholar rate limited for {doi}, attempt {attempt + 1}")
+                    response = self.session.get(url, params=params)
+                    return response.json()
+                except Exception as e:
+                    # Special handling for rate limiting in Semantic Scholar
+                    if hasattr(e, "response") and e.response and e.response.status_code == 429:
+                        logger.debug(f"Semantic Scholar rate limited for {doi}")
+                    else:
+                        logger.debug(f"Semantic Scholar request failed for {doi}: {e}")
+                    return None
+            else:
+                # Fallback to old retry logic
+                for attempt in range(self.max_retries):
+                    try:
+                        response = self.session.get(url, params=params, timeout=self.timeout)
+                        if response.status_code == 200:
+                            return response.json()
+                        elif response.status_code == 429:  # Rate limited
+                            logger.debug(f"Semantic Scholar rate limited for {doi}, attempt {attempt + 1}")
+                            if attempt < self.max_retries - 1:
+                                time.sleep(2**attempt)
+                            continue
+                        else:
+                            logger.debug(f"Semantic Scholar returned {response.status_code} for {doi}")
+                            return None
+                    except requests.RequestException as e:
+                        logger.debug(f"Semantic Scholar request failed for {doi}, attempt {attempt + 1}: {e}")
                         if attempt < self.max_retries - 1:
                             time.sleep(2**attempt)
-                        continue
-                    else:
-                        logger.debug(f"Semantic Scholar returned {response.status_code} for {doi}")
-                        return None
-                except requests.RequestException as e:
-                    logger.debug(f"Semantic Scholar request failed for {doi}, attempt {attempt + 1}: {e}")
-                    if attempt < self.max_retries - 1:
-                        time.sleep(2**attempt)
-                    else:
-                        return None
+                        else:
+                            return None
 
-            return None
+                return None
 
         except Exception as e:
             logger.debug(f"Semantic Scholar fetch failed for {doi}: {e}")

@@ -16,6 +16,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
+try:
+    from ..utils.retry import get_with_retry
+except ImportError:
+    # Fallback when retry module isn't available
+    get_with_retry = None
+
 from ..utils.advanced_cache import AdvancedCache
 
 logger = logging.getLogger(__name__)
@@ -403,8 +409,12 @@ class DependencyManager:
             normalized_name = package_name.lower().replace("_", "-")
             url = f"{self.pypi_api_base}/{normalized_name}/json"
 
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
+            # Use retry logic for network requests
+            if get_with_retry:
+                response = get_with_retry(url, max_attempts=3, timeout=10)
+            else:
+                response = requests.get(url, timeout=10)
+                response.raise_for_status()
 
             package_info = response.json()
 
@@ -429,8 +439,12 @@ class DependencyManager:
             normalized_name = package_name.lower().replace("_", "-")
             url = f"{self.pypi_api_base}/{normalized_name}/{version}/json"
 
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
+            # Use retry logic for network requests
+            if get_with_retry:
+                response = get_with_retry(url, max_attempts=3, timeout=10)
+            else:
+                response = requests.get(url, timeout=10)
+                response.raise_for_status()
 
             version_info = response.json()
 

@@ -19,6 +19,12 @@ except ImportError:
     requests = None
 
 try:
+    from ..utils.retry import get_with_retry
+except ImportError:
+    # Fallback when retry module isn't available
+    get_with_retry = None
+
+try:
     from rich.progress import (
         BarColumn,
         MofNCompleteColumn,
@@ -404,8 +410,12 @@ class FigureGenerator:
                 print(f"     Requesting {format_type.upper()} from mermaid.ink...")
 
                 try:
-                    response = requests.get(api_url, timeout=30)
-                    response.raise_for_status()
+                    # Use retry logic for network requests
+                    if get_with_retry:
+                        response = get_with_retry(api_url, max_attempts=3, timeout=30)
+                    else:
+                        response = requests.get(api_url, timeout=30)
+                        response.raise_for_status()
 
                     # Write the content
                     if format_type == "svg":
