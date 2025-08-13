@@ -3,6 +3,7 @@
 # ======================================================================
 # This Docker image contains all system dependencies for Rxiv-Maker
 # but NO Python code or rxiv-maker specific logic.
+# Updated to test consolidated Docker workflow system.
 #
 # ARCHITECTURE SUPPORT: AMD64 and ARM64
 # - Uses mermaid.ink API for diagram generation (no local dependencies)

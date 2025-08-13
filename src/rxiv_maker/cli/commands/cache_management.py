@@ -10,7 +10,7 @@ This module provides commands for:
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import click
 
@@ -152,7 +152,7 @@ def cleanup(max_age_hours: int, dry_run: bool):
             docker_cleanup = docker_optimizer.cleanup_build_cache(max_age_hours)
             cleanup_results["docker"] = docker_cleanup
         else:
-            cleanup_results["docker"] = {"estimated_cleanup": "varies"}
+            cleanup_results["docker"] = {"estimated_cleanup": 0}
 
         action = "Would clean up" if dry_run else "Cleaned up"
         safe_console_print(console, f"✅ {action}: {cleanup_results}")
@@ -237,7 +237,7 @@ def _print_stats_table(stats: Dict[str, Any]) -> None:
 
 def _generate_optimization_recommendations(stats: Dict[str, Any]) -> Dict[str, list]:
     """Generate optimization recommendations based on cache statistics."""
-    recommendations = {"performance": [], "storage": [], "configuration": []}
+    recommendations: Dict[str, List[Dict[str, str]]] = {"performance": [], "storage": [], "configuration": []}
 
     # Analyze bibliography cache performance
     if "bibliography" in stats:
@@ -270,8 +270,8 @@ def _generate_optimization_recommendations(stats: Dict[str, Any]) -> Dict[str, l
                 )
 
             memory_entries = cache_data.get("memory_entries", 0)
-            total_entries = cache_data.get("total_entries", memory_entries)
-            if memory_entries < total_entries * 0.3:
+            total_entries = cache_data.get("total_entries", memory_entries) or memory_entries
+            if total_entries > 0 and memory_entries < total_entries * 0.3:
                 recommendations["configuration"].append(
                     {
                         "priority": "low",

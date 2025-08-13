@@ -225,7 +225,7 @@ class ConfigValidator:
                     errors.extend(path_errors)
                 elif var_type == "choice":
                     choices = var_config.get("choices", [])
-                    if var_value not in choices:
+                    if isinstance(choices, list) and var_value not in choices:
                         warnings.append(
                             create_validation_error(
                                 ErrorCode.INVALID_CONFIG_VALUE,
@@ -328,7 +328,7 @@ class ConfigValidator:
             pyproject_validation = self._validate_pyproject_config(pyproject_path)
             errors.extend(pyproject_validation.get("errors", []))
             warnings.extend(pyproject_validation.get("warnings", []))
-            structure_info["pyproject_validation"] = pyproject_validation
+            structure_info["pyproject_validation"] = pyproject_validation.get("valid", False)
 
         return {
             "valid": len(errors) == 0,
@@ -488,7 +488,9 @@ class ConfigValidator:
 
             if expected_type in type_mapping:
                 expected_python_type = type_mapping[expected_type]
-                if not isinstance(field_value, expected_python_type):
+                if isinstance(expected_python_type, (type, tuple)) and not isinstance(
+                    field_value, expected_python_type
+                ):
                     errors.append(
                         create_validation_error(
                             ErrorCode.INVALID_CONFIG_VALUE,
@@ -861,7 +863,7 @@ class ConfigValidator:
         """Validate system dependencies and environment."""
         errors: List[Any] = []
         warnings: List[Any] = []
-        system_info = {}
+        system_info: Dict[str, Any] = {}
 
         # Check Python version
         import sys
