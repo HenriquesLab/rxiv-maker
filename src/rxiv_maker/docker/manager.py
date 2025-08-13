@@ -852,9 +852,9 @@ if __name__ == "__main__":
 
     def get_resource_usage(self) -> dict[str, Any]:
         """Get Docker resource usage statistics."""
-        stats = {
+        stats: dict[str, Any] = {
             "containers": {},
-            "total_memory_mb": 0,
+            "total_memory_mb": 0.0,
             "total_cpu_percent": 0.0,
             "warnings": [],
         }
@@ -973,8 +973,8 @@ def get_docker_manager(
         default_image = image or "henriqueslab/rxiv-maker-base:latest"
 
         # Get resource limits from environment or defaults
-        memory = memory_limit or os.environ.get("RXIV_DOCKER_MEMORY", "2g")
-        cpu = cpu_limit or os.environ.get("RXIV_DOCKER_CPU", "2.0")
+        memory = memory_limit if memory_limit is not None else os.environ.get("RXIV_DOCKER_MEMORY", "2g")
+        cpu = cpu_limit if cpu_limit is not None else os.environ.get("RXIV_DOCKER_CPU", "2.0")
 
         _docker_manager = DockerManager(
             default_image=default_image,

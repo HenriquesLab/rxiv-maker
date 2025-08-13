@@ -9,7 +9,7 @@ nox.options.default_venv_backend = "uv"
 nox.options.reuse_existing_virtualenvs = True
 
 # Set default sessions for local development workflow
-nox.options.sessions = ["lint", "test_fast"]
+nox.options.sessions = ["lint", "test_unit", "test_integration"]
 
 # Configuration constants
 PYTHON_VERSIONS = ["3.11", "3.12", "3.13"]
@@ -64,6 +64,35 @@ def format(session):
 
 
 @nox.session(python="3.11", reuse_venv=True)
+def test_unit(session):
+    """Run unit tests only - fastest feedback (<1 min target)."""
+    install_project_deps(session)
+
+    session.run(
+        "pytest",
+        "tests/unit/",
+        "--maxfail=3",
+        "--tb=short",
+        "-x",  # Stop on first failure for fast feedback
+        *session.posargs,
+    )
+
+
+@nox.session(python="3.11", reuse_venv=True)
+def test_integration(session):
+    """Run integration tests - moderate feedback (<5 min target)."""
+    install_project_deps(session)
+
+    session.run(
+        "pytest",
+        "tests/integration/",
+        "--maxfail=5",
+        "--tb=short",
+        *session.posargs,
+    )
+
+
+@nox.session(python="3.11", reuse_venv=True)
 def test_fast(session):
     """Quick development feedback - fast tests only (<2 min target)."""
     install_project_deps(session)
@@ -73,7 +102,7 @@ def test_fast(session):
         "pytest",
         "tests/unit/",
         "-m",
-        "fast or (not slow and not integration and not docker)",
+        "unit and not ci_exclude",
         "--maxfail=3",
         "--tb=short",
         "-x",  # Stop on first failure for fast feedback
@@ -89,12 +118,31 @@ def test(session):
     # Run unit and light integration tests, excluding slow/docker tests
     session.run(
         "pytest",
-        "tests",
+        "tests/unit/",
+        "tests/integration/",
+        "tests/cli/",
         "-m",
-        "not slow and not docker and not ci_exclude",
+        "not slow and not docker and not ci_exclude and not system",
         "--cov=src",
         "--cov-report=term-missing:skip-covered",
         "--maxfail=5",
+        *session.posargs,
+    )
+
+
+@nox.session(python="3.11", reuse_venv=True)
+def test_system(session):
+    """Run system tests - comprehensive end-to-end testing (manual trigger only)."""
+    install_project_deps(session)
+
+    session.run(
+        "pytest",
+        "tests/system/",
+        "-m",
+        "system",
+        "--tb=long",
+        "--maxfail=3",
+        "-v",
         *session.posargs,
     )
 

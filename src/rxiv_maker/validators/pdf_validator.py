@@ -15,6 +15,7 @@ import os
 import re
 import sys
 from pathlib import Path
+from typing import Dict, Union
 
 # Add the parent directory to the path to allow imports when run as a script
 if __name__ == "__main__":
@@ -23,7 +24,7 @@ if __name__ == "__main__":
 try:
     import pypdf
 except ImportError:
-    pypdf = None
+    pypdf = None  # type: ignore[assignment]
 
 if __name__ == "__main__":
     from rxiv_maker.validators.base_validator import (
@@ -56,7 +57,7 @@ class PDFValidator(BaseValidator):
         super().__init__(manuscript_path)
         self.pdf_path = pdf_path
         self.pdf_text = ""
-        self.pdf_pages = []
+        self.pdf_pages: list[str] = []
 
         # Patterns for validation
         self.citation_pattern = re.compile(r"\[([^\]]+)\]")
@@ -355,9 +356,9 @@ class PDFValidator(BaseValidator):
 
         return errors
 
-    def _get_validation_statistics(self) -> dict[str, any]:
+    def _get_validation_statistics(self) -> Dict[str, Union[int, float, str]]:
         """Get validation statistics from PDF text."""
-        stats = {
+        stats: Dict[str, Union[int, float, str]] = {
             "total_pages": len(self.pdf_pages),
             "total_characters": len(self.pdf_text),
             "total_words": len(self.pdf_text.split()),

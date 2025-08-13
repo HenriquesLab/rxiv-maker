@@ -142,12 +142,10 @@ class UpdateCheckGroup(click.Group):
             engine = ctx.obj.get("engine") if ctx.obj else None
             if engine in ["docker", "podman"]:
                 try:
-                    # For now, we'll keep the existing docker cleanup for backward compatibility
-                    # TODO: Implement proper container engine cleanup once we fully migrate
-                    if engine == "docker":
-                        from ..docker import cleanup_global_docker_manager
+                    # Use the new unified cleanup system for all container engines
+                    from ..engines.factory import ContainerEngineFactory
 
-                        cleanup_global_docker_manager()
+                    ContainerEngineFactory.manual_cleanup()
                 except Exception:
                     # Ignore cleanup errors to avoid masking original exceptions
                     pass

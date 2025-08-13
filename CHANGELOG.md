@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Multi-Stage CI Workflow**: Implement intelligent 3-stage GitHub Actions pipeline
+  - Stage 1: Fast unit tests with no external dependencies (10min timeout)
+  - Stage 2: Integration tests with conditional dependency checking (20min timeout) 
+  - Stage 3: Package build and validation (10min timeout)
+  - Each stage runs only if the previous stage passes, optimizing CI resource usage
+- **Comprehensive Test Categorization**: Enhanced pytest marker system for better test organization
+  - Auto-marking by directory structure: `unit`, `integration`, `system`  
+  - Dependency markers: `requires_latex`, `requires_docker`, `requires_podman`, `requires_r`
+  - Performance markers: `fast`, `slow`, `ci_exclude`
+  - Smart dependency detection based on test names and file patterns
+
+### Fixed
+- **DOI Validation in CI**: Fix CI environment detection logic that was incorrectly skipping all validation
+  - CI environments now disable online validation but still perform offline format validation
+  - Tests now properly validate DOI formats even in GitHub Actions environments
+  - Maintains backward compatibility while enabling proper validation testing
+- **Test Infrastructure Robustness**: Fix hardcoded assumptions causing CI test failures
+  - Update LaTeX installation verification tests to accept multiple valid error message formats
+  - Fix test mocking to properly simulate both `shutil.which()` and `subprocess.run()` calls
+  - Improve error message flexibility across different testing environments
+- **Container Engine Cleanup**: Implement proper unified cleanup system for Docker and Podman engines
+  - Replace legacy Docker-only cleanup with unified ContainerEngineFactory.manual_cleanup()
+  - Add global engine registry with weak references to track active container instances
+  - Ensure automatic cleanup on program termination through atexit handlers
+  - Improve resource management and prevent container session leaks across both Docker and Podman engines
+
 ## [v1.4.24] - 2025-08-12
 
 ### Added

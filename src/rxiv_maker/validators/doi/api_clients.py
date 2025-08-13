@@ -2,6 +2,7 @@
 
 import logging
 import time
+from abc import ABC, abstractmethod
 from typing import Any
 
 import requests
@@ -10,7 +11,7 @@ from crossref_commons.retrieval import get_publication_as_json
 logger = logging.getLogger(__name__)
 
 
-class BaseDOIClient:
+class BaseDOIClient(ABC):
     """Base class for DOI API clients."""
 
     def __init__(self, timeout: int = 10, max_retries: int = 3):
@@ -19,7 +20,7 @@ class BaseDOIClient:
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": "rxiv-maker/1.0 (https://github.com/henriqueslab/rxiv-maker)"})
 
-    def _make_request(self, url: str, headers: dict = None) -> dict[str, Any] | None:
+    def _make_request(self, url: str, headers: dict[str, str] | None = None) -> dict[str, Any] | None:
         """Make HTTP request with retry logic."""
         for attempt in range(self.max_retries):
             try:
@@ -34,6 +35,11 @@ class BaseDOIClient:
                     logger.debug(f"All attempts failed for {url}: {e}")
                     return None
         return None
+
+    @abstractmethod
+    def fetch_metadata(self, doi: str) -> dict[str, Any] | None:
+        """Fetch metadata for the given DOI."""
+        pass
 
 
 class CrossRefClient(BaseDOIClient):
@@ -232,6 +238,10 @@ class DOIResolver(BaseDOIClient):
             logger.debug(f"Cached resolution status for {doi}: {resolves}")
 
         return resolves
+
+    def fetch_metadata(self, doi: str) -> dict[str, Any] | None:
+        """DOIResolver doesn't fetch metadata, only verifies resolution."""
+        return None
 
 
 class OpenAlexClient(BaseDOIClient):

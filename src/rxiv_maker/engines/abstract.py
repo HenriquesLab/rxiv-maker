@@ -18,12 +18,12 @@ class ContainerSession:
             workspace_dir: Workspace directory path
             engine_type: Type of container engine (docker, podman, etc.)
         """
-        self.container_id = container_id
-        self.image = image
-        self.workspace_dir = workspace_dir
-        self.engine_type = engine_type
-        self.created_at = None
-        self._active = True
+        self.container_id: str = container_id
+        self.image: str = image
+        self.workspace_dir: Path = workspace_dir
+        self.engine_type: str = engine_type
+        self.created_at: Optional[float] = None  # Will be set by derived classes
+        self._active: bool = True
 
     def is_active(self) -> bool:
         """Check if the container is still running."""
@@ -381,8 +381,16 @@ if __name__ == "__main__":
 
     def cleanup_all_sessions(self) -> None:
         """Clean up all active container sessions."""
-        for session in self._active_sessions.values():
-            session.cleanup()
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        for session_key, session in list(self._active_sessions.items()):
+            try:
+                session.cleanup()
+            except Exception as e:
+                logger.debug(f"Failed to cleanup session {session_key}: {e}")
+                # Continue with other sessions even if one fails
         self._active_sessions.clear()
 
     def get_session_stats(self) -> Dict[str, Any]:

@@ -282,6 +282,9 @@ markers = [
     "memory_intensive: Tests that use significant memory",
     "requires_latex: Requires LaTeX installation",
     "requires_docker: Requires Docker availability",
+    "requires_podman: Requires Podman availability",
+    "requires_r: Requires R statistical software",
+    "system: System-level integration tests",
     "flaky: Tests that are known to be flaky or unstable",
     "ci_exclude: Tests to exclude in CI environments",
 ]

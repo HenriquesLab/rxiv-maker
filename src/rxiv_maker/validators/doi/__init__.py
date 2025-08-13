@@ -1,6 +1,7 @@
 """DOI validation module."""
 
 from .api_clients import (
+    BaseDOIClient,
     CrossRefClient,
     DataCiteClient,
     DOIResolver,
@@ -12,6 +13,7 @@ from .api_clients import (
 from .metadata_comparator import MetadataComparator
 
 __all__ = [
+    "BaseDOIClient",
     "CrossRefClient",
     "DataCiteClient",
     "HandleSystemClient",

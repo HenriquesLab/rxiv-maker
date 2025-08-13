@@ -2,7 +2,7 @@
 
 import os
 import re
-from typing import Any
+from typing import Any, Dict
 
 try:
     from ..core.error_codes import ErrorCode, create_validation_error
@@ -50,7 +50,7 @@ class CitationValidator(BaseValidator):
         # Determine DOI validation setting from config if not explicitly provided
         if enable_doi_validation is None:
             try:
-                manuscript_file = find_manuscript_md(manuscript_path)
+                manuscript_file = find_manuscript_md()
                 metadata = extract_yaml_metadata(str(manuscript_file))
                 self.enable_doi_validation = get_doi_validation_setting(metadata)
             except Exception:
@@ -62,7 +62,7 @@ class CitationValidator(BaseValidator):
     def validate(self) -> ValidationResult:
         """Validate citations in manuscript files."""
         errors = []
-        metadata = {}
+        metadata: Dict[str, Any] = {}
 
         # Load bibliography keys
         bib_file_path = os.path.join(self.manuscript_path, "03_REFERENCES.bib")

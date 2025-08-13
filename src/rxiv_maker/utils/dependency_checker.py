@@ -226,7 +226,7 @@ class DependencyChecker:
         version = None
         path = None
 
-        if found:
+        if found and conda_exe is not None:
             found, version, path = self.check_command_version(conda_exe)
 
         # Installation commands for conda

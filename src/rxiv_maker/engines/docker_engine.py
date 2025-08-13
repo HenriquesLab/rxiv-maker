@@ -240,7 +240,7 @@ class DockerEngine(AbstractContainerEngine):
 
         return docker_cmd
 
-    def _get_or_create_session(self, session_key: str, image: str) -> Optional[DockerSession]:
+    def _get_or_create_session(self, session_key: str, image: str) -> Optional["DockerSession"]:
         """Get an existing session or create a new one if session reuse is enabled."""
         if not self.enable_session_reuse:
             return None
@@ -252,7 +252,7 @@ class DockerEngine(AbstractContainerEngine):
         if session_key in self._active_sessions:
             session = self._active_sessions[session_key]
             if session.is_active():
-                return session
+                return session  # type: ignore[return-value]
             else:
                 # Session is dead, remove it
                 del self._active_sessions[session_key]
@@ -284,7 +284,7 @@ class DockerEngine(AbstractContainerEngine):
 
         return None
 
-    def _initialize_container(self, session: DockerSession) -> bool:
+    def _initialize_container(self, session: ContainerSession) -> bool:
         """Initialize a Docker container with health checks and verification."""
         try:
             # Basic connectivity test
@@ -381,7 +381,8 @@ except ImportError as e:
         expired_keys = []
 
         for key, session in self._active_sessions.items():
-            if current_time - session.created_at > self._session_timeout or not session.is_active():
+            session_age = current_time - (session.created_at or 0.0)
+            if session_age > self._session_timeout or not session.is_active():
                 session.cleanup()
                 expired_keys.append(key)
 
@@ -390,7 +391,7 @@ except ImportError as e:
 
         # If we have too many sessions, cleanup the oldest ones
         if len(self._active_sessions) > self._max_sessions:
-            sorted_sessions = sorted(self._active_sessions.items(), key=lambda x: x[1].created_at)
+            sorted_sessions = sorted(self._active_sessions.items(), key=lambda x: x[1].created_at or 0.0)
             excess_count = len(self._active_sessions) - self._max_sessions
             for key, session in sorted_sessions[:excess_count]:
                 session.cleanup()

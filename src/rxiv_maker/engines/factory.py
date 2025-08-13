@@ -1,12 +1,17 @@
 """Factory for creating container engine instances."""
 
+import atexit
+import logging
 import os
+import weakref
 from pathlib import Path
-from typing import Dict, Optional, Type
+from typing import Dict, Optional, Set, Type
 
 from .abstract import AbstractContainerEngine
 from .docker_engine import DockerEngine
 from .podman_engine import PodmanEngine
+
+logger = logging.getLogger(__name__)
 
 
 class ContainerEngineFactory:
@@ -17,6 +22,10 @@ class ContainerEngineFactory:
         "docker": DockerEngine,
         "podman": PodmanEngine,
     }
+
+    # Registry to track active engine instances for cleanup
+    _active_engines: Set[weakref.ReferenceType] = set()
+    _cleanup_registered = False
 
     @classmethod
     def create_engine(
@@ -70,6 +79,9 @@ class ContainerEngineFactory:
             raise RuntimeError(
                 f"{engine_type.title()} is not available. Please ensure {engine_type} is installed and running."
             )
+
+        # Register engine for cleanup
+        cls._register_engine_instance(engine)
 
         return engine
 
@@ -168,6 +180,62 @@ class ContainerEngineFactory:
             List of supported engine names
         """
         return list(cls._engines.keys())
+
+    @classmethod
+    def _register_engine_instance(cls, engine: AbstractContainerEngine) -> None:
+        """Register an engine instance for cleanup tracking.
+
+        Args:
+            engine: Container engine instance to track
+        """
+        # Register cleanup handler only once
+        if not cls._cleanup_registered:
+            atexit.register(cls.cleanup_all_engines)
+            cls._cleanup_registered = True
+
+        # Use weak reference to avoid keeping engines alive unnecessarily
+        engine_ref = weakref.ref(engine)
+        cls._active_engines.add(engine_ref)
+
+    @classmethod
+    def cleanup_all_engines(cls) -> int:
+        """Clean up all active container engines and their sessions.
+
+        This method is typically called automatically on program exit,
+        but can also be called manually for explicit cleanup.
+
+        Returns:
+            Number of engines successfully cleaned up
+        """
+        logger.debug("Cleaning up active container engines...")
+
+        # Create a copy to avoid modification during iteration
+        active_refs = cls._active_engines.copy()
+        cls._active_engines.clear()
+
+        cleanup_count = 0
+        for engine_ref in active_refs:
+            engine = engine_ref()
+            if engine is not None:
+                try:
+                    logger.debug(f"Cleaning up {engine.engine_name} engine sessions...")
+                    engine.cleanup_all_sessions()
+                    cleanup_count += 1
+                except Exception as e:
+                    logger.debug(f"Error cleaning up {engine.engine_name} engine: {e}")
+
+        if cleanup_count > 0:
+            logger.debug(f"Successfully cleaned up {cleanup_count} container engines")
+
+        return cleanup_count
+
+    @classmethod
+    def manual_cleanup(cls) -> None:
+        """Manually trigger cleanup of all engines.
+
+        This is useful for explicit cleanup in CLI commands or tests.
+        """
+        cls.cleanup_all_engines()
 
 
 # Global factory instance for convenience

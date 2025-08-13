@@ -5,8 +5,7 @@ import time
 from pathlib import Path
 from typing import List, Optional
 
-from .abstract import ContainerSession
-from .docker_engine import DockerEngine
+from .abstract import AbstractContainerEngine, ContainerSession
 
 
 class PodmanSession(ContainerSession):
@@ -63,11 +62,11 @@ class PodmanSession(ContainerSession):
             return False
 
 
-class PodmanEngine(DockerEngine):
+class PodmanEngine(AbstractContainerEngine):
     """Podman container engine implementation.
 
-    Inherits from DockerEngine since Podman has a Docker-compatible API.
-    Only overrides engine-specific behavior where needed.
+    Podman has a Docker-compatible API but needs its own engine implementation
+    to handle rootless containers and other Podman-specific behavior.
     """
 
     @property
@@ -185,7 +184,7 @@ class PodmanEngine(DockerEngine):
 
         return podman_cmd
 
-    def _get_or_create_session(self, session_key: str, image: str) -> Optional[PodmanSession]:
+    def _get_or_create_session(self, session_key: str, image: str) -> Optional["PodmanSession"]:
         """Get an existing session or create a new one if session reuse is enabled."""
         if not self.enable_session_reuse:
             return None
@@ -197,7 +196,7 @@ class PodmanEngine(DockerEngine):
         if session_key in self._active_sessions:
             session = self._active_sessions[session_key]
             if session.is_active():
-                return session
+                return session  # type: ignore[return-value]
             else:
                 # Session is dead, remove it
                 del self._active_sessions[session_key]
@@ -229,7 +228,7 @@ class PodmanEngine(DockerEngine):
 
         return None
 
-    def _initialize_container(self, session: PodmanSession) -> bool:
+    def _initialize_container(self, session: ContainerSession) -> bool:
         """Initialize a Podman container with health checks and verification."""
         try:
             # Basic connectivity test
@@ -373,3 +372,31 @@ except ImportError as e:
             timeout=timeout,
             **kwargs,
         )
+
+    def _cleanup_expired_sessions(self, force: bool = False) -> None:
+        """Clean up expired or inactive Podman sessions."""
+        current_time = time.time()
+
+        # Only run cleanup every 30 seconds unless forced
+        if not force and current_time - self._last_cleanup < 30:
+            return
+
+        self._last_cleanup = current_time
+        expired_keys = []
+
+        for key, session in self._active_sessions.items():
+            session_age = current_time - (session.created_at or 0.0)
+            if session_age > self._session_timeout or not session.is_active():
+                session.cleanup()
+                expired_keys.append(key)
+
+        for key in expired_keys:
+            del self._active_sessions[key]
+
+        # If we have too many sessions, cleanup the oldest ones
+        if len(self._active_sessions) > self._max_sessions:
+            sorted_sessions = sorted(self._active_sessions.items(), key=lambda x: x[1].created_at or 0.0)
+            excess_count = len(self._active_sessions) - self._max_sessions
+            for key, session in sorted_sessions[:excess_count]:
+                session.cleanup()
+                del self._active_sessions[key]

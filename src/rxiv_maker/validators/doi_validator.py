@@ -5,7 +5,7 @@ import logging
 import os
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, List, Tuple
 
 from ..core.error_codes import ErrorCode, create_validation_error
 from .base_validator import (
@@ -14,6 +14,7 @@ from .base_validator import (
     ValidationResult,
 )
 from .doi import (
+    BaseDOIClient,
     CrossRefClient,
     DataCiteClient,
     DOIResolver,
@@ -90,14 +91,14 @@ class DOIValidator(BaseValidator):
 
         # Initialize cache with error handling for temporary directories
         try:
-            cache_dir = cache_dir or Path(manuscript_path).parent / ".rxiv_cache" / "doi"
+            cache_dir = cache_dir or str(Path(manuscript_path).parent / ".rxiv_cache" / "doi")
             self.cache = DOICache(cache_dir)
         except Exception as cache_error:
             logger.warning(f"Failed to initialize DOI cache: {cache_error}. Using memory-only cache.")
             # Create a temporary cache directory as fallback
             import tempfile
 
-            temp_cache_dir = Path(tempfile.mkdtemp(prefix="rxiv_doi_cache_"))
+            temp_cache_dir = tempfile.mkdtemp(prefix="rxiv_doi_cache_")
             self.cache = DOICache(temp_cache_dir)
 
         # Initialize API clients
@@ -176,10 +177,10 @@ class DOIValidator(BaseValidator):
             "successful_validations": 0,
         }
 
-        # Skip online validation in CI unless forced
+        # Disable online validation in CI unless forced, but still do format validation
         if self._is_ci_environment() and not self.force_validation:
-            logger.info("Skipping DOI validation in CI environment (use --force-validation to override)")
-            return ValidationResult(self.name, errors, metadata)
+            logger.info("Disabling online DOI validation in CI environment (use --force-validation to override)")
+            self.enable_online_validation = False
 
         # Check network connectivity before attempting online validation
         if self.enable_online_validation and not self._check_network_connectivity():
@@ -528,7 +529,7 @@ class DOIValidator(BaseValidator):
         ]
 
         # Fallback sources (new resilient alternatives) - only if enabled
-        fallback_sources = []
+        fallback_sources: List[Tuple[BaseDOIClient, str]] = []
         if self.enable_fallback_apis:
             if self.openalex_client:
                 fallback_sources.append((self.openalex_client, "OpenAlex"))

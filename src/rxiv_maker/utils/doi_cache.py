@@ -447,7 +447,7 @@ class DOICache:
             True if multiple APIs are failing and we should extend cache period
         """
         current_time = time.time()
-        recent_failures = {}
+        recent_failures: dict[str, int] = {}
         total_dois_checked = 0
 
         # Count recent failures by API across all DOI entries
