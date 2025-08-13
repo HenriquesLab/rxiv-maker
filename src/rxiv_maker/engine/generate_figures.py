@@ -18,6 +18,21 @@ try:
 except ImportError:
     requests = None
 
+try:
+    from rich.progress import (
+        BarColumn,
+        MofNCompleteColumn,
+        Progress,
+        SpinnerColumn,
+        TaskProgressColumn,
+        TextColumn,
+        TimeElapsedColumn,
+    )
+
+    RICH_AVAILABLE = True
+except ImportError:
+    RICH_AVAILABLE = False
+
 # Add the parent directory to the path to allow imports when run as a script
 if __name__ == "__main__":
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -83,86 +98,98 @@ class FigureGenerator:
             parallel: Enable parallel processing of figures
             max_workers: Maximum number of worker threads for parallel processing
         """
-        print("Starting figure generation...")
-
         if not self.figures_dir.exists():
             print(f"Warning: Figures directory '{self.figures_dir}' does not exist")
             return
 
-        print(f"Scanning for figures in: {self.figures_dir}")
-        print("DEBUG: About to do file globbing...")
-
         # Find all figure files
         try:
             if self.r_only:
-                print("DEBUG: r_only mode, getting R files...")
                 r_files = list(self.figures_dir.glob("*.R"))
                 mermaid_files = []
                 python_files = []
             else:
-                print("DEBUG: Getting mermaid files...")
                 mermaid_files = list(self.figures_dir.glob("*.mmd"))
-                print(f"DEBUG: Found {len(mermaid_files)} mermaid files")
-
-                print("DEBUG: Getting python files...")
                 python_files = list(self.figures_dir.glob("*.py"))
-                print(f"DEBUG: Found {len(python_files)} python files")
-
-                print("DEBUG: Getting R files...")
                 r_files = list(self.figures_dir.glob("*.R"))
-                print(f"DEBUG: Found {len(r_files)} R files")
 
-            print("DEBUG: File globbing completed successfully!")
+            total_files = len(mermaid_files) + len(python_files) + len(r_files)
+
+            if total_files == 0:
+                print("No figure files found to process")
+                return
+
+            print(f"Found {total_files} figure file(s) to process")
 
             # Process figures with optional parallelization
-            if parallel and (len(mermaid_files) + len(python_files) + len(r_files)) > 1:
+            if parallel and total_files > 1:
                 self._generate_figures_parallel(mermaid_files, python_files, r_files, max_workers)
             else:
                 self._generate_figures_sequential(mermaid_files, python_files, r_files)
 
-            print("DEBUG: All generation methods completed!")
-
         except Exception as e:
-            print(f"DEBUG: Error in method: {e}")
+            print(f"Error in figure generation: {e}")
             raise
 
     def _generate_figures_sequential(self, mermaid_files, python_files, r_files):
-        """Generate figures sequentially (original behavior)."""
-        # Mermaid generation
-        print("DEBUG: About to test Mermaid generation...")
+        """Generate figures sequentially with progress tracking."""
+        all_files = []
+
+        # Prepare file list with types
         if mermaid_files and not self.r_only:
-            print(f"Found {len(mermaid_files)} Mermaid file(s):")
-            for mmd_file in mermaid_files:
-                print(f"  Processing: {mmd_file.name}")
-                try:
-                    self.generate_mermaid_figure(mmd_file)
-                    print(f"  ✓ Completed: {mmd_file.name}")
-                except Exception as e:
-                    print(f"  ✗ Failed: {mmd_file.name} - {e}")
-
-        # Python generation
-        print("DEBUG: About to test Python generation...")
+            all_files.extend([(f, "mermaid", "🌊") for f in mermaid_files])
         if python_files and not self.r_only:
-            print(f"Found {len(python_files)} Python file(s):")
-            for py_file in python_files:
-                print(f"  Processing: {py_file.name}")
-                try:
-                    self.generate_python_figure(py_file)
-                    print(f"  ✓ Completed: {py_file.name}")
-                except Exception as e:
-                    print(f"  ✗ Failed: {py_file.name} - {e}")
-
-        # R generation
-        print("DEBUG: About to test R generation...")
+            all_files.extend([(f, "python", "🐍") for f in python_files])
         if r_files:
-            print(f"Found {len(r_files)} R file(s):")
-            for r_file in r_files:
-                print(f"  Processing: {r_file.name}")
+            all_files.extend([(f, "R", "📊") for f in r_files])
+
+        if not all_files:
+            return
+
+        # Use Rich progress bar if available, fallback to simple progress
+        if RICH_AVAILABLE:
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(complete_style="green", finished_style="green"),
+                TaskProgressColumn(),
+                MofNCompleteColumn(),
+                TimeElapsedColumn(),
+                transient=True,
+            ) as progress:
+                task = progress.add_task("Generating figures...", total=len(all_files))
+
+                for _i, (file_path, file_type, emoji) in enumerate(all_files):
+                    progress.update(task, description=f"{emoji} Processing {file_path.name}")
+
+                    try:
+                        if file_type == "mermaid":
+                            self.generate_mermaid_figure(file_path)
+                        elif file_type == "python":
+                            self.generate_python_figure(file_path)
+                        elif file_type == "R":
+                            self.generate_r_figure(file_path)
+
+                        progress.update(task, advance=1, description=f"✅ {file_path.name} completed")
+                    except Exception as e:
+                        progress.update(task, advance=1, description=f"❌ {file_path.name} failed: {e}")
+                        print(f"Error generating {file_path.name}: {e}")
+        else:
+            # Fallback to simple progress without Rich
+            for i, (file_path, file_type, emoji) in enumerate(all_files):
+                print(f"[{i + 1}/{len(all_files)}] {emoji} Processing {file_path.name}")
+
                 try:
-                    self.generate_r_figure(r_file)
-                    print(f"  ✓ Completed: {r_file.name}")
+                    if file_type == "mermaid":
+                        self.generate_mermaid_figure(file_path)
+                    elif file_type == "python":
+                        self.generate_python_figure(file_path)
+                    elif file_type == "R":
+                        self.generate_r_figure(file_path)
+
+                    print(f"  ✅ Completed: {file_path.name}")
                 except Exception as e:
-                    print(f"  ✗ Failed: {r_file.name} - {e}")
+                    print(f"  ❌ Failed: {file_path.name} - {e}")
 
     def _generate_figures_parallel(self, mermaid_files, python_files, r_files, max_workers):
         """Generate figures in parallel using ThreadPoolExecutor."""

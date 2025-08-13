@@ -908,7 +908,7 @@ class BuildManager:
             self.log(f"Error running PDF validation: {e}", "WARNING")
             return True  # Don't fail the build on PDF validation errors
 
-    def run_full_build(self) -> bool:
+    def run_full_build(self, progress_callback=None) -> bool:
         """Run the complete build process."""
         # Create operation context for the entire build
         with create_operation("pdf_build", manuscript=self.manuscript_path, engine=self.engine) as op:
@@ -920,8 +920,13 @@ class BuildManager:
 
             # Track performance
             perf_tracker = get_performance_tracker()
+            current_step = 0
+            total_steps = 10 if self.skip_validation else 11
 
             # Step 1: Check manuscript structure
+            current_step += 1
+            if progress_callback:
+                progress_callback("Checking manuscript structure", current_step, total_steps)
             perf_tracker.start_operation("check_structure")
             if not self.check_manuscript_structure():
                 op.log("Failed at manuscript structure check")
@@ -929,6 +934,9 @@ class BuildManager:
             perf_tracker.end_operation("check_structure")
 
             # Step 2: Set up output directory
+            current_step += 1
+            if progress_callback:
+                progress_callback("Setting up output directory", current_step, total_steps)
             perf_tracker.start_operation("setup_output")
             if not self.setup_output_directory():
                 op.log("Failed at output directory setup")
@@ -936,6 +944,9 @@ class BuildManager:
             perf_tracker.end_operation("setup_output")
 
             # Step 3: Generate figures (before validation to ensure figure files exist)
+            current_step += 1
+            if progress_callback:
+                progress_callback("Generating figures", current_step, total_steps)
             perf_tracker.start_operation("generate_figures")
             if not self.generate_figures():
                 op.log("Failed at figure generation")
@@ -943,30 +954,46 @@ class BuildManager:
             perf_tracker.end_operation("generate_figures")
 
             # Step 4: Validate manuscript (if not skipped)
-            perf_tracker.start_operation("validate_manuscript")
-            if not self.validate_manuscript():
-                op.log("Failed at manuscript validation")
-                return False
-            perf_tracker.end_operation("validate_manuscript")
+            if not self.skip_validation:
+                current_step += 1
+                if progress_callback:
+                    progress_callback("Validating manuscript", current_step, total_steps)
+                perf_tracker.start_operation("validate_manuscript")
+                if not self.validate_manuscript():
+                    op.log("Failed at manuscript validation")
+                    return False
+                perf_tracker.end_operation("validate_manuscript")
 
             # Step 5: Copy style files
+            current_step += 1
+            if progress_callback:
+                progress_callback("Copying style files", current_step, total_steps)
             perf_tracker.start_operation("copy_files")
             if not self.copy_style_files():
                 op.log("Failed at copying style files")
                 return False
 
             # Step 6: Copy references
+            current_step += 1
+            if progress_callback:
+                progress_callback("Copying references", current_step, total_steps)
             if not self.copy_references():
                 op.log("Failed at copying references")
                 return False
 
             # Step 7: Copy figures
+            current_step += 1
+            if progress_callback:
+                progress_callback("Copying figures", current_step, total_steps)
             if not self.copy_figures():
                 op.log("Failed at copying figures")
                 return False
             perf_tracker.end_operation("copy_files")
 
             # Step 8: Generate LaTeX files
+            current_step += 1
+            if progress_callback:
+                progress_callback("Generating LaTeX files", current_step, total_steps)
             perf_tracker.start_operation("generate_tex")
             if not self.generate_tex_files():
                 op.log("Failed at LaTeX generation")
@@ -974,6 +1001,9 @@ class BuildManager:
             perf_tracker.end_operation("generate_tex")
 
             # Step 9: Compile PDF
+            current_step += 1
+            if progress_callback:
+                progress_callback("Compiling PDF", current_step, total_steps)
             perf_tracker.start_operation("compile_pdf")
             if not self.compile_pdf():
                 op.log("Failed at PDF compilation")
@@ -981,6 +1011,9 @@ class BuildManager:
             perf_tracker.end_operation("compile_pdf")
 
             # Step 10: Copy PDF to manuscript directory
+            current_step += 1
+            if progress_callback:
+                progress_callback("Finalizing build", current_step, total_steps)
             if not self.copy_pdf_to_manuscript():
                 op.log("Failed at copying PDF to manuscript")
                 return False

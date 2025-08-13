@@ -57,7 +57,7 @@
 - [ ] Improve performance of bibliography validation for large reference lists
 - [ ] Add better caching for figure generation to speed up builds
 - [ ] Implement retry logic for network-dependent operations
-- [ ] Add progress bars for long-running operations
+- [x] Add progress bars for long-running operations ✅
 
 ## Low Priority Items
 
