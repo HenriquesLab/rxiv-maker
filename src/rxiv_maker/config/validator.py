@@ -81,8 +81,8 @@ class ConfigValidator:
                 logger.debug("Using cached configuration validation result")
                 return cached_result
 
-        errors = []
-        warnings = []
+        errors: List[Any] = []
+        warnings: List[Any] = []
         config_data = None
 
         try:
@@ -430,10 +430,10 @@ class ConfigValidator:
 
     def _validate_against_schema(
         self, data: Dict[str, Any], schema_name: str, context: str = "configuration"
-    ) -> Tuple[List, List]:
+    ) -> Tuple[List[Any], List[Any]]:
         """Validate data against schema."""
-        errors = []
-        warnings = []
+        errors: List[Any] = []
+        warnings: List[Any] = []
 
         # Get schema
         schema_path = schema_name.split(".")
@@ -859,8 +859,8 @@ class ConfigValidator:
 
     def _validate_system_dependencies(self) -> Dict[str, Any]:
         """Validate system dependencies and environment."""
-        errors = []
-        warnings = []
+        errors: List[Any] = []
+        warnings: List[Any] = []
         system_info = {}
 
         # Check Python version
