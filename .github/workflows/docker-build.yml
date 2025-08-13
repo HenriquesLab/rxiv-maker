@@ -149,7 +149,7 @@ jobs:
                 echo "$DIFF_CONTENT" | grep -E '^[+-]' | head -10
 
                 # Check if changes are only to dev dependencies
-                if echo "$DIFF_CONTENT" | grep -E '^[+-].*(' | grep -vE "($DEV_ONLY_DEPS)" | grep -E '^[+-].*"' >/dev/null; then
+                if echo "$DIFF_CONTENT" | grep -E '^[+-].*"' | grep -vE "($DEV_ONLY_DEPS)" >/dev/null; then
                   echo "🔥 Runtime dependencies changed - Docker rebuild required"
                   RUNTIME_IMPACT=true
                 elif echo "$DIFF_CONTENT" | grep -E '^[+-].*dependencies.*=' >/dev/null; then
