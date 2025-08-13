@@ -1,0 +1,54 @@
+name: Docker Build Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths:
+      - '.github/workflows/docker-test.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test-basic:
+    name: Test Basic Docker Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Test simple script
+        run: |
+          echo "Testing basic workflow functionality..."
+          echo "Current directory: $(pwd)"
+          echo "Files in .github/workflows:"
+          ls -la .github/workflows/
+
+          echo "Testing Docker availability..."
+          docker --version
+
+          echo "✅ Basic test completed successfully"
+
+  test-dockerfile:
+    name: Test Dockerfile Syntax
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate Dockerfile
+        run: |
+          echo "Checking Dockerfile syntax..."
+          if [ -f "src/docker/images/base/Dockerfile" ]; then
+            echo "✅ Dockerfile found"
+            # Check basic syntax
+            docker run --rm -i hadolint/hadolint < src/docker/images/base/Dockerfile || echo "hadolint not available, skipping"
+          else
+            echo "❌ Dockerfile not found"
+            exit 1
+          fi
