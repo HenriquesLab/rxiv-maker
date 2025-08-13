@@ -117,6 +117,14 @@ jobs:
             echo "build-scripts=false" >> $GITHUB_OUTPUT
           fi
 
+          # Check for workflow changes (for testing)
+          if echo "$CHANGED_FILES" | grep -E '^\.github/workflows/docker-build\.yml$'; then
+            echo "workflow=true" >> $GITHUB_OUTPUT
+            echo "🚀 Docker workflow changed - will test build"
+          else
+            echo "workflow=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Generate dependency hash
         id: hash
         run: |
@@ -156,7 +164,8 @@ jobs:
             echo "🏷️ Release trigger - will build"
           elif [ "${{ steps.changes.outputs.dockerfile }}" == "true" ] || \
                [ "${{ steps.changes.outputs.dependencies }}" == "true" ] || \
-               [ "${{ steps.changes.outputs.build-scripts }}" == "true" ]; then
+               [ "${{ steps.changes.outputs.build-scripts }}" == "true" ] || \
+               [ "${{ steps.changes.outputs.workflow }}" == "true" ]; then
             echo "should-build=true" >> $GITHUB_OUTPUT
             echo "📋 Relevant changes detected - will build"
           else
