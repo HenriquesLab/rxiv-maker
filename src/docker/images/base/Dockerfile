@@ -258,8 +258,19 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     # Font configuration tools
     fontconfig \
     fontconfig-config \
-    # Rebuild font cache
-    && fc-cache -fv
+    && dpkg --configure -a
+
+# Rebuild font cache in separate step with error handling
+RUN fc-cache -fv || { \
+    echo "❌ fc-cache failed, diagnosing..."; \
+    echo "PATH: $PATH"; \
+    which fc-cache || echo "fc-cache not found in PATH"; \
+    dpkg -l | grep fontconfig || echo "fontconfig not properly installed"; \
+    echo "Attempting fontconfig reinstall..."; \
+    apt-get update && apt-get install --reinstall -y fontconfig fontconfig-config; \
+    echo "Retrying fc-cache..."; \
+    fc-cache -fv; \
+}
 
 # ======================================================================
 # LaTeX Base Stage - LaTeX installation (PHASE 3)

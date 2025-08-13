@@ -205,17 +205,15 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           platforms: ${{ matrix.platform }}
-          # 🚀 PHASE 4: Enhanced Buildx configuration for maximum performance
+          # 🚀 PHASE 4: Simplified Buildx configuration for stability
           driver-opts: |
             network=host
             image=moby/buildkit:v0.12.4
           buildkitd-config-inline: |
             [worker.oci]
-              max-parallelism = 8
+              max-parallelism = 4
             [worker.containerd]
-              max-parallelism = 8
-            [registry."docker.io"]
-              mirrors = ["mirror.gcr.io"]
+              max-parallelism = 4
             # Enable experimental features for multi-stage parallel builds
             [feature-gates]
               "multi-platform" = true
@@ -308,6 +306,7 @@ jobs:
 
       - name: Build Docker image
         uses: docker/build-push-action@v5
+        timeout-minutes: 45
         with:
           context: .
           file: src/docker/images/base/Dockerfile
@@ -315,18 +314,14 @@ jobs:
           push: false  # Don't push yet, test first
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # 🚀 PHASE 4: Enhanced BuildKit caching (GitHub Actions cache only for now)
-          cache-from: |
-            type=gha,scope=build-${{ matrix.platform }}
-            type=gha,scope=build-shared
-          cache-to: |
-            type=gha,scope=build-${{ matrix.platform }},mode=max
-            type=gha,scope=build-shared,mode=max
-          # 🚀 PHASE 4: Enhanced build arguments for maximum acceleration
+          # 🚀 PHASE 4: Simplified BuildKit caching (single scope per platform)
+          cache-from: type=gha,scope=build-${{ matrix.platform }}
+          cache-to: type=gha,scope=build-${{ matrix.platform }},mode=max
+          # 🚀 PHASE 4: Enhanced build arguments for stability (disabled eatmydata for timing fix)
           build-args: |
-            USE_EATMYDATA=true
+            USE_EATMYDATA=false
             BUILDKIT_INLINE_CACHE=1
-          # 🚀 PHASE 4: Enable all BuildKit features for multi-stage optimization
+          # 🚀 PHASE 4: Enable detailed build progress for debugging
           outputs: type=docker,dest=/tmp/image-${{ steps.platform.outputs.slug }}.tar
 
       - name: Upload image artifact
@@ -538,16 +533,14 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # 🚀 PHASE 4: Multi-platform enhanced caching strategy (GitHub Actions cache)
+          # 🚀 PHASE 4: Simplified multi-platform caching strategy
           cache-from: |
             type=gha,scope=build-linux-amd64
             type=gha,scope=build-linux-arm64
-            type=gha,scope=build-shared
-          cache-to: |
-            type=gha,scope=build-shared,mode=max
-          # 🚀 PHASE 4: Production build arguments
+          cache-to: type=gha,scope=build-multi-platform,mode=max
+          # 🚀 PHASE 4: Production build arguments (disabled eatmydata for stability)
           build-args: |
-            USE_EATMYDATA=true
+            USE_EATMYDATA=false
             BUILDKIT_INLINE_CACHE=1
           # 🚀 PHASE 4: Enable attestations for enhanced security and traceability
           provenance: true
