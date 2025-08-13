@@ -148,18 +148,20 @@ jobs:
                 echo "Analyzing dependency changes:"
                 echo "$DIFF_CONTENT" | grep -E '^[+-]' | head -10
 
-                # Check if changes are only to dev dependencies
-                if echo "$DIFF_CONTENT" | grep -E '^[+-].*"' | grep -vE "($DEV_ONLY_DEPS)" >/dev/null; then
-                  echo "🔥 Runtime dependencies changed - Docker rebuild required"
-                  RUNTIME_IMPACT=true
+                # Simplified dependency check - if there are any changes with quotes that aren't dev deps
+                if echo "$DIFF_CONTENT" | grep -E '^[+-].*"[^"]*"' >/dev/null; then
+                  if echo "$DIFF_CONTENT" | grep -E '^[+-].*"[^"]*"' | grep -vE "($DEV_ONLY_DEPS)" >/dev/null; then
+                    echo "🔥 Runtime dependencies changed - Docker rebuild required"
+                    RUNTIME_IMPACT=true
+                  else
+                    echo "✅ Only dev/test dependencies changed - skipping Docker rebuild"
+                    RUNTIME_IMPACT=false
+                  fi
                 elif echo "$DIFF_CONTENT" | grep -E '^[+-].*dependencies.*=' >/dev/null; then
                   echo "🔥 Main dependencies section changed - Docker rebuild required"
                   RUNTIME_IMPACT=true
-                elif echo "$DIFF_CONTENT" | grep -vE "($DEV_ONLY_DEPS|optional-dependencies|test|dev|lint|docs)" | grep -E '^[+-]' >/dev/null; then
-                  echo "🔥 Non-dev dependency changes detected - Docker rebuild required"
-                  RUNTIME_IMPACT=true
                 else
-                  echo "✅ Only dev/test dependencies changed - skipping Docker rebuild"
+                  echo "✅ No significant dependency changes detected"
                   RUNTIME_IMPACT=false
                 fi
               fi
