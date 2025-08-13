@@ -521,3 +521,4 @@ LABEL org.opencontainers.image.variant="phase3-enhanced-multistage"
 # USER rxivmaker
 
 CMD ["/bin/bash"]
+# Test comment for triggering build
