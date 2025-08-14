@@ -73,7 +73,9 @@ class TestValidateCommand:
             assert result.exit_code == 1
             assert "❌ Validation failed. See details above." in result.output
             assert "💡 Run with --detailed for more information" in result.output
-            assert "💡 Use 'rxiv pdf --skip-validation' to build anyway" in result.output
+            # Check for the core message ignoring ANSI color codes
+            assert "rxiv pdf --skip-validation" in result.output
+            assert "to build anyway" in result.output
 
     @patch("rxiv_maker.cli.commands.validate.Progress")
     @patch("rxiv_maker.engine.validate.main")
