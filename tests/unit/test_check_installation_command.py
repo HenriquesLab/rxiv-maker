@@ -500,7 +500,8 @@ class TestCheckInstallationCommandEdgeCases:
 
     @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
     @patch("rxiv_maker.cli.commands.check_installation.Console")
-    def test_combined_flags(self, mock_console, mock_verify):
+    @patch("rxiv_maker.install.manager.InstallManager")
+    def test_combined_flags(self, mock_install_manager, mock_console, mock_verify):
         """Test combining multiple flags."""
         mock_verify.return_value = {
             "python": True,
@@ -510,10 +511,17 @@ class TestCheckInstallationCommandEdgeCases:
         mock_console_instance = MagicMock()
         mock_console.return_value = mock_console_instance
 
+        # Mock the InstallManager to prevent actual installation
+        mock_manager_instance = MagicMock()
+        mock_install_manager.return_value = mock_manager_instance
+        mock_manager_instance.repair.return_value = True
+
         # Test --detailed --fix together (should prioritize --json if present)
         result = self.runner.invoke(check_installation, ["--detailed", "--fix"])
 
         assert result.exit_code == 0
+        # Verify that repair was called when --fix flag is used
+        mock_manager_instance.repair.assert_called_once()
 
     @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
     @patch("rxiv_maker.cli.commands.check_installation.diagnose_installation")
