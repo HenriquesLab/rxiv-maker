@@ -500,8 +500,8 @@ class TestDataIntegrityAndCorruption(unittest.TestCase):
         original_content = "Original file content"
         modified_content = "Modified file content"
 
-        original_checksum = hashlib.md5(original_content.encode()).hexdigest()
-        modified_checksum = hashlib.md5(modified_content.encode()).hexdigest()
+        original_checksum = hashlib.md5(original_content.encode(), usedforsecurity=False).hexdigest()
+        modified_checksum = hashlib.md5(modified_content.encode(), usedforsecurity=False).hexdigest()
 
         # Checksums should be different
         self.assertNotEqual(original_checksum, modified_checksum)

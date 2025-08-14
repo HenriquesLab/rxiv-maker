@@ -48,7 +48,7 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
         self.assertIn("jobs", workflow)
 
         # Test workflow name
-        self.assertEqual(workflow["name"], "CI")
+        self.assertEqual(workflow["name"], "Unified CI/CD Pipeline")
 
         # Test trigger events - handle YAML parsing edge case
         trigger_section = workflow.get("on") or workflow.get(True)
@@ -85,12 +85,12 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
             self.skipTest("inputs not found in workflow_dispatch")
 
         dispatch_inputs = workflow_dispatch["inputs"]
-        self.assertIn("run_system_tests", dispatch_inputs)
+        self.assertIn("test_suite", dispatch_inputs)
 
-        system_tests_input = dispatch_inputs["run_system_tests"]
-        self.assertEqual(system_tests_input["default"], True)
-        self.assertEqual(system_tests_input["type"], "boolean")
-        self.assertFalse(system_tests_input["required"])
+        test_suite_input = dispatch_inputs["test_suite"]
+        self.assertEqual(test_suite_input["default"], "fast")
+        self.assertEqual(test_suite_input["type"], "choice")
+        self.assertFalse(test_suite_input["required"])
 
     @pytest.mark.fast
     def test_jobs_configuration(self):
@@ -103,14 +103,14 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
 
         jobs = workflow["jobs"]
 
-        # Test job presence - check for unit-tests job
-        self.assertIn("unit-tests", jobs)
+        # Test job presence - check for fast-tests job
+        self.assertIn("fast-tests", jobs, f"Available jobs: {list(jobs.keys())}")
 
-        # Test unit-tests job
-        test_job = jobs["unit-tests"]
-        self.assertEqual(test_job["runs-on"], "ubuntu-latest")
-        self.assertEqual(test_job["name"], "Unit Tests (Fast)")
-        self.assertEqual(test_job["timeout-minutes"], 10)
+        # Test fast-tests job
+        test_job = jobs["fast-tests"]
+        self.assertIn("runs-on", test_job)
+        self.assertEqual(test_job["name"], "Fast Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})")
+        self.assertEqual(test_job["timeout-minutes"], 15)
 
     @pytest.mark.fast
     def test_docker_container_configuration(self):
@@ -121,7 +121,7 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
         with open(self.workflow_file) as f:
             workflow = yaml.safe_load(f)
 
-        test_job = workflow["jobs"]["unit-tests"]
+        test_job = workflow["jobs"]["fast-tests"]
 
         # CI workflow doesn't use Docker containers - runs directly on ubuntu-latest
         if "container" not in test_job:
@@ -140,7 +140,7 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
         with open(self.workflow_file) as f:
             workflow = yaml.safe_load(f)
 
-        test_steps = workflow["jobs"]["unit-tests"]["steps"]
+        test_steps = workflow["jobs"]["fast-tests"]["steps"]
         cache_steps = [step for step in test_steps if step.get("name", "").startswith("Cache")]
 
         # Test that we have cache steps

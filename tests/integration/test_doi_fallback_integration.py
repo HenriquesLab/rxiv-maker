@@ -306,6 +306,7 @@ class TestDOIFallbackIntegration(unittest.TestCase):
             self.assertTrue(any("from any source" in msg for msg in error_messages))
 
     @pytest.mark.slow
+    @pytest.mark.timeout(240)  # Network requests for large bibliography need extended time
     def test_fallback_performance_with_large_bibliography(self):
         """Test fallback performance with a large number of DOIs."""
         # Create a bibliography with many DOIs (simulating large manuscript)

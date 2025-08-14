@@ -411,10 +411,10 @@ class SecurityScanner:
         dependencies = []
 
         try:
-            import tomli
+            import tomllib
 
             with open(pyproject_file, "rb") as f:
-                data = tomli.load(f)
+                data = tomllib.load(f)
 
             # Extract main dependencies
             project_deps = data.get("project", {}).get("dependencies", [])
@@ -589,7 +589,7 @@ class SecurityScanner:
                     )
 
                 # Check for hardcoded secrets (simplified)
-                secret_patterns = [
+                secret_patterns = [  # nosec B105 - These are regex patterns for detecting secrets, not actual secrets
                     (r'password\s*=\s*["\'][^"\']+["\']', "Hardcoded password"),
                     (r'api[_-]?key\s*=\s*["\'][^"\']+["\']', "Hardcoded API key"),
                     (r'secret\s*=\s*["\'][^"\']+["\']', "Hardcoded secret"),

@@ -315,10 +315,10 @@ class DependencyManager:
         dependencies = {}
 
         try:
-            import tomli
+            import tomllib
 
             with open(self.pyproject_file, "rb") as f:
-                data = tomli.load(f)
+                data = tomllib.load(f)
 
             # Main dependencies
             project_deps = data.get("project", {}).get("dependencies", [])

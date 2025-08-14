@@ -293,3 +293,4 @@ plan_prompt.md
 .gha-logs
 .bandit
 bandit-report.json
+iv-maker/output.md

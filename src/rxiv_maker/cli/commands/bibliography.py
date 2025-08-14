@@ -187,12 +187,25 @@ def validate(ctx: click.Context, manuscript_path: str | None, no_doi: bool) -> N
 
     MANUSCRIPT_PATH: Path to manuscript directory (default: MANUSCRIPT)
 
+    ⚠️  **DEPRECATED**: Use 'rxiv validate' instead for comprehensive validation.
+
+    The main 'rxiv validate' command now includes bibliography validation along with
+    manuscript structure, cross-references, figures, and more. This command will be
+    removed in a future version.
+
     This command validates bibliography entries for:
     - Correct format
     - DOI validity
     - Required fields
     """
     verbose = ctx.obj.get("verbose", False)
+
+    # Show deprecation warning
+    console.print("⚠️  [yellow]DEPRECATED:[/yellow] 'rxiv bibliography validate' is deprecated.", style="yellow")
+    console.print(
+        "💡 Use 'rxiv validate' for comprehensive manuscript validation including bibliography.", style="blue"
+    )
+    console.print()  # Empty line for readability
 
     # Default to MANUSCRIPT if not specified
     if manuscript_path is None:

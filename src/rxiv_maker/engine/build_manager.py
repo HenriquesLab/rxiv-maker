@@ -744,74 +744,103 @@ class BuildManager:
     def copy_pdf_to_manuscript(self) -> bool:
         """Copy generated PDF to manuscript directory with custom name."""
         try:
-            # Import and call the copy_pdf function directly instead of subprocess
-            from ..engine.copy_pdf import copy_pdf_with_custom_filename
+            from ..processors.yaml_processor import extract_yaml_metadata
+            from ..utils import copy_pdf_to_manuscript_folder, find_manuscript_md
 
-            # Set environment variables that the function expects
-            env_backup = {}
-            if "MANUSCRIPT_PATH" not in os.environ:
-                env_backup["MANUSCRIPT_PATH"] = os.environ.get("MANUSCRIPT_PATH")
-                os.environ["MANUSCRIPT_PATH"] = self.manuscript_path
+            # Find and parse the manuscript markdown
+            manuscript_md = find_manuscript_md()
+            self.log(f"Reading metadata from: {manuscript_md}")
 
-            # Change to the manuscript directory for the copy operation
-            original_cwd = os.getcwd()
-            os.chdir(Path(self.manuscript_path))
+            yaml_metadata = extract_yaml_metadata(manuscript_md)
 
-            try:
-                # Call the function directly
-                success = copy_pdf_with_custom_filename(str(self.output_dir.name))
+            # Copy PDF with custom filename using output_dir relative to manuscript
+            result = copy_pdf_to_manuscript_folder(str(self.output_dir.name), yaml_metadata)
 
-                if success:
-                    self.log("PDF copied to manuscript directory")
-                    return True
-                else:
-                    self.log("❌ Failed to copy PDF to manuscript directory", level="ERROR")
-                    return False
-            finally:
-                # Restore original working directory
-                os.chdir(original_cwd)
-
-                # Restore environment variables
-                for key, value in env_backup.items():
-                    if value is None and key in os.environ:
-                        del os.environ[key]
-                    elif value is not None:
-                        os.environ[key] = value
+            if result:
+                self.log("PDF copied to manuscript directory")
+                return True
+            else:
+                self.log("❌ Failed to copy PDF to manuscript directory", level="ERROR")
+                return False
 
         except Exception as e:
             self.log(f"Error copying PDF: {e}", "ERROR")
+            import traceback
+
+            self.log(f"Traceback: {traceback.format_exc()}", "ERROR")
             return False
 
     def run_word_count_analysis(self) -> bool:
         """Run word count analysis on the manuscript."""
         try:
-            # Import and call the analyze_manuscript_word_count function directly
-            from .analyze_word_count import analyze_manuscript_word_count
+            from ..converters.md2tex import extract_content_sections
+            from ..utils import find_manuscript_md
 
-            # Find the manuscript file
-            manuscript_md = None
-            for md_file in ["01_MAIN.md", "MAIN.md", "manuscript.md"]:
-                md_path = Path(self.manuscript_path) / md_file
-                if md_path.exists():
-                    manuscript_md = str(md_path)
-                    break
-
+            # Find the manuscript markdown file
+            manuscript_md = find_manuscript_md()
             if not manuscript_md:
                 self.log("Could not find manuscript markdown file for word count analysis", "WARNING")
                 return False
 
-            # Call the word count analysis function directly
-            result = analyze_manuscript_word_count(manuscript_md)
+            self.log(f"Analyzing word count for: {manuscript_md}")
 
-            if result == 0:
-                return True
-            else:
-                self.log("Word count analysis completed with warnings", "WARNING")
-                return False
+            # Extract content sections from markdown
+            content_sections = extract_content_sections(str(manuscript_md))
+
+            # Analyze word counts and provide warnings
+            self._analyze_section_word_counts(content_sections)
+
+            self.log("Word count analysis completed")
+            return True
 
         except Exception as e:
             self.log(f"Error running word count analysis: {e}", "WARNING")
+            import traceback
+
+            self.log(f"Traceback: {traceback.format_exc()}", "WARNING")
             return False
+
+    def _analyze_section_word_counts(self, content_sections):
+        """Analyze word counts for each section and provide warnings."""
+        import re
+
+        section_guidelines = {
+            "abstract": {"ideal": 150, "max_warning": 250, "description": "Abstract"},
+            "main": {"ideal": 1500, "max_warning": 3000, "description": "Main content"},
+            "methods": {"ideal": 1000, "max_warning": 3000, "description": "Methods"},
+            "results": {"ideal": 800, "max_warning": 2000, "description": "Results"},
+            "discussion": {"ideal": 600, "max_warning": 1500, "description": "Discussion"},
+            "conclusion": {"ideal": 200, "max_warning": 500, "description": "Conclusion"},
+            "funding": {"ideal": 50, "max_warning": 150, "description": "Funding"},
+            "acknowledgements": {"ideal": 100, "max_warning": 300, "description": "Acknowledgements"},
+        }
+
+        def count_words_in_text(text):
+            """Count words in text, excluding LaTeX commands."""
+            # Remove LaTeX commands (backslash followed by word characters)
+            text_no_latex = re.sub(r"\\[a-zA-Z]+\{[^}]*\}", "", text)
+            text_no_latex = re.sub(r"\\[a-zA-Z]+", "", text_no_latex)
+            # Remove remaining LaTeX markup
+            text_no_latex = re.sub(r"[{}\\]", " ", text_no_latex)
+            # Split by whitespace and count non-empty words
+            words = [word for word in text_no_latex.split() if word.strip()]
+            return len(words)
+
+        total_words = 0
+        for section_name, section_content in content_sections.items():
+            if section_name in section_guidelines:
+                word_count = count_words_in_text(section_content)
+                total_words += word_count
+
+                guidelines = section_guidelines[section_name]
+                status = "✅" if word_count <= guidelines["max_warning"] else "⚠️"
+
+                self.log(
+                    f"{status} {guidelines['description']}: {word_count} words "
+                    f"(ideal: {guidelines['ideal']}, warning: {guidelines['max_warning']})"
+                )
+
+        self.log(f"📊 Total manuscript word count: {total_words} words")
 
     def run_pdf_validation(self) -> bool:
         """Run PDF validation to check final output quality."""

@@ -182,16 +182,16 @@ runs:
       run: |
         echo "🔒 Running security scans..."
 
-        # Install security tools
-        python -m pip install --upgrade pip bandit safety
+        # Install security tools using uv
+        uv add --dev bandit safety
 
         # Bandit scan
         if [ -d "src" ]; then
           bandit -r src/ -f json -o bandit-report.json || echo "Bandit completed with issues"
         fi
 
-        # Safety check
-        safety check --json --output safety-report.json || echo "Safety completed with issues"
+        # Safety scan
+        safety scan --json --output safety-report.json || echo "Safety completed with issues"
 
         echo "✅ Security scans completed"
 
@@ -210,8 +210,7 @@ runs:
       run: |
         # Build and test wheel installation
         uv build
-        python -m pip install --upgrade pip
-        python -m pip install dist/*.whl
+        uv tool install dist/*.whl
         python -c "import rxiv_maker; print('✅ Package imports successfully')"
         python -c "from rxiv_maker import __version__; print(f'Version: {__version__}')"
 

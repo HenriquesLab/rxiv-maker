@@ -187,11 +187,10 @@ pyyaml>=6.0
             manager = DependencyManager(self.project_dir)
 
             # Test update impact calculation
-            old_version = "2.28.0"
             new_version = "2.29.0"
 
             if hasattr(manager, "assess_update_impact"):
-                impact = manager.assess_update_impact("requests", old_version, new_version)
+                impact = manager.assess_update_impact("requests", new_version)
                 self.assertIsInstance(impact, dict)
                 self.assertIn("risk_level", impact)
 

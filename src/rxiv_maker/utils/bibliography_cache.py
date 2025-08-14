@@ -383,8 +383,9 @@ def cached_parse_bibliography(file_path: str, content: str) -> List[Dict[str, An
     This is a placeholder - actual parsing logic should be implemented
     in the calling code and use this caching mechanism.
     """
-    # This would be implemented by the actual bibliography parser
-    raise NotImplementedError("This is a caching wrapper - implement actual parsing")
+    logger.warning(f"Bibliography parsing not yet implemented for {file_path}")
+    # Return empty list as safe placeholder
+    return []
 
 
 @cached_function(
@@ -399,8 +400,9 @@ def cached_validate_doi(doi: str, validation_options: Dict[str, Any]) -> Dict[st
     This is a placeholder - actual validation logic should be implemented
     in the calling code and use this caching mechanism.
     """
-    # This would be implemented by the actual DOI validator
-    raise NotImplementedError("This is a caching wrapper - implement actual validation")
+    logger.warning(f"DOI validation not yet implemented for {doi}")
+    # Return empty dict as safe placeholder
+    return {"valid": False, "message": "DOI validation not yet implemented"}
 
 
 @cached_function(cache_name="citation_analysis", ttl_hours=48, content_based=True, compression=True)
@@ -410,5 +412,6 @@ def cached_analyze_citations(manuscript_content: str, bibliography_keys: List[st
     This is a placeholder - actual analysis logic should be implemented
     in the calling code and use this caching mechanism.
     """
-    # This would be implemented by the actual citation analyzer
-    raise NotImplementedError("This is a caching wrapper - implement actual analysis")
+    logger.warning(f"Citation analysis not yet implemented for {len(bibliography_keys)} bibliography keys")
+    # Return empty analysis as safe placeholder
+    return {"citations": [], "missing": [], "unused": []}

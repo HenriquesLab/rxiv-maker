@@ -1,4 +1,11 @@
-"""Unit tests for Docker engine mode functionality."""
+"""DEPRECATED: Legacy Docker-only tests.
+
+This file contains legacy Docker-specific tests.
+New container engine tests that support both Docker and Podman are in test_container_engines.py.
+
+These tests are kept for backwards compatibility but should be updated to use the new
+parameterized approach in test_container_engines.py.
+"""
 
 import os
 import tempfile
@@ -12,14 +19,17 @@ import pytest
 pytestmark = pytest.mark.ci_exclude
 
 
+@pytest.mark.parametrize("engine_type", ["docker", "podman"])
 @pytest.mark.docker
-class TestDockerEngineMode(unittest.TestCase):
-    """Test Docker engine mode functionality."""
+@pytest.mark.podman
+class TestContainerEngineMode(unittest.TestCase):
+    """Test container engine functionality for both Docker and Podman."""
 
     def setUp(self):
         """Set up test environment."""
         self.temp_dir = tempfile.mkdtemp()
         self.workspace_dir = Path(self.temp_dir)
+        self.engine_type = getattr(self, "_pytest_engine_type", "docker")  # Default to docker for unittest
 
     def tearDown(self):
         """Clean up test environment."""

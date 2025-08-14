@@ -128,6 +128,7 @@ class TestHomebrewFormula:
         # Should be cross-platform compatible via pipx
 
     @pytest.mark.slow
+    @pytest.mark.timeout(90)  # Formula parsing with Ruby may take time
     def test_formula_syntax_validation(self, formula_path):
         """Test formula syntax with Ruby parser."""
         if not shutil.which("ruby"):
@@ -443,6 +444,7 @@ class TestPackageManagerIntegration:
     """Integration tests for package manager functionality."""
 
     @pytest.mark.slow
+    @pytest.mark.timeout(120)  # Homebrew validation may be slow
     @pytest.mark.skipif(platform.system() != "Darwin", reason="Homebrew tests require macOS")
     def test_homebrew_tap_structure(self):
         """Test Homebrew tap repository structure."""
@@ -477,6 +479,7 @@ class TestPackageManagerIntegration:
             pytest.skip("Homebrew validation not available")
 
     @pytest.mark.slow
+    @pytest.mark.timeout(120)  # Scoop validation may be slow
     @pytest.mark.skipif(platform.system() != "Windows", reason="Scoop tests require Windows")
     def test_scoop_bucket_structure(self):
         """Test Scoop bucket repository structure."""

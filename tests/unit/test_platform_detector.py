@@ -198,24 +198,44 @@ class TestPlatformDetector(unittest.TestCase):
 
     @patch("subprocess.run")
     def test_run_command_windows(self, mock_run):
-        """Test command execution on Windows."""
+        """Test secure command execution on Windows (default shell=False)."""
         mock_run.return_value = Mock(returncode=0, stdout="output")
 
         with patch.object(self.detector, "is_windows", return_value=True):
             result = self.detector.run_command("echo test")
 
-        mock_run.assert_called_once_with("echo test", shell=True)
+        mock_run.assert_called_once_with("echo test", shell=False)
         self.assertEqual(result.returncode, 0)
 
     @patch("subprocess.run")
     def test_run_command_unix(self, mock_run):
-        """Test command execution on Unix."""
+        """Test secure command execution on Unix (default shell=False)."""
         mock_run.return_value = Mock(returncode=0, stdout="output")
 
         with patch.object(self.detector, "is_windows", return_value=False):
             result = self.detector.run_command("echo test")
 
+        mock_run.assert_called_once_with("echo test", shell=False)
+        self.assertEqual(result.returncode, 0)
+
+    @patch("subprocess.run")
+    def test_run_command_with_shell_explicit(self, mock_run):
+        """Test command execution with explicit shell=True (legacy mode)."""
+        mock_run.return_value = Mock(returncode=0, stdout="output")
+
+        # Test that shell=True still works when explicitly requested
+        result = self.detector.run_command("echo test", shell=True)
         mock_run.assert_called_once_with("echo test", shell=True)
+        self.assertEqual(result.returncode, 0)
+
+    @patch("subprocess.run")
+    def test_run_command_with_list_args(self, mock_run):
+        """Test secure command execution with list arguments."""
+        mock_run.return_value = Mock(returncode=0, stdout="output")
+
+        # Test the secure way with list arguments
+        result = self.detector.run_command(["echo", "test"])
+        mock_run.assert_called_once_with(["echo", "test"], shell=False)
         self.assertEqual(result.returncode, 0)
 
     @patch("shutil.which")
@@ -266,29 +286,51 @@ class TestPlatformDetector(unittest.TestCase):
     @patch("subprocess.run")
     def test_install_uv_windows(self, mock_run):
         """Test uv installation on Windows."""
-        mock_run.return_value = Mock(returncode=0)
+        # Mock successful responses for both PowerShell calls
+        mock_run.side_effect = [
+            Mock(returncode=0, stdout="$install_script_content"),  # Download script
+            Mock(returncode=0, stdout="Installation complete"),  # Execute script
+        ]
 
         with patch.object(self.detector, "is_windows", return_value=True):
             result = self.detector.install_uv()
 
         self.assertTrue(result)
-        mock_run.assert_called_once()
-        args = mock_run.call_args[0][0]
-        self.assertIn("powershell", args)
-        self.assertIn("irm https://astral.sh/uv/install.ps1", args)
+        self.assertEqual(mock_run.call_count, 2)
+
+        # Check first call (download script)
+        first_call_args = mock_run.call_args_list[0][0][0]
+        self.assertIn("powershell", first_call_args)
+        self.assertIn("Invoke-RestMethod https://astral.sh/uv/install.ps1", first_call_args)
+
+        # Check second call (execute script)
+        second_call_args = mock_run.call_args_list[1][0][0]
+        self.assertIn("powershell", second_call_args)
+        self.assertIn("-ExecutionPolicy", second_call_args)
 
     @patch("subprocess.run")
     def test_install_uv_unix(self, mock_run):
         """Test uv installation on Unix."""
-        mock_run.return_value = Mock(returncode=0)
+        # Mock successful responses for both curl and sh calls
+        mock_run.side_effect = [
+            Mock(returncode=0, stdout="#!/bin/sh\necho 'install script'"),  # curl download
+            Mock(returncode=0, stdout="Installation complete"),  # sh execution
+        ]
 
         with patch.object(self.detector, "is_windows", return_value=False):
             result = self.detector.install_uv()
 
         self.assertTrue(result)
-        mock_run.assert_called_once()
-        args = mock_run.call_args[0][0]
-        self.assertIn("curl -LsSf https://astral.sh/uv/install.sh", args)
+        self.assertEqual(mock_run.call_count, 2)
+
+        # Check first call (curl download)
+        first_call_args = mock_run.call_args_list[0][0][0]
+        self.assertEqual(first_call_args[0], "curl")
+        self.assertIn("https://astral.sh/uv/install.sh", first_call_args)
+
+        # Check second call (sh execution)
+        second_call_args = mock_run.call_args_list[1][0][0]
+        self.assertEqual(second_call_args[0], "sh")
 
     @patch("subprocess.run")
     def test_install_uv_failure(self, mock_run):
@@ -427,7 +469,7 @@ class TestPlatformUtilityFunctions(unittest.TestCase):
 
         result = run_platform_command("echo test")
 
-        mock_run_command.assert_called_once_with("echo test", shell=True)
+        mock_run_command.assert_called_once_with("echo test", shell=False)
         self.assertEqual(result.returncode, 0)
 
 
@@ -506,7 +548,7 @@ class TestPlatformDetectorEdgeCases(unittest.TestCase):
 
         detector.run_command("test command", capture_output=True, text=True, timeout=30)
 
-        mock_run.assert_called_once_with("test command", shell=True, capture_output=True, text=True, timeout=30)
+        mock_run.assert_called_once_with("test command", shell=False, capture_output=True, text=True, timeout=30)
 
 
 class TestUnicodeEncoding(unittest.TestCase):

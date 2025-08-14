@@ -61,8 +61,7 @@ class TestSecurityScanner(unittest.TestCase):
         except ImportError:
             self.skipTest("Security scanner module not available")
 
-    @pytest.mark.parametrize("file_extension", [".md", ".txt", ".yml", ".yaml", ".bib", ".tex"])
-    def test_safe_file_extension_detection(self, file_extension):
+    def test_safe_file_extension_detection(self):
         """Test detection of safe file extensions."""
         try:
             import sys
@@ -71,12 +70,17 @@ class TestSecurityScanner(unittest.TestCase):
             from rxiv_maker.security.scanner import SecurityScanner
 
             scanner = SecurityScanner()
-            test_file = self.test_dir / f"test{file_extension}"
-            test_file.write_text("# Test content")
 
-            # Test that safe extensions are properly identified
-            if hasattr(scanner, "is_safe_file_extension"):
-                self.assertTrue(scanner.is_safe_file_extension(test_file))
+            # Test multiple safe file extensions
+            safe_extensions = [".md", ".txt", ".yml", ".yaml", ".bib", ".tex"]
+            for file_extension in safe_extensions:
+                with self.subTest(extension=file_extension):
+                    test_file = self.test_dir / f"test{file_extension}"
+                    test_file.write_text("# Test content")
+
+                    # Test that safe extensions are properly identified
+                    if hasattr(scanner, "is_safe_file_extension"):
+                        self.assertTrue(scanner.is_safe_file_extension(test_file))
 
         except ImportError:
             self.skipTest("Security scanner module not available")
@@ -150,7 +154,11 @@ class TestSecurityScanner(unittest.TestCase):
             mock_run.return_value = Mock(returncode=0, stdout="No known vulnerabilities found", stderr="")
 
             if hasattr(scanner, "scan_dependencies"):
-                result = scanner.scan_dependencies(self.test_dir)
+                # Create a test requirements.txt file
+                requirements_file = self.test_dir / "requirements.txt"
+                requirements_file.write_text("pytest>=7.0.0\nrequests>=2.28.0\n")
+
+                result = scanner.scan_dependencies(requirements_file=requirements_file)
                 self.assertIsNotNone(result)
                 mock_run.assert_called()
 

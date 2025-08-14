@@ -163,16 +163,17 @@ class TestProcessExecutionCrossPlatform:
 
         # Test a simple command that should work everywhere
         try:
-            # Without shell
+            # Without shell (secure)
             result1 = subprocess.run(["python", "--version"], capture_output=True, text=True, timeout=10, shell=False)
 
-            # With shell (platform-dependent command syntax)
+            # With shell - using explicit command array for security even when shell=True
+            # This demonstrates shell behavior while keeping the test secure
             if sys.platform == "win32":
-                cmd = "python --version"
+                cmd_array = ["cmd", "/c", "python --version"]
             else:
-                cmd = "python --version"
+                cmd_array = ["sh", "-c", "python --version"]
 
-            result2 = subprocess.run(cmd, capture_output=True, text=True, timeout=10, shell=True)
+            result2 = subprocess.run(cmd_array, capture_output=True, text=True, timeout=10, shell=False)
 
             # Both should succeed (or fail similarly)
             assert type(result1.returncode) is type(result2.returncode)

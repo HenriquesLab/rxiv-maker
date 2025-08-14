@@ -64,7 +64,7 @@ class TestDOIClientIndividual(unittest.TestCase):
         with self.assertRaises(TypeError):
             BaseDOIClient()
 
-    @patch("crossref_commons.retrieval.get_publication_as_json")
+    @patch("rxiv_maker.validators.doi.api_clients.get_publication_as_json")
     def test_crossref_client_primary_success(self, mock_get_publication):
         """Test CrossRef client successful primary fetch."""
         mock_get_publication.return_value = {"message": self.test_metadata}
@@ -76,26 +76,27 @@ class TestDOIClientIndividual(unittest.TestCase):
         self.assertEqual(result["title"], ["Test Article"])
         mock_get_publication.assert_called_once_with(self.test_doi)
 
-    @patch("crossref_commons.retrieval.get_publication_as_json")
-    @patch("requests.Session.get")
-    def test_crossref_client_fallback_to_rest_api(self, mock_session_get, mock_get_publication):
+    @patch("rxiv_maker.validators.doi.api_clients.get_publication_as_json")
+    def test_crossref_client_fallback_to_rest_api(self, mock_get_publication):
         """Test CrossRef client falls back to REST API when library fails."""
         # Primary method fails
         mock_get_publication.side_effect = Exception("Library fetch failed")
 
-        # REST API succeeds
+        # Mock the session.get method for the fallback
+        client = CrossRefClient(timeout=5)
+
+        # Create a mock response for the fallback API call
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"message": self.test_metadata}
-        mock_session_get.return_value = mock_response
 
-        client = CrossRefClient(timeout=5)
-        result = client.fetch_metadata(self.test_doi)
+        # Mock the session.get method
+        with patch.object(client.session, "get", return_value=mock_response):
+            result = client.fetch_metadata(self.test_doi)
 
         self.assertIsNotNone(result)
         self.assertEqual(result["title"], ["Test Article"])
         mock_get_publication.assert_called_once_with(self.test_doi)
-        mock_session_get.assert_called_once()
 
     @patch.object(DataCiteClient, "_make_request")
     def test_datacite_client_success(self, mock_make_request):
@@ -134,8 +135,7 @@ class TestDOIClientIndividual(unittest.TestCase):
         self.assertIsNotNone(result)
         self.assertEqual(result["title"], "OpenAlex Test Article")
 
-    @patch("requests.Session.get")
-    def test_semantic_scholar_client_success(self, mock_session_get):
+    def test_semantic_scholar_client_success(self):
         """Test Semantic Scholar client successful fetch."""
         semantic_metadata = {
             "title": "Semantic Scholar Test Article",
@@ -144,12 +144,16 @@ class TestDOIClientIndividual(unittest.TestCase):
             "venue": "Semantic Scholar Journal",
         }
 
-        mock_response = Mock()
-        mock_response.json.return_value = semantic_metadata
-        mock_session_get.return_value = mock_response
-
         client = SemanticScholarClient(timeout=5)
-        result = client.fetch_metadata(self.test_doi)
+
+        # Create a mock response
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = semantic_metadata
+
+        # Mock the session.get method directly on the client instance
+        with patch.object(client.session, "get", return_value=mock_response):
+            result = client.fetch_metadata(self.test_doi)
 
         self.assertIsNotNone(result)
         self.assertEqual(result["title"], "Semantic Scholar Test Article")

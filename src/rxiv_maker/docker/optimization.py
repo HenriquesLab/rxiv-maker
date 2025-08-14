@@ -115,7 +115,7 @@ class DockerBuildOptimizer:
         """Calculate hash of directory contents for caching."""
         import hashlib
 
-        hash_obj = hashlib.md5()
+        hash_obj = hashlib.md5(usedforsecurity=False)
 
         # Include essential files only
         essential_files = ["Dockerfile", "requirements.txt", "pyproject.toml", "package.json", "Makefile"]

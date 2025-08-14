@@ -167,29 +167,32 @@ Recent improvements ensure robust container engine support with graceful fallbac
 
 3. **Test Your Changes**
    ```bash
-   # Quick development feedback (<2 min)
-   nox -s test_fast                           # Fast tests only
+   # Quick development feedback (<1 min)
+   nox -s "test(test_type='fast')"            # Fast tests only
    
    # Full test suite (<10 min, matches CI)
-   nox -s test                                # Unit + integration tests
+   nox -s "test(test_type='full')"            # Unit + integration tests (default)
+   nox -s test                                # Shorthand for full test suite
    
-   # Cross-version testing (for releases)  
-   nox -s test_cross                          # Test Python 3.11, 3.12, 3.13
+   # Selective testing for focused development
+   nox -s "test(test_type='unit')"            # Unit tests only
+   nox -s "test(test_type='integration')"     # Integration tests only
    
    # Specialized testing
-   nox -s test_docker                         # Docker engine tests
-   nox -s pdf                                 # PDF generation (local + docker engines)
+   nox -s "pdf(engine='local')"               # PDF generation (local engine)
+   nox -s "pdf(engine='docker')"              # PDF generation (Docker engine)
    
    # Code quality checks
    nox -s lint                                # Linting (ruff + mypy)
    nox -s format                              # Auto-format code
+   nox -s security                            # Security scanning (bandit, safety, pip-audit)
    
    # Build validation
    nox -s build                               # Package build + validation
    
    # Test with manuscripts using modern CLI
    rxiv validate EXAMPLE_MANUSCRIPT/          # Validate manuscript
-   rxiv pdf EXAMPLE_MANUSCRIPT/               # Build PDF
+   rxiv pdf EXAMPLE_MANUSCRIPT/               # Build PDF (local engine)
    RXIV_ENGINE=DOCKER rxiv pdf EXAMPLE_MANUSCRIPT/  # Build in Docker
    ```
 
@@ -203,8 +206,9 @@ Recent improvements ensure robust container engine support with graceful fallbac
 ## 📝 Pull Request Guidelines
 
 ### Before Submitting
-- [ ] Tests pass locally (`nox -s test_fast` or `nox -s test`)
+- [ ] Tests pass locally (`nox -s "test(test_type='fast')"` or `nox -s test`)
 - [ ] Code follows project style (`nox -s lint` and `nox -s format`)
+- [ ] Security checks pass (`nox -s security`)
 - [ ] Package builds successfully (`nox -s build`)
 - [ ] Documentation updated if needed
 - [ ] CHANGELOG.md updated for significant changes

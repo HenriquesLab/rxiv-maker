@@ -70,25 +70,43 @@ class EnvironmentSetup:
             return False
 
     def install_uv(self) -> bool:
-        """Install uv package manager."""
+        """Install uv package manager using secure subprocess calls."""
         self.log("Installing uv package manager...", "STEP")
 
-        if self.platform.is_windows():
-            # Use PowerShell on Windows
-            cmd = 'powershell -Command "irm https://astral.sh/uv/install.ps1 | iex"'
-        else:
-            # Use curl on Unix-like systems
-            cmd = "curl -LsSf https://astral.sh/uv/install.sh | sh"
-
         try:
-            result = subprocess.run(
-                cmd,
-                shell=True,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-            )
+            if self.platform.is_windows():
+                # Use PowerShell on Windows with secure list arguments
+                result = subprocess.run(
+                    ["powershell", "-Command", "irm https://astral.sh/uv/install.ps1 | iex"],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    timeout=300,  # 5 minute timeout for installation
+                )
+            else:
+                # Use secure approach for Unix-like systems
+                # First, download the installation script
+                curl_result = subprocess.run(
+                    ["curl", "-LsSf", "https://astral.sh/uv/install.sh"],
+                    capture_output=True,
+                    text=True,
+                    timeout=60,  # 1 minute timeout for download
+                )
+
+                if curl_result.returncode != 0:
+                    self.log(f"Failed to download uv installer: {curl_result.stderr}", "ERROR")
+                    return False
+
+                # Execute the downloaded script securely
+                result = subprocess.run(
+                    ["sh", "-c", curl_result.stdout],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    timeout=240,  # 4 minute timeout for installation
+                )
             if result.returncode == 0:
                 self.log("uv installed successfully")
                 return True

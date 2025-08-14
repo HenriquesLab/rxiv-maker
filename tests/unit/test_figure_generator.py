@@ -457,7 +457,7 @@ class TestFigureValidationAndErrorHandling(unittest.TestCase):
         test_file.write_text(content)
 
         # Calculate checksum
-        checksum = hashlib.md5(content.encode()).hexdigest()
+        checksum = hashlib.md5(content.encode(), usedforsecurity=False).hexdigest()
         self.assertEqual(len(checksum), 32)
 
     def test_concurrent_figure_generation_safety(self):

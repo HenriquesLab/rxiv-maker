@@ -2364,11 +2364,11 @@ wheels = [
 
 [[package]]
 name = "pypdf"
-version = "5.8.0"
+version = "6.0.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/28/5a/139b1a3ec3789cc77a7cb9d5d3bc9e97e742e6d03708baeb7719f8ad0827/pypdf-5.8.0.tar.gz", hash = "sha256:f8332f80606913e6f0ce65488a870833c9d99ccdb988c17bb6c166f7c8e140cb", size = 5029494, upload-time = "2025-07-13T12:51:35.125Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/20/ac/a300a03c3b34967c050677ccb16e7a4b65607ee5df9d51e8b6d713de4098/pypdf-6.0.0.tar.gz", hash = "sha256:282a99d2cc94a84a3a3159f0d9358c0af53f85b4d28d76ea38b96e9e5ac2a08d", size = 5033827, upload-time = "2025-08-11T14:22:02.352Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8b/94/05d0310bfa92c26aa50a9d2dea2c6448a1febfdfcf98fb340a99d48a3078/pypdf-5.8.0-py3-none-any.whl", hash = "sha256:bfe861285cd2f79cceecefde2d46901e4ee992a9f4b42c56548c4a6e9236a0d1", size = 309718, upload-time = "2025-07-13T12:51:33.159Z" },
+    { url = "https://files.pythonhosted.org/packages/2c/83/2cacc506eb322bb31b747bc06ccb82cc9aa03e19ee9c1245e538e49d52be/pypdf-6.0.0-py3-none-any.whl", hash = "sha256:56ea60100ce9f11fc3eec4f359da15e9aec3821b036c1f06d2b660d35683abb8", size = 310465, upload-time = "2025-08-11T14:22:00.481Z" },
 ]
 
 [[package]]
@@ -3207,9 +3207,9 @@ requires-dist = [
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.2.0" },
     { name = "py", marker = "extra == 'all'", specifier = ">=1.11.0" },
     { name = "py", marker = "extra == 'dev'", specifier = ">=1.11.0" },
-    { name = "pypdf", specifier = ">=3.0.0" },
-    { name = "pytest", marker = "extra == 'all'", specifier = ">=7.4,<8.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4,<8.0" },
+    { name = "pypdf", specifier = ">=6.0.0" },
+    { name = "pytest", marker = "extra == 'all'", specifier = ">=7.4,<9.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4,<9.0" },
     { name = "pytest-benchmark", marker = "extra == 'all'", specifier = ">=4.0.0" },
     { name = "pytest-benchmark", marker = "extra == 'dev'", specifier = ">=4.0.0" },
     { name = "pytest-clarity", marker = "extra == 'all'", specifier = ">=1.0.0" },
@@ -3239,7 +3239,6 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.12.2" },
     { name = "safety", marker = "extra == 'security'", specifier = ">=3.0.0" },
     { name = "seaborn", specifier = ">=0.12.0" },
-    { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.0.0" },
     { name = "tomli-w", specifier = ">=1.0.0" },
     { name = "types-pyyaml", marker = "extra == 'all'", specifier = ">=6.0.0" },
     { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0.0" },
@@ -3267,7 +3266,7 @@ dev = [
     { name = "pre-commit", specifier = ">=4.2.0" },
     { name = "py", specifier = ">=1.11.0" },
     { name = "pyinstaller", specifier = ">=6.14.2" },
-    { name = "pytest", specifier = ">=7.4,<8.0" },
+    { name = "pytest", specifier = ">=7.4,<9.0" },
     { name = "pytest", specifier = ">=7.4.4" },
     { name = "pytest-benchmark", specifier = ">=4.0.0" },
     { name = "pytest-benchmark", specifier = ">=5.0.1" },

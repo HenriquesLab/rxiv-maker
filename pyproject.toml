@@ -32,7 +32,7 @@ dependencies = [
     "pandas>=2.0.0",
     # Core functionality dependencies
     "Pillow>=9.0.0",
-    "pypdf>=3.0.0",
+    "pypdf>=6.0.0",
     "PyYAML>=6.0.0",
     "python-dotenv>=1.0.0",
     "crossref-commons>=0.0.7",
@@ -43,7 +43,6 @@ dependencies = [
     "packaging>=21.0.0",
     "platformdirs>=4.0.0",
     "tomli-w>=1.0.0",
-    "tomli>=2.0.0;python_version<'3.11'",
     "requests>=2.28.0",
 ]
 
@@ -257,7 +256,7 @@ addopts = [
     "--cov-report=term-missing:skip-covered",
     "--dist=worksteal",  # Optimized work distribution with pytest-xdist
     "--maxfail=5",  # Increased to handle flaky tests better
-    "--timeout=120",  # Global timeout for individual tests
+    "--timeout=60",  # Default timeout for fast tests, overridden by specific timeouts
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
@@ -271,6 +270,7 @@ markers = [
     "pdf_validation: marks tests as PDF validation-related tests",
     "cli: marks tests as CLI-related tests",
     "docker: marks tests as Docker engine mode tests",
+    "podman: marks tests as Podman engine mode tests",
     "binary: Binary distribution tests",
     "pyinstaller: PyInstaller-specific tests",
     "package_manager: Package manager integration tests",

@@ -725,10 +725,10 @@ class ConfigValidator:
         warnings = []
 
         try:
-            import tomli
+            import tomllib
 
             with open(pyproject_path, "rb") as f:
-                pyproject_data = tomli.load(f)
+                pyproject_data = tomllib.load(f)
 
             # Check required sections
             required_sections = ["project", "build-system"]
@@ -936,7 +936,7 @@ class ConfigValidator:
         try:
             import hashlib
 
-            return hashlib.md5(file_path.read_bytes()).hexdigest()[:12]
+            return hashlib.md5(file_path.read_bytes(), usedforsecurity=False).hexdigest()[:12]
         except Exception:
             return "unknown"
 

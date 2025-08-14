@@ -183,14 +183,15 @@ class PlatformDetector:
         except (subprocess.TimeoutExpired, FileNotFoundError, Exception):
             return False
 
-    def run_command(self, cmd: str, shell: bool = True, **kwargs) -> subprocess.CompletedProcess:
-        """Run a command with platform-appropriate settings."""
-        if self.is_windows():
-            # On Windows, use cmd.exe for better compatibility
-            return subprocess.run(cmd, shell=shell, **kwargs)
-        else:
-            # On Unix-like systems, use bash if available
-            return subprocess.run(cmd, shell=shell, **kwargs)
+    def run_command(self, cmd: str | list[str], shell: bool = False, **kwargs) -> subprocess.CompletedProcess:
+        """Run a command with platform-appropriate settings.
+
+        Args:
+            cmd: Command to run - use list format for security, string only when shell=True
+            shell: Whether to use shell (default: False for security)
+            **kwargs: Additional arguments to pass to subprocess.run
+        """
+        return subprocess.run(cmd, shell=shell, **kwargs)
 
     def check_command_exists(self, command: str) -> bool:
         """Check if a command exists on the system."""
@@ -218,14 +219,68 @@ class PlatformDetector:
         """Install uv package manager for the current platform."""
         try:
             if self.is_windows():
-                # Use PowerShell on Windows
-                cmd = 'powershell -Command "irm https://astral.sh/uv/install.ps1 | iex"'
-            else:
-                # Use curl on Unix-like systems
-                cmd = "curl -LsSf https://astral.sh/uv/install.sh | sh"
+                # Use PowerShell on Windows - download and execute separately for security
+                import os
+                import tempfile
 
-            result = self.run_command(cmd, capture_output=True, text=True)
-            return result.returncode == 0
+                # Download script to temporary file first, then execute
+                with tempfile.NamedTemporaryFile(mode="w", suffix=".ps1", delete=False) as f:
+                    # Download the install script
+                    download_result = self.run_command(
+                        ["powershell", "-Command", "Invoke-RestMethod https://astral.sh/uv/install.ps1"],
+                        capture_output=True,
+                        text=True,
+                    )
+                    if download_result.returncode != 0:
+                        return False
+
+                    f.write(download_result.stdout)
+                    temp_script = f.name
+
+                try:
+                    # Execute the downloaded script
+                    result = self.run_command(
+                        ["powershell", "-ExecutionPolicy", "Bypass", "-File", temp_script],
+                        capture_output=True,
+                        text=True,
+                    )
+                    return result.returncode == 0
+                finally:
+                    # Clean up temporary script
+                    try:
+                        os.unlink(temp_script)
+                    except OSError:
+                        pass
+            else:
+                # Use curl and sh on Unix-like systems with secure argument list
+                import os
+                import tempfile
+
+                # Download script to temporary file first, then execute
+                with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as f:
+                    # Download the install script
+                    download_result = self.run_command(
+                        ["curl", "-LsSf", "https://astral.sh/uv/install.sh"], capture_output=True, text=True
+                    )
+                    if download_result.returncode != 0:
+                        return False
+
+                    f.write(download_result.stdout)
+                    temp_script = f.name
+
+                try:
+                    # Make script executable and run it
+                    os.chmod(temp_script, 0o755)
+                    result = self.run_command(["sh", temp_script], capture_output=True, text=True)
+                    return result.returncode == 0
+                finally:
+                    # Clean up temporary script
+                    try:
+                        os.unlink(temp_script)
+                    except OSError:
+                        pass
+
+                return False
         except Exception:
             return False
 
@@ -292,7 +347,7 @@ def is_unix_like() -> bool:
     return platform_detector.is_unix_like()
 
 
-def run_platform_command(cmd: str, **kwargs) -> subprocess.CompletedProcess:
+def run_platform_command(cmd: str | list[str], **kwargs) -> subprocess.CompletedProcess:
     """Run a command with platform-appropriate settings."""
     return platform_detector.run_command(cmd, **kwargs)
 
