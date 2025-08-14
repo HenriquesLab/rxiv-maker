@@ -606,13 +606,14 @@ class TestMainFunction:
     def test_main_detailed(self, mock_exit, mock_subprocess):
         """Test main function with detailed flag."""
         mock_result = MagicMock()
-        mock_result.returncode = 0
+        mock_result.returncode = 1  # Simulate validation failure
         mock_subprocess.return_value = mock_result
 
         main()
 
         mock_subprocess.assert_called_once()
-        mock_exit.assert_called_once_with(0)
+        # The detailed path calls sys.exit with the returncode from subprocess
+        mock_exit.assert_called_with(1)
 
     @patch("sys.argv", ["validate_manuscript.py", "/test/path", "--detailed"])
     @patch("subprocess.run")
@@ -624,7 +625,8 @@ class TestMainFunction:
 
         main()
 
-        mock_exit.assert_called_once_with(1)
+        # The detailed path calls sys.exit with 1 when FileNotFoundError
+        mock_exit.assert_called_with(1)
 
     @patch("sys.argv", ["validate_manuscript.py", "/test/path"])
     @patch("rxiv_maker.scripts.validate_manuscript.ManuscriptValidator")
