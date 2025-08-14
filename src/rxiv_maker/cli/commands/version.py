@@ -100,17 +100,18 @@ def version(ctx: click.Context, detailed: bool, check_updates: bool) -> None:
         try:
             import click
 
-            table.add_row("Click", click.__version__, "✅ Available")
+            table.add_row("Click", str(click.__version__), "✅ Available")
         except ImportError:
             table.add_row("Click", "Not found", "❌ Missing")
 
         try:
-            # Rich doesn't have __version__, try getting it from __init__
+            # Rich doesn't have __version__, try getting it from metadata
             try:
-                from rich import __version__ as rich_version
+                import importlib.metadata
 
+                rich_version = importlib.metadata.version("rich")
                 table.add_row("Rich", rich_version, "✅ Available")
-            except ImportError:
+            except (ImportError, importlib.metadata.PackageNotFoundError):
                 table.add_row("Rich", "Available", "✅ Available")
         except ImportError:
             table.add_row("Rich", "Not found", "❌ Missing")
@@ -159,10 +160,11 @@ def version(ctx: click.Context, detailed: bool, check_updates: bool) -> None:
                     print("Click: Not found (Missing)")
 
                 try:
-                    from rich import __version__ as rich_version
+                    import importlib.metadata
 
+                    rich_version = importlib.metadata.version("rich")
                     print(f"Rich: {rich_version} (Available)")
-                except ImportError:
+                except (ImportError, importlib.metadata.PackageNotFoundError):
                     print("Rich: Available (Available)")
 
                 try:

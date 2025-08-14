@@ -19,10 +19,13 @@ logger = get_logger()
 def get_figure_generator():
     """Get FigureGenerator class with lazy import."""
     try:
-        from .generate_figures import FigureGenerator
+        from .generate_figures import FigureGenerator  # type: ignore[misc]
+
+        return FigureGenerator
     except ImportError:
-        from generate_figures import FigureGenerator
-    return FigureGenerator
+        from generate_figures import FigureGenerator  # type: ignore[no-redef]
+
+        return FigureGenerator
 
 
 class BuildManager:
@@ -51,7 +54,10 @@ class BuildManager:
             track_changes_tag: Git tag to track changes against
             engine: Execution engine ("local" or "docker")
         """
-        self.manuscript_path: str = manuscript_path or os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
+        manuscript_path_resolved = manuscript_path or os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
+        if manuscript_path_resolved is None:
+            manuscript_path_resolved = "MANUSCRIPT"
+        self.manuscript_path: str = manuscript_path_resolved
         # Make output_dir absolute relative to manuscript directory
         self.manuscript_dir_path = Path(self.manuscript_path)
         if Path(output_dir).is_absolute():
@@ -233,13 +239,15 @@ class BuildManager:
 
             # Convert to absolute path, then make relative to workspace directory
             manuscript_abs = manuscript_path.resolve()
+            if self.container_engine is None:
+                raise RuntimeError("Container engine not initialized")
             workspace_dir = self.container_engine.workspace_dir
 
             try:
                 manuscript_rel = manuscript_abs.relative_to(workspace_dir)
             except ValueError:
                 # If manuscript is not within workspace, use just the name
-                manuscript_rel = manuscript_path.name
+                manuscript_rel = Path(manuscript_path.name)
 
             # Build validation command for container using installed CLI
             validation_cmd = ["rxiv", "validate", str(manuscript_rel), "--detailed"]
@@ -247,6 +255,8 @@ class BuildManager:
             if self.verbose:
                 validation_cmd.append("--verbose")
 
+            if self.container_engine is None:
+                raise RuntimeError("Container engine not initialized")
             result = self.container_engine.run_command(command=validation_cmd, session_key="validation")
 
             if result.returncode == 0:
@@ -323,10 +333,10 @@ class BuildManager:
 
         try:
             # Get FigureGenerator class
-            FigureGenerator = get_figure_generator()
+            FigureGeneratorClass = get_figure_generator()
 
             # Generate Mermaid and Python figures
-            figure_gen = FigureGenerator(
+            figure_gen = FigureGeneratorClass(
                 figures_dir=str(self.figures_dir),
                 output_dir=str(self.figures_dir),
                 output_format="pdf",
@@ -335,7 +345,7 @@ class BuildManager:
             figure_gen.generate_all_figures()
 
             # Generate R figures if any
-            r_figure_gen = FigureGenerator(
+            r_figure_gen = FigureGeneratorClass(
                 figures_dir=str(self.figures_dir),
                 output_dir=str(self.figures_dir),
                 output_format="pdf",
@@ -597,6 +607,8 @@ class BuildManager:
             tex_file = self.output_dir / f"{self.manuscript_name}.tex"
 
             # Run LaTeX compilation with multiple passes
+            if self.container_engine is None:
+                raise RuntimeError("Container engine not initialized")
             results = self.container_engine.run_latex_compilation(
                 tex_file=tex_file, working_dir=self.output_dir, passes=3
             )
@@ -818,6 +830,8 @@ class BuildManager:
         """Run PDF validation using container engine."""
         try:
             # Convert paths to be relative to container workspace
+            if self.container_engine is None:
+                raise RuntimeError("Container engine not initialized")
             workspace_dir = self.container_engine.workspace_dir
 
             # Handle manuscript path
@@ -826,7 +840,7 @@ class BuildManager:
             try:
                 manuscript_rel = manuscript_abs.relative_to(workspace_dir)
             except ValueError:
-                manuscript_rel = manuscript_path.name
+                manuscript_rel = Path(manuscript_path.name)
 
             # Handle PDF path
             pdf_abs = self.output_pdf.resolve()
@@ -845,6 +859,8 @@ class BuildManager:
                 f"/workspace/{pdf_rel}",
             ]
 
+            if self.container_engine is None:
+                raise RuntimeError("Container engine not initialized")
             result = self.container_engine.run_command(command=pdf_validation_cmd, session_key="pdf_validation")
 
             if result.returncode == 0:

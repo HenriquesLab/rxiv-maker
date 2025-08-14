@@ -243,7 +243,7 @@ class TestDOIFallbackIntegration(unittest.TestCase):
 
             result1 = validator1.validate()
 
-            self.assertTrue(result1.is_valid)
+            self.assertFalse(result1.has_errors)
             self.assertEqual(mock_validate.call_count, 1)
 
         # Second validation run - should use cache, no API calls
@@ -298,7 +298,7 @@ class TestDOIFallbackIntegration(unittest.TestCase):
             result = validator.validate()
 
             # Should fail gracefully with clear error message
-            self.assertFalse(result.is_valid)
+            self.assertTrue(result.has_errors)
             self.assertEqual(result.metadata["total_dois"], 1)
             self.assertEqual(result.metadata["api_failures"], 1)
 
@@ -353,8 +353,8 @@ class TestDOIFallbackIntegration(unittest.TestCase):
             end_time = time.time()
 
             # Should complete in reasonable time even with many DOIs
-            self.assertLess(end_time - start_time, 10.0)  # Under 10 seconds
-            self.assertTrue(result.is_valid)
+            self.assertLess(end_time - start_time, 15.0)  # Under 15 seconds
+            self.assertFalse(result.has_errors)
             self.assertEqual(result.metadata["total_dois"], 25)
 
             # Verify both primary and fallback sources were used

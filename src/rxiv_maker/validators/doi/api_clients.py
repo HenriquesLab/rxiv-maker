@@ -12,8 +12,8 @@ try:
     from ...utils.retry import RetryableSession, RetryStrategy
 except ImportError:
     # Fallback when retry module isn't available
-    RetryableSession = None
-    RetryStrategy = None
+    RetryableSession = None  # type: ignore
+    RetryStrategy = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class BaseDOIClient(ABC):
         self.max_retries = max_retries
 
         # Use enhanced RetryableSession if available, fallback to basic session
-        if RetryableSession:
+        if RetryableSession is not None:
             self.session = RetryableSession(
                 max_attempts=max_retries,
                 strategy=RetryStrategy.EXPONENTIAL_BACKOFF,

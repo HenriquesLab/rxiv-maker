@@ -71,7 +71,7 @@ def analyze_section_word_counts(content_sections):
             if max_warning and word_count > max_warning:
                 status = "⚠️"
                 warning = f" (exceeds typical {max_warning} word limit)"
-            elif ideal and word_count > ideal * 1.5:
+            elif ideal is not None and isinstance(ideal, (int, float)) and word_count > (ideal * 1.5):
                 status = "⚠️"
                 warning = f" (consider typical ~{ideal} words)"
 

@@ -240,7 +240,9 @@ class InstallManager:
         try:
             import ctypes
 
-            return ctypes.windll.shell32.IsUserAnAdmin()
+            if hasattr(ctypes, "windll"):
+                return ctypes.windll.shell32.IsUserAnAdmin()  # type: ignore[attr-defined]
+            return False
         except (ImportError, OSError, Exception):
             return False
 

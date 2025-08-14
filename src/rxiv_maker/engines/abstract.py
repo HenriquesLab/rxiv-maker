@@ -306,7 +306,6 @@ class AbstractContainerEngine(ABC):
                 self.engine_name, target_image, f"Pull command failed with exit code {e.returncode}"
             ) from e
 
-    @abstractmethod
     def run_command(
         self,
         command: str | List[str],
@@ -335,9 +334,97 @@ class AbstractContainerEngine(ABC):
         Returns:
             CompletedProcess result
         """
-        pass
+        import logging
 
-    @abstractmethod
+        logger = logging.getLogger(__name__)
+
+        target_image = image or self.default_image
+
+        # Try to use existing session if session_key provided
+        session = None
+        if session_key:
+            session = self._get_or_create_session(session_key, target_image)
+
+        if session and session.is_active():
+            # Execute in existing container
+            exec_cmd = self._build_exec_command(command, working_dir, session.container_id)
+        else:
+            # Create new container for this command
+            exec_cmd = self._build_container_command(
+                command=command,
+                image=target_image,
+                working_dir=working_dir,
+                volumes=volumes,
+                environment=environment,
+            )
+
+        # Execute the command with enhanced error handling
+        try:
+            result = subprocess.run(
+                exec_cmd,
+                capture_output=capture_output,
+                text=True,
+                timeout=timeout,
+                **kwargs,
+            )
+
+            # If we used a session and the command failed, check if the session is still active
+            if session and result.returncode != 0:
+                if not session.is_active():
+                    logger.debug(
+                        f"{self.engine_name.title()} session {session.container_id[:12]} died during command execution"
+                    )
+                    # Remove the dead session from our tracking
+                    if session_key in self._active_sessions:
+                        del self._active_sessions[session_key]
+
+            return result
+
+        except subprocess.TimeoutExpired as e:
+            # If using a session, check if it's still alive after timeout
+            if session:
+                if not session.is_active():
+                    logger.debug(f"{self.engine_name.title()} session {session.container_id[:12]} died during timeout")
+                    if session_key in self._active_sessions:
+                        del self._active_sessions[session_key]
+            raise e
+        except Exception as e:
+            # Log unexpected errors for debugging
+            cmd_preview = " ".join(exec_cmd[:5]) + ("..." if len(exec_cmd) > 5 else "")
+            logger.debug(f"Unexpected error executing {self.engine_name} command '{cmd_preview}': {e}")
+            raise e
+
+    def _build_exec_command(self, command: str | List[str], working_dir: str, container_id: str) -> List[str]:
+        """Build an exec command for running in an existing container.
+
+        Args:
+            command: Command to execute (string or list)
+            working_dir: Working directory inside container
+            container_id: Container ID to execute in
+
+        Returns:
+            List of command arguments for container exec
+        """
+        if isinstance(command, str):
+            return [
+                self.engine_name,
+                "exec",
+                "-w",
+                working_dir,
+                container_id,
+                "sh",
+                "-c",
+                command,
+            ]
+        else:
+            return [
+                self.engine_name,
+                "exec",
+                "-w",
+                working_dir,
+                container_id,
+            ] + command
+
     def _build_container_command(
         self,
         command: str | List[str],
@@ -351,6 +438,132 @@ class AbstractContainerEngine(ABC):
         detach: bool = False,
     ) -> List[str]:
         """Build a container run command with optimal settings."""
+        container_cmd = [self.engine_name, "run"]
+
+        # Container options
+        if remove and not detach:
+            container_cmd.append("--rm")
+
+        if detach:
+            container_cmd.append("-d")
+
+        if interactive:
+            container_cmd.extend(["-i", "-t"])
+
+        # Platform specification
+        container_cmd.extend(["--platform", self._platform])
+
+        # Resource limits
+        container_cmd.extend(["--memory", self.memory_limit])
+        container_cmd.extend(["--cpus", self.cpu_limit])
+
+        # Volume mounts
+        all_volumes = self._base_volumes.copy()
+        if volumes:
+            all_volumes.extend(volumes)
+
+        for volume in all_volumes:
+            container_cmd.extend(["-v", volume])
+
+        # Working directory
+        container_cmd.extend(["-w", working_dir])
+
+        # Environment variables
+        all_env = self._base_env.copy()
+        if environment:
+            all_env.update(environment)
+
+        for key, value in all_env.items():
+            container_cmd.extend(["-e", f"{key}={value}"])
+
+        # User specification
+        if user:
+            container_cmd.extend(["--user", user])
+
+        # Image
+        container_cmd.append(image or self.default_image)
+
+        # Command
+        if isinstance(command, str):
+            container_cmd.extend(["sh", "-c", command])
+        else:
+            container_cmd.extend(command)
+
+        return container_cmd
+
+    def _get_or_create_session(self, session_key: str, image: str) -> Optional[ContainerSession]:
+        """Get an existing session or create a new one if session reuse is enabled."""
+        if not self.enable_session_reuse:
+            return None
+
+        # Clean up expired sessions
+        self._cleanup_expired_sessions()
+
+        # Check if we have an active session
+        if session_key in self._active_sessions:
+            session = self._active_sessions[session_key]
+            if session.is_active():
+                return session
+            else:
+                # Session is dead, remove it
+                del self._active_sessions[session_key]
+
+        # Create new session
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        try:
+            container_cmd = self._build_container_command(
+                command=["sleep", "infinity"],  # Keep container alive
+                image=image,
+                detach=True,
+                remove=False,
+            )
+
+            result = subprocess.run(container_cmd, capture_output=True, text=True, timeout=30)
+
+            if result.returncode == 0:
+                container_id = result.stdout.strip()
+                session = self._create_session_instance(container_id, image, self.workspace_dir)
+
+                # Initialize container with health checks
+                if self._initialize_container(session):
+                    self._active_sessions[session_key] = session
+                    logger.debug(f"Created new {self.engine_name} session: {container_id[:12]}")
+                    return session
+                else:
+                    # Cleanup failed session
+                    logger.debug(f"Failed to initialize {self.engine_name} session {container_id[:12]}, cleaning up")
+                    session.cleanup()
+            else:
+                # Log session creation failure details
+                error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+                logger.debug(f"Failed to create {self.engine_name} session for {session_key}: {error_msg}")
+
+        except subprocess.TimeoutExpired:
+            logger.debug(f"Timeout creating {self.engine_name} session for {session_key}")
+        except subprocess.CalledProcessError as e:
+            logger.debug(
+                f"Command failed creating {self.engine_name} session for {session_key}: exit code {e.returncode}"
+            )
+        except Exception as e:
+            logger.debug(f"Unexpected error creating {self.engine_name} session for {session_key}: {e}")
+
+        return None
+
+    @abstractmethod
+    def _create_session_instance(self, container_id: str, image: str, workspace_dir: Path) -> ContainerSession:
+        """Create an engine-specific session instance.
+
+        Args:
+            container_id: Container ID
+            image: Container image name
+            workspace_dir: Workspace directory path
+
+        Returns:
+            Engine-specific ContainerSession instance
+        """
         pass
 
     def _detect_platform(self) -> str:

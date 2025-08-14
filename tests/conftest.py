@@ -423,6 +423,33 @@ Test results here.
     }
 
 
+@pytest.fixture(scope="session")
+def lightweight_manuscript_template():
+    """Ultra-lightweight manuscript for fast unit tests."""
+    return {
+        "config": "title: Fast Test\nauthors: [{name: Test, email: test@test.com}]",
+        "content": "# Test\nSimple content.",
+        "bibliography": "@article{test2023, title={Test}, year={2023}}",
+    }
+
+
+@pytest.fixture
+def fast_manuscript(lightweight_manuscript_template, temp_dir):
+    """Create minimal manuscript in <100ms."""
+    manuscript_dir = temp_dir / "fast_manuscript"
+    manuscript_dir.mkdir()
+
+    # Create files with minimal content
+    (manuscript_dir / "00_CONFIG.yml").write_text(lightweight_manuscript_template["config"])
+    (manuscript_dir / "01_MAIN.md").write_text(lightweight_manuscript_template["content"])
+    (manuscript_dir / "03_REFERENCES.bib").write_text(lightweight_manuscript_template["bibliography"])
+
+    # Create minimal figures directory
+    (manuscript_dir / "FIGURES").mkdir()
+
+    return manuscript_dir
+
+
 @pytest.fixture
 def minimal_manuscript(minimal_manuscript_template, temp_dir):
     """Create minimal manuscript in temp directory for fast tests."""
@@ -489,6 +516,9 @@ pytest.mark.integration = pytest.mark.integration  # Already defined by auto-mar
 pytest.mark.system = pytest.mark.system
 pytest.mark.fast = pytest.mark.fast
 pytest.mark.slow = pytest.mark.slow
+pytest.mark.performance = pytest.mark.performance
+pytest.mark.memory_test = pytest.mark.memory_test
+pytest.mark.smoke = pytest.mark.smoke
 
 
 # --- Class-Scoped Fixtures for Performance ---
@@ -656,3 +686,21 @@ def class_execution_engine(request):
         if container_id:
             print(f"\n🧹 Cleaning up container: {container_id[:12]}")
             subprocess.run([engine_name, "rm", "-f", container_id], check=False)
+
+
+@pytest.fixture(autouse=True)
+def test_isolation():
+    """Ensure test isolation by cleaning up state."""
+    # Pre-test setup
+    yield
+    # Post-test cleanup
+    import gc
+    import os
+
+    # Clear any lingering environment variables
+    test_env_vars = [var for var in os.environ if var.startswith("RXIV_TEST_")]
+    for var in test_env_vars:
+        os.environ.pop(var, None)
+
+    # Force garbage collection
+    gc.collect()

@@ -498,7 +498,7 @@ def parse_supplementary_sections(content):
     # Split content by lines
     lines = content.split("\n")
     current_section = None
-    section_content = []
+    section_content: list[str] = []
 
     for line in lines:
         stripped = line.strip()

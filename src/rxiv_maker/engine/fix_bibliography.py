@@ -12,7 +12,7 @@ import sys
 import time
 from difflib import SequenceMatcher
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict
 
 import requests
 
@@ -286,9 +286,9 @@ class BibliographyFixer:
             # Use the work retrieval API with query parameters
 
             base_url = "https://api.crossref.org/works"
-            params = {
+            params: Dict[str, str] = {
                 "query": query,
-                "rows": 20,  # Increased to find more candidates
+                "rows": "20",  # Increased to find more candidates
                 "sort": "relevance",
                 "order": "desc",
             }

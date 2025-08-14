@@ -21,11 +21,24 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
 
-# Import new validators
+# Import new validators with proper fallback handling
+if TYPE_CHECKING:
+    from ..validators import (
+        CitationValidator,
+        FigureValidator,
+        LaTeXErrorParser,
+        MathValidator,
+        ReferenceValidator,
+        SyntaxValidator,
+        ValidationLevel,
+    )
+
+ENHANCED_VALIDATION_AVAILABLE = False
+
 try:
     from ..validators import (
         CitationValidator,
@@ -41,19 +54,19 @@ try:
 except ImportError:
     try:
         # Try absolute import when run as script
-        from rxiv_maker.validators import (
-            CitationValidator,
-            FigureValidator,
-            LaTeXErrorParser,
-            MathValidator,
-            ReferenceValidator,
-            SyntaxValidator,
-            ValidationLevel,
+        from rxiv_maker.validators import (  # type: ignore[no-redef]
+            CitationValidator,  # type: ignore[no-redef]
+            FigureValidator,  # type: ignore[no-redef]
+            LaTeXErrorParser,  # type: ignore[no-redef]
+            MathValidator,  # type: ignore[no-redef]
+            ReferenceValidator,  # type: ignore[no-redef]
+            SyntaxValidator,  # type: ignore[no-redef]
+            ValidationLevel,  # type: ignore[no-redef]
         )
 
         ENHANCED_VALIDATION_AVAILABLE = True
     except ImportError:
-        ENHANCED_VALIDATION_AVAILABLE = False
+        pass
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")

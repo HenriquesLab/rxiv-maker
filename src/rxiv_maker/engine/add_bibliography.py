@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import requests
+from requests import Response
 
 # Add the parent directory to the path to allow imports when run as a script
 if __name__ == "__main__":
@@ -20,7 +21,10 @@ try:
     from ..utils.retry import get_with_retry
 except ImportError:
     # Fallback when retry module isn't available
-    get_with_retry = None
+    def get_with_retry(url: str, max_attempts: int = 3, timeout: int = 30, **kwargs) -> Response:
+        """Fallback implementation when retry module unavailable."""
+        return requests.get(url, timeout=timeout, **kwargs)
+
 
 from rxiv_maker.utils.doi_cache import DOICache
 
@@ -253,10 +257,7 @@ class BibliographyAdder:
         headers = {"Accept": "application/json"}
 
         # Use retry logic for network requests
-        if get_with_retry:
-            response = get_with_retry(url, headers=headers, max_attempts=3, timeout=10)
-        else:
-            response = requests.get(url, headers=headers, timeout=10)
+        response = get_with_retry(url, headers=headers, max_attempts=3, timeout=10)
 
         if response.status_code == 200:
             data = response.json()

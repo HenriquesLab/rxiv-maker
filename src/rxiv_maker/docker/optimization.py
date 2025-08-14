@@ -316,7 +316,7 @@ class DockerBuildOptimizer:
 
         content = dockerfile_path.read_text()
         stages: List[Dict[str, Any]] = []
-        current_stage = None
+        current_stage: Optional[Dict[str, Any]] = None
 
         for line_num, line in enumerate(content.splitlines(), 1):
             line = line.strip()

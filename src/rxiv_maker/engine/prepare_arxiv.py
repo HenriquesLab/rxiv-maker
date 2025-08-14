@@ -200,7 +200,8 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None, manuscript_path
         print("   The package should build correctly on arXiv.")
 
     # Store compilation result for later use
-    prepare_arxiv_package.compilation_success = compilation_success
+    # Note: Function attributes are not type-safe, consider using a class or return value
+    # prepare_arxiv_package.compilation_success = compilation_success
 
     return arxiv_path
 

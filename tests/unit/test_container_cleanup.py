@@ -378,8 +378,8 @@ class TestContainerSessionLifecycle(unittest.TestCase):
 
             # Verify Docker stop and rm commands were called
             expected_calls = [
-                call(["docker", "stop", "test_container_id"], capture_output=True, timeout=10),
-                call(["docker", "rm", "test_container_id"], capture_output=True, timeout=10),
+                call(["docker", "stop", "test_container_id"], capture_output=True, text=True, timeout=10),
+                call(["docker", "rm", "test_container_id"], capture_output=True, text=True, timeout=10),
             ]
             mock_run.assert_has_calls(expected_calls, any_order=False)
 
@@ -408,8 +408,8 @@ class TestContainerSessionLifecycle(unittest.TestCase):
 
             # Verify Podman stop and rm commands were called
             expected_calls = [
-                call(["podman", "stop", "test_container_id"], capture_output=True, timeout=10),
-                call(["podman", "rm", "test_container_id"], capture_output=True, timeout=10),
+                call(["podman", "stop", "test_container_id"], capture_output=True, text=True, timeout=10),
+                call(["podman", "rm", "test_container_id"], capture_output=True, text=True, timeout=10),
             ]
             mock_run.assert_has_calls(expected_calls, any_order=False)
 

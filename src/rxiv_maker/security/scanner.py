@@ -344,7 +344,7 @@ class SecurityScanner:
         Returns:
             Dictionary with validation results
         """
-        validation = {"url": url, "is_safe": True, "issues": [], "recommendations": []}
+        validation: Dict[str, Any] = {"url": url, "is_safe": True, "issues": [], "recommendations": []}
 
         try:
             parsed = urlparse(url)

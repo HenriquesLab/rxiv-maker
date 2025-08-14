@@ -20,7 +20,7 @@ try:
     from ..utils.retry import get_with_retry
 except ImportError:
     # Fallback when retry module isn't available
-    get_with_retry = None
+    get_with_retry = None  # type: ignore
 
 from ..utils.advanced_cache import AdvancedCache
 
@@ -162,7 +162,7 @@ class DependencyManager:
         Returns:
             Impact assessment results
         """
-        impact_assessment = {
+        impact_assessment: Dict[str, Any] = {
             "package": package_name,
             "target_version": target_version,
             "breaking_changes": [],
@@ -410,7 +410,7 @@ class DependencyManager:
             url = f"{self.pypi_api_base}/{normalized_name}/json"
 
             # Use retry logic for network requests
-            if get_with_retry:
+            if get_with_retry is not None:
                 response = get_with_retry(url, max_attempts=3, timeout=10)
             else:
                 response = requests.get(url, timeout=10)
@@ -440,7 +440,7 @@ class DependencyManager:
             url = f"{self.pypi_api_base}/{normalized_name}/{version}/json"
 
             # Use retry logic for network requests
-            if get_with_retry:
+            if get_with_retry is not None:
                 response = get_with_retry(url, max_attempts=3, timeout=10)
             else:
                 response = requests.get(url, timeout=10)
@@ -580,7 +580,7 @@ class DependencyManager:
 
     def _check_dependency_conflicts(self, package_name: str, target_version: str) -> List[str]:
         """Check for potential dependency conflicts."""
-        conflicts = []
+        conflicts: List[str] = []
 
         try:
             # Get dependencies of target version
