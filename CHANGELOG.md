@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.5.2] - 2025-08-14
+
+### Fixed
+- **🐛 Path Resolution Issues**: Comprehensive fix for path handling throughout PDF generation workflow
+  - **Figure Path Display**: Fixed duplicate path components in figure generation output (e.g., `Figure__example/Figure__example/Figure__example.png` → `Figure__example/Figure__example.png`)
+  - **Manuscript File Lookup**: Updated all functions to use correct manuscript paths instead of current working directory
+  - **PDF Generation Pipeline**: Enhanced `find_manuscript_md()`, `generate_preprint()`, and `copy_pdf_to_manuscript_folder()` with proper path parameter support
+  - **Cross-Directory Compatibility**: PDF generation now works correctly from any directory location
+  - **Google Colab Compatibility**: Resolved CLI parsing issues in containerized environments
+  - **Backwards Compatibility**: All existing functionality preserved while fixing path resolution bugs
+- **GitHub Issues**: Resolves #96 (CLI path issues) and #97 (Google Colab argument parsing)
+
 ## [v1.5.1] - 2025-08-14
 
 ### Fixed
