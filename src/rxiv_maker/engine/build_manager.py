@@ -576,8 +576,8 @@ class BuildManager:
             os.chdir(Path(self.manuscript_path).parent)
 
             try:
-                # Generate the preprint
-                result = generate_preprint(str(self.output_dir), yaml_metadata)
+                # Generate the preprint with explicit manuscript path
+                result = generate_preprint(str(self.output_dir), yaml_metadata, self.manuscript_path)
 
                 if result:
                     self.log("LaTeX files generated successfully")
@@ -752,14 +752,14 @@ class BuildManager:
             from ..processors.yaml_processor import extract_yaml_metadata
             from ..utils import copy_pdf_to_manuscript_folder, find_manuscript_md
 
-            # Find and parse the manuscript markdown
-            manuscript_md = find_manuscript_md()
+            # Find and parse the manuscript markdown using the known manuscript path
+            manuscript_md = find_manuscript_md(self.manuscript_path)
             self.log(f"Reading metadata from: {manuscript_md}")
 
             yaml_metadata = extract_yaml_metadata(manuscript_md)
 
-            # Copy PDF with custom filename using full output_dir path
-            result = copy_pdf_to_manuscript_folder(str(self.output_dir), yaml_metadata)
+            # Copy PDF with custom filename using full output_dir path and manuscript path
+            result = copy_pdf_to_manuscript_folder(str(self.output_dir), yaml_metadata, self.manuscript_path)
 
             if result:
                 self.log("PDF copied to manuscript directory")
@@ -781,8 +781,8 @@ class BuildManager:
             from ..converters.md2tex import extract_content_sections
             from ..utils import find_manuscript_md
 
-            # Find the manuscript markdown file
-            manuscript_md = find_manuscript_md()
+            # Find the manuscript markdown file using the known manuscript path
+            manuscript_md = find_manuscript_md(self.manuscript_path)
             if not manuscript_md:
                 self.log("Could not find manuscript markdown file for word count analysis", "WARNING")
                 return False

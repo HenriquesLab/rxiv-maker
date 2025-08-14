@@ -49,19 +49,28 @@ def get_custom_pdf_filename(yaml_metadata: dict[str, Any]) -> str:
     return filename
 
 
-def copy_pdf_to_manuscript_folder(output_dir: str, yaml_metadata: dict[str, Any]) -> Path | None:
+def copy_pdf_to_manuscript_folder(
+    output_dir: str, yaml_metadata: dict[str, Any], manuscript_dir: str | None = None
+) -> Path | None:
     """Copy the generated PDF to the manuscript folder with proper naming.
 
     Args:
         output_dir: Directory containing the generated PDF.
         yaml_metadata: Metadata dictionary from YAML config.
+        manuscript_dir: Optional path to the manuscript directory. If not provided,
+                       uses MANUSCRIPT_PATH environment variable.
 
     Returns:
         Path to the copied PDF file, or None if copy failed.
     """
-    # Get manuscript path from environment variable to determine the output PDF name
-    manuscript_path = os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
-    manuscript_name = os.path.basename(manuscript_path)
+    # Determine manuscript directory and name
+    if manuscript_dir:
+        manuscript_path = manuscript_dir
+        manuscript_name = os.path.basename(manuscript_path)
+    else:
+        # Fallback to environment variable for backward compatibility
+        manuscript_path = os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
+        manuscript_name = os.path.basename(manuscript_path)
 
     output_pdf = Path(output_dir) / f"{manuscript_name}.pdf"
     if not output_pdf.exists():

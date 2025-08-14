@@ -17,8 +17,12 @@ def create_output_dir(output_dir: str) -> None:
         print(f"Output directory already exists: {output_dir}")
 
 
-def find_manuscript_md() -> Path:
+def find_manuscript_md(manuscript_path: str | None = None) -> Path:
     """Find the main manuscript markdown file.
+
+    Args:
+        manuscript_path: Optional path to the manuscript directory. If not provided,
+                        uses current directory or MANUSCRIPT_PATH environment variable.
 
     Returns:
         Path to the main manuscript file (01_MAIN.md).
@@ -26,6 +30,19 @@ def find_manuscript_md() -> Path:
     Raises:
         FileNotFoundError: If the manuscript file cannot be found.
     """
+    if manuscript_path:
+        # If manuscript_path is provided, look directly in that directory
+        manuscript_dir = Path(manuscript_path)
+        manuscript_md = manuscript_dir / "01_MAIN.md"
+        if manuscript_md.exists():
+            return manuscript_md
+
+        raise FileNotFoundError(
+            f"Main manuscript file 01_MAIN.md not found in {manuscript_dir}/. "
+            f"Make sure you specify the correct manuscript directory."
+        )
+
+    # Original logic for backward compatibility
     current_dir = Path.cwd()
 
     # First try the current directory (for when we're already in the manuscript dir)
@@ -34,14 +51,14 @@ def find_manuscript_md() -> Path:
         return manuscript_md
 
     # Then try the MANUSCRIPT_PATH subdirectory (for backward compatibility)
-    manuscript_path = os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
-    manuscript_md = current_dir / manuscript_path / "01_MAIN.md"
+    env_manuscript_path = os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
+    manuscript_md = current_dir / env_manuscript_path / "01_MAIN.md"
     if manuscript_md.exists():
         return manuscript_md
 
     raise FileNotFoundError(
         f"Main manuscript file 01_MAIN.md not found in "
-        f"{current_dir}/ or {current_dir}/{manuscript_path}/. "
+        f"{current_dir}/ or {current_dir}/{env_manuscript_path}/. "
         f"Make sure you're in the manuscript directory or MANUSCRIPT_PATH environment variable points to the "
         f"correct directory."
     )

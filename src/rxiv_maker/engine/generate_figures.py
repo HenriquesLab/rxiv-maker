@@ -646,9 +646,21 @@ class FigureGenerator:
             if potential_files:
                 print("  ✅ Generated figures:")
                 for gen_file in sorted(potential_files):
-                    # Show relative path from figure_dir
-                    rel_path = gen_file.relative_to(figure_dir)
-                    print(f"     - {figure_dir.name}/{rel_path}")
+                    # Show relative path from the original figures directory
+                    # figure_dir might be a subdirectory, so we need to get the path from the root FIGURES dir
+                    try:
+                        # Try to get relative path from the parent figures directory
+                        figures_root = figure_dir.parent if figure_dir.parent.name == "FIGURES" else figure_dir
+                        while figures_root.name != "FIGURES" and figures_root.parent != figures_root:
+                            figures_root = figures_root.parent
+                        if figures_root.name == "FIGURES":
+                            rel_path = gen_file.relative_to(figures_root)
+                        else:
+                            rel_path = gen_file.relative_to(figure_dir)
+                        print(f"     - {rel_path}")
+                    except ValueError:
+                        # Fallback: just show the filename
+                        print(f"     - {gen_file.name}")
             else:
                 print(f"  ⚠️  No output files detected for {py_file.name}")
                 print(f"     Debug: Checked {len(current_files)} total files")
@@ -753,7 +765,21 @@ class FigureGenerator:
             if potential_files:
                 print("  ✅ Generated figures:")
                 for gen_file in sorted(potential_files):
-                    print(f"     - {figure_dir.name}/{gen_file.name}")
+                    # Show relative path from the original figures directory
+                    try:
+                        # Try to get relative path from the parent figures directory
+                        figures_root = figure_dir.parent if figure_dir.parent.name == "FIGURES" else figure_dir
+                        while figures_root.name != "FIGURES" and figures_root.parent != figures_root:
+                            figures_root = figures_root.parent
+
+                        if figures_root.name == "FIGURES":
+                            rel_path = gen_file.relative_to(figures_root)
+                        else:
+                            rel_path = gen_file.relative_to(figure_dir)
+                        print(f"     - {rel_path}")
+                    except ValueError:
+                        # Fallback: just show the filename
+                        print(f"     - {gen_file.name}")
             else:
                 print(f"  ⚠️  No output files detected for {r_file.name}")
                 return
