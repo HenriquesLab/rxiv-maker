@@ -102,6 +102,7 @@ class TestBinaryDistributionWorkflow:
             assert "update-manifest" in scoop_content
 
     @pytest.mark.slow
+    @pytest.mark.timeout(90)  # GitHub API requests may be slow
     def test_github_api_release_structure(self):
         """Test that GitHub releases have the expected structure."""
         # This test checks the GitHub API to verify release structure
@@ -332,6 +333,7 @@ class TestReleaseWorkflowIntegration:
         assert "secrets." in content
 
     @pytest.mark.slow
+    @pytest.mark.timeout(120)  # YAML validation may require file processing
     def test_workflow_yaml_validity(self):
         """Test that workflow YAML is valid."""
         workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"

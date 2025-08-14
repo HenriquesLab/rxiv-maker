@@ -2,14 +2,14 @@
 
 import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import click
 import yaml
 
 from ...config.manager import get_config_manager
 from ...config.validator import ConfigValidator
-from ...utils.platform import safe_console_print
+from ...utils.platform import safe_print
 
 
 @click.group(name="config")
@@ -27,7 +27,7 @@ def config_group():
 )
 @click.option("--force", is_flag=True, help="Overwrite existing configuration file")
 @click.option("--output", type=click.Path(path_type=Path), help="Output path for configuration file")
-def init(template: str, force: bool, output: Path = None):
+def init(template: str, force: bool, output: Optional[Path] = None):
     """Initialize configuration file from template."""
     try:
         config_manager = get_config_manager()
@@ -35,8 +35,8 @@ def init(template: str, force: bool, output: Path = None):
         if output:
             # Custom output path
             if output.exists() and not force:
-                safe_console_print(f"❌ Configuration file already exists: {output}")
-                safe_console_print("Use --force to overwrite")
+                safe_print(f"❌ Configuration file already exists: {output}")
+                safe_print("Use --force to overwrite")
                 raise click.ClickException("Configuration file already exists")
 
             # Get template config and write to custom path
@@ -50,18 +50,18 @@ def init(template: str, force: bool, output: Path = None):
             # Use default initialization
             config_path = config_manager.init_config(template, force)
 
-        safe_console_print(f"✅ Configuration file created: {config_path}")
-        safe_console_print(f"📝 Template used: {template}")
-        safe_console_print("\n💡 Next steps:")
-        safe_console_print(f"   1. Edit {config_path.name} with your manuscript details")
-        safe_console_print("   2. Run 'rxiv config validate' to check your configuration")
-        safe_console_print("   3. Use 'rxiv pdf' to generate your manuscript")
+        safe_print(f"✅ Configuration file created: {config_path}")
+        safe_print(f"📝 Template used: {template}")
+        safe_print("\n💡 Next steps:")
+        safe_print(f"   1. Edit {config_path.name} with your manuscript details")
+        safe_print("   2. Run 'rxiv config validate' to check your configuration")
+        safe_print("   3. Use 'rxiv pdf' to generate your manuscript")
 
     except ValueError as e:
-        safe_console_print(f"❌ {e}")
+        safe_print(f"❌ {e}")
         raise click.ClickException(str(e)) from e
     except Exception as e:
-        safe_console_print(f"❌ Failed to initialize configuration: {e}")
+        safe_print(f"❌ Failed to initialize configuration: {e}")
         raise click.ClickException(f"Configuration initialization failed: {e}") from e
 
 
@@ -80,21 +80,21 @@ def init(template: str, force: bool, output: Path = None):
     help="Output format for validation results",
 )
 @click.option("--strict", is_flag=True, help="Use strict validation mode")
-def validate(config_path: Path = None, output_format: str = "table", strict: bool = False):
+def validate(config_path: Optional[Path] = None, output_format: str = "table", strict: bool = False):
     """Validate configuration file."""
     try:
         config_manager = get_config_manager()
         validator = ConfigValidator()
 
-        safe_console_print("🔍 Validating configuration...")
-        safe_console_print("=" * 50)
+        safe_print("🔍 Validating configuration...")
+        safe_print("=" * 50)
 
         # Validate manuscript configuration
         if config_path:
-            safe_console_print(f"📄 Validating: {config_path}")
+            safe_print(f"📄 Validating: {config_path}")
             config_validation = config_manager.validate_config(config_path)
         else:
-            safe_console_print("📄 Searching for configuration file...")
+            safe_print("📄 Searching for configuration file...")
             config_validation = config_manager.validate_config()
 
         # Validate CLI arguments (simulate current command)
@@ -117,7 +117,7 @@ def validate(config_path: Path = None, output_format: str = "table", strict: boo
         }
 
         if output_format == "json":
-            safe_console_print(json.dumps(all_results, indent=2, default=str))
+            safe_print(json.dumps(all_results, indent=2, default=str))
         else:
             _print_validation_results(all_results, strict)
 
@@ -128,12 +128,12 @@ def validate(config_path: Path = None, output_format: str = "table", strict: boo
             if strict:
                 raise click.ClickException("Configuration validation failed (strict mode)")
             else:
-                safe_console_print("\n⚠️  Validation completed with issues (non-blocking)")
+                safe_print("\n⚠️  Validation completed with issues (non-blocking)")
         else:
-            safe_console_print("\n✅ All validations passed!")
+            safe_print("\n✅ All validations passed!")
 
     except Exception as e:
-        safe_console_print(f"❌ Validation failed: {e}")
+        safe_print(f"❌ Validation failed: {e}")
         raise click.ClickException(f"Configuration validation failed: {e}") from e
 
 
@@ -148,7 +148,7 @@ def validate(config_path: Path = None, output_format: str = "table", strict: boo
     default="string",
     help="Value type for setting values",
 )
-def get(key: str, value: str = None, config_path: Path = None, value_type: str = "string"):
+def get(key: str, value: Optional[str] = None, config_path: Optional[Path] = None, value_type: str = "string"):
     """Get or set configuration values."""
     try:
         config_manager = get_config_manager()
@@ -158,18 +158,19 @@ def get(key: str, value: str = None, config_path: Path = None, value_type: str =
             config_value = config_manager.get_config_value(key, config_path=config_path)
 
             if config_value is None:
-                safe_console_print(f"❌ Configuration key '{key}' not found")
+                safe_print(f"❌ Configuration key '{key}' not found")
                 return
 
-            safe_console_print(f"📝 {key}: {config_value}")
+            safe_print(f"📝 {key}: {config_value}")
 
             if isinstance(config_value, dict):
-                safe_console_print("\n🔍 Nested configuration:")
+                safe_print("\n🔍 Nested configuration:")
                 for nested_key, nested_value in config_value.items():
-                    safe_console_print(f"   {key}.{nested_key}: {nested_value}")
+                    safe_print(f"   {key}.{nested_key}: {nested_value}")
         else:
             # Set value
             # Convert value to appropriate type
+            converted_value: Any
             if value_type == "int":
                 converted_value = int(value)
             elif value_type == "float":
@@ -182,11 +183,11 @@ def get(key: str, value: str = None, config_path: Path = None, value_type: str =
                 converted_value = value
 
             updated_path = config_manager.set_config_value(key, converted_value, config_path)
-            safe_console_print(f"✅ Updated {key} = {converted_value}")
-            safe_console_print(f"📄 Configuration file: {updated_path}")
+            safe_print(f"✅ Updated {key} = {converted_value}")
+            safe_print(f"📄 Configuration file: {updated_path}")
 
     except Exception as e:
-        safe_console_print(f"❌ Configuration operation failed: {e}")
+        safe_print(f"❌ Configuration operation failed: {e}")
         raise click.ClickException(f"Configuration operation failed: {e}") from e
 
 
@@ -202,7 +203,7 @@ def get(key: str, value: str = None, config_path: Path = None, value_type: str =
     "--config", "config_path", type=click.Path(exists=True, path_type=Path), help="Path to specific configuration file"
 )
 @click.option("--include-defaults", is_flag=True, help="Include default values in output")
-def show(output_format: str = "table", config_path: Path = None, include_defaults: bool = False):
+def show(output_format: str = "table", config_path: Optional[Path] = None, include_defaults: bool = False):
     """Show current configuration."""
     try:
         config_manager = get_config_manager()
@@ -212,27 +213,27 @@ def show(output_format: str = "table", config_path: Path = None, include_default
         else:
             # Load only non-default configuration
             if config_path:
-                config = config_manager._load_config_file(config_path)
+                config = config_manager._load_config_file(config_path) or {}
             else:
                 existing_config = config_manager._find_existing_config()
                 if existing_config:
-                    config = config_manager._load_config_file(existing_config)
+                    config = config_manager._load_config_file(existing_config) or {}
                 else:
                     config = {}
 
         if not config:
-            safe_console_print("❌ No configuration found")
+            safe_print("❌ No configuration found")
             return
 
         if output_format == "json":
-            safe_console_print(json.dumps(config, indent=2, ensure_ascii=False))
+            safe_print(json.dumps(config, indent=2, ensure_ascii=False))
         elif output_format == "yaml":
             yaml.dump(config, click.get_text_stream("stdout"), default_flow_style=False)
         else:
             _print_config_table(config, include_defaults)
 
     except Exception as e:
-        safe_console_print(f"❌ Failed to show configuration: {e}")
+        safe_print(f"❌ Failed to show configuration: {e}")
         raise click.ClickException(f"Failed to show configuration: {e}") from e
 
 
@@ -243,23 +244,23 @@ def show(output_format: str = "table", config_path: Path = None, include_default
 @click.option(
     "--config", "config_path", type=click.Path(exists=True, path_type=Path), help="Path to configuration file to export"
 )
-def export(output: Path, export_format: str, include_defaults: bool, config_path: Path = None):
+def export(output: Path, export_format: str, include_defaults: bool, config_path: Optional[Path] = None):
     """Export configuration to file."""
     try:
         config_manager = get_config_manager()
 
         exported_path = config_manager.export_config(output, export_format, include_defaults)
 
-        safe_console_print(f"✅ Configuration exported to: {exported_path}")
-        safe_console_print(f"📊 Format: {export_format.upper()}")
+        safe_print(f"✅ Configuration exported to: {exported_path}")
+        safe_print(f"📊 Format: {export_format.upper()}")
 
         if include_defaults:
-            safe_console_print("📝 Includes default values")
+            safe_print("📝 Includes default values")
         else:
-            safe_console_print("📝 Custom values only")
+            safe_print("📝 Custom values only")
 
     except Exception as e:
-        safe_console_print(f"❌ Export failed: {e}")
+        safe_print(f"❌ Export failed: {e}")
         raise click.ClickException(f"Configuration export failed: {e}") from e
 
 
@@ -273,24 +274,24 @@ def export(output: Path, export_format: str, include_defaults: bool, config_path
     help="Path to configuration file to migrate",
 )
 @click.option("--backup/--no-backup", default=True, help="Create backup before migration")
-def migrate(from_version: str, to_version: str, config_path: Path = None, backup: bool = True):
+def migrate(from_version: str, to_version: str, config_path: Optional[Path] = None, backup: bool = True):
     """Migrate configuration from one version to another."""
     try:
         config_manager = get_config_manager()
 
-        safe_console_print(f"🔄 Migrating configuration: {from_version} → {to_version}")
+        safe_print(f"🔄 Migrating configuration: {from_version} → {to_version}")
 
         if backup:
-            safe_console_print("💾 Backup will be created automatically")
+            safe_print("💾 Backup will be created automatically")
 
         migrated_path = config_manager.migrate_config(from_version, to_version, config_path)
 
-        safe_console_print(f"✅ Configuration migrated: {migrated_path}")
-        safe_console_print("🔍 Please review the migrated configuration")
-        safe_console_print("💡 Run 'rxiv config validate' to verify the migration")
+        safe_print(f"✅ Configuration migrated: {migrated_path}")
+        safe_print("🔍 Please review the migrated configuration")
+        safe_print("💡 Run 'rxiv config validate' to verify the migration")
 
     except Exception as e:
-        safe_console_print(f"❌ Migration failed: {e}")
+        safe_print(f"❌ Migration failed: {e}")
         raise click.ClickException(f"Configuration migration failed: {e}") from e
 
 
@@ -300,8 +301,8 @@ def list_files():
     try:
         config_manager = get_config_manager()
 
-        safe_console_print("📁 Configuration Files")
-        safe_console_print("=" * 50)
+        safe_print("📁 Configuration Files")
+        safe_print("=" * 50)
 
         config_files = config_manager.list_config_files()
 
@@ -329,27 +330,27 @@ def list_files():
             else:
                 status = "❌ Not found"
 
-            safe_console_print(f"\n{i}. {Path(path).name}")
-            safe_console_print(f"   Path: {path}")
-            safe_console_print(f"   Status: {status}")
+            safe_print(f"\n{i}. {Path(path).name}")
+            safe_print(f"   Path: {path}")
+            safe_print(f"   Status: {status}")
 
         # Show which file would be used
         active_config = config_manager._find_existing_config()
         if active_config:
-            safe_console_print(f"\n🎯 Active configuration: {active_config}")
+            safe_print(f"\n🎯 Active configuration: {active_config}")
         else:
-            safe_console_print("\n❌ No active configuration found")
-            safe_console_print("💡 Run 'rxiv config init' to create one")
+            safe_print("\n❌ No active configuration found")
+            safe_print("💡 Run 'rxiv config init' to create one")
 
     except Exception as e:
-        safe_console_print(f"❌ Failed to list configuration files: {e}")
+        safe_print(f"❌ Failed to list configuration files: {e}")
         raise click.ClickException(f"Failed to list configuration files: {e}") from e
 
 
 def _print_validation_results(results: Dict[str, Any], strict: bool = False) -> None:
     """Print validation results in table format."""
-    safe_console_print("📊 Configuration Validation Results")
-    safe_console_print("=" * 60)
+    safe_print("📊 Configuration Validation Results")
+    safe_print("=" * 60)
 
     total_errors = 0
     total_warnings = 0
@@ -364,40 +365,40 @@ def _print_validation_results(results: Dict[str, Any], strict: bool = False) -> 
 
         # Section header
         status_icon = "✅" if section_valid else "❌"
-        safe_console_print(f"\n{status_icon} {section_name.replace('_', ' ').title()}")
-        safe_console_print("-" * 40)
+        safe_print(f"\n{status_icon} {section_name.replace('_', ' ').title()}")
+        safe_print("-" * 40)
 
         if section_errors == 0 and section_warnings == 0:
-            safe_console_print("   No issues found")
+            safe_print("   No issues found")
         else:
             if section_errors > 0:
-                safe_console_print(f"   🔴 Errors: {section_errors}")
+                safe_print(f"   🔴 Errors: {section_errors}")
                 for error in section_result.get("errors", []):
-                    safe_console_print(f"      • {error.message}")
+                    safe_print(f"      • {error.message}")
 
             if section_warnings > 0:
-                safe_console_print(f"   🟡 Warnings: {section_warnings}")
+                safe_print(f"   🟡 Warnings: {section_warnings}")
                 for warning in section_result.get("warnings", []):
-                    safe_console_print(f"      • {warning.message}")
+                    safe_print(f"      • {warning.message}")
 
     # Summary
-    safe_console_print("\n📊 Summary")
-    safe_console_print("=" * 20)
-    safe_console_print(f"Total Errors: {total_errors}")
-    safe_console_print(f"Total Warnings: {total_warnings}")
+    safe_print("\n📊 Summary")
+    safe_print("=" * 20)
+    safe_print(f"Total Errors: {total_errors}")
+    safe_print(f"Total Warnings: {total_warnings}")
 
     if total_errors == 0 and total_warnings == 0:
-        safe_console_print("🎉 Perfect configuration!")
+        safe_print("🎉 Perfect configuration!")
     elif total_errors == 0:
-        safe_console_print("✅ Configuration is valid (warnings are non-blocking)")
+        safe_print("✅ Configuration is valid (warnings are non-blocking)")
     else:
-        safe_console_print("❌ Configuration has errors that need to be fixed")
+        safe_print("❌ Configuration has errors that need to be fixed")
 
 
 def _print_config_table(config: Dict[str, Any], include_defaults: bool = False) -> None:
     """Print configuration in table format."""
-    safe_console_print("📋 Current Configuration")
-    safe_console_print("=" * 50)
+    safe_print("📋 Current Configuration")
+    safe_print("=" * 50)
 
     def print_nested_config(data: Dict[str, Any], prefix: str = "", level: int = 0) -> None:
         indent = "  " * level
@@ -406,18 +407,18 @@ def _print_config_table(config: Dict[str, Any], include_defaults: bool = False) 
             full_key = f"{prefix}.{key}" if prefix else key
 
             if isinstance(value, dict):
-                safe_console_print(f"{indent}📁 {key}:")
+                safe_print(f"{indent}📁 {key}:")
                 print_nested_config(value, full_key, level + 1)
             elif isinstance(value, list):
-                safe_console_print(f"{indent}📝 {key}: [{len(value)} items]")
+                safe_print(f"{indent}📝 {key}: [{len(value)} items]")
                 for i, item in enumerate(value[:3]):  # Show first 3 items
-                    safe_console_print(f"{indent}   {i + 1}. {item}")
+                    safe_print(f"{indent}   {i + 1}. {item}")
                 if len(value) > 3:
-                    safe_console_print(f"{indent}   ... and {len(value) - 3} more")
+                    safe_print(f"{indent}   ... and {len(value) - 3} more")
             else:
-                safe_console_print(f"{indent}📝 {key}: {value}")
+                safe_print(f"{indent}📝 {key}: {value}")
 
     print_nested_config(config)
 
     if not include_defaults:
-        safe_console_print("\n💡 Use --include-defaults to see all configuration values")
+        safe_print("\n💡 Use --include-defaults to see all configuration values")

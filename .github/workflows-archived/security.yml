@@ -211,14 +211,14 @@ jobs:
 
       - name: Run Safety scan
         run: |
-          safety check --json --output safety-results.json
+          safety scan --json --output safety-results.json
         continue-on-error: true
 
       - name: Display Safety results
         if: always()
         run: |
           echo "🛡️ Safety vulnerability scan results:"
-          safety check --short-report || true
+          safety scan --short-report || true
 
       - name: Upload Safety results
         if: always()

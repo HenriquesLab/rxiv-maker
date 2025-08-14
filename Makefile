@@ -101,12 +101,9 @@ else
     ENGINE_STATUS = 💻 Local
 endif
 
-# Helper function for rxiv CLI commands with fallback
-# Usage: $(call RXIV_RUN,cli-command,module-path,module-args)
-define RXIV_RUN
-	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.cli $(1) || \
-	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.$(2) $(3)
-endef
+# Simplified rxiv CLI helper - no more complex fallback logic
+# The unified rxiv CLI handles all path resolution and environment variables
+RXIV_CLI = MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" rxiv
 
 # Error handling helper for validation failures
 define VALIDATION_ERROR
@@ -158,7 +155,8 @@ all: pdf
 # Install Python dependencies only (cross-platform)
 .PHONY: setup
 setup:
-	@$(PYTHON_CMD) -m pip install -e . || PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.setup_environment
+	@echo "⚙️  Setting up Python environment..."
+	$(PYTHON_CMD) -m pip install -e .
 
 # Reinstall Python dependencies (removes .venv and creates new one) - cross-platform
 .PHONY: setup-reinstall
@@ -175,35 +173,37 @@ test-platform:
 .PHONY: install-deps
 install-deps:
 	@echo "🔧 Installing system dependencies..."
-	@$(PYTHON_CMD) -m rxiv_maker.cli install-deps
+	$(RXIV_CLI) setup --mode system-only
 
 # Install system dependencies in minimal mode
 .PHONY: install-deps-minimal
 install-deps-minimal:
 	@echo "🔧 Installing system dependencies (minimal mode)..."
-	@$(PYTHON_CMD) -m rxiv_maker.cli install-deps --mode=minimal
+	$(RXIV_CLI) setup --mode minimal
 
 # Check system dependencies
 .PHONY: check-deps
 check-deps:
 	@echo "🔍 Checking system dependencies..."
-	$(call RXIV_RUN,setup --check-deps-only,engine.setup_environment,--check-deps-only)
+	$(RXIV_CLI) setup --check-only
 
 # Check system dependencies (verbose)
 .PHONY: check-deps-verbose
 check-deps-verbose:
 	@echo "🔍 Checking system dependencies (verbose)..."
-	@PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.engine.setup_environment --check-deps-only --verbose
+	$(RXIV_CLI) setup --check-only --verbose
 
 # Generate PDF with validation (requires LaTeX installation)
 .PHONY: pdf
 pdf:
-	$(call RXIV_RUN,pdf "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) $(if $(FORCE_FIGURES),--force-figures),engine.build_manager,--manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) $(if $(FORCE_FIGURES),--force-figures))
+	@echo "📄 Generating PDF: $(MANUSCRIPT_PATH) → $(OUTPUT_DIR)"
+	$(RXIV_CLI) pdf "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) $(if $(FORCE_FIGURES),--force-figures)
 
 # Generate PDF without validation (for debugging)
 .PHONY: pdf-no-validate
 pdf-no-validate:
-	$(call RXIV_RUN,pdf "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --skip-validation $(if $(FORCE_FIGURES),--force-figures),engine.build_manager,--manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --skip-validation $(if $(FORCE_FIGURES),--force-figures))
+	@echo "📄 Generating PDF (no validation): $(MANUSCRIPT_PATH) → $(OUTPUT_DIR)"
+	$(RXIV_CLI) pdf "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) --skip-validation $(if $(FORCE_FIGURES),--force-figures)
 
 # Generate PDF with change tracking against a git tag
 .PHONY: pdf-track-changes
@@ -242,14 +242,14 @@ arxiv: pdf
 .PHONY: validate
 validate:
 	@echo "🔍 Running manuscript validation..."
-	$(call RXIV_RUN,validate "$(MANUSCRIPT_PATH)" --detailed,engine.validate,"$(MANUSCRIPT_PATH)" --detailed) || { $(VALIDATION_ERROR); }
+	$(RXIV_CLI) validate "$(MANUSCRIPT_PATH)" --detailed || { $(VALIDATION_ERROR); }
 	@echo "✅ Validation passed!"
 
 # Internal validation target for PDF build (quiet mode)
 .PHONY: _validate_quiet
 _validate_quiet:
 	@echo "🔍 Validating manuscript: $(MANUSCRIPT_PATH)"
-	$(call RXIV_RUN,validate "$(MANUSCRIPT_PATH)",engine.validate,"$(MANUSCRIPT_PATH)") || { $(VALIDATION_ERROR); }
+	$(RXIV_CLI) validate "$(MANUSCRIPT_PATH)" || { $(VALIDATION_ERROR); }
 
 # ======================================================================
 # 🧪 TESTING AND CODE QUALITY
@@ -262,24 +262,11 @@ test:
 	@$(PYTHON_CMD) -m pytest tests/ -v
 
 # Repository integrity and safeguard validation
-.PHONY: validate-repo
-validate-repo:
-	@echo "🛡️  Validating repository integrity and submodule boundaries..."
-	@scripts/safeguards/validate-submodules.sh
-	@$(PYTHON_CMD) scripts/safeguards/check-repo-boundaries.py
-
-.PHONY: test-safeguards
-test-safeguards:
-	@echo "🧪 Testing safeguards with simulated corruption scenarios..."
-	@scripts/safeguards/test-safeguards.sh
-
-.PHONY: test-submodule-guardrails
-test-submodule-guardrails:
-	@echo "🛡️  Testing submodule guardrails..."
-	@scripts/test-submodule-guardrails.sh
+# Note: validate-repo, test-safeguards, and test-submodule-guardrails targets removed
+# as submodules are no longer used for distribution
 
 .PHONY: validate-all
-validate-all: validate validate-repo
+validate-all: validate
 	@echo "✅ All validation checks completed successfully!"
 
 # Run unit tests only
@@ -325,7 +312,7 @@ check: lint typecheck
 .PHONY: fix-bibliography
 fix-bibliography:
 	@echo "🔧 Attempting to fix bibliography issues..."
-	$(call RXIV_RUN,bibliography fix "$(MANUSCRIPT_PATH)",engine.fix_bibliography,"$(MANUSCRIPT_PATH)") || { \
+	$(RXIV_CLI) bibliography fix "$(MANUSCRIPT_PATH)" || { \
 		echo "❌ Bibliography fixing failed!"; \
 		echo "💡 Run with --dry-run to see potential fixes first"; \
 		echo "💡 Use --verbose for detailed logging"; exit 1; }
@@ -334,7 +321,7 @@ fix-bibliography:
 .PHONY: fix-bibliography-dry-run
 fix-bibliography-dry-run:
 	@echo "🔍 Checking potential bibliography fixes..."
-	$(call RXIV_RUN,bibliography fix "$(MANUSCRIPT_PATH)" --dry-run,engine.fix_bibliography,"$(MANUSCRIPT_PATH)" --dry-run)
+	$(RXIV_CLI) bibliography fix "$(MANUSCRIPT_PATH)" --dry-run
 
 # Add bibliography entries from DOI
 .PHONY: add-bibliography
@@ -371,28 +358,29 @@ add-bibliography:
 # 🧹 MAINTENANCE
 # ======================================================================
 
-# Consolidated cleaning targets using helper function
+# Consolidated cleaning targets using simplified CLI
 # Clean output directory (cross-platform)
 .PHONY: clean
 clean:
-	$(call RXIV_RUN,clean "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR),engine.cleanup,--manuscript-path "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR))
+	@echo "🧹 Cleaning: $(MANUSCRIPT_PATH) → $(OUTPUT_DIR)"
+	$(RXIV_CLI) clean "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR)
 
 # Specialized cleaning targets
 .PHONY: clean-output clean-figures clean-arxiv clean-temp clean-cache
 clean-output:
-	$(call RXIV_RUN,clean --output-only --output-dir $(OUTPUT_DIR),engine.cleanup,--output-only --output-dir $(OUTPUT_DIR))
+	$(RXIV_CLI) clean --output-only --output-dir $(OUTPUT_DIR)
 
 clean-figures:
-	$(call RXIV_RUN,clean "$(MANUSCRIPT_PATH)" --figures-only,engine.cleanup,--figures-only --manuscript-path "$(MANUSCRIPT_PATH)")
+	$(RXIV_CLI) clean "$(MANUSCRIPT_PATH)" --figures-only
 
 clean-arxiv:
-	$(call RXIV_RUN,clean --arxiv-only,engine.cleanup,--arxiv-only)
+	$(RXIV_CLI) clean --arxiv-only
 
 clean-temp:
-	$(call RXIV_RUN,clean --temp-only,engine.cleanup,--temp-only)
+	$(RXIV_CLI) clean --temp-only
 
 clean-cache:
-	$(call RXIV_RUN,clean --cache-only,engine.cleanup,--cache-only)
+	$(RXIV_CLI) clean --cache-only
 
 # ======================================================================
 # 🐳 DOCKER ENGINE MODE

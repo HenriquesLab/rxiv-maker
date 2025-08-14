@@ -114,7 +114,8 @@ def process_directory(dir_path, output_dir, base_package=""):
                     module = importlib.util.module_from_spec(spec)
                     # Add to sys.modules to help with relative imports
                     sys.modules[f"rxiv_maker.{full_module_name}"] = module
-                    spec.loader.exec_module(module)
+                    if spec.loader is not None:
+                        spec.loader.exec_module(module)
                     print(f"Generated documentation for rxiv_maker.{full_module_name} (fallback)")
 
                 # Generate documentation with clean module name

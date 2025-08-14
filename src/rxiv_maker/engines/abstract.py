@@ -27,12 +27,73 @@ class ContainerSession:
 
     def is_active(self) -> bool:
         """Check if the container is still running."""
-        return self._active
+        if not self._active:
+            return False
+
+        try:
+            result = subprocess.run(
+                [
+                    self.engine_type,
+                    "container",
+                    "inspect",
+                    self.container_id,
+                    "--format",
+                    "{{.State.Running}}",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if result.returncode == 0:
+                is_running = result.stdout.strip().lower() == "true"
+                if not is_running:
+                    self._active = False
+                return is_running
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+            self._active = False
+
+        return False
 
     def cleanup(self) -> bool:
         """Stop and remove the container."""
-        self._active = False
-        return True
+        if not self._active:
+            return True
+
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        try:
+            # Stop the container
+            stop_result = subprocess.run(
+                [self.engine_type, "stop", self.container_id], capture_output=True, text=True, timeout=10
+            )
+            if stop_result.returncode != 0:
+                logger.debug(
+                    f"Failed to stop {self.engine_type} container {self.container_id[:12]}: {stop_result.stderr}"
+                )
+
+            # Remove the container
+            rm_result = subprocess.run(
+                [self.engine_type, "rm", self.container_id], capture_output=True, text=True, timeout=10
+            )
+            if rm_result.returncode != 0:
+                logger.debug(
+                    f"Failed to remove {self.engine_type} container {self.container_id[:12]}: {rm_result.stderr}"
+                )
+
+            self._active = False
+            return True
+        except subprocess.TimeoutExpired:
+            logger.debug(f"Timeout during {self.engine_type} container {self.container_id[:12]} cleanup")
+            self._active = False  # Mark as inactive even if cleanup timed out
+            return False
+        except subprocess.CalledProcessError as e:
+            logger.debug(
+                f"Error during {self.engine_type} container {self.container_id[:12]} cleanup: exit code {e.returncode}"
+            )
+            self._active = False  # Mark as inactive even if cleanup failed
+            return False
 
 
 class AbstractContainerEngine(ABC):
@@ -78,17 +139,173 @@ class AbstractContainerEngine(ABC):
         """Return the name of the container engine (e.g., 'docker', 'podman')."""
         pass
 
-    @abstractmethod
     def check_available(self) -> bool:
-        """Check if the container engine is available and running."""
-        pass
+        """Check if the container engine is available and running.
 
-    @abstractmethod
+        Returns:
+            True if engine is available and running, False otherwise.
+
+        Raises:
+            ContainerEngineNotFoundError: If engine binary is not found
+            ContainerEngineNotRunningError: If engine daemon/service is not running
+            ContainerPermissionError: If permission denied accessing engine
+            ContainerTimeoutError: If engine commands timeout
+        """
+        import logging
+        import subprocess
+
+        logger = logging.getLogger(__name__)
+
+        # Import exceptions here to avoid circular imports
+        from .exceptions import (
+            ContainerEngineNotFoundError,
+            ContainerEngineNotRunningError,
+            ContainerPermissionError,
+            ContainerTimeoutError,
+        )
+
+        try:
+            # First check if engine binary exists
+            version_result = subprocess.run([self.engine_name, "--version"], capture_output=True, text=True, timeout=5)
+
+            if version_result.returncode != 0:
+                if "permission denied" in version_result.stderr.lower():
+                    raise ContainerPermissionError(self.engine_name, f"check {self.engine_name.title()} version")
+                else:
+                    logger.debug(f"{self.engine_name.title()} version check failed: {version_result.stderr}")
+                    return False
+
+        except FileNotFoundError as e:
+            raise ContainerEngineNotFoundError(self.engine_name) from e
+        except subprocess.TimeoutExpired as e:
+            raise ContainerTimeoutError(self.engine_name, "version check", 5) from e
+
+        try:
+            # Then check if engine daemon/service is actually running
+            ps_result = subprocess.run([self.engine_name, "ps"], capture_output=True, text=True, timeout=10)
+
+            if ps_result.returncode != 0:
+                stderr_lower = ps_result.stderr.lower()
+                if "permission denied" in stderr_lower or "access denied" in stderr_lower:
+                    raise ContainerPermissionError(self.engine_name, "list containers")
+                elif "cannot connect" in stderr_lower or "connection refused" in stderr_lower:
+                    raise ContainerEngineNotRunningError(self.engine_name)
+                elif self._is_service_not_running_error(stderr_lower):
+                    raise ContainerEngineNotRunningError(self.engine_name)
+                else:
+                    logger.debug(f"{self.engine_name.title()} ps failed: {ps_result.stderr}")
+                    return False
+
+            return True
+
+        except subprocess.TimeoutExpired as e:
+            raise ContainerTimeoutError(self.engine_name, "daemon/service connectivity check", 10) from e
+        except subprocess.CalledProcessError as e:
+            logger.debug(f"{self.engine_name.title()} ps command failed with exit code {e.returncode}")
+            return False
+
+    def _is_service_not_running_error(self, stderr_lower: str) -> bool:
+        """Check if the error indicates the container service is not running.
+
+        This method can be overridden by subclasses to provide engine-specific
+        error pattern matching.
+
+        Args:
+            stderr_lower: The stderr output in lowercase
+
+        Returns:
+            True if the error indicates service is not running
+        """
+        # Common patterns for both Docker and Podman
+        service_not_running_patterns = [
+            "daemon" in stderr_lower and "not running" in stderr_lower,
+            "service" in stderr_lower and "not running" in stderr_lower,
+            "machine" in stderr_lower and ("not running" in stderr_lower or "stopped" in stderr_lower),
+        ]
+        return any(service_not_running_patterns)
+
     def pull_image(self, image: Optional[str] = None, force_pull: bool = False) -> bool:
-        """Pull a container image if not already available or force_pull is True."""
-        pass
+        """Pull a container image if not already available or force_pull is True.
 
-    @abstractmethod
+        Args:
+            image: Image name to pull (defaults to default_image)
+            force_pull: Force pull even if image exists locally
+
+        Returns:
+            True if image is available after operation, False otherwise
+
+        Raises:
+            ContainerImagePullError: If image pull fails with details
+            ContainerTimeoutError: If pull operation times out
+            ContainerPermissionError: If permission denied during pull
+        """
+        import logging
+        import subprocess
+
+        logger = logging.getLogger(__name__)
+        target_image = image or self.default_image
+
+        # Import exceptions here to avoid circular imports
+        from .exceptions import (
+            ContainerImagePullError,
+            ContainerPermissionError,
+            ContainerTimeoutError,
+        )
+
+        # If force_pull is False, check if image is already available locally
+        if not force_pull:
+            try:
+                result = subprocess.run(
+                    [self.engine_name, "image", "inspect", target_image],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                if result.returncode == 0:
+                    logger.debug(f"{self.engine_name.title()} image {target_image} already available locally")
+                    return True  # Image already available locally
+            except subprocess.TimeoutExpired:
+                logger.debug(f"Timeout checking local image {target_image}, proceeding with pull")
+            except subprocess.CalledProcessError:
+                logger.debug(f"Image {target_image} not available locally, proceeding with pull")
+
+        # Pull the latest version of the image
+        logger.info(f"Pulling {self.engine_name.title()} image: {target_image}")
+        try:
+            result = subprocess.run(
+                [self.engine_name, "pull", target_image],
+                capture_output=True,
+                text=True,
+                timeout=300,  # 5 minutes
+            )
+
+            if result.returncode == 0:
+                logger.info(f"Successfully pulled {self.engine_name.title()} image: {target_image}")
+                return True
+            else:
+                # Analyze the error to provide helpful feedback
+                stderr_lower = result.stderr.lower()
+                if "permission denied" in stderr_lower:
+                    raise ContainerPermissionError(self.engine_name, f"pull image {target_image}")
+                elif "not found" in stderr_lower or "no such image" in stderr_lower:
+                    raise ContainerImagePullError(self.engine_name, target_image, "Image not found in registry")
+                elif "network" in stderr_lower or "connection" in stderr_lower:
+                    raise ContainerImagePullError(self.engine_name, target_image, "Network connectivity issue")
+                elif "unauthorized" in stderr_lower or "authentication" in stderr_lower:
+                    raise ContainerImagePullError(
+                        self.engine_name, target_image, "Authentication required for private image"
+                    )
+                else:
+                    raise ContainerImagePullError(self.engine_name, target_image, result.stderr.strip())
+
+        except subprocess.TimeoutExpired as e:
+            raise ContainerTimeoutError(self.engine_name, f"pull image {target_image}", 300) from e
+        except subprocess.CalledProcessError as e:
+            logger.debug(f"{self.engine_name.title()} pull failed with exit code {e.returncode}")
+            raise ContainerImagePullError(
+                self.engine_name, target_image, f"Pull command failed with exit code {e.returncode}"
+            ) from e
+
     def run_command(
         self,
         command: str | List[str],
@@ -117,9 +334,97 @@ class AbstractContainerEngine(ABC):
         Returns:
             CompletedProcess result
         """
-        pass
+        import logging
 
-    @abstractmethod
+        logger = logging.getLogger(__name__)
+
+        target_image = image or self.default_image
+
+        # Try to use existing session if session_key provided
+        session = None
+        if session_key:
+            session = self._get_or_create_session(session_key, target_image)
+
+        if session and session.is_active():
+            # Execute in existing container
+            exec_cmd = self._build_exec_command(command, working_dir, session.container_id)
+        else:
+            # Create new container for this command
+            exec_cmd = self._build_container_command(
+                command=command,
+                image=target_image,
+                working_dir=working_dir,
+                volumes=volumes,
+                environment=environment,
+            )
+
+        # Execute the command with enhanced error handling
+        try:
+            result = subprocess.run(
+                exec_cmd,
+                capture_output=capture_output,
+                text=True,
+                timeout=timeout,
+                **kwargs,
+            )
+
+            # If we used a session and the command failed, check if the session is still active
+            if session and result.returncode != 0:
+                if not session.is_active():
+                    logger.debug(
+                        f"{self.engine_name.title()} session {session.container_id[:12]} died during command execution"
+                    )
+                    # Remove the dead session from our tracking
+                    if session_key in self._active_sessions:
+                        del self._active_sessions[session_key]
+
+            return result
+
+        except subprocess.TimeoutExpired as e:
+            # If using a session, check if it's still alive after timeout
+            if session:
+                if not session.is_active():
+                    logger.debug(f"{self.engine_name.title()} session {session.container_id[:12]} died during timeout")
+                    if session_key in self._active_sessions:
+                        del self._active_sessions[session_key]
+            raise e
+        except Exception as e:
+            # Log unexpected errors for debugging
+            cmd_preview = " ".join(exec_cmd[:5]) + ("..." if len(exec_cmd) > 5 else "")
+            logger.debug(f"Unexpected error executing {self.engine_name} command '{cmd_preview}': {e}")
+            raise e
+
+    def _build_exec_command(self, command: str | List[str], working_dir: str, container_id: str) -> List[str]:
+        """Build an exec command for running in an existing container.
+
+        Args:
+            command: Command to execute (string or list)
+            working_dir: Working directory inside container
+            container_id: Container ID to execute in
+
+        Returns:
+            List of command arguments for container exec
+        """
+        if isinstance(command, str):
+            return [
+                self.engine_name,
+                "exec",
+                "-w",
+                working_dir,
+                container_id,
+                "sh",
+                "-c",
+                command,
+            ]
+        else:
+            return [
+                self.engine_name,
+                "exec",
+                "-w",
+                working_dir,
+                container_id,
+            ] + command
+
     def _build_container_command(
         self,
         command: str | List[str],
@@ -133,6 +438,132 @@ class AbstractContainerEngine(ABC):
         detach: bool = False,
     ) -> List[str]:
         """Build a container run command with optimal settings."""
+        container_cmd = [self.engine_name, "run"]
+
+        # Container options
+        if remove and not detach:
+            container_cmd.append("--rm")
+
+        if detach:
+            container_cmd.append("-d")
+
+        if interactive:
+            container_cmd.extend(["-i", "-t"])
+
+        # Platform specification
+        container_cmd.extend(["--platform", self._platform])
+
+        # Resource limits
+        container_cmd.extend(["--memory", self.memory_limit])
+        container_cmd.extend(["--cpus", self.cpu_limit])
+
+        # Volume mounts
+        all_volumes = self._base_volumes.copy()
+        if volumes:
+            all_volumes.extend(volumes)
+
+        for volume in all_volumes:
+            container_cmd.extend(["-v", volume])
+
+        # Working directory
+        container_cmd.extend(["-w", working_dir])
+
+        # Environment variables
+        all_env = self._base_env.copy()
+        if environment:
+            all_env.update(environment)
+
+        for key, value in all_env.items():
+            container_cmd.extend(["-e", f"{key}={value}"])
+
+        # User specification
+        if user:
+            container_cmd.extend(["--user", user])
+
+        # Image
+        container_cmd.append(image or self.default_image)
+
+        # Command
+        if isinstance(command, str):
+            container_cmd.extend(["sh", "-c", command])
+        else:
+            container_cmd.extend(command)
+
+        return container_cmd
+
+    def _get_or_create_session(self, session_key: str, image: str) -> Optional[ContainerSession]:
+        """Get an existing session or create a new one if session reuse is enabled."""
+        if not self.enable_session_reuse:
+            return None
+
+        # Clean up expired sessions
+        self._cleanup_expired_sessions()
+
+        # Check if we have an active session
+        if session_key in self._active_sessions:
+            session = self._active_sessions[session_key]
+            if session.is_active():
+                return session
+            else:
+                # Session is dead, remove it
+                del self._active_sessions[session_key]
+
+        # Create new session
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        try:
+            container_cmd = self._build_container_command(
+                command=["sleep", "infinity"],  # Keep container alive
+                image=image,
+                detach=True,
+                remove=False,
+            )
+
+            result = subprocess.run(container_cmd, capture_output=True, text=True, timeout=30)
+
+            if result.returncode == 0:
+                container_id = result.stdout.strip()
+                session = self._create_session_instance(container_id, image, self.workspace_dir)
+
+                # Initialize container with health checks
+                if self._initialize_container(session):
+                    self._active_sessions[session_key] = session
+                    logger.debug(f"Created new {self.engine_name} session: {container_id[:12]}")
+                    return session
+                else:
+                    # Cleanup failed session
+                    logger.debug(f"Failed to initialize {self.engine_name} session {container_id[:12]}, cleaning up")
+                    session.cleanup()
+            else:
+                # Log session creation failure details
+                error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+                logger.debug(f"Failed to create {self.engine_name} session for {session_key}: {error_msg}")
+
+        except subprocess.TimeoutExpired:
+            logger.debug(f"Timeout creating {self.engine_name} session for {session_key}")
+        except subprocess.CalledProcessError as e:
+            logger.debug(
+                f"Command failed creating {self.engine_name} session for {session_key}: exit code {e.returncode}"
+            )
+        except Exception as e:
+            logger.debug(f"Unexpected error creating {self.engine_name} session for {session_key}: {e}")
+
+        return None
+
+    @abstractmethod
+    def _create_session_instance(self, container_id: str, image: str, workspace_dir: Path) -> ContainerSession:
+        """Create an engine-specific session instance.
+
+        Args:
+            container_id: Container ID
+            image: Container image name
+            workspace_dir: Workspace directory path
+
+        Returns:
+            Engine-specific ContainerSession instance
+        """
         pass
 
     def _detect_platform(self) -> str:
@@ -414,3 +845,131 @@ if __name__ == "__main__":
             stats["session_details"].append(session_info)
 
         return stats
+
+    def _initialize_container(self, session: "ContainerSession") -> bool:
+        """Initialize a container with health checks and verification.
+
+        This method performs common initialization tasks for all container engines.
+        Subclasses can override this method to add engine-specific initialization.
+
+        Args:
+            session: Container session to initialize
+
+        Returns:
+            True if initialization successful, False otherwise
+        """
+        engine_type = session.engine_type
+        container_id = session.container_id
+
+        try:
+            # Basic connectivity test
+            exec_cmd = [
+                engine_type,
+                "exec",
+                container_id,
+                "echo",
+                "container_ready",
+            ]
+            result = subprocess.run(exec_cmd, capture_output=True, text=True, timeout=10)
+            if result.returncode != 0:
+                return False
+
+            # Test Python availability and basic imports
+            python_test = [
+                engine_type,
+                "exec",
+                container_id,
+                "python3",
+                "-c",
+                "import sys; print(f'Python {sys.version_info.major}.{sys.version_info.minor}')",
+            ]
+            result = subprocess.run(python_test, capture_output=True, text=True, timeout=15)
+            if result.returncode != 0:
+                return False
+
+            # Test critical Python dependencies
+            deps_test = [
+                engine_type,
+                "exec",
+                container_id,
+                "python3",
+                "-c",
+                """
+try:
+    import numpy, matplotlib, yaml, requests
+    print('Critical dependencies verified')
+except ImportError as e:
+    print(f'Dependency error: {e}')
+    exit(1)
+""",
+            ]
+            result = subprocess.run(deps_test, capture_output=True, text=True, timeout=20)
+            if result.returncode != 0:
+                return False
+
+            # Test R availability (non-blocking)
+            r_test = [
+                engine_type,
+                "exec",
+                container_id,
+                "sh",
+                "-c",
+                "which Rscript && Rscript --version || echo 'R not available'",
+            ]
+            subprocess.run(r_test, capture_output=True, text=True, timeout=10)
+
+            # Test LaTeX availability (non-blocking)
+            latex_test = [
+                engine_type,
+                "exec",
+                container_id,
+                "sh",
+                "-c",
+                "which pdflatex && echo 'LaTeX ready' || echo 'LaTeX not available'",
+            ]
+            subprocess.run(latex_test, capture_output=True, text=True, timeout=10)
+
+            # Set up workspace permissions
+            workspace_setup = [
+                engine_type,
+                "exec",
+                container_id,
+                "sh",
+                "-c",
+                "chmod -R 755 /workspace && mkdir -p /workspace/output",
+            ]
+            result = subprocess.run(workspace_setup, capture_output=True, text=True, timeout=10)
+            return result.returncode == 0
+
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+            return False
+
+    def _cleanup_expired_sessions(self, force: bool = False) -> None:
+        """Clean up expired or inactive container sessions."""
+        import time
+
+        current_time = time.time()
+
+        # Only run cleanup every 30 seconds unless forced
+        if not force and current_time - self._last_cleanup < 30:
+            return
+
+        self._last_cleanup = current_time
+        expired_keys = []
+
+        for key, session in self._active_sessions.items():
+            session_age = current_time - (session.created_at or 0.0)
+            if session_age > self._session_timeout or not session.is_active():
+                session.cleanup()
+                expired_keys.append(key)
+
+        for key in expired_keys:
+            del self._active_sessions[key]
+
+        # If we have too many sessions, cleanup the oldest ones
+        if len(self._active_sessions) > self._max_sessions:
+            sorted_sessions = sorted(self._active_sessions.items(), key=lambda x: x[1].created_at or 0.0)
+            excess_count = len(self._active_sessions) - self._max_sessions
+            for key, session in sorted_sessions[:excess_count]:
+                session.cleanup()
+                del self._active_sessions[key]

@@ -1,0 +1,17 @@
+name: Minimal Test
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - '.github/workflows/minimal-test.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hello World
+        run: echo "Hello World!"
+
+      - name: Check Docker
+        run: docker --version

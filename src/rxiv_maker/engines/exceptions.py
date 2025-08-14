@@ -198,3 +198,139 @@ class ContainerTimeoutError(ContainerEngineError):
         )
 
         super().__init__(message, engine_type, suggestion)
+
+
+class ContainerResourceError(ContainerEngineError):
+    """Exception raised when container operations fail due to resource constraints."""
+
+    def __init__(self, engine_type: str, resource_type: str, details: Optional[str] = None):
+        """Initialize resource error.
+
+        Args:
+            engine_type: Type of engine (docker, podman)
+            resource_type: Type of resource that's constrained (memory, disk, cpu)
+            details: Optional error details
+        """
+        message = f"Container operation failed due to {resource_type} constraints"
+        if details:
+            message += f": {details}"
+
+        if resource_type == "memory":
+            suggestion = (
+                "Try reducing memory usage or increasing available memory. "
+                "You can also try using --memory-limit to set a lower limit for containers."
+            )
+        elif resource_type == "disk":
+            suggestion = (
+                "Free up disk space or try cleaning up old containers and images. "
+                f"Use '{engine_type} system prune' to clean up unused resources."
+            )
+        elif resource_type == "cpu":
+            suggestion = (
+                "Try reducing CPU usage by lowering --cpu-limit or closing other applications to free up CPU resources."
+            )
+        else:
+            suggestion = f"Check system resources and {engine_type} configuration for {resource_type} limitations."
+
+        super().__init__(message, engine_type, suggestion)
+
+
+def provide_helpful_error_message(error: Exception, engine_type: str) -> str:
+    """Provide a user-friendly error message with suggestions.
+
+    Args:
+        error: The original exception
+        engine_type: The container engine type (docker, podman)
+
+    Returns:
+        A helpful error message with suggestions
+    """
+    if isinstance(error, ContainerEngineError):
+        # Our custom exceptions already have helpful messages
+        return str(error)
+
+    error_str = str(error).lower()
+    system = platform.system().lower()
+
+    # Common error patterns and suggestions
+    if "permission denied" in error_str:
+        if engine_type == "docker" and system == "linux":
+            return (
+                f"{engine_type.title()} Error: Permission denied\n"
+                f"💡 Suggestion: Add your user to the docker group: 'sudo usermod -aG docker $USER', "
+                f"then log out and back in, or run with sudo"
+            )
+        elif engine_type == "podman":
+            return (
+                f"{engine_type.title()} Error: Permission denied\n"
+                f"💡 Suggestion: Try running in rootless mode or check Podman permissions. "
+                f"You may need to configure subuid/subgid mappings"
+            )
+
+    if "command not found" in error_str or "no such file" in error_str:
+        if engine_type == "docker":
+            if system == "darwin":
+                return (
+                    f"{engine_type.title()} Error: Docker not found\n"
+                    f"💡 Suggestion: Install Docker Desktop from https://docker.com/get-started "
+                    f"or use 'brew install --cask docker'"
+                )
+            elif system == "linux":
+                return (
+                    f"{engine_type.title()} Error: Docker not found\n"
+                    f"💡 Suggestion: Install Docker using your package manager: "
+                    f"'sudo apt install docker.io' (Ubuntu/Debian) or 'sudo yum install docker' (RHEL/CentOS)"
+                )
+        elif engine_type == "podman":
+            if system == "darwin":
+                return (
+                    f"{engine_type.title()} Error: Podman not found\n"
+                    f"💡 Suggestion: Install Podman using 'brew install podman'"
+                )
+            elif system == "linux":
+                return (
+                    f"{engine_type.title()} Error: Podman not found\n"
+                    f"💡 Suggestion: Install Podman using your package manager: "
+                    f"'sudo apt install podman' (Ubuntu/Debian) or 'sudo yum install podman' (RHEL/CentOS)"
+                )
+
+    if "connection refused" in error_str or "cannot connect" in error_str:
+        if engine_type == "docker":
+            if system == "darwin":
+                return (
+                    f"{engine_type.title()} Error: Cannot connect to Docker daemon\n"
+                    f"💡 Suggestion: Start Docker Desktop application or run 'open -a Docker' in Terminal"
+                )
+            elif system == "linux":
+                return (
+                    f"{engine_type.title()} Error: Cannot connect to Docker daemon\n"
+                    f"💡 Suggestion: Start Docker daemon: 'sudo systemctl start docker' or 'sudo service docker start'"
+                )
+        elif engine_type == "podman":
+            if system == "darwin":
+                return (
+                    f"{engine_type.title()} Error: Cannot connect to Podman service\n"
+                    f"💡 Suggestion: Start Podman machine: 'podman machine start' "
+                    f"or initialize first with 'podman machine init'"
+                )
+            elif system == "linux":
+                return (
+                    f"{engine_type.title()} Error: Cannot connect to Podman service\n"
+                    f"💡 Suggestion: Start Podman service: 'sudo systemctl start podman' "
+                    f"or run 'podman system service' for rootless mode"
+                )
+
+    if "timeout" in error_str:
+        return (
+            f"{engine_type.title()} Error: Operation timed out\n"
+            f"💡 Suggestion: The operation is taking longer than expected. This might be due to "
+            f"slow network, large image downloads, or system resource constraints. "
+            f"Try increasing timeout or check system resources."
+        )
+
+    # Fallback for unknown errors
+    return (
+        f"{engine_type.title()} Error: {error}\n"
+        f"💡 Suggestion: Check {engine_type} installation and ensure the service is running. "
+        f"Try running '{engine_type} --version' and '{engine_type} ps' to diagnose the issue."
+    )

@@ -19,8 +19,8 @@ class OperationContext:
         self.operation_type = operation_type
         self.operation_id = self._generate_id()
         self.metadata = metadata or {}
-        self.start_time = None
-        self.end_time = None
+        self.start_time: float | None = None
+        self.end_time: float | None = None
         self.logs: list[tuple[float, str]] = []
 
     def _generate_id(self) -> str:
@@ -47,7 +47,7 @@ class OperationContext:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit operation context."""
         self.end_time = time.time()
-        duration = self.end_time - self.start_time
+        duration = self.end_time - (self.start_time or 0)
 
         if exc_type:
             self.log(f"Failed with error: {exc_val}")

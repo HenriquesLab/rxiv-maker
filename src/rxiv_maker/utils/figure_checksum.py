@@ -167,6 +167,43 @@ class FigureChecksumManager:
             logger.info("All figure source files are up to date")
             return False
 
+    def has_file_changed(self, relative_path: str) -> bool:
+        """Check if a specific file has changed based on its checksum.
+
+        Args:
+            relative_path: Relative path from figures directory
+
+        Returns:
+            True if file has changed or is new, False if unchanged
+        """
+        file_path = self.figures_dir / relative_path
+        if not file_path.exists():
+            return True  # File doesn't exist, consider it changed
+
+        current_checksum = self._calculate_file_checksum(file_path)
+        if not current_checksum:
+            return True  # Can't calculate checksum, assume changed
+
+        cached_checksum = self._checksums.get(relative_path)
+        return cached_checksum != current_checksum
+
+    def update_file_checksum(self, relative_path: str) -> None:
+        """Update checksum for a specific file.
+
+        Args:
+            relative_path: Relative path from figures directory
+        """
+        file_path = self.figures_dir / relative_path
+        if not file_path.exists():
+            logger.warning(f"File not found for checksum update: {file_path}")
+            return
+
+        current_checksum = self._calculate_file_checksum(file_path)
+        if current_checksum:
+            self._checksums[relative_path] = current_checksum
+            self._save_checksums()
+            logger.debug(f"Updated checksum for {relative_path}: {current_checksum}")
+
     def update_checksums(self, files: list[Path] | None = None) -> None:
         """Update checksums for specified files or all source files.
 

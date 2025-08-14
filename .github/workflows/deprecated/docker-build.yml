@@ -1,0 +1,447 @@
+name: Docker Build & Release
+
+on:
+  push:
+    branches: [main, dev]
+    paths:
+      - 'src/docker/images/base/Dockerfile'
+      - 'pyproject.toml'
+      - 'src/docker/images/base/build.sh'
+      - 'src/docker/images/base/Makefile'
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'tests/**'
+
+  pull_request:
+    branches: [main, dev]
+    paths:
+      - 'src/docker/images/base/Dockerfile'
+      - 'pyproject.toml'
+      - 'src/docker/images/base/build.sh'
+      - 'src/docker/images/base/Makefile'
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'tests/**'
+
+  release:
+    types: [published]
+
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'Platforms to build for'
+        required: false
+        default: 'linux/amd64,linux/arm64'
+        type: string
+      push_to_registry:
+        description: 'Push to Docker Hub'
+        required: false
+        default: false
+        type: boolean
+      test_only:
+        description: 'Build and test only (no push)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: docker-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: 1
+  DOCKER_BUILDKIT: 1
+  REGISTRY: docker.io
+  IMAGE_NAME: henriqueslab/rxiv-maker-base
+
+jobs:
+  # Simplified change detection
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      should-build: ${{ steps.decision.outputs.should-build }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+
+      - name: Detect file changes
+        id: changes
+        run: |
+          echo "Checking for relevant file changes..."
+
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+          else
+            echo "⚠️ Initial commit detected"
+            CHANGED_FILES=$(git show --name-only --pretty=format: HEAD)
+          fi
+
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          # Check for Dockerfile changes
+          if echo "$CHANGED_FILES" | grep -E '^src/docker/images/base/Dockerfile$'; then
+            echo "dockerfile=true" >> $GITHUB_OUTPUT
+            echo "📝 Dockerfile changed"
+          else
+            echo "dockerfile=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Check for dependency changes
+          if echo "$CHANGED_FILES" | grep -E '^pyproject.toml$'; then
+            echo "dependencies=true" >> $GITHUB_OUTPUT
+            echo "📦 Dependencies changed"
+          else
+            echo "dependencies=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Check for build script changes
+          if echo "$CHANGED_FILES" | grep -E '^src/docker/images/base/(build\.sh|Makefile)$'; then
+            echo "build-scripts=true" >> $GITHUB_OUTPUT
+            echo "🔧 Build scripts changed"
+          else
+            echo "build-scripts=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build decision
+        id: decision
+        run: |
+          # Simple build decision logic
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "should-build=true" >> $GITHUB_OUTPUT
+            echo "🚀 Manual trigger - will build"
+          elif [ "${{ github.event_name }}" == "release" ]; then
+            echo "should-build=true" >> $GITHUB_OUTPUT
+            echo "🏷️ Release trigger - will build"
+          elif [ "${{ steps.changes.outputs.dockerfile }}" == "true" ] || \
+               [ "${{ steps.changes.outputs.dependencies }}" == "true" ] || \
+               [ "${{ steps.changes.outputs.build-scripts }}" == "true" ]; then
+            echo "should-build=true" >> $GITHUB_OUTPUT
+            echo "📋 Relevant changes detected - will build"
+          else
+            echo "should-build=false" >> $GITHUB_OUTPUT
+            echo "⏭️ No relevant changes - skipping build"
+          fi
+
+  # Build and test Docker image
+  build-and-test:
+    name: Build & Test Docker Image
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.should-build == 'true'
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set platform slug
+        id: platform
+        run: |
+          PLATFORM_SLUG=$(echo "${{ matrix.platform }}" | sed 's/\//-/g')
+          echo "slug=$PLATFORM_SLUG" >> $GITHUB_OUTPUT
+          echo "Platform: ${{ matrix.platform }} -> Slug: $PLATFORM_SLUG"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: ${{ matrix.platform }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        timeout-minutes: 45
+        with:
+          context: .
+          file: src/docker/images/base/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=build-${{ matrix.platform }}
+          cache-to: type=gha,scope=build-${{ matrix.platform }},mode=max
+          outputs: type=docker,dest=/tmp/image-${{ steps.platform.outputs.slug }}.tar
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: docker-image-${{ steps.platform.outputs.slug }}
+          path: /tmp/image-${{ steps.platform.outputs.slug }}.tar
+          retention-days: 1
+
+  # Test the built images
+  test-images:
+    name: Test Docker Images
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build-and-test]
+    if: needs.detect-changes.outputs.should-build == 'true'
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Download image artifacts
+        uses: actions/download-artifact@v5
+        with:
+          pattern: docker-image-*
+          merge-multiple: true
+
+      - name: Load Docker images
+        run: |
+          # Load all built images
+          for image_file in docker-image-*.tar; do
+            if [ -f "$image_file" ]; then
+              echo "Loading $image_file..."
+              docker load --input "$image_file"
+            fi
+          done
+
+          # List loaded images
+          docker images | grep henriqueslab/rxiv-maker-base || echo "No images found"
+
+          # Ensure a :latest tag exists for tests
+          if ! docker images --format '{{.Repository}}:{{.Tag}}' | grep -q '^henriqueslab/rxiv-maker-base:latest$'; then
+            most_recent=$(docker images --format '{{.Repository}}:{{.Tag}}' | awk '/^henriqueslab\/rxiv-maker-base:/ {print; exit}')
+            if [ -n "$most_recent" ]; then
+              echo "Tagging $most_recent as henriqueslab/rxiv-maker-base:latest for tests"
+              docker tag "$most_recent" henriqueslab/rxiv-maker-base:latest
+            fi
+          fi
+
+      - name: Test Docker image
+        run: |
+          echo "🧪 Testing built Docker image..."
+          docker run --rm henriqueslab/rxiv-maker-base:latest python3 -c "
+          import sys
+          print(f'Python version: {sys.version}')
+          print('✅ Docker image test successful!')
+          "
+
+  # Push to Docker Hub (only on main branch or releases)
+  push-to-registry:
+    name: Push to Docker Hub
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build-and-test, test-images]
+    if: |
+      needs.detect-changes.outputs.should-build == 'true' &&
+      (
+        github.ref == 'refs/heads/main' ||
+        github.event_name == 'release' ||
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.push_to_registry == 'true')
+      ) &&
+      github.event.inputs.test_only != 'true'
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PUSH }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: src/docker/images/base/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # 🚀 PHASE 4: Simplified multi-platform caching strategy
+          cache-from: |
+            type=gha,scope=build-linux-amd64
+            type=gha,scope=build-linux-arm64
+          cache-to: type=gha,scope=build-multi-platform,mode=max
+          # 🔧 Simplified production build arguments for fc-cache stability
+          build-args: |
+            USE_EATMYDATA=false
+          # 🚀 PHASE 4: Enable attestations for enhanced security and traceability
+          provenance: true
+          sbom: true
+
+      - name: Create release summary
+        run: |
+          echo "## 🐳 Docker Image Released" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:** ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Platforms:** linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
+          echo "**Dependency Hash:** ${{ needs.detect-changes.outputs.dependency-hash }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Usage:**" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "# Development mode with runtime dependency injection" >> $GITHUB_STEP_SUMMARY
+          echo "docker run -it --rm -v \$PWD:/workspace ${{ env.IMAGE_NAME }}:latest dev-mode.sh" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  # Phase 4: Cache Management and Optimization
+  cache-management:
+    name: Cache Management (Phase 4)
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build-and-test]
+    if: needs.detect-changes.outputs.should-build == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache size analysis
+        run: |
+          echo "## 🚀 PHASE 4: Build Cache Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Analyze GitHub Actions cache usage
+          echo "**GitHub Actions Cache Usage:**" >> $GITHUB_STEP_SUMMARY
+          gh api repos/${{ github.repository }}/actions/caches --paginate | jq -r '
+            .actions_caches[] |
+            select(.key | contains("buildkit")) |
+            "| \(.key) | \(.size_in_bytes / 1024 / 1024 | round)MB | \(.created_at[:10]) |"
+          ' | head -20 >> $GITHUB_STEP_SUMMARY || echo "No buildkit caches found" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Cache Optimization Status:**" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Multi-source caching (GHA + Registry)" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Platform-specific cache scopes" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Enhanced BuildKit configuration" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Parallel multi-stage builds" >> $GITHUB_STEP_SUMMARY
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prune old caches
+        continue-on-error: true
+        run: |
+          echo "🧹 Pruning old Docker build caches..."
+
+          # Clean up old GitHub Actions caches (keep last 10 per scope)
+          gh api repos/${{ github.repository }}/actions/caches --paginate | jq -r '
+            .actions_caches[] |
+            select(.key | contains("buildkit")) |
+            select(.created_at < (now - 604800 | strftime("%Y-%m-%dT%H:%M:%SZ"))) |
+            .id
+          ' | head -20 | while read cache_id; do
+            if [ -n "$cache_id" ]; then
+              echo "Deleting cache ID: $cache_id"
+              gh api -X DELETE repos/${{ github.repository }}/actions/caches/$cache_id || true
+            fi
+          done
+
+          echo "✅ Cache cleanup completed"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Summary job
+  build-summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build-and-test, test-images, push-to-registry, cache-management]
+    if: always()
+    timeout-minutes: 5
+
+    steps:
+      - name: Build summary
+        run: |
+          echo "## Docker Build & Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.detect-changes.outputs.should-build }}" == "true" ]; then
+            echo "**Build Triggered:** ✅ Yes" >> $GITHUB_STEP_SUMMARY
+            echo "**Dockerfile Changed:** ${{ needs.detect-changes.outputs.dockerfile-changed }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Dependencies Changed:** ${{ needs.detect-changes.outputs.dependencies-changed }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Build Scripts Changed:** ${{ needs.detect-changes.outputs.build-scripts-changed }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Dependency Hash:** ${{ needs.detect-changes.outputs.dependency-hash }}" >> $GITHUB_STEP_SUMMARY
+
+            if [ "${{ needs.build-and-test.result }}" == "success" ]; then
+              echo "**Build Status:** ✅ Success" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "**Build Status:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            if [ "${{ needs.test-images.result }}" == "success" ]; then
+              echo "**Tests Status:** ✅ Passed" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "**Tests Status:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            if [ "${{ needs.push-to-registry.result }}" == "success" ]; then
+              echo "**Registry Push:** ✅ Success" >> $GITHUB_STEP_SUMMARY
+            elif [ "${{ needs.push-to-registry.result }}" == "skipped" ]; then
+              echo "**Registry Push:** ⏭️ Skipped (PR or test-only)" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "**Registry Push:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            if [ "${{ needs.cache-management.result }}" == "success" ]; then
+              echo "**Phase 4 Cache Management:** ✅ Success" >> $GITHUB_STEP_SUMMARY
+            elif [ "${{ needs.cache-management.result }}" == "skipped" ]; then
+              echo "**Phase 4 Cache Management:** ⏭️ Skipped (not main branch)" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "**Phase 4 Cache Management:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🚀 Phase 4 CI/CD Optimizations Active:" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Multi-source BuildKit caching (GHA + Registry)" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Platform-specific cache scopes" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Enhanced Buildx configuration (8x parallelism)" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Automatic cache cleanup and management" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ eatmydata filesystem acceleration" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Multi-stage parallel builds with enhanced layer ordering" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Build Triggered:** ⏭️ No (no relevant changes)" >> $GITHUB_STEP_SUMMARY
+          fi

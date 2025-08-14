@@ -344,7 +344,7 @@ class SecurityScanner:
         Returns:
             Dictionary with validation results
         """
-        validation = {"url": url, "is_safe": True, "issues": [], "recommendations": []}
+        validation: Dict[str, Any] = {"url": url, "is_safe": True, "issues": [], "recommendations": []}
 
         try:
             parsed = urlparse(url)
@@ -411,10 +411,10 @@ class SecurityScanner:
         dependencies = []
 
         try:
-            import tomli
+            import tomllib
 
             with open(pyproject_file, "rb") as f:
-                data = tomli.load(f)
+                data = tomllib.load(f)
 
             # Extract main dependencies
             project_deps = data.get("project", {}).get("dependencies", [])
@@ -589,7 +589,7 @@ class SecurityScanner:
                     )
 
                 # Check for hardcoded secrets (simplified)
-                secret_patterns = [
+                secret_patterns = [  # nosec B105 - These are regex patterns for detecting secrets, not actual secrets
                     (r'password\s*=\s*["\'][^"\']+["\']', "Hardcoded password"),
                     (r'api[_-]?key\s*=\s*["\'][^"\']+["\']', "Hardcoded API key"),
                     (r'secret\s*=\s*["\'][^"\']+["\']', "Hardcoded secret"),
@@ -687,7 +687,8 @@ class SecurityScanner:
             if not self._should_skip_file(file_path):
                 try:
                     hash_obj.update(file_path.read_bytes())
-                except Exception:
+                except Exception as e:
+                    logging.warning(f"Failed to read file for hashing: {file_path}: {e}")
                     pass
 
         return hash_obj.hexdigest()[:12]

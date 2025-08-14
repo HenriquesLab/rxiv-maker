@@ -65,7 +65,7 @@ def generate_enhanced_index(docs_dir, successful_modules):
     readme_path = docs_dir / "README.md"
 
     # Create categories for modules
-    categories = {
+    categories: dict[str, list[str]] = {
         "commands": [],
         "processors": [],
         "converters": [],

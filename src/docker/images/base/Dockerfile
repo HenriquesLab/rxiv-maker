@@ -3,6 +3,7 @@
 # ======================================================================
 # This Docker image contains all system dependencies for Rxiv-Maker
 # but NO Python code or rxiv-maker specific logic.
+# Updated to test consolidated Docker workflow system.
 #
 # ARCHITECTURE SUPPORT: AMD64 and ARM64
 # - Uses mermaid.ink API for diagram generation (no local dependencies)
@@ -179,9 +180,11 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 # Configure R for optimal performance with devxy.io binary repository (PHASE 1 optimization)
 # ✨ NEW: Added devxy.io binary repository (Dec 2024) for 50-80% speedup
-RUN echo 'options(repos = c(' >> /usr/lib/R/etc/Rprofile.site \
+RUN ARCH=$(dpkg --print-architecture) \
+    && echo "🔍 Detected architecture: $ARCH" \
+    && echo 'options(repos = c(' >> /usr/lib/R/etc/Rprofile.site \
     && echo '  # 🚀 devxy.io binary repository - NEW Dec 2024 (fastest)' >> /usr/lib/R/etc/Rprofile.site \
-    && echo '  DEVXY = "https://cran.devxy.io/amd64/jammy/latest",' >> /usr/lib/R/etc/Rprofile.site \
+    && echo "  DEVXY = \"https://cran.devxy.io/$ARCH/jammy/latest\"," >> /usr/lib/R/etc/Rprofile.site \
     && echo '  # RStudio Package Manager binaries (fallback)' >> /usr/lib/R/etc/Rprofile.site \
     && echo '  CRAN = "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest",' >> /usr/lib/R/etc/Rprofile.site \
     && echo '  RSPM = "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest",' >> /usr/lib/R/etc/Rprofile.site \
@@ -199,15 +202,21 @@ RUN echo 'options(repos = c(' >> /usr/lib/R/etc/Rprofile.site \
 # 🚀 BuildKit cache mount for R package downloads and builds
 RUN --mount=type=cache,target=/root/.cache/R,sharing=locked \
     --mount=type=cache,target=/tmp/downloaded_packages,sharing=locked \
+    ARCH=$(dpkg --print-architecture) && \
+    echo "🔍 Using R repository for architecture: $ARCH" && \
     R -e " \
   # Set global options for installation with devxy.io priority \
+  arch <- system('dpkg --print-architecture', intern=TRUE); \
+  cat('Architecture detected in R:', arch, '\\n'); \
   options(repos = c( \
-    'https://cran.devxy.io/amd64/jammy/latest', \
+    paste0('https://cran.devxy.io/', arch, '/jammy/latest'), \
     'https://packagemanager.rstudio.com/cran/__linux__/jammy/latest', \
     'https://cran.rstudio.com/' \
   )); \
   options(Ncpus = parallel::detectCores()); \
-  options(timeout = 120); \
+  # ARM64-specific timeout adjustments \
+  timeout_val <- if (Sys.info()['machine'] == 'aarch64') 600 else 120; \
+  options(timeout = timeout_val); \
   \
   # Helper function for robust package installation \
   install_safe <- function(packages, description = '') { \
@@ -417,9 +426,15 @@ COPY --from=latex-base /usr/share/fonts /usr/share/fonts
 COPY --from=latex-base /etc/fonts /etc/fonts
 COPY --from=latex-base /usr/bin/fc-cache /usr/bin/fc-cache
 COPY --from=latex-base /usr/bin/fc-list /usr/bin/fc-list
-# Copy fontconfig library dependencies for fc-cache to work
-COPY --from=latex-base /usr/lib/x86_64-linux-gnu/libfontconfig.so.1* /usr/lib/x86_64-linux-gnu/
-COPY --from=latex-base /usr/lib/x86_64-linux-gnu/libfreetype.so.6* /usr/lib/x86_64-linux-gnu/
+# Copy fontconfig library dependencies for fc-cache to work (architecture-aware)
+RUN ARCH_PATH=$(dpkg --print-architecture | sed 's/amd64/x86_64-linux-gnu/;s/arm64/aarch64-linux-gnu/') \
+    && echo "🔍 Using architecture-specific library path: $ARCH_PATH"
+COPY --from=latex-base /usr/lib/*/libfontconfig.so.1* /usr/lib/
+COPY --from=latex-base /usr/lib/*/libfreetype.so.6* /usr/lib/
+RUN ARCH_PATH=$(dpkg --print-architecture | sed 's/amd64/x86_64-linux-gnu/;s/arm64/aarch64-linux-gnu/') \
+    && mkdir -p /usr/lib/$ARCH_PATH \
+    && find /usr/lib -name "libfontconfig.so.1*" -exec ln -sf {} /usr/lib/$ARCH_PATH/ \; \
+    && find /usr/lib -name "libfreetype.so.6*" -exec ln -sf {} /usr/lib/$ARCH_PATH/ \;
 
 # Create a non-root user for security (but allow GitHub Actions to work)
 RUN groupadd -r rxivmaker && useradd -r -g rxivmaker -d /home/rxivmaker -s /bin/bash rxivmaker \
@@ -507,3 +522,4 @@ LABEL org.opencontainers.image.variant="phase3-enhanced-multistage"
 # USER rxivmaker
 
 CMD ["/bin/bash"]
+# Test comment for triggering build

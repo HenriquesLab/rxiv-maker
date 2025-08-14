@@ -423,9 +423,8 @@ runs:
         done
 
         if [ "$success" = false ]; then
-          echo "⚠️ UV installation failed, falling back to pip..."
-          python -m pip install --upgrade pip setuptools wheel
-          python -m pip install -e . || {
+          echo "⚠️ UV installation failed, falling back to direct uv pip..."
+          uv pip install --system -e . || {
             echo "❌ All installation methods failed"
             exit 1
           }

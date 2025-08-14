@@ -19,10 +19,13 @@ logger = get_logger()
 def get_figure_generator():
     """Get FigureGenerator class with lazy import."""
     try:
-        from .generate_figures import FigureGenerator
+        from .generate_figures import FigureGenerator  # type: ignore[misc]
+
+        return FigureGenerator
     except ImportError:
-        from generate_figures import FigureGenerator
-    return FigureGenerator
+        from generate_figures import FigureGenerator  # type: ignore[no-redef]
+
+        return FigureGenerator
 
 
 class BuildManager:
@@ -51,7 +54,10 @@ class BuildManager:
             track_changes_tag: Git tag to track changes against
             engine: Execution engine ("local" or "docker")
         """
-        self.manuscript_path: str = manuscript_path or os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
+        manuscript_path_resolved = manuscript_path or os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
+        if manuscript_path_resolved is None:
+            manuscript_path_resolved = "MANUSCRIPT"
+        self.manuscript_path: str = manuscript_path_resolved
         # Make output_dir absolute relative to manuscript directory
         self.manuscript_dir_path = Path(self.manuscript_path)
         if Path(output_dir).is_absolute():
@@ -233,13 +239,15 @@ class BuildManager:
 
             # Convert to absolute path, then make relative to workspace directory
             manuscript_abs = manuscript_path.resolve()
+            if self.container_engine is None:
+                raise RuntimeError("Container engine not initialized")
             workspace_dir = self.container_engine.workspace_dir
 
             try:
                 manuscript_rel = manuscript_abs.relative_to(workspace_dir)
             except ValueError:
                 # If manuscript is not within workspace, use just the name
-                manuscript_rel = manuscript_path.name
+                manuscript_rel = Path(manuscript_path.name)
 
             # Build validation command for container using installed CLI
             validation_cmd = ["rxiv", "validate", str(manuscript_rel), "--detailed"]
@@ -247,6 +255,8 @@ class BuildManager:
             if self.verbose:
                 validation_cmd.append("--verbose")
 
+            if self.container_engine is None:
+                raise RuntimeError("Container engine not initialized")
             result = self.container_engine.run_command(command=validation_cmd, session_key="validation")
 
             if result.returncode == 0:
@@ -323,10 +333,10 @@ class BuildManager:
 
         try:
             # Get FigureGenerator class
-            FigureGenerator = get_figure_generator()
+            FigureGeneratorClass = get_figure_generator()
 
             # Generate Mermaid and Python figures
-            figure_gen = FigureGenerator(
+            figure_gen = FigureGeneratorClass(
                 figures_dir=str(self.figures_dir),
                 output_dir=str(self.figures_dir),
                 output_format="pdf",
@@ -335,7 +345,7 @@ class BuildManager:
             figure_gen.generate_all_figures()
 
             # Generate R figures if any
-            r_figure_gen = FigureGenerator(
+            r_figure_gen = FigureGeneratorClass(
                 figures_dir=str(self.figures_dir),
                 output_dir=str(self.figures_dir),
                 output_format="pdf",
@@ -552,6 +562,11 @@ class BuildManager:
             # Extract YAML metadata from the manuscript file
             yaml_metadata = extract_yaml_metadata(str(manuscript_md))
 
+            # Inject Rxiv-Maker citation if requested
+            from ..utils import inject_rxiv_citation
+
+            inject_rxiv_citation(yaml_metadata)
+
             # Set MANUSCRIPT_PATH env var for generate_preprint
             original_env = os.environ.get("MANUSCRIPT_PATH")
             os.environ["MANUSCRIPT_PATH"] = os.path.basename(self.manuscript_path)
@@ -561,8 +576,8 @@ class BuildManager:
             os.chdir(Path(self.manuscript_path).parent)
 
             try:
-                # Generate the preprint
-                result = generate_preprint(str(self.output_dir), yaml_metadata)
+                # Generate the preprint with explicit manuscript path
+                result = generate_preprint(str(self.output_dir), yaml_metadata, self.manuscript_path)
 
                 if result:
                     self.log("LaTeX files generated successfully")
@@ -597,6 +612,8 @@ class BuildManager:
             tex_file = self.output_dir / f"{self.manuscript_name}.tex"
 
             # Run LaTeX compilation with multiple passes
+            if self.container_engine is None:
+                raise RuntimeError("Container engine not initialized")
             results = self.container_engine.run_latex_compilation(
                 tex_file=tex_file, working_dir=self.output_dir, passes=3
             )
@@ -732,74 +749,103 @@ class BuildManager:
     def copy_pdf_to_manuscript(self) -> bool:
         """Copy generated PDF to manuscript directory with custom name."""
         try:
-            # Import and call the copy_pdf function directly instead of subprocess
-            from ..engine.copy_pdf import copy_pdf_with_custom_filename
+            from ..processors.yaml_processor import extract_yaml_metadata
+            from ..utils import copy_pdf_to_manuscript_folder, find_manuscript_md
 
-            # Set environment variables that the function expects
-            env_backup = {}
-            if "MANUSCRIPT_PATH" not in os.environ:
-                env_backup["MANUSCRIPT_PATH"] = os.environ.get("MANUSCRIPT_PATH")
-                os.environ["MANUSCRIPT_PATH"] = self.manuscript_path
+            # Find and parse the manuscript markdown using the known manuscript path
+            manuscript_md = find_manuscript_md(self.manuscript_path)
+            self.log(f"Reading metadata from: {manuscript_md}")
 
-            # Change to the manuscript directory for the copy operation
-            original_cwd = os.getcwd()
-            os.chdir(Path(self.manuscript_path))
+            yaml_metadata = extract_yaml_metadata(manuscript_md)
 
-            try:
-                # Call the function directly
-                success = copy_pdf_with_custom_filename(str(self.output_dir.name))
+            # Copy PDF with custom filename using full output_dir path and manuscript path
+            result = copy_pdf_to_manuscript_folder(str(self.output_dir), yaml_metadata, self.manuscript_path)
 
-                if success:
-                    self.log("PDF copied to manuscript directory")
-                    return True
-                else:
-                    self.log("❌ Failed to copy PDF to manuscript directory", level="ERROR")
-                    return False
-            finally:
-                # Restore original working directory
-                os.chdir(original_cwd)
-
-                # Restore environment variables
-                for key, value in env_backup.items():
-                    if value is None and key in os.environ:
-                        del os.environ[key]
-                    elif value is not None:
-                        os.environ[key] = value
+            if result:
+                self.log("PDF copied to manuscript directory")
+                return True
+            else:
+                self.log("❌ Failed to copy PDF to manuscript directory", level="ERROR")
+                return False
 
         except Exception as e:
             self.log(f"Error copying PDF: {e}", "ERROR")
+            import traceback
+
+            self.log(f"Traceback: {traceback.format_exc()}", "ERROR")
             return False
 
     def run_word_count_analysis(self) -> bool:
         """Run word count analysis on the manuscript."""
         try:
-            # Import and call the analyze_manuscript_word_count function directly
-            from .analyze_word_count import analyze_manuscript_word_count
+            from ..converters.md2tex import extract_content_sections
+            from ..utils import find_manuscript_md
 
-            # Find the manuscript file
-            manuscript_md = None
-            for md_file in ["01_MAIN.md", "MAIN.md", "manuscript.md"]:
-                md_path = Path(self.manuscript_path) / md_file
-                if md_path.exists():
-                    manuscript_md = str(md_path)
-                    break
-
+            # Find the manuscript markdown file using the known manuscript path
+            manuscript_md = find_manuscript_md(self.manuscript_path)
             if not manuscript_md:
                 self.log("Could not find manuscript markdown file for word count analysis", "WARNING")
                 return False
 
-            # Call the word count analysis function directly
-            result = analyze_manuscript_word_count(manuscript_md)
+            self.log(f"Analyzing word count for: {manuscript_md}")
 
-            if result == 0:
-                return True
-            else:
-                self.log("Word count analysis completed with warnings", "WARNING")
-                return False
+            # Extract content sections from markdown
+            content_sections = extract_content_sections(str(manuscript_md))
+
+            # Analyze word counts and provide warnings
+            self._analyze_section_word_counts(content_sections)
+
+            self.log("Word count analysis completed")
+            return True
 
         except Exception as e:
             self.log(f"Error running word count analysis: {e}", "WARNING")
+            import traceback
+
+            self.log(f"Traceback: {traceback.format_exc()}", "WARNING")
             return False
+
+    def _analyze_section_word_counts(self, content_sections):
+        """Analyze word counts for each section and provide warnings."""
+        import re
+
+        section_guidelines = {
+            "abstract": {"ideal": 150, "max_warning": 250, "description": "Abstract"},
+            "main": {"ideal": 1500, "max_warning": 3000, "description": "Main content"},
+            "methods": {"ideal": 1000, "max_warning": 3000, "description": "Methods"},
+            "results": {"ideal": 800, "max_warning": 2000, "description": "Results"},
+            "discussion": {"ideal": 600, "max_warning": 1500, "description": "Discussion"},
+            "conclusion": {"ideal": 200, "max_warning": 500, "description": "Conclusion"},
+            "funding": {"ideal": 50, "max_warning": 150, "description": "Funding"},
+            "acknowledgements": {"ideal": 100, "max_warning": 300, "description": "Acknowledgements"},
+        }
+
+        def count_words_in_text(text):
+            """Count words in text, excluding LaTeX commands."""
+            # Remove LaTeX commands (backslash followed by word characters)
+            text_no_latex = re.sub(r"\\[a-zA-Z]+\{[^}]*\}", "", text)
+            text_no_latex = re.sub(r"\\[a-zA-Z]+", "", text_no_latex)
+            # Remove remaining LaTeX markup
+            text_no_latex = re.sub(r"[{}\\]", " ", text_no_latex)
+            # Split by whitespace and count non-empty words
+            words = [word for word in text_no_latex.split() if word.strip()]
+            return len(words)
+
+        total_words = 0
+        for section_name, section_content in content_sections.items():
+            if section_name in section_guidelines:
+                word_count = count_words_in_text(section_content)
+                total_words += word_count
+
+                guidelines = section_guidelines[section_name]
+                status = "✅" if word_count <= guidelines["max_warning"] else "⚠️"
+
+                self.log(
+                    f"{status} {guidelines['description']}: {word_count} words "
+                    f"(ideal: {guidelines['ideal']}, warning: {guidelines['max_warning']})"
+                )
+
+        self.log(f"📊 Total manuscript word count: {total_words} words")
 
     def run_pdf_validation(self) -> bool:
         """Run PDF validation to check final output quality."""
@@ -818,6 +864,8 @@ class BuildManager:
         """Run PDF validation using container engine."""
         try:
             # Convert paths to be relative to container workspace
+            if self.container_engine is None:
+                raise RuntimeError("Container engine not initialized")
             workspace_dir = self.container_engine.workspace_dir
 
             # Handle manuscript path
@@ -826,7 +874,7 @@ class BuildManager:
             try:
                 manuscript_rel = manuscript_abs.relative_to(workspace_dir)
             except ValueError:
-                manuscript_rel = manuscript_path.name
+                manuscript_rel = Path(manuscript_path.name)
 
             # Handle PDF path
             pdf_abs = self.output_pdf.resolve()
@@ -845,6 +893,8 @@ class BuildManager:
                 f"/workspace/{pdf_rel}",
             ]
 
+            if self.container_engine is None:
+                raise RuntimeError("Container engine not initialized")
             result = self.container_engine.run_command(command=pdf_validation_cmd, session_key="pdf_validation")
 
             if result.returncode == 0:
@@ -908,7 +958,7 @@ class BuildManager:
             self.log(f"Error running PDF validation: {e}", "WARNING")
             return True  # Don't fail the build on PDF validation errors
 
-    def run_full_build(self) -> bool:
+    def run_full_build(self, progress_callback=None) -> bool:
         """Run the complete build process."""
         # Create operation context for the entire build
         with create_operation("pdf_build", manuscript=self.manuscript_path, engine=self.engine) as op:
@@ -920,8 +970,13 @@ class BuildManager:
 
             # Track performance
             perf_tracker = get_performance_tracker()
+            current_step = 0
+            total_steps = 10 if self.skip_validation else 11
 
             # Step 1: Check manuscript structure
+            current_step += 1
+            if progress_callback:
+                progress_callback("Checking manuscript structure", current_step, total_steps)
             perf_tracker.start_operation("check_structure")
             if not self.check_manuscript_structure():
                 op.log("Failed at manuscript structure check")
@@ -929,6 +984,9 @@ class BuildManager:
             perf_tracker.end_operation("check_structure")
 
             # Step 2: Set up output directory
+            current_step += 1
+            if progress_callback:
+                progress_callback("Setting up output directory", current_step, total_steps)
             perf_tracker.start_operation("setup_output")
             if not self.setup_output_directory():
                 op.log("Failed at output directory setup")
@@ -936,6 +994,9 @@ class BuildManager:
             perf_tracker.end_operation("setup_output")
 
             # Step 3: Generate figures (before validation to ensure figure files exist)
+            current_step += 1
+            if progress_callback:
+                progress_callback("Generating figures", current_step, total_steps)
             perf_tracker.start_operation("generate_figures")
             if not self.generate_figures():
                 op.log("Failed at figure generation")
@@ -943,30 +1004,46 @@ class BuildManager:
             perf_tracker.end_operation("generate_figures")
 
             # Step 4: Validate manuscript (if not skipped)
-            perf_tracker.start_operation("validate_manuscript")
-            if not self.validate_manuscript():
-                op.log("Failed at manuscript validation")
-                return False
-            perf_tracker.end_operation("validate_manuscript")
+            if not self.skip_validation:
+                current_step += 1
+                if progress_callback:
+                    progress_callback("Validating manuscript", current_step, total_steps)
+                perf_tracker.start_operation("validate_manuscript")
+                if not self.validate_manuscript():
+                    op.log("Failed at manuscript validation")
+                    return False
+                perf_tracker.end_operation("validate_manuscript")
 
             # Step 5: Copy style files
+            current_step += 1
+            if progress_callback:
+                progress_callback("Copying style files", current_step, total_steps)
             perf_tracker.start_operation("copy_files")
             if not self.copy_style_files():
                 op.log("Failed at copying style files")
                 return False
 
             # Step 6: Copy references
+            current_step += 1
+            if progress_callback:
+                progress_callback("Copying references", current_step, total_steps)
             if not self.copy_references():
                 op.log("Failed at copying references")
                 return False
 
             # Step 7: Copy figures
+            current_step += 1
+            if progress_callback:
+                progress_callback("Copying figures", current_step, total_steps)
             if not self.copy_figures():
                 op.log("Failed at copying figures")
                 return False
             perf_tracker.end_operation("copy_files")
 
             # Step 8: Generate LaTeX files
+            current_step += 1
+            if progress_callback:
+                progress_callback("Generating LaTeX files", current_step, total_steps)
             perf_tracker.start_operation("generate_tex")
             if not self.generate_tex_files():
                 op.log("Failed at LaTeX generation")
@@ -974,6 +1051,9 @@ class BuildManager:
             perf_tracker.end_operation("generate_tex")
 
             # Step 9: Compile PDF
+            current_step += 1
+            if progress_callback:
+                progress_callback("Compiling PDF", current_step, total_steps)
             perf_tracker.start_operation("compile_pdf")
             if not self.compile_pdf():
                 op.log("Failed at PDF compilation")
@@ -981,6 +1061,9 @@ class BuildManager:
             perf_tracker.end_operation("compile_pdf")
 
             # Step 10: Copy PDF to manuscript directory
+            current_step += 1
+            if progress_callback:
+                progress_callback("Finalizing build", current_step, total_steps)
             if not self.copy_pdf_to_manuscript():
                 op.log("Failed at copying PDF to manuscript")
                 return False

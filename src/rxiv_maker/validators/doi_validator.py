@@ -58,6 +58,7 @@ class DOIValidator(BaseValidator):
         enable_semantic_scholar: bool = True,
         enable_handle_system: bool = True,
         fallback_timeout: int = 10,
+        enable_performance_optimizations: bool = True,
     ):
         """Initialize DOI validator.
 
@@ -74,6 +75,7 @@ class DOIValidator(BaseValidator):
             enable_semantic_scholar: Whether to enable Semantic Scholar as a fallback API
             enable_handle_system: Whether to enable Handle System as a fallback resolver
             fallback_timeout: Timeout in seconds for fallback API requests
+            enable_performance_optimizations: Whether to enable parallel file processing and other optimizations
         """
         super().__init__(manuscript_path)
 
@@ -81,6 +83,7 @@ class DOIValidator(BaseValidator):
         self.force_validation = force_validation
         self.ignore_ci_environment = ignore_ci_environment
         self.max_workers = max_workers
+        self.enable_performance_optimizations = enable_performance_optimizations
 
         # Fallback configuration
         self.enable_fallback_apis = enable_fallback_apis
@@ -238,27 +241,80 @@ class DOIValidator(BaseValidator):
             )
             return ValidationResult(self.name, errors, metadata)
 
-        # Process each bibliography file
-        for bib_file in bib_files:
-            try:
-                file_errors, file_metadata = self._validate_bib_file(bib_file)
-                errors.extend(file_errors)
-                # Merge metadata
-                for key in metadata:
-                    if key in file_metadata:
-                        metadata[key] += file_metadata[key]
-            except Exception as e:
-                logger.error(f"Failed to process {bib_file}: {e}")
-                errors.append(
-                    create_validation_error(
-                        ErrorCode.BIB_PROCESSING_ERROR,
-                        f"Failed to process bibliography file: {e}",
-                        file_path=str(bib_file),
+        # Process bibliography files in parallel for better performance (if optimizations enabled)
+        if len(bib_files) > 1 and self.enable_performance_optimizations:
+            logger.info(f"Processing {len(bib_files)} bibliography files in parallel")
+            # Use parallel processing for multiple files
+            file_workers = min(len(bib_files), self.max_workers)
+            with concurrent.futures.ThreadPoolExecutor(max_workers=file_workers) as file_executor:
+                future_to_file = {
+                    file_executor.submit(self._validate_bib_file_safe, bib_file): bib_file for bib_file in bib_files
+                }
+
+                for future in concurrent.futures.as_completed(future_to_file):
+                    bib_file = future_to_file[future]
+                    try:
+                        file_errors, file_metadata = future.result()
+                        errors.extend(file_errors)
+                        # Merge metadata
+                        for key in metadata:
+                            if key in file_metadata:
+                                metadata[key] += file_metadata[key]
+                    except Exception as e:
+                        logger.error(f"Failed to process {bib_file}: {e}")
+                        errors.append(
+                            create_validation_error(
+                                ErrorCode.BIB_PROCESSING_ERROR,
+                                f"Failed to process bibliography file: {e}",
+                                file_path=str(bib_file),
+                            )
+                        )
+                        metadata["api_failures"] += 1
+        else:
+            # Single file - use existing sequential processing
+            for bib_file in bib_files:
+                try:
+                    file_errors, file_metadata = self._validate_bib_file(bib_file)
+                    errors.extend(file_errors)
+                    # Merge metadata
+                    for key in metadata:
+                        if key in file_metadata:
+                            metadata[key] += file_metadata[key]
+                except Exception as e:
+                    logger.error(f"Failed to process {bib_file}: {e}")
+                    errors.append(
+                        create_validation_error(
+                            ErrorCode.BIB_PROCESSING_ERROR,
+                            f"Failed to process bibliography file: {e}",
+                            file_path=str(bib_file),
+                        )
                     )
-                )
-                metadata["api_failures"] += 1
+                    metadata["api_failures"] += 1
 
         return ValidationResult(self.name, errors, metadata)
+
+    def _validate_bib_file_safe(self, bib_file: Path) -> tuple[list[ValidationError], dict]:
+        """Thread-safe wrapper for bibliography file validation.
+
+        This method provides exception safety for parallel file processing.
+        """
+        try:
+            return self._validate_bib_file(bib_file)
+        except Exception as e:
+            logger.error(f"Exception in parallel processing of {bib_file}: {e}")
+            error = create_validation_error(
+                ErrorCode.BIB_PROCESSING_ERROR,
+                f"Failed to process bibliography file during parallel validation: {e}",
+                file_path=str(bib_file),
+            )
+            metadata = {
+                "total_dois": 0,
+                "validated_dois": 0,
+                "invalid_format": 0,
+                "api_failures": 1,
+                "successful_validations": 0,
+            }
+            return [error], metadata
 
     def _validate_bib_file(self, bib_file: Path) -> tuple[list[ValidationError], dict]:
         """Validate DOIs in a single bibliography file."""
@@ -311,12 +367,18 @@ class DOIValidator(BaseValidator):
             f"Validating {len(doi_entries)} DOI entries in {bib_file.name} using resilient validation with fallback sources"
         )
 
-        # Validate DOI entries in parallel
+        # Optimize DOI validation with batching for large sets
+        if len(doi_entries) > 20:
+            logger.info(f"Processing {len(doi_entries)} DOI entries with batch optimization")
+
+        # Validate DOI entries in parallel with enhanced performance monitoring
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             future_to_entry = {
                 executor.submit(self._validate_doi_entry, entry, str(bib_file)): entry for entry in doi_entries
             }
 
+            # Process results as they complete for better user feedback
+            completed_count = 0
             for future in concurrent.futures.as_completed(future_to_entry):
                 entry_errors, entry_metadata = future.result()
                 errors.extend(entry_errors)
@@ -324,6 +386,10 @@ class DOIValidator(BaseValidator):
                 for key in metadata:
                     if key in entry_metadata:
                         metadata[key] += entry_metadata[key]
+
+                completed_count += 1
+                if len(doi_entries) > 10 and completed_count % 10 == 0:
+                    logger.info(f"Validated {completed_count}/{len(doi_entries)} DOIs...")
 
         # Update checksum after successful validation
         self.checksum_manager.update_checksum(validation_completed=True)

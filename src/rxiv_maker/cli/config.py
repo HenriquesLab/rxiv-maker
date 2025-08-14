@@ -38,16 +38,6 @@ class Config:
 
             with open(self.config_file, "rb") as f:
                 self.config_data = tomllib.load(f)
-        except ImportError:
-            # Fallback for Python < 3.11
-            try:
-                import tomli
-
-                with open(self.config_file, "rb") as f:
-                    self.config_data = tomli.load(f)
-            except ImportError:
-                console_warning(console, "TOML library not available. Using defaults.")
-                self.config_data = self.get_default_config()
         except Exception as e:
             console_warning(console, f"Error loading config: {e}. Using defaults.")
             self.config_data = self.get_default_config()

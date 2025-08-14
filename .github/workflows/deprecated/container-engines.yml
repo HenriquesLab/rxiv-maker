@@ -1,0 +1,140 @@
+name: Container Engines Test
+
+on:
+  # Manual trigger for container engine testing
+  workflow_dispatch:
+    inputs:
+      test_podman:
+        description: 'Test Podman engine'
+        required: false
+        default: true
+        type: boolean
+      test_docker:
+        description: 'Test Docker engine'
+        required: false
+        default: true
+        type: boolean
+
+  # Also run on changes to container engine code
+  pull_request:
+    branches: [main, dev]
+    paths:
+      - 'src/rxiv_maker/engines/**'
+      - 'src/rxiv_maker/docker/**'
+      - 'tests/integration/**'
+      - '.github/workflows/container-engines*.yml'
+
+# Minimal permissions
+permissions:
+  contents: read
+
+# Cancel previous runs on same PR
+concurrency:
+  group: container-engines-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: 1
+  UV_SYSTEM_PYTHON: 1
+  PYTHONIOENCODING: utf-8
+
+jobs:
+  container-test:
+    name: Test ${{ matrix.engine }} Engine
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [docker, podman]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Setup ${{ matrix.engine }}
+        run: |
+          if [ "${{ matrix.engine }}" == "docker" ]; then
+            echo "🐳 Docker is pre-installed on GitHub Actions runners"
+            docker --version
+          else
+            echo "🦭 Setting up Podman..."
+            sudo apt-get update
+            sudo apt-get install -y podman
+            podman --version
+          fi
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "latest"
+
+      - name: Set up Python and install dependencies
+        run: |
+          uv python install 3.11
+          uv sync --dev --all-extras
+
+      - name: Prepare container image
+        id: prepare
+        run: |
+          echo "🔍 Getting Docker image for testing..."
+
+          # Try to use pre-built image first (from docker-build workflow)
+          if docker pull henriqueslab/rxiv-maker-base:latest 2>/dev/null; then
+            echo "✅ Using pre-built image from registry"
+
+            # Tag for Podman if needed
+            if [ "${{ matrix.engine }}" == "podman" ]; then
+              # Pull image using Podman
+              podman pull docker.io/henriqueslab/rxiv-maker-base:latest
+            fi
+
+            echo "image_ready=true" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ Pre-built image not available, building locally..."
+
+            # Simple local build
+            if [ "${{ matrix.engine }}" == "docker" ]; then
+              docker build -t henriqueslab/rxiv-maker-base:latest -f src/docker/images/base/Dockerfile .
+            else
+              podman build -t henriqueslab/rxiv-maker-base:latest -f src/docker/images/base/Dockerfile .
+            fi
+
+            if [ $? -eq 0 ]; then
+              echo "✅ Local build successful"
+              echo "image_ready=true" >> $GITHUB_OUTPUT
+            else
+              echo "❌ Local build failed"
+              echo "image_ready=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Test container functionality
+        if: steps.prepare.outputs.image_ready == 'true'
+        env:
+          RXIV_ENGINE: ${{ matrix.engine == 'docker' && 'DOCKER' || 'PODMAN' }}
+        run: |
+          echo "🧪 Testing ${{ matrix.engine }} engine functionality..."
+
+          # Basic container test
+          ${{ matrix.engine }} run --rm henriqueslab/rxiv-maker-base:latest python3 -c "
+          import sys
+          print(f'✅ Container test passed - Python {sys.version[:5]}')
+          "
+
+          # Test rxiv-maker integration tests that require containers
+          echo "🔬 Running container-specific integration tests..."
+          uv run pytest tests/integration/ \
+            -m "integration and requires_${{ matrix.engine }}" \
+            --maxfail=3 --tb=short -v || true
+
+      - name: Report results
+        run: |
+          if [ "${{ steps.prepare.outputs.image_ready }}" == "true" ]; then
+            echo "✅ ${{ matrix.engine }} engine tests completed successfully"
+          else
+            echo "⚠️ ${{ matrix.engine }} engine tests skipped due to image preparation issues"
+          fi

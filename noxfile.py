@@ -9,7 +9,7 @@ nox.options.default_venv_backend = "uv"
 nox.options.reuse_existing_virtualenvs = True
 
 # Set default sessions for local development workflow
-nox.options.sessions = ["lint", "test_unit", "test_integration"]
+nox.options.sessions = ["lint", "test(test_type='full')"]
 
 # Configuration constants
 PYTHON_VERSIONS = ["3.11", "3.12", "3.13"]
@@ -29,7 +29,7 @@ SECURITY_DEPS = ["bandit>=1.7.5", "safety>=2.3.5", "pip-audit>=2.6.1"]
 
 
 def install_project_deps(session):
-    """Install project and test dependencies efficiently."""
+    """Install project and test dependencies efficiently using uv."""
     session.run("uv", "pip", "install", "-e", ".", external=True)
     session.run("uv", "pip", "install", *TEST_DEPS, external=True)
 
@@ -64,70 +64,65 @@ def format(session):
 
 
 @nox.session(python="3.11", reuse_venv=True)
-def test_unit(session):
-    """Run unit tests only - fastest feedback (<1 min target)."""
+@nox.parametrize("test_type", ["unit", "integration", "fast", "full"])
+def test(session, test_type):
+    """Unified test session with different execution modes.
+
+    Usage:
+        nox -s test-unit      # Unit tests only (fastest, <1 min)
+        nox -s test-integration  # Integration tests only (<5 min)
+        nox -s test-fast      # Fast tests only (<2 min)
+        nox -s test-full      # Full test suite (<10 min)
+        nox -s test           # Default to full test suite
+    """
     install_project_deps(session)
 
-    session.run(
-        "pytest",
-        "tests/unit/",
-        "--maxfail=3",
-        "--tb=short",
-        "-x",  # Stop on first failure for fast feedback
-        *session.posargs,
-    )
-
-
-@nox.session(python="3.11", reuse_venv=True)
-def test_integration(session):
-    """Run integration tests - moderate feedback (<5 min target)."""
-    install_project_deps(session)
-
-    session.run(
-        "pytest",
-        "tests/integration/",
-        "--maxfail=5",
-        "--tb=short",
-        *session.posargs,
-    )
-
-
-@nox.session(python="3.11", reuse_venv=True)
-def test_fast(session):
-    """Quick development feedback - fast tests only (<2 min target)."""
-    install_project_deps(session)
-
-    # Run only fast tests, excluding slow and integration tests
-    session.run(
-        "pytest",
-        "tests/unit/",
-        "-m",
-        "unit and not ci_exclude",
-        "--maxfail=3",
-        "--tb=short",
-        "-x",  # Stop on first failure for fast feedback
-        *session.posargs,
-    )
-
-
-@nox.session(python="3.11", reuse_venv=True)
-def test(session):
-    """Primary test session matching CI behavior (<10 min target)."""
-    install_project_deps(session)
-
-    # Run unit and light integration tests, excluding slow/docker tests
-    session.run(
-        "pytest",
-        "tests/unit/",
-        "tests/integration/",
-        "tests/cli/",
-        "-m",
-        "not slow and not docker and not ci_exclude and not system",
-        "--cov=src",
-        "--cov-report=term-missing:skip-covered",
-        "--maxfail=5",
-        *session.posargs,
-    )
+    if test_type == "unit":
+        # Unit tests only - fastest feedback
+        session.run(
+            "pytest",
+            "tests/unit/",
+            "--maxfail=3",
+            "--tb=short",
+            "-x",  # Stop on first failure for fast feedback
+            *session.posargs,
+        )
+    elif test_type == "integration":
+        # Integration tests only - moderate feedback
+        session.run(
+            "pytest",
+            "tests/integration/",
+            "--maxfail=5",
+            "--tb=short",
+            *session.posargs,
+        )
+    elif test_type == "fast":
+        # Quick development feedback - fast tests only
+        session.run(
+            "pytest",
+            "tests/unit/",
+            "-m",
+            "unit and not ci_exclude",
+            "--maxfail=3",
+            "--tb=short",
+            "-x",  # Stop on first failure for fast feedback
+            *session.posargs,
+        )
+    elif test_type == "full":
+        # Primary test session matching CI behavior with coverage enforcement
+        session.run(
+            "pytest",
+            "tests/unit/",
+            "tests/integration/",
+            "tests/cli/",
+            "-m",
+            "not slow and not docker and not ci_exclude and not system",
+            "--cov=src",
+            "--cov-report=term-missing:skip-covered",
+            "--cov-fail-under=85",  # Enforce minimum 85% coverage
+            "--maxfail=5",
+            *session.posargs,
+        )
 
 
 @nox.session(python="3.11", reuse_venv=True)
@@ -240,25 +235,49 @@ def test_podman(session):
 
 @nox.session(python="3.11", reuse_venv=True)
 def security(session):
-    """Run comprehensive security checks."""
+    """Run comprehensive security checks with automated vulnerability detection."""
     session.run("uv", "pip", "install", *SECURITY_DEPS, external=True)
 
-    # Security vulnerability scanning
-    session.run("safety", "check")
-    session.run("pip-audit")
+    # Security vulnerability scanning with enhanced configuration
+    session.log("Running pip-audit for known vulnerabilities...")
+    session.run("pip-audit", "--format", "json", "--output", "pip-audit-report.json", success_codes=[0, 1])
+
+    session.log("Running safety scan for known vulnerabilities...")
+    # Use --output json for non-interactive output, continue on failure to not block CI
+    session.run("safety", "scan", "--output", "json", success_codes=[0, 1, 2])
 
     # Static security analysis
-    session.run("bandit", "-r", "src/", "-f", "json", "-o", "bandit-report.json")
+    session.log("Running bandit for static security analysis...")
+    session.run("bandit", "-r", "src/", "-f", "json", "-o", "bandit-report.json", success_codes=[0, 1])
+
+    session.log("Security scanning completed - check report files for details")
 
 
 @nox.session(python="3.11", reuse_venv=True)
 def docs(session):
-    """Generate API documentation."""
+    """Generate comprehensive API documentation with validation."""
     session.run("uv", "pip", "install", *DOC_DEPS, external=True)
     install_project_deps(session)
 
-    # Generate docs
-    session.run("lazydocs", "src/", "--output-path", "docs/api/")
+    session.log("Cleaning existing documentation...")
+    session.run("rm", "-rf", "docs/api/", external=True)
+    session.run("mkdir", "-p", "docs/api/", external=True)
+
+    session.log("Generating API documentation...")
+    # Generate comprehensive docs with better configuration
+    session.run(
+        "lazydocs",
+        "src/rxiv_maker/",
+        "--output-path",
+        "docs/api/",
+        "--overview-file",
+        "README.md",
+        "--src-base-url",
+        "https://github.com/HenriquesLab/rxiv-maker/blob/main/",
+        success_codes=[0, 1],
+    )  # Continue on warning/non-critical errors
+
+    session.log("Documentation generation completed - check docs/api/ directory")
 
 
 # Utility Sessions

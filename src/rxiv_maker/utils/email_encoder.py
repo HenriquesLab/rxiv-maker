@@ -5,6 +5,7 @@ and their decoding for use in PDF generation.
 """
 
 import base64
+import binascii
 import re
 
 
@@ -62,7 +63,7 @@ def decode_email(encoded_email):
 
         return decoded_email
 
-    except (base64.binascii.Error, UnicodeDecodeError) as e:
+    except (binascii.Error, UnicodeDecodeError) as e:
         raise ValueError(f"Invalid base64 encoded email: {encoded_email}") from e
 
 

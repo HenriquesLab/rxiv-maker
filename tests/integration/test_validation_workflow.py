@@ -163,6 +163,7 @@ Reference to undefined figure @fig:nonexistent.
             f.write(bib_content)
 
     @pytest.mark.slow
+    @pytest.mark.timeout(120)  # Makefile validation may take longer
     def test_makefile_validation_valid_manuscript(self, execution_engine):
         """Test validation through Makefile with valid manuscript."""
         self.create_valid_manuscript()
@@ -314,6 +315,7 @@ Reference to undefined figure @fig:nonexistent.
         # as it requires LaTeX installation, but validation passing is a good indicator
 
     @pytest.mark.slow
+    @pytest.mark.timeout(180)  # Comprehensive scenarios need more time
     def test_comprehensive_validation_scenarios(self):
         """Test various validation scenarios comprehensively."""
         scenarios = [

@@ -1,4 +1,7 @@
-"""Install system dependencies command for rxiv-maker CLI."""
+"""DEPRECATED: Install system dependencies command for rxiv-maker CLI.
+
+This command is deprecated. Use 'rxiv setup --mode system-only' instead.
+"""
 
 import sys
 from pathlib import Path
@@ -46,45 +49,41 @@ def install_deps(
     repair: bool,
     log_file: Path | None,
 ) -> None:
-    """Install system dependencies for rxiv-maker.
+    """DEPRECATED: Install system dependencies for rxiv-maker.
 
-    This command installs system-level dependencies like LaTeX, Node.js, R, and
-    other libraries needed for manuscript processing. It's separate from the
-    regular Python package installation to make dependency management explicit.
+    ⚠️  This command is deprecated and will be removed in a future version.
 
-    Installation modes:
-    - full: Install all dependencies (LaTeX, Node.js, R, system libs)
-    - minimal: Python packages + essential LaTeX only
-    - core: Python packages + LaTeX (skip Node.js, R)
-    - skip-system: Python packages only
+    Please use the unified setup command instead:
+    - 'rxiv setup --mode system-only' (equivalent to this command)
+    - 'rxiv setup' (full setup including Python dependencies)
+    - 'rxiv setup --mode minimal' (minimal installation)
+
+    See 'rxiv setup --help' for more options.
     """
     verbose = ctx.obj.get("verbose", False)
 
+    # Show deprecation warning
+    console.print("⚠️  WARNING: 'rxiv install-deps' is deprecated!", style="bold yellow")
+    console.print("Use 'rxiv setup --mode system-only' instead.", style="yellow")
+    console.print("Redirecting to the new command...", style="dim")
+    console.print()
+
     try:
-        # Import installation manager
-        from ...install.manager import InstallManager, InstallMode
+        # Import the new setup command
+        from .setup import setup
 
-        # Create installation manager
-        manager = InstallManager(
-            mode=InstallMode(mode),
-            verbose=verbose,
-            force=force,
-            interactive=not non_interactive,
-            log_file=log_file,
-        )
+        # Map parameters to the new setup command format
+        setup_kwargs = {
+            "mode": "system-only" if mode == "full" else mode,
+            "reinstall": False,
+            "force": force,
+            "non_interactive": non_interactive,
+            "check_only": False,
+            "log_file": log_file,
+        }
 
-        console.print(f"🔧 Installing system dependencies in {mode} mode...", style="blue")
-
-        # Run installation or repair
-        success = manager.repair() if repair else manager.install()
-
-        if success:
-            console.print("✅ System dependency installation completed!", style="green")
-            console.print("💡 Run 'rxiv check-installation' to verify setup", style="dim")
-        else:
-            console.print("❌ System dependency installation failed!", style="red")
-            console.print("💡 Check the log file for details", style="dim")
-            sys.exit(1)
+        # Call the new setup command
+        setup(ctx, **setup_kwargs)
 
     except KeyboardInterrupt:
         console.print("\n⏹️  Installation interrupted by user", style="yellow")

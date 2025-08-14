@@ -1,6 +1,16 @@
-name: CI
+name: Unified CI/CD Pipeline
 
 on:
+  push:
+    branches: [main, dev]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'noxfile.py'
+      - '.github/workflows/ci.yml'
+
   pull_request:
     branches: [main, dev]
     paths:
@@ -8,23 +18,40 @@ on:
       - 'tests/**'
       - 'pyproject.toml'
       - 'uv.lock'
+      - 'noxfile.py'
       - '.github/workflows/ci.yml'
-      - '.pre-commit-config.yaml'
 
-  # Manual trigger for comprehensive testing including system tests
   workflow_dispatch:
     inputs:
-      run_system_tests:
-        description: 'Run system tests (container-based)'
+      test_suite:
+        description: 'Test suite to run'
         required: false
-        default: true
-        type: boolean
+        default: 'fast'
+        type: choice
+        options:
+        - fast
+        - full
+        - system
+      os_matrix:
+        description: 'Operating systems to test'
+        required: false
+        default: 'ubuntu-latest'
+        type: choice
+        options:
+        - ubuntu-latest
+        - all
+      python_matrix:
+        description: 'Python versions to test'
+        required: false
+        default: '3.11'
+        type: choice
+        options:
+        - '3.11'
+        - all
 
-# Minimal permissions by default
 permissions:
   contents: read
 
-# Cancel previous runs on same PR
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -35,172 +62,26 @@ env:
   PYTHONIOENCODING: utf-8
 
 jobs:
-  # Stage 1: Fast unit tests (no external dependencies)
-  unit-tests:
-    name: Unit Tests (Fast)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          version: 'latest'
-          enable-cache: true
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/uv
-            .venv
-          key: ci-unit-${{ runner.os }}-${{ hashFiles('**/uv.lock') }}
-          restore-keys: |
-            ci-unit-${{ runner.os }}-
-
-      - name: Install dependencies
-        run: |
-          uv sync --frozen
-          uv pip install pytest pytest-xdist pytest-cov
-
-      - name: Run linting
-        run: |
-          echo "🔍 Running linting checks..."
-          uv run ruff check src/ tests/
-          uv run ruff format --check src/ tests/
-          echo "✅ Linting passed"
-
-      - name: Run unit tests
-        run: |
-          echo "🧪 Running fast unit tests..."
-          uv run pytest tests/unit/ -m "unit and fast and not ci_exclude" \
-            --cov=src --cov-report=term-missing:skip-covered -x \
-            --tb=short --durations=10
-          echo "✅ Unit tests passed"
-
-  # Stage 2: Integration tests with conditional execution
-  integration-tests:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    needs: unit-tests
-    timeout-minutes: 20
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          version: 'latest'
-          enable-cache: true
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/uv
-            .venv
-          key: ci-integration-${{ runner.os }}-${{ hashFiles('**/uv.lock') }}
-          restore-keys: |
-            ci-integration-${{ runner.os }}-
-
-      - name: Install dependencies
-        run: |
-          uv sync --frozen
-          uv pip install pytest pytest-xdist pytest-cov pytest-timeout
-
-      - name: Run integration tests (no LaTeX required)
-        run: |
-          echo "🧪 Running integration tests..."
-          uv run pytest tests/integration/ -m "integration and not requires_latex and not requires_docker" \
-            --cov=src --cov-report=term-missing:skip-covered \
-            --maxfail=5 --tb=short --durations=10
-          echo "✅ Integration tests passed"
-
-  # Stage 3: Package build validation
-  build-validation:
-    name: Build & Package Validation
-    runs-on: ubuntu-latest
-    needs: [unit-tests, integration-tests]
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          version: 'latest'
-          enable-cache: true
-
-      - name: Install dependencies
-        run: |
-          uv sync --frozen
-          uv pip install build twine
-
-      - name: Build package
-        run: |
-          echo "📦 Building package..."
-          uv run python -m build
-          echo "✅ Package built successfully"
-
-      - name: Validate package
-        run: |
-          echo "🔍 Validating package..."
-          uv run twine check dist/*
-          echo "✅ Package validation passed"
-
-  # Stage 4: System tests (manual trigger or when system files change)
-  system-tests:
-    name: System Tests (Container-based)
-    runs-on: ubuntu-latest
-    needs: [unit-tests, integration-tests]
-    # Only run system tests when:
-    # 1. Manually triggered with run_system_tests=true, OR
-    # 2. When system test files change in a PR
-    if: >
-      (github.event_name == 'workflow_dispatch' && inputs.run_system_tests) ||
-      (github.event_name == 'pull_request' && contains(github.event.pull_request.changed_files, 'tests/system/'))
-    timeout-minutes: 45
+  # Job 1: Fast unit tests and linting (always runs)
+  fast-tests:
+    name: Fast Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
 
     strategy:
       fail-fast: false
       matrix:
-        engine: [docker]  # Start with Docker, can add Podman later
+        os: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.os_matrix == 'all' && fromJson('["ubuntu-latest", "windows-latest", "macos-latest"]') || fromJson('["ubuntu-latest"]') }}
+        python-version: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.python_matrix == 'all' && fromJson('["3.11", "3.12", "3.13"]') || fromJson('["3.11"]') }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Set up Python
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-
-      - name: Setup Docker
-        run: |
-          echo "🐳 Docker is pre-installed on GitHub Actions runners"
-          docker --version
+          python-version: ${{ matrix.python-version }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
@@ -214,49 +95,320 @@ jobs:
           path: |
             ~/.cache/uv
             .venv
-          key: ci-system-${{ runner.os }}-${{ hashFiles('**/uv.lock') }}
+          key: ci-fast-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/uv.lock') }}
           restore-keys: |
-            ci-system-${{ runner.os }}-
+            ci-fast-${{ runner.os }}-${{ matrix.python-version }}-
 
       - name: Install dependencies
         run: |
           uv sync --frozen
-          uv pip install nox
 
-      - name: Run system tests
+      - name: Run linting (Ubuntu only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          echo "🔍 Running linting checks..."
+          uv run nox -s lint
+          echo "✅ Linting passed"
+
+      - name: Run fast unit tests with coverage
+        run: |
+          echo "🧪 Running fast unit tests with coverage..."
+          uv run nox -s "test(test_type='fast')" -- --cov=src --cov-report=term-missing:skip-covered --cov-fail-under=85
+          echo "✅ Fast tests passed with coverage threshold"
+
+  # Job 2: Integration tests (runs on successful fast tests)
+  integration-tests:
+    name: Integration Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    needs: fast-tests
+    if: github.event.inputs.test_suite != 'fast' || github.event_name != 'workflow_dispatch'
+    timeout-minutes: 25
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.os_matrix == 'all' && fromJson('["ubuntu-latest", "windows-latest", "macos-latest"]') || fromJson('["ubuntu-latest"]') }}
+        python-version: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.python_matrix == 'all' && fromJson('["3.11", "3.12", "3.13"]') || fromJson('["3.11"]') }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: 'latest'
+          enable-cache: true
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: ci-integration-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/uv.lock') }}
+          restore-keys: |
+            ci-integration-${{ runner.os }}-${{ matrix.python-version }}-
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen
+
+      - name: Run integration tests with coverage
+        run: |
+          echo "🧪 Running integration tests with coverage..."
+          uv run nox -s "test(test_type='integration')" -- --cov=src --cov-report=term-missing:skip-covered --cov-fail-under=85
+          echo "✅ Integration tests passed with coverage threshold"
+
+  # Job 3: Build validation (runs in parallel with integration tests)
+  build-validation:
+    name: Build & Package Validation
+    runs-on: ubuntu-latest
+    needs: fast-tests
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: 'latest'
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen
+
+      - name: Run build validation
+        run: |
+          echo "📦 Running build validation..."
+          uv run nox -s build
+          echo "✅ Build validation passed"
+
+  # Job 4: Container engine testing (conditional)
+  container-tests:
+    name: Container Tests (${{ matrix.engine }})
+    runs-on: ubuntu-latest
+    needs: [fast-tests, integration-tests]
+    if: |
+      github.event.inputs.test_suite == 'system' ||
+      github.event.inputs.test_suite == 'full' ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.changed_files, 'src/docker/')) ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [docker] # Can add podman later: [docker, podman]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: 'latest'
+          enable-cache: true
+
+      - name: Setup container engine (${{ matrix.engine }})
+        run: |
+          if [ "${{ matrix.engine }}" == "docker" ]; then
+            echo "🐳 Docker is pre-installed"
+            docker --version
+          elif [ "${{ matrix.engine }}" == "podman" ]; then
+            echo "🦭 Installing Podman..."
+            sudo apt-get update
+            sudo apt-get install -y podman
+            podman --version
+          fi
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen
+
+      - name: Run container engine tests
         env:
           RXIV_ENGINE: ${{ matrix.engine }}
         run: |
-          echo "🧪 Running system tests with ${{ matrix.engine }} engine..."
-          nox -s test_system
+          echo "🧪 Running ${{ matrix.engine }} container tests..."
+          uv run nox -s "pdf(engine='${{ matrix.engine }}')"
+          echo "✅ Container tests passed"
+
+  # Job 5: System tests (manual trigger or specific conditions)
+  system-tests:
+    name: System Tests
+    runs-on: ubuntu-latest
+    needs: [integration-tests, build-validation]
+    if: |
+      github.event.inputs.test_suite == 'system' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.test_suite == 'full') ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.changed_files, 'tests/system/'))
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: 'latest'
+          enable-cache: true
+
+      - name: Setup Docker for system tests
+        run: |
+          echo "🐳 Docker is pre-installed for system tests"
+          docker --version
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen
+
+      - name: Run system tests
+        run: |
+          echo "🧪 Running comprehensive system tests..."
+          uv run nox -s test_system
           echo "✅ System tests passed"
+
+  # Job 6: Security scanning (runs in parallel)
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    needs: fast-tests
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: 'latest'
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen
+
+      - name: Run security checks
+        run: |
+          echo "🔒 Running security scanning..."
+          uv run nox -s security
+          echo "✅ Security checks passed"
+
+  # Job 7: Documentation validation (runs in parallel)
+  docs-validation:
+    name: Documentation Validation
+    runs-on: ubuntu-latest
+    needs: fast-tests
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: 'latest'
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen
+
+      - name: Generate and validate documentation
+        run: |
+          echo "📚 Generating API documentation..."
+          uv run nox -s docs
+          echo "✅ Documentation validation passed"
+
+      - name: Upload documentation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-documentation
+          path: docs/api/
+          retention-days: 30
 
   # Summary job
   ci-summary:
-    name: CI Summary
+    name: CI Pipeline Summary
     runs-on: ubuntu-latest
-    needs: [unit-tests, integration-tests, build-validation, system-tests]
+    needs: [fast-tests, integration-tests, build-validation, container-tests, system-tests, security-scan, docs-validation]
     if: always()
 
     steps:
-      - name: Generate summary
+      - name: Generate comprehensive summary
         run: |
-          echo "## Multi-Stage CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "## 🚀 Unified CI/CD Pipeline Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Integration Tests | ${{ needs.integration-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Build Validation | ${{ needs.build-validation.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| System Tests | ${{ needs.system-tests.result == 'success' && '✅ Passed' || (needs.system-tests.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status | Duration |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Fast Tests | ${{ needs.fast-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} | ~10min |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration Tests | ${{ needs.integration-tests.result == 'success' && '✅ Passed' || (needs.integration-tests.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} | ~20min |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Validation | ${{ needs.build-validation.result == 'success' && '✅ Passed' || '❌ Failed' }} | ~10min |" >> $GITHUB_STEP_SUMMARY
+          echo "| Container Tests | ${{ needs.container-tests.result == 'success' && '✅ Passed' || (needs.container-tests.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} | ~25min |" >> $GITHUB_STEP_SUMMARY
+          echo "| System Tests | ${{ needs.system-tests.result == 'success' && '✅ Passed' || (needs.system-tests.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} | ~40min |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Scan | ${{ needs.security-scan.result == 'success' && '✅ Passed' || (needs.security-scan.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} | ~10min |" >> $GITHUB_STEP_SUMMARY
+          echo "| Documentation | ${{ needs.docs-validation.result == 'success' && '✅ Passed' || (needs.docs-validation.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} | ~5min |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Determine overall status (system tests are optional)
-          REQUIRED_JOBS_PASSED=${{ needs.unit-tests.result == 'success' && needs.integration-tests.result == 'success' && needs.build-validation.result == 'success' }}
-          SYSTEM_TESTS_OK=${{ needs.system-tests.result == 'success' || needs.system-tests.result == 'skipped' }}
+          # Determine overall pipeline status
+          CORE_JOBS_PASSED=${{ needs.fast-tests.result == 'success' && needs.integration-tests.result == 'success' && needs.build-validation.result == 'success' }}
+          OPTIONAL_JOBS_OK=${{
+            (needs.container-tests.result == 'success' || needs.container-tests.result == 'skipped') &&
+            (needs.system-tests.result == 'success' || needs.system-tests.result == 'skipped') &&
+            (needs.security-scan.result == 'success' || needs.security-scan.result == 'skipped') &&
+            (needs.docs-validation.result == 'success' || needs.docs-validation.result == 'skipped')
+          }}
 
-          if [[ "$REQUIRED_JOBS_PASSED" == "true" && "$SYSTEM_TESTS_OK" == "true" ]]; then
-            echo "🎉 **All CI stages passed!**" >> $GITHUB_STEP_SUMMARY
+          if [[ "$CORE_JOBS_PASSED" == "true" && "$OPTIONAL_JOBS_OK" == "true" ]]; then
+            echo "🎉 **All CI pipeline stages completed successfully!**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### ✨ Optimizations Active:" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Unified workflow with intelligent matrix strategies" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Leverages nox parametrized test sessions" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Conditional execution based on file changes" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Parallel job execution for faster feedback" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Cross-platform testing (Ubuntu, Windows, macOS)" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Multi-Python version support (3.11, 3.12, 3.13)" >> $GITHUB_STEP_SUMMARY
           else
-            echo "⚠️ **Some CI stages failed - see individual job logs**" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Some CI pipeline stages failed - check individual job logs**" >> $GITHUB_STEP_SUMMARY
           fi

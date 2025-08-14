@@ -43,7 +43,10 @@ class LaTeXErrorParser(BaseValidator):
         r"Package (\w+) Error": {
             "type": "package_error",
             "message": "LaTeX package error occurred",
-            "suggestion": ("Check package usage and ensure required packages are installed"),
+            "suggestion": (
+                "Check package usage and ensure required packages are installed. "
+                "You may need to update your LaTeX distribution or install missing packages."
+            ),
         },
         r"LaTeX Error: Environment (\w+) undefined": {
             "type": "undefined_environment",
@@ -68,7 +71,7 @@ class LaTeXErrorParser(BaseValidator):
         r"Citation '([^']+)' on page \d+ undefined": {
             "type": "undefined_citation",
             "message": "Bibliography reference not found",
-            "suggestion": "Check citation key exists in bibliography file",
+            "suggestion": "Check citation key exists in your bibliography (.bib) file(s)",
         },
         r"Reference '([^']+)' on page \d+ undefined": {
             "type": "undefined_reference",
@@ -95,11 +98,20 @@ class LaTeXErrorParser(BaseValidator):
             log_file_path: Optional specific path to .log file
         """
         super().__init__(manuscript_path)
+        from pathlib import Path
+
+        self.manuscript_name = Path(manuscript_path).name
         self.log_file_path = log_file_path or self._find_log_file()
 
     def _find_log_file(self) -> str | None:
         """Find the LaTeX log file in output directory."""
+        log_filename = f"{self.manuscript_name}.log"
         possible_paths = [
+            os.path.join(self.manuscript_path, "output", log_filename),
+            os.path.join(self.manuscript_path, log_filename),
+            os.path.join("output", log_filename),
+            log_filename,
+            # Fallback to MANUSCRIPT.log for backward compatibility
             os.path.join(self.manuscript_path, "output", "MANUSCRIPT.log"),
             os.path.join(self.manuscript_path, "MANUSCRIPT.log"),
             os.path.join("output", "MANUSCRIPT.log"),
@@ -117,11 +129,19 @@ class LaTeXErrorParser(BaseValidator):
         metadata: dict[str, Any] = {"log_file": self.log_file_path}
 
         if not self.log_file_path or not os.path.exists(self.log_file_path):
+            # Provide more context-appropriate suggestions for CLI users
+            log_filename = f"{self.manuscript_name}.log"
+            expected_locations = [f"{self.manuscript_path}/output/{log_filename}", f"output/{log_filename}"]
+
             errors.append(
                 self._create_error(
                     ValidationLevel.WARNING,
-                    "LaTeX log file not found - cannot analyze compilation errors",
-                    suggestion="Run 'make pdf' to generate LaTeX compilation log",
+                    f"LaTeX log file ({log_filename}) not found - cannot analyze compilation errors",
+                    suggestion=(
+                        f"LaTeX compilation may have failed or not completed. "
+                        f"Expected log file in: {' or '.join(expected_locations)}. "
+                        f"Try running with --verbose flag for more compilation details."
+                    ),
                 )
             )
             return ValidationResult("LaTeXErrorParser", errors, metadata)
@@ -270,7 +290,9 @@ class LaTeXErrorParser(BaseValidator):
                     if cite_match:
                         citation_key = cite_match.group(1)
                         suggestion = (
-                            f"Citation key '{citation_key}' not found in bibliography. Check 03_REFERENCES.bib file."
+                            f"Citation key '{citation_key}' not found in bibliography. "
+                            f"Check your .bib file(s) in the manuscript directory. "
+                            f"You can also run 'rxiv validate {self.manuscript_name} --detailed' for more bibliography analysis."
                         )
 
                 return suggestion

@@ -24,18 +24,12 @@ rxiv-maker/
 │   ├── orchestrate-release.py           # Release orchestration
 │   └── test-package-system.py           # System testing
 ├── submodules/
-│   ├── homebrew-rxiv-maker/
-│   │   ├── Formula/
-│   │   │   ├── rxiv-maker.rb.template   # Homebrew template
-│   │   │   └── rxiv-maker.rb            # Generated formula
-│   │   └── .github/workflows/
-│   │       └── update-formula.yml       # Enhanced workflow
-│   └── scoop-rxiv-maker/
-│       ├── bucket/
-│       │   ├── rxiv-maker.json.template # Scoop template
-│       │   └── rxiv-maker.json          # Generated manifest
+│   └── homebrew-rxiv-maker/
+│       ├── Formula/
+│       │   ├── rxiv-maker.rb.template   # Homebrew template
+│       │   └── rxiv-maker.rb            # Generated formula
 │       └── .github/workflows/
-│           └── update-manifest.yml      # Enhanced workflow
+│           └── update-formula.yml       # Enhanced workflow
 └── .github/workflows/
     └── release.yml                      # Main release workflow
 ```
@@ -53,11 +47,6 @@ All templates use double curly brace placeholders: `{{PLACEHOLDER_NAME}}`
 - `{{MACOS_X64_SHA256}}`: SHA256 hash for macOS x64 binary
 - `{{LINUX_X64_SHA256}}`: SHA256 hash for Linux x64 binary
 
-### Scoop Template Placeholders
-
-- `{{VERSION}}`: Full version string (e.g., "v1.4.8")
-- `{{VERSION_NUM}}`: Version number without 'v' prefix (e.g., "1.4.8")
-- `{{WINDOWS_X64_SHA256}}`: SHA256 hash for Windows x64 binary
 
 ## Scripts
 
@@ -75,7 +64,6 @@ python validate-package-templates.py validate-checksum <file> <expected_hash>
 - Template structure validation
 - Placeholder verification
 - Ruby syntax checking (Homebrew)
-- JSON structure validation (Scoop)
 - Checksum verification
 
 ### update-package-templates.py
@@ -89,7 +77,6 @@ python update-package-templates.py <command> <version> [--dry-run]
 
 **Commands:**
 - `homebrew <version>`: Update Homebrew formula
-- `scoop <version>`: Update Scoop manifest
 - `all <version>`: Update all package managers
 
 **Features:**
@@ -159,19 +146,6 @@ python test-package-system.py [test-name]
 - Repository dispatch from main release workflow
 - Manual workflow dispatch with dry-run option
 
-### Scoop Workflow (update-manifest.yml)
-
-**Improvements:**
-- Python-based template processing
-- JSON validation with PowerShell
-- Scoop installation testing
-- Automatic backup and rollback
-- Cross-platform shell scripting
-- Enhanced error reporting
-
-**Trigger Methods:**
-- Repository dispatch from main release workflow
-- Manual workflow dispatch with dry-run option
 
 ### Main Release Workflow Integration
 

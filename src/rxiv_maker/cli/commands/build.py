@@ -137,14 +137,20 @@ def build(
         sys.exit(1)
 
     try:
+        from rich.progress import BarColumn, MofNCompleteColumn, TaskProgressColumn, TimeElapsedColumn
+
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
+            BarColumn(complete_style="green", finished_style="green"),
+            TaskProgressColumn(),
+            MofNCompleteColumn(),
+            TimeElapsedColumn(),
             console=logger.console,
             transient=True,
         ) as progress:
             # Create build manager
-            task = progress.add_task("Initializing build manager...", total=None)
+            initialization_task = progress.add_task("Initializing build manager...", total=None)
             build_manager = BuildManager(
                 manuscript_path=manuscript_path,
                 output_dir=output_dir,
@@ -154,13 +160,37 @@ def build(
                 verbose=verbose,
                 engine=engine,
             )
+            progress.update(initialization_task, description="✅ Build manager initialized")
 
-            # Build the PDF
-            progress.update(task, description="Generating PDF...")
-            success = build_manager.run_full_build()
+            # Enhanced progress tracking for build steps
+            build_steps = [
+                "Checking manuscript structure",
+                "Setting up output directory",
+                "Generating figures",
+                "Validating manuscript",
+                "Copying style files",
+                "Copying references",
+                "Copying figures",
+                "Generating LaTeX files",
+                "Compiling PDF",
+                "Finalizing build",
+            ]
+
+            # Skip validation step if requested
+            if skip_validation:
+                build_steps.remove("Validating manuscript")
+
+            main_task = progress.add_task("Building PDF...", total=len(build_steps))
+
+            # Pass progress callback to build manager
+            def progress_callback(step_name, completed_steps, total_steps):
+                progress.update(main_task, completed=completed_steps, description=f"📄 {step_name}")
+
+            # Build the PDF with progress tracking
+            success = build_manager.run_full_build(progress_callback=progress_callback)
 
             if success:
-                progress.update(task, description="✅ PDF generated successfully!")
+                progress.update(main_task, completed=len(build_steps), description="✅ PDF generated successfully!")
                 logger.success(f"PDF generated: {output_dir}/{Path(manuscript_path).name}.pdf")
 
                 # Show additional info
@@ -170,7 +200,7 @@ def build(
                     logger.info("All figures regenerated")
 
             else:
-                progress.update(task, description="❌ PDF generation failed")
+                progress.update(main_task, description="❌ PDF generation failed")
                 logger.error("PDF generation failed. Check output above for errors.")
                 logger.tip("Run with --verbose for more details")
                 logger.tip("Run 'rxiv validate' to check for issues")

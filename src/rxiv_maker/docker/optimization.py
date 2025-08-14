@@ -13,7 +13,7 @@ import platform
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from ..utils.advanced_cache import AdvancedCache
 
@@ -115,7 +115,7 @@ class DockerBuildOptimizer:
         """Calculate hash of directory contents for caching."""
         import hashlib
 
-        hash_obj = hashlib.md5()
+        hash_obj = hashlib.md5(usedforsecurity=False)
 
         # Include essential files only
         essential_files = ["Dockerfile", "requirements.txt", "pyproject.toml", "package.json", "Makefile"]
@@ -309,14 +309,14 @@ class DockerBuildOptimizer:
 
         return max(base_time, 2), explanation
 
-    def optimize_multi_stage_build(self, dockerfile_path: Path) -> Dict[str, any]:
+    def optimize_multi_stage_build(self, dockerfile_path: Path) -> Dict[str, Any]:
         """Analyze and suggest optimizations for multi-stage builds."""
         if not dockerfile_path.exists():
             return {"error": "Dockerfile not found"}
 
         content = dockerfile_path.read_text()
-        stages = []
-        current_stage = None
+        stages: List[Dict[str, Any]] = []
+        current_stage: Optional[Dict[str, Any]] = None
 
         for line_num, line in enumerate(content.splitlines(), 1):
             line = line.strip()
@@ -427,7 +427,7 @@ class DockerResourceManager:
     def __init__(self):
         self.system_info = self._get_system_info()
 
-    def _get_system_info(self) -> Dict[str, any]:
+    def _get_system_info(self) -> Dict[str, Any]:
         """Get system resource information."""
         info = {
             "cpu_count": os.cpu_count() or 2,

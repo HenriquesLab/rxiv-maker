@@ -9,7 +9,7 @@ The rxiv-maker project uses a comprehensive release pipeline that includes:
 - Binary distribution for major platforms
 - PyPI package publishing
 - Homebrew formula updates
-- Scoop package updates
+- Docker image publishing
 - GitHub releases with artifacts
 
 ## Release Types
@@ -118,25 +118,23 @@ brew install --build-from-source ./Formula/rxiv-maker.rb
 brew test rxiv-maker
 ```
 
-### Scoop Package Updates
+### Docker Image Updates
 
-**Location:** `submodules/scoop-rxiv-maker/bucket/rxiv-maker.json`
+**Location:** `src/docker/images/base/`
 
 **Automated Process:**
-1. Scoop manifest is updated with new version and URLs
-2. SHA256 hashes are fetched for Windows binaries
-3. Manifest is validated against Scoop standards
-4. Updated manifest is published
+1. Docker images are built for multiple platforms (amd64, arm64)
+2. Images are tagged with version and latest
+3. Images are pushed to Docker Hub
+4. Runtime dependency injection system is tested
 
 **Manual Update (if needed):**
 ```bash
-# Update Scoop manifest
-cd submodules/scoop-rxiv-maker
-./scripts/update-manifest.ps1 -Version v1.4.8
+# Build Docker image locally
+docker build -t henriqueslab/rxiv-maker-base:v1.4.8 -f src/docker/images/base/Dockerfile .
 
-# Test manifest locally (Windows)
-scoop install .\bucket\rxiv-maker.json
-scoop test rxiv-maker
+# Test Docker image
+docker run --rm henriqueslab/rxiv-maker-base:v1.4.8 python3 --version
 ```
 
 ## Release Checklist
@@ -156,15 +154,15 @@ scoop test rxiv-maker
 - [ ] GitHub Actions workflow completed successfully
 - [ ] All artifacts uploaded to GitHub release (including track changes PDF)
 - [ ] PyPI package published
-- [ ] Package managers updated (Homebrew, Scoop)
+- [ ] Package managers updated (Homebrew)
+- [ ] Docker images published
 - [ ] Release notes reviewed and published
 
 ### Post-Release
 
 - [ ] Homebrew formula working (test installation)
-- [ ] Scoop package working (test installation)
 - [ ] PyPI installation working (`pip install rxiv-maker`)
-- [ ] Docker base image updated (if needed)
+- [ ] Docker images working (`docker run henriqueslab/rxiv-maker-base:latest`)
 - [ ] Documentation site updated
 - [ ] Social media/community announcements
 
@@ -191,7 +189,7 @@ The release workflow automatically detects version from:
 
 ### Package Manager Update Failures
 - **Homebrew**: Check formula syntax and dependency changes
-- **Scoop**: Verify JSON manifest structure and URLs
+- **Docker**: Verify image builds and pushes correctly
 - **PyPI**: Ensure wheel builds correctly on all platforms
 
 ### Release Rollback
@@ -199,7 +197,7 @@ If a release has critical issues:
 
 1. **Remove from PyPI** (if possible within 72 hours)
 2. **Revert Homebrew formula** to previous version
-3. **Update Scoop manifest** to previous version
+3. **Revert Docker images** by promoting previous tag to latest
 4. **Mark GitHub release** as pre-release
 5. **Create hotfix release** with fixes
 
@@ -236,9 +234,9 @@ uv publish
 cd submodules/homebrew-rxiv-maker
 ./scripts/update-formula.sh v1.4.8
 
-# Update Scoop (Windows)
-cd submodules/scoop-rxiv-maker
-./scripts/update-manifest.ps1 -Version v1.4.8
+# Update Docker images
+docker build -t henriqueslab/rxiv-maker-base:v1.4.8 -f src/docker/images/base/Dockerfile .
+docker push henriqueslab/rxiv-maker-base:v1.4.8
 ```
 
 ## Release Monitoring
@@ -275,8 +273,8 @@ For release-related issues:
 - `scripts/validate-package-templates.py`: Validate package configurations
 
 ### Configuration Files
-- `.github/workflows/release.yml`: Main release workflow
-- `submodules/homebrew-rxiv-maker/Formula/rxiv-maker.rb.template`: Homebrew template
-- `submodules/scoop-rxiv-maker/bucket/rxiv-maker.json.template`: Scoop template
+- `.github/workflows/release.yml`: Main release workflow  
+- `submodules/homebrew-rxiv-maker/Formula/rxiv-maker.rb`: Homebrew formula
+- `src/docker/images/base/Dockerfile`: Docker image configuration
 
 This process ensures reliable, automated releases while maintaining flexibility for manual intervention when needed.

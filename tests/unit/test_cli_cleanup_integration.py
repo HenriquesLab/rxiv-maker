@@ -279,6 +279,100 @@ class TestCLIContainerCleanupIntegration(unittest.TestCase):
         except ImportError:
             self.skipTest("Memory management integration imports not available")
 
+    @patch("rxiv_maker.engines.factory.ContainerEngineFactory.cleanup_all_engines")
+    def test_verbose_cleanup_output(self, mock_cleanup):
+        """Test that verbose cleanup provides proper user feedback."""
+        try:
+            import sys
+            from unittest.mock import MagicMock, patch
+
+            sys.path.insert(0, "src")
+
+            # Test verbose cleanup with successful cleanup
+            mock_cleanup.return_value = 2
+
+            with patch("rxiv_maker.cli.main.console") as mock_console:
+                # Create mock context object
+                mock_ctx = MagicMock()
+                mock_ctx.obj = {"engine": "docker", "verbose": True}
+
+                # Import the UpdateCheckGroup to test its invoke method
+                from rxiv_maker.cli.main import UpdateCheckGroup
+
+                group = UpdateCheckGroup()
+
+                # Mock the super().invoke call to avoid running actual commands
+                with patch("click.Group.invoke") as mock_super_invoke:
+                    mock_super_invoke.return_value = None
+
+                    try:
+                        group.invoke(mock_ctx)
+                    except Exception:
+                        pass  # Expected since we're mocking
+
+                # Verify verbose output was called
+                mock_console.print.assert_any_call("🧹 Cleaning up container sessions...", style="dim")
+                mock_console.print.assert_any_call("✅ Cleaned up 2 container engine(s)", style="dim green")
+
+            # Test verbose cleanup with no active sessions
+            mock_cleanup.return_value = 0
+
+            with patch("rxiv_maker.cli.main.console") as mock_console:
+                mock_ctx = MagicMock()
+                mock_ctx.obj = {"engine": "docker", "verbose": True}
+
+                group = UpdateCheckGroup()
+
+                with patch("click.Group.invoke") as mock_super_invoke:
+                    mock_super_invoke.return_value = None
+
+                    try:
+                        group.invoke(mock_ctx)
+                    except Exception:
+                        pass
+
+                # Verify verbose output for no sessions
+                mock_console.print.assert_any_call("🧹 Cleaning up container sessions...", style="dim")
+                mock_console.print.assert_any_call("ℹ️  No active container sessions to clean up", style="dim")
+
+        except ImportError:
+            self.skipTest("Verbose cleanup imports not available")
+
+    @patch("rxiv_maker.engines.factory.ContainerEngineFactory.cleanup_all_engines")
+    def test_cleanup_error_verbose_handling(self, mock_cleanup):
+        """Test that cleanup errors are properly reported in verbose mode."""
+        try:
+            import sys
+            from unittest.mock import MagicMock, patch
+
+            sys.path.insert(0, "src")
+
+            # Test cleanup failure with verbose output
+            mock_cleanup.side_effect = Exception("Cleanup failed")
+
+            with patch("rxiv_maker.cli.main.console") as mock_console:
+                mock_ctx = MagicMock()
+                mock_ctx.obj = {"engine": "docker", "verbose": True}
+
+                from rxiv_maker.cli.main import UpdateCheckGroup
+
+                group = UpdateCheckGroup()
+
+                with patch("click.Group.invoke") as mock_super_invoke:
+                    mock_super_invoke.return_value = None
+
+                    try:
+                        group.invoke(mock_ctx)
+                    except Exception:
+                        pass
+
+                # Verify error was displayed in verbose mode
+                mock_console.print.assert_any_call("🧹 Cleaning up container sessions...", style="dim")
+                mock_console.print.assert_any_call("⚠️  Container cleanup failed: Cleanup failed", style="dim yellow")
+
+        except ImportError:
+            self.skipTest("Error handling imports not available")
+
 
 @pytest.mark.unit
 class TestCLICleanupCommands(unittest.TestCase):

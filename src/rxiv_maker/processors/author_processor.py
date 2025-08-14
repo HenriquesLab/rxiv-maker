@@ -240,6 +240,10 @@ def generate_extended_author_info(yaml_metadata):
             # Use the new extendedauthor command
             author_items.append(f"\\extendedauthor{{{name}}}{{{social_line}}}")
 
+    # Only generate the extended author list if there are authors with extended information
+    if not author_items:
+        return ""  # Return empty string if no extended authors
+
     result += "\n".join(author_items)
     result += "\n\\end{extendedauthorlist}"
 

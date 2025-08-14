@@ -21,7 +21,7 @@ from rxiv_maker.utils import (
 )
 
 
-def generate_preprint(output_dir, yaml_metadata):
+def generate_preprint(output_dir, yaml_metadata, manuscript_path=None):
     """Generate the preprint using the template."""
     # Ensure output directory exists
     create_output_dir(output_dir)
@@ -31,7 +31,7 @@ def generate_preprint(output_dir, yaml_metadata):
         template_content = template_file.read()
 
     # Find and process the manuscript markdown
-    manuscript_md = find_manuscript_md()
+    manuscript_md = find_manuscript_md(manuscript_path)
 
     # Process all template replacements
     template_content = process_template_replacements(template_content, yaml_metadata, str(manuscript_md))

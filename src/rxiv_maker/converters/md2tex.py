@@ -252,41 +252,37 @@ def _process_tables_with_protection(
     for placeholder, original in protected_markdown_tables.items():
         content = content.replace(placeholder, original)
 
-    # Temporarily restore backtick content for table processing, then re-protect it
-    temp_content = content
-
-    # Only restore backticks that are actually in table rows to avoid
-    # affecting verbatim blocks
-    table_lines = temp_content.split("\n")
+    # Restore backticks only in table rows to avoid affecting verbatim blocks
+    table_lines = content.split("\n")
     for i, line in enumerate(table_lines):
         if "|" in line and line.strip().startswith("|") and line.strip().endswith("|"):
-            # This is a table row - restore backticks in this line only
+            # Restore backticks in table rows only
             for placeholder, original in protected_backtick_content.items():
                 line = line.replace(placeholder, original)
             table_lines[i] = line
 
     temp_content = "\n".join(table_lines)
 
-    # Process tables with selectively restored content
+    # Process tables with restored content
     table_processed_content = convert_tables_to_latex(
         temp_content,
         protected_backtick_content,
         is_supplementary,
     )
 
-    # IMPORTANT: Protect entire LaTeX table blocks from further markdown processing
+    # Protect LaTeX table blocks from further markdown processing
     def protect_latex_table(match: re.Match[str]) -> str:
         table_content = match.group(0)
         placeholder = f"XXPROTECTEDTABLEXX{len(protected_tables)}XXPROTECTEDTABLEXX"
         protected_tables[placeholder] = table_content
         return placeholder
 
-    # Protect all LaTeX table environments from further processing
+    # Protect all LaTeX table environments
     for env in ["table", "sidewaystable", "stable"]:
         pattern = rf"\\begin\{{{env}\*?\}}.*?\\end\{{{env}\*?\}}"
         table_processed_content = re.sub(pattern, protect_latex_table, table_processed_content, flags=re.DOTALL)
 
-    # Re-protect any backtick content that wasn't converted to \texttt{} in tables
+    # Re-protect unconverted backtick content
     for original, placeholder in [(v, k) for k, v in protected_backtick_content.items()]:
         if original in table_processed_content:
             table_processed_content = table_processed_content.replace(original, placeholder)
@@ -339,48 +335,6 @@ def _process_text_formatting(content: LatexContent, protected_backtick_content: 
 
     # Special handling for italic text in list items
     content = re.sub(r"(\\item\s+)\*([^*]+?)\*", r"\1\\textit{\2}", content)
-
-    return content
-
-
-def _process_list_item_formatting(content: MarkdownContent) -> LatexContent:
-    """Apply text formatting to list items while preserving list structure.
-
-    This function specifically targets formatting within LaTeX itemize/enumerate
-    environments that have already been converted from markdown lists.
-
-    Args:
-        content: Text with LaTeX list environments
-
-    Returns:
-        Text with formatted list items
-    """
-    # Find all list environments
-    list_pattern = r"(\\begin\{(?:itemize|enumerate)\}.*?\\end\{(?:itemize|enumerate)\})"
-    list_blocks = re.findall(list_pattern, content, re.DOTALL)
-
-    for list_block in list_blocks:
-        formatted_block = list_block
-
-        # Find all list items and format their content
-        item_pattern = r"(\\item\s+)([^\\]*)"
-
-        def format_item_content(match):
-            item_prefix = match.group(1)  # \item part
-            item_content = match.group(2)  # content after \item
-
-            # Apply bold formatting
-            item_content = re.sub(r"\*\*(.+?)\*\*", r"\\textbf{\1}", item_content)
-
-            # Apply italic formatting - use a more inclusive pattern
-            item_content = re.sub(r"\*([^*]+?)\*", r"\\textit{\1}", item_content)
-
-            return item_prefix + item_content
-
-        formatted_block = re.sub(item_pattern, format_item_content, formatted_block)
-
-        # Replace the original block with the formatted one
-        content = content.replace(list_block, formatted_block)
 
     return content
 

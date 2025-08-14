@@ -4,6 +4,7 @@ This module handles the extraction and parsing of YAML metadata from markdown fi
 """
 
 import re
+from typing import Any
 
 try:
     import yaml
@@ -129,7 +130,7 @@ def get_doi_validation_setting(metadata: dict) -> bool:
 
 def parse_yaml_simple(yaml_content):
     """Simple YAML parser for basic key-value pairs."""
-    metadata = {}
+    metadata: dict[str, Any] = {}
     lines = yaml_content.strip().split("\n")
     current_key = None
     current_value = []

@@ -1,21 +1,25 @@
-"""Word count analysis command for Rxiv-Maker.
+"""DEPRECATED: Word count analysis functionality moved to BuildManager.
 
-This module provides word count analysis functionality that can be run independently
-after manuscript generation to provide statistics about the document.
+This module is deprecated. The word count analysis functionality has been integrated
+directly into the BuildManager class. Use BuildManager.run_word_count_analysis()
+instead.
+
+This module will be removed in a future version.
 """
 
-import os
 import sys
+import warnings
 from pathlib import Path
 
-# Add the parent directory to the path to allow imports when run as a script
-if __name__ == "__main__":
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-    from rxiv_maker.converters.md2tex import extract_content_sections
-    from rxiv_maker.utils import find_manuscript_md
-else:
-    from ..converters.md2tex import extract_content_sections
-    from ..utils import find_manuscript_md
+from ..converters.md2tex import extract_content_sections
+from ..utils import find_manuscript_md
+
+# Issue deprecation warning
+warnings.warn(
+    "analyze_word_count module is deprecated. Use BuildManager.run_word_count_analysis() instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 
 def count_words_in_text(text):
@@ -71,7 +75,7 @@ def analyze_section_word_counts(content_sections):
             if max_warning and word_count > max_warning:
                 status = "⚠️"
                 warning = f" (exceeds typical {max_warning} word limit)"
-            elif ideal and word_count > ideal * 1.5:
+            elif ideal is not None and isinstance(ideal, (int, float)) and word_count > (ideal * 1.5):
                 status = "⚠️"
                 warning = f" (consider typical ~{ideal} words)"
 
@@ -92,7 +96,9 @@ def analyze_section_word_counts(content_sections):
 
 
 def analyze_manuscript_word_count(manuscript_path: str | None = None) -> int:
-    """Analyze word counts from manuscript markdown.
+    """DEPRECATED: Analyze word counts from manuscript markdown.
+
+    Use BuildManager.run_word_count_analysis() instead.
 
     Args:
         manuscript_path: Path to manuscript markdown file (auto-detected if
@@ -101,6 +107,11 @@ def analyze_manuscript_word_count(manuscript_path: str | None = None) -> int:
     Returns:
         0 if successful, 1 if error
     """
+    warnings.warn(
+        "analyze_manuscript_word_count() is deprecated. Use BuildManager.run_word_count_analysis() instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     try:
         # Find the manuscript markdown file
         if manuscript_path:

@@ -6,12 +6,13 @@ This is the comprehensive installation guide for Rxiv-Maker. **Choose ONE method
 
 | Method | Best For | Requirements | Setup Time | Skill Level |
 |--------|----------|--------------|------------|-------------|
-| **🌐 Google Colab** | First-time users, quick experiments | Google account | 2 minutes | Beginner |
-| **📦 Modern CLI** | Quick start, modern interface | Python 3.11+ | 2-3 minutes | Beginner |
-| **🍺 Homebrew** | macOS users, package management | macOS + Homebrew | 3-5 minutes | Beginner |
+| **📦 Modern CLI (pip)** | Quick start, all platforms | Python 3.11+ | 2-3 minutes | Beginner |
+| **🍺 Homebrew** | macOS/Linux users, dependency management | macOS/Linux + Homebrew | 3-5 minutes | Beginner |
 | **🐳 Docker Engine** | Consistent environment, teams | Docker + Make | 3-5 minutes | Beginner |
-| **🏠 Local Development** | Advanced users, offline work | Python, LaTeX, Make | 10-30 minutes | Advanced |
+| **🌐 Google Colab** | First-time users, quick experiments | Google account | 2 minutes | Beginner |
+| **🪟 WSL2 (Windows)** | Windows users | Windows 10/11 | 5-10 minutes | Beginner |
 | **⚡ GitHub Actions** | Team collaboration, automation | GitHub account | 5 minutes | Intermediate |
+| **🏠 Local Development** | Advanced users, offline work | Python, LaTeX, Make | 10-30 minutes | Advanced |
 
 ---
 
@@ -34,7 +35,66 @@ For detailed instructions, see: [Google Colab Tutorial](../tutorials/google_cola
 
 ---
 
-## 🍺 Homebrew (macOS Users)
+## 🪟 WSL2 for Windows Users (Highly Recommended)
+
+**Best Windows experience with full Linux compatibility and performance.**
+
+### Why WSL2 for Windows?
+- ✅ **Full compatibility**: Same commands as Linux/macOS users
+- ✅ **Better performance**: Native Linux environment vs Windows emulation
+- ✅ **File system integration**: Access Windows files seamlessly
+- ✅ **Docker support**: Full container integration
+- ✅ **Package managers**: Access to apt, pip, and all Linux tools
+
+### Quick WSL2 Setup
+```powershell
+# 1. Install WSL2 (Windows PowerShell as Administrator)
+wsl --install -d Ubuntu-22.04
+
+# 2. Restart computer when prompted
+
+# 3. Launch Ubuntu from Start Menu and create user account
+
+# 4. Update system and install dependencies
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y python3.11 python3.11-venv python3-pip nodejs npm git make curl
+
+# 5. Install LaTeX (recommended for best results)
+sudo apt install -y texlive-latex-recommended texlive-fonts-recommended
+
+# 6. Install rxiv-maker
+pip install rxiv-maker
+
+# 7. Verify installation
+rxiv check-installation
+
+# 8. Initialize your first manuscript
+rxiv init MY_PAPER/
+
+# 9. Build PDF
+rxiv pdf MY_PAPER/
+```
+
+### Working with Windows Files
+```bash
+# Access Windows files from WSL2
+cd /mnt/c/Users/YourName/Documents
+
+# Create manuscripts on Windows filesystem for easy access
+mkdir /mnt/c/Users/YourName/Documents/papers
+cd /mnt/c/Users/YourName/Documents/papers
+rxiv init my-awesome-paper/
+```
+
+### Pro Tips for WSL2
+- **VS Code integration**: Install "WSL" extension for seamless editing
+- **Performance**: Keep project files on Linux filesystem (`~/`) for best performance
+- **Windows Terminal**: Use Windows Terminal for better WSL2 experience
+- **Resource limits**: WSL2 automatically manages memory and CPU
+
+---
+
+## 🍺 Homebrew (macOS/Linux Users)
 
 **Package manager installation for macOS with automatic dependency management.**
 
@@ -118,11 +178,15 @@ docker --version
 # Option 1: Chocolatey (recommended)
 choco install make
 
-# Option 2: Scoop
-scoop install make
-
-# Option 3: Visual Studio Build Tools (if you have VS installed)
+# Option 2: Visual Studio Build Tools (if you have VS installed)
 # Make is included with "Desktop development with C++" workload
+
+# Option 3: Git Bash (includes make)
+# Download Git for Windows which includes make in Git Bash
+
+# Option 4: Windows Subsystem for Linux (WSL2 - recommended)
+wsl --install -d Ubuntu-22.04
+# Then use: sudo apt install -y make
 ```
 
 **macOS:**
@@ -172,7 +236,7 @@ For detailed Docker information, see: [Docker Engine Mode Guide](../workflows/do
 
 ---
 
-## 📦 Modern CLI Installation (Recommended)
+## 📦 Modern CLI Installation (pip - Cross Platform)
 
 **The easiest way to get started with Rxiv-Maker using the modern command-line interface.**
 
@@ -342,13 +406,45 @@ make setup
 make pdf MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT
 ```
 
-**Alternative: WSL2 (Recommended)**
-```bash
-# Install Ubuntu in WSL2 first
+**Windows Subsystem for Linux (WSL2) - Recommended for Windows Users**
+
+WSL2 provides a full Linux environment on Windows, offering the best compatibility with rxiv-maker:
+
+```powershell
+# Install WSL2 with Ubuntu (Windows PowerShell as Administrator)
 wsl --install -d Ubuntu-22.04
 
-# Then follow Linux instructions inside WSL2
+# Restart your computer when prompted
+
+# Launch Ubuntu and complete initial setup (create username/password)
+# Then follow the Linux installation instructions inside WSL2:
+
+# Update package manager
+sudo apt update
+
+# Install system dependencies
+sudo apt install -y python3.11 python3.11-venv python3-pip nodejs npm git make curl
+
+# Install LaTeX
+sudo apt install -y texlive-latex-recommended texlive-fonts-recommended
+
+# Clone repository and setup
+git clone https://github.com/henriqueslab/rxiv-maker.git
+cd rxiv-maker
+python3.11 -m venv .venv
+source .venv/bin/activate
+make setup
+
+# Generate your first PDF
+make pdf MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT
 ```
+
+**WSL2 Benefits:**
+- ✅ Native Linux environment with full compatibility
+- ✅ Access to Windows files via `/mnt/c/Users/YourName/`
+- ✅ Better performance than running in PowerShell
+- ✅ Full Docker integration
+- ✅ Same commands as Linux users
 
 </details>
 

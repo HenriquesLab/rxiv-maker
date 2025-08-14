@@ -81,8 +81,8 @@ class ConfigValidator:
                 logger.debug("Using cached configuration validation result")
                 return cached_result
 
-        errors = []
-        warnings = []
+        errors: List[Any] = []
+        warnings: List[Any] = []
         config_data = None
 
         try:
@@ -225,7 +225,7 @@ class ConfigValidator:
                     errors.extend(path_errors)
                 elif var_type == "choice":
                     choices = var_config.get("choices", [])
-                    if var_value not in choices:
+                    if isinstance(choices, list) and var_value not in choices:
                         warnings.append(
                             create_validation_error(
                                 ErrorCode.INVALID_CONFIG_VALUE,
@@ -328,7 +328,7 @@ class ConfigValidator:
             pyproject_validation = self._validate_pyproject_config(pyproject_path)
             errors.extend(pyproject_validation.get("errors", []))
             warnings.extend(pyproject_validation.get("warnings", []))
-            structure_info["pyproject_validation"] = pyproject_validation
+            structure_info["pyproject_validation"] = pyproject_validation.get("valid", False)
 
         return {
             "valid": len(errors) == 0,
@@ -430,10 +430,10 @@ class ConfigValidator:
 
     def _validate_against_schema(
         self, data: Dict[str, Any], schema_name: str, context: str = "configuration"
-    ) -> Tuple[List, List]:
+    ) -> Tuple[List[Any], List[Any]]:
         """Validate data against schema."""
-        errors = []
-        warnings = []
+        errors: List[Any] = []
+        warnings: List[Any] = []
 
         # Get schema
         schema_path = schema_name.split(".")
@@ -488,7 +488,9 @@ class ConfigValidator:
 
             if expected_type in type_mapping:
                 expected_python_type = type_mapping[expected_type]
-                if not isinstance(field_value, expected_python_type):
+                if isinstance(expected_python_type, (type, tuple)) and not isinstance(
+                    field_value, expected_python_type
+                ):
                     errors.append(
                         create_validation_error(
                             ErrorCode.INVALID_CONFIG_VALUE,
@@ -723,10 +725,10 @@ class ConfigValidator:
         warnings = []
 
         try:
-            import tomli
+            import tomllib
 
             with open(pyproject_path, "rb") as f:
-                pyproject_data = tomli.load(f)
+                pyproject_data = tomllib.load(f)
 
             # Check required sections
             required_sections = ["project", "build-system"]
@@ -859,9 +861,9 @@ class ConfigValidator:
 
     def _validate_system_dependencies(self) -> Dict[str, Any]:
         """Validate system dependencies and environment."""
-        errors = []
-        warnings = []
-        system_info = {}
+        errors: List[Any] = []
+        warnings: List[Any] = []
+        system_info: Dict[str, Any] = {}
 
         # Check Python version
         import sys
@@ -934,7 +936,7 @@ class ConfigValidator:
         try:
             import hashlib
 
-            return hashlib.md5(file_path.read_bytes()).hexdigest()[:12]
+            return hashlib.md5(file_path.read_bytes(), usedforsecurity=False).hexdigest()[:12]
         except Exception:
             return "unknown"
 

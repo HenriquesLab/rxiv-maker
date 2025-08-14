@@ -123,8 +123,9 @@ class ContainerEngineFactory:
         if env_engine in cls._engines:
             try:
                 return cls.create_engine(env_engine, workspace_dir=workspace_dir, **kwargs)
-            except RuntimeError:
+            except RuntimeError as e:
                 # Engine specified in env var is not available, continue to auto-detect
+                logging.warning(f"Engine '{env_engine}' specified in environment variable is not available: {e}")
                 pass
 
         # Auto-detect available engines in priority order

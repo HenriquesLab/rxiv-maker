@@ -16,13 +16,34 @@ from pathlib import Path
 try:
     import requests
 except ImportError:
-    requests = None
+    requests = None  # type: ignore
+
+try:
+    from ..utils.retry import get_with_retry
+except ImportError:
+    # Fallback when retry module isn't available
+    get_with_retry = None  # type: ignore
+
+try:
+    from rich.progress import (
+        BarColumn,
+        MofNCompleteColumn,
+        Progress,
+        SpinnerColumn,
+        TaskProgressColumn,
+        TextColumn,
+        TimeElapsedColumn,
+    )
+
+    RICH_AVAILABLE = True
+except ImportError:
+    RICH_AVAILABLE = False
 
 # Add the parent directory to the path to allow imports when run as a script
 if __name__ == "__main__":
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-# Import platform utilities and Docker manager
+# Import platform utilities and Docker manager with proper fallback handling
 try:
     from ..docker.manager import get_docker_manager
     from ..utils.platform import platform_detector
@@ -31,8 +52,8 @@ except ImportError:
     import sys
 
     sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-    from rxiv_maker.docker.manager import get_docker_manager
-    from rxiv_maker.utils.platform import platform_detector
+    from rxiv_maker.docker.manager import get_docker_manager  # type: ignore[no-redef]
+    from rxiv_maker.utils.platform import platform_detector  # type: ignore[no-redef]
 
 
 class FigureGenerator:
@@ -45,6 +66,8 @@ class FigureGenerator:
         output_format="png",
         r_only=False,
         engine="local",
+        enable_content_caching=True,
+        manuscript_path=None,
     ):
         """Initialize the figure generator.
 
@@ -54,14 +77,34 @@ class FigureGenerator:
             output_format: Default output format for figures
             r_only: Only process R files if True
             engine: Execution engine ("local" or "docker")
+            enable_content_caching: Enable content-based caching to avoid unnecessary rebuilds
+            manuscript_path: Path to manuscript directory (for caching, defaults to current directory)
         """
         self.figures_dir = Path(figures_dir).resolve()
         self.output_dir = Path(output_dir).resolve()
         self.output_format = output_format.lower()
         self.r_only = r_only
         self.engine = engine
+        self.enable_content_caching = enable_content_caching
         self.supported_formats = ["png", "svg", "pdf", "eps"]
         self.platform = platform_detector
+        self.verbose = False
+
+        # Initialize content-based caching if enabled
+        self.checksum_manager = None
+        if self.enable_content_caching:
+            try:
+                # Import here to avoid circular dependencies
+                from ..utils.figure_checksum import FigureChecksumManager
+
+                # Use provided manuscript path or default to parent of figures_dir
+                if manuscript_path is None:
+                    manuscript_path = self.figures_dir.parent
+
+                self.checksum_manager = FigureChecksumManager(str(manuscript_path))
+            except ImportError as e:
+                print(f"Warning: Content caching disabled due to import error: {e}")
+                self.enable_content_caching = False
 
         # Initialize Docker manager if using docker engine
         self.docker_manager = None
@@ -76,6 +119,47 @@ class FigureGenerator:
         # Ensure output directory exists
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
+    def _should_regenerate_figure(self, source_file: Path, output_file: Path) -> bool:
+        """Check if a figure should be regenerated based on content changes.
+
+        Args:
+            source_file: Source figure file (.mmd, .py, .R)
+            output_file: Expected output file
+
+        Returns:
+            True if figure should be regenerated, False if cached version is up-to-date
+        """
+        # If caching is disabled, always regenerate
+        if not self.enable_content_caching or self.checksum_manager is None:
+            return True
+
+        # If output file doesn't exist, must regenerate
+        if not output_file.exists():
+            return True
+
+        # Check if source file content has changed
+        try:
+            relative_path = source_file.relative_to(self.figures_dir)
+            return self.checksum_manager.has_file_changed(str(relative_path))
+        except (ValueError, Exception):
+            # If we can't determine, err on the side of regeneration
+            return True
+
+    def _update_figure_cache(self, source_file: Path) -> None:
+        """Update the cache after successfully generating a figure.
+
+        Args:
+            source_file: Source figure file that was processed
+        """
+        if self.enable_content_caching and self.checksum_manager is not None:
+            try:
+                relative_path = source_file.relative_to(self.figures_dir)
+                self.checksum_manager.update_file_checksum(str(relative_path))
+            except (ValueError, Exception) as e:
+                # Cache update failed, but don't fail the whole operation
+                print(f"Warning: Failed to update checksum for {source_file.name}: {e}")
+                pass
+
     def generate_all_figures(self, parallel: bool = True, max_workers: int = 4):
         """Generate all figures found in the figures directory.
 
@@ -83,86 +167,98 @@ class FigureGenerator:
             parallel: Enable parallel processing of figures
             max_workers: Maximum number of worker threads for parallel processing
         """
-        print("Starting figure generation...")
-
         if not self.figures_dir.exists():
             print(f"Warning: Figures directory '{self.figures_dir}' does not exist")
             return
 
-        print(f"Scanning for figures in: {self.figures_dir}")
-        print("DEBUG: About to do file globbing...")
-
         # Find all figure files
         try:
             if self.r_only:
-                print("DEBUG: r_only mode, getting R files...")
                 r_files = list(self.figures_dir.glob("*.R"))
                 mermaid_files = []
                 python_files = []
             else:
-                print("DEBUG: Getting mermaid files...")
                 mermaid_files = list(self.figures_dir.glob("*.mmd"))
-                print(f"DEBUG: Found {len(mermaid_files)} mermaid files")
-
-                print("DEBUG: Getting python files...")
                 python_files = list(self.figures_dir.glob("*.py"))
-                print(f"DEBUG: Found {len(python_files)} python files")
-
-                print("DEBUG: Getting R files...")
                 r_files = list(self.figures_dir.glob("*.R"))
-                print(f"DEBUG: Found {len(r_files)} R files")
 
-            print("DEBUG: File globbing completed successfully!")
+            total_files = len(mermaid_files) + len(python_files) + len(r_files)
+
+            if total_files == 0:
+                print("No figure files found to process")
+                return
+
+            print(f"Found {total_files} figure file(s) to process")
 
             # Process figures with optional parallelization
-            if parallel and (len(mermaid_files) + len(python_files) + len(r_files)) > 1:
+            if parallel and total_files > 1:
                 self._generate_figures_parallel(mermaid_files, python_files, r_files, max_workers)
             else:
                 self._generate_figures_sequential(mermaid_files, python_files, r_files)
 
-            print("DEBUG: All generation methods completed!")
-
         except Exception as e:
-            print(f"DEBUG: Error in method: {e}")
+            print(f"Error in figure generation: {e}")
             raise
 
     def _generate_figures_sequential(self, mermaid_files, python_files, r_files):
-        """Generate figures sequentially (original behavior)."""
-        # Mermaid generation
-        print("DEBUG: About to test Mermaid generation...")
+        """Generate figures sequentially with progress tracking."""
+        all_files = []
+
+        # Prepare file list with types
         if mermaid_files and not self.r_only:
-            print(f"Found {len(mermaid_files)} Mermaid file(s):")
-            for mmd_file in mermaid_files:
-                print(f"  Processing: {mmd_file.name}")
-                try:
-                    self.generate_mermaid_figure(mmd_file)
-                    print(f"  ✓ Completed: {mmd_file.name}")
-                except Exception as e:
-                    print(f"  ✗ Failed: {mmd_file.name} - {e}")
-
-        # Python generation
-        print("DEBUG: About to test Python generation...")
+            all_files.extend([(f, "mermaid", "🌊") for f in mermaid_files])
         if python_files and not self.r_only:
-            print(f"Found {len(python_files)} Python file(s):")
-            for py_file in python_files:
-                print(f"  Processing: {py_file.name}")
-                try:
-                    self.generate_python_figure(py_file)
-                    print(f"  ✓ Completed: {py_file.name}")
-                except Exception as e:
-                    print(f"  ✗ Failed: {py_file.name} - {e}")
-
-        # R generation
-        print("DEBUG: About to test R generation...")
+            all_files.extend([(f, "python", "🐍") for f in python_files])
         if r_files:
-            print(f"Found {len(r_files)} R file(s):")
-            for r_file in r_files:
-                print(f"  Processing: {r_file.name}")
+            all_files.extend([(f, "R", "📊") for f in r_files])
+
+        if not all_files:
+            return
+
+        # Use Rich progress bar if available, fallback to simple progress
+        if RICH_AVAILABLE:
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(complete_style="green", finished_style="green"),
+                TaskProgressColumn(),
+                MofNCompleteColumn(),
+                TimeElapsedColumn(),
+                transient=True,
+            ) as progress:
+                task = progress.add_task("Generating figures...", total=len(all_files))
+
+                for _i, (file_path, file_type, emoji) in enumerate(all_files):
+                    progress.update(task, description=f"{emoji} Processing {file_path.name}")
+
+                    try:
+                        if file_type == "mermaid":
+                            self.generate_mermaid_figure(file_path)
+                        elif file_type == "python":
+                            self.generate_python_figure(file_path)
+                        elif file_type == "R":
+                            self.generate_r_figure(file_path)
+
+                        progress.update(task, advance=1, description=f"✅ {file_path.name} completed")
+                    except Exception as e:
+                        progress.update(task, advance=1, description=f"❌ {file_path.name} failed: {e}")
+                        print(f"Error generating {file_path.name}: {e}")
+        else:
+            # Fallback to simple progress without Rich
+            for i, (file_path, file_type, emoji) in enumerate(all_files):
+                print(f"[{i + 1}/{len(all_files)}] {emoji} Processing {file_path.name}")
+
                 try:
-                    self.generate_r_figure(r_file)
-                    print(f"  ✓ Completed: {r_file.name}")
+                    if file_type == "mermaid":
+                        self.generate_mermaid_figure(file_path)
+                    elif file_type == "python":
+                        self.generate_python_figure(file_path)
+                    elif file_type == "R":
+                        self.generate_r_figure(file_path)
+
+                    print(f"  ✅ Completed: {file_path.name}")
                 except Exception as e:
-                    print(f"  ✗ Failed: {r_file.name} - {e}")
+                    print(f"  ❌ Failed: {file_path.name} - {e}")
 
     def _generate_figures_parallel(self, mermaid_files, python_files, r_files, max_workers):
         """Generate figures in parallel using ThreadPoolExecutor."""
@@ -247,6 +343,12 @@ class FigureGenerator:
 
             # --- Step 1: Generate SVG using mermaid.ink API ---
             svg_output_file = figure_dir / f"{mmd_file.stem}.svg"
+
+            # Check if figure needs regeneration
+            if not self._should_regenerate_figure(mmd_file, svg_output_file):
+                print(f"  ⚡ Skipping {mmd_file.name}: cached version is up-to-date")
+                return
+
             print(f"  🎨 Generating SVG using mermaid.ink API: {figure_dir.name}/{svg_output_file.name}...")
 
             # Read the mermaid diagram content
@@ -254,6 +356,8 @@ class FigureGenerator:
 
             if self.engine == "docker":
                 # Use Docker for Mermaid processing
+                if self.docker_manager is None:
+                    raise RuntimeError("Docker manager not initialized for docker engine")
                 result = self.docker_manager.run_mermaid_generation(
                     input_file=mmd_file.resolve(),
                     output_file=svg_output_file.resolve(),
@@ -282,6 +386,9 @@ class FigureGenerator:
                     return
 
             # All formats are generated directly by _generate_mermaid_with_api()
+
+            # Update cache after successful generation
+            self._update_figure_cache(mmd_file)
 
         except Exception as e:
             print(f"  ❌ Error processing {mmd_file.name}: {e}")
@@ -377,8 +484,12 @@ class FigureGenerator:
                 print(f"     Requesting {format_type.upper()} from mermaid.ink...")
 
                 try:
-                    response = requests.get(api_url, timeout=30)
-                    response.raise_for_status()
+                    # Use retry logic for network requests
+                    if get_with_retry is not None:
+                        response = get_with_retry(api_url, max_attempts=3, timeout=30)
+                    else:
+                        response = requests.get(api_url, timeout=30)
+                        response.raise_for_status()
 
                     # Write the content
                     if format_type == "svg":
@@ -420,13 +531,24 @@ class FigureGenerator:
             figure_dir = self.output_dir / py_file.stem
             figure_dir.mkdir(parents=True, exist_ok=True)
 
+            # Check if figure needs regeneration (check for any output file)
+            output_patterns = ["*.png", "*.pdf", "*.svg", "*.eps"]
+            existing_outputs = []
+            for pattern in output_patterns:
+                existing_outputs.extend(figure_dir.glob(pattern))
+
+            if existing_outputs and not self._should_regenerate_figure(py_file, existing_outputs[0]):
+                print(f"  ⚡ Skipping {py_file.name}: cached version is up-to-date")
+                return
+
             print(f"  🐍 Executing {py_file.name}...")
 
             # Execute the Python script - use Docker if engine="docker"
-            import shlex
 
             if self.engine == "docker":
                 # Use Docker execution with centralized manager
+                if self.docker_manager is None:
+                    raise RuntimeError("Docker manager not initialized for docker engine")
                 env = {"RXIV_FIGURE_OUTPUT_DIR": str(figure_dir.absolute())}
 
                 result = self.docker_manager.run_python_script(
@@ -446,14 +568,11 @@ class FigureGenerator:
                         f"os.chdir('{figure_dir.absolute()}'); "
                         f"exec(open('{py_file.absolute()}').read())"
                     )
-                    cmd_parts = ["uv", "run", "python", "-c", exec_code]
-                    # Use manual shell escaping for compatibility
-                    cmd = " ".join(shlex.quote(part) for part in cmd_parts)
+                    cmd = ["uv", "run", "python", "-c", exec_code]
                     # Run from current working directory (project root) not figure_dir
                     cwd = None
                 else:
-                    cmd_parts = [python_cmd, str(py_file.absolute())]
-                    cmd = " ".join(shlex.quote(part) for part in cmd_parts)
+                    cmd = [python_cmd, str(py_file.absolute())]
                     # For other Python commands, run from figure directory
                     cwd = str(figure_dir.absolute())
 
@@ -527,9 +646,21 @@ class FigureGenerator:
             if potential_files:
                 print("  ✅ Generated figures:")
                 for gen_file in sorted(potential_files):
-                    # Show relative path from figure_dir
-                    rel_path = gen_file.relative_to(figure_dir)
-                    print(f"     - {figure_dir.name}/{rel_path}")
+                    # Show relative path from the original figures directory
+                    # figure_dir might be a subdirectory, so we need to get the path from the root FIGURES dir
+                    try:
+                        # Try to get relative path from the parent figures directory
+                        figures_root = figure_dir.parent if figure_dir.parent.name == "FIGURES" else figure_dir
+                        while figures_root.name != "FIGURES" and figures_root.parent != figures_root:
+                            figures_root = figures_root.parent
+                        if figures_root.name == "FIGURES":
+                            rel_path = gen_file.relative_to(figures_root)
+                        else:
+                            rel_path = gen_file.relative_to(figure_dir)
+                        print(f"     - {rel_path}")
+                    except ValueError:
+                        # Fallback: just show the filename
+                        print(f"     - {gen_file.name}")
             else:
                 print(f"  ⚠️  No output files detected for {py_file.name}")
                 print(f"     Debug: Checked {len(current_files)} total files")
@@ -537,6 +668,10 @@ class FigureGenerator:
                 if current_files:
                     available_files = [f.name for f in current_files]
                     print(f"     Debug: Available files: {available_files}")
+                return
+
+            # Update cache after successful generation
+            self._update_figure_cache(py_file)
 
         except Exception as e:
             print(f"  ❌ Error executing {py_file.name}: {e}")
@@ -555,12 +690,24 @@ class FigureGenerator:
             figure_dir = self.output_dir / r_file.stem
             figure_dir.mkdir(parents=True, exist_ok=True)
 
+            # Check if figure needs regeneration (check for any output file)
+            output_patterns = ["*.png", "*.pdf", "*.svg", "*.eps"]
+            existing_outputs = []
+            for pattern in output_patterns:
+                existing_outputs.extend(figure_dir.glob(pattern))
+
+            if existing_outputs and not self._should_regenerate_figure(r_file, existing_outputs[0]):
+                print(f"  ⚡ Skipping {r_file.name}: cached version is up-to-date")
+                return
+
             print(f"  📊 Executing {r_file.name}...")
 
             # Execute the R script - use Docker if engine="docker"
 
             if self.engine == "docker":
                 # Use Docker execution with centralized manager
+                if self.docker_manager is None:
+                    raise RuntimeError("Docker manager not initialized for docker engine")
                 env = {"RXIV_FIGURE_OUTPUT_DIR": str(figure_dir.absolute())}
 
                 result = self.docker_manager.run_r_script(
@@ -618,9 +765,27 @@ class FigureGenerator:
             if potential_files:
                 print("  ✅ Generated figures:")
                 for gen_file in sorted(potential_files):
-                    print(f"     - {figure_dir.name}/{gen_file.name}")
+                    # Show relative path from the original figures directory
+                    try:
+                        # Try to get relative path from the parent figures directory
+                        figures_root = figure_dir.parent if figure_dir.parent.name == "FIGURES" else figure_dir
+                        while figures_root.name != "FIGURES" and figures_root.parent != figures_root:
+                            figures_root = figures_root.parent
+
+                        if figures_root.name == "FIGURES":
+                            rel_path = gen_file.relative_to(figures_root)
+                        else:
+                            rel_path = gen_file.relative_to(figure_dir)
+                        print(f"     - {rel_path}")
+                    except ValueError:
+                        # Fallback: just show the filename
+                        print(f"     - {gen_file.name}")
             else:
                 print(f"  ⚠️  No output files detected for {r_file.name}")
+                return
+
+            # Update cache after successful generation
+            self._update_figure_cache(r_file)
 
         except Exception as e:
             print(f"  ❌ Error executing {r_file.name}: {e}")
@@ -777,6 +942,15 @@ def main():
         choices=["local", "docker"],
         help="Execution engine (local or docker, can be set via RXIV_ENGINE env var)",
     )
+    parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Disable content-based caching (regenerate all figures)",
+    )
+    parser.add_argument(
+        "--manuscript-path",
+        help="Path to manuscript directory (for caching, defaults to current directory)",
+    )
 
     args = parser.parse_args()
 
@@ -786,6 +960,8 @@ def main():
         output_format=args.format,
         r_only=args.r_only,
         engine=args.engine,
+        enable_content_caching=not args.no_cache,
+        manuscript_path=args.manuscript_path,
     )
 
     # Set verbose mode if specified

@@ -159,6 +159,8 @@ class ConfigManager:
         # Load existing config or start with default
         if config_path.exists():
             current_config = self._load_config_file(config_path)
+            if current_config is None:
+                current_config = self._get_config_template("default")
         else:
             current_config = self._get_config_template("default")
 
@@ -215,7 +217,7 @@ class ConfigManager:
         """
         # Convert dot notation to nested dict update
         keys = key.split(".")
-        updates = {}
+        updates: Dict[str, Any] = {}
         current = updates
 
         for k in keys[:-1]:
@@ -281,7 +283,8 @@ class ConfigManager:
             # Load only non-default configuration
             config_file = self._find_existing_config()
             if config_file:
-                config = self._load_config_file(config_file)
+                loaded_config = self._load_config_file(config_file)
+                config = loaded_config if loaded_config is not None else {}
             else:
                 config = {}
 
