@@ -264,15 +264,14 @@ class CleanupManager:
 
         # Import migration utilities
         from ..utils.cache_utils import (
-            get_cache_dir, 
-            get_legacy_rxiv_cache_dir, 
+            cleanup_legacy_rxiv_cache_dir,
+            get_legacy_rxiv_cache_dir,
             migrate_rxiv_cache_directory,
-            cleanup_legacy_rxiv_cache_dir
         )
 
         # Legacy cache directories in current directory
         cache_dirs = [Path(".cache"), Path(".rxiv_cache"), Path("__pycache__"), Path(".pytest_cache")]
-        
+
         # Check for .rxiv_cache and offer migration before cleanup
         legacy_rxiv_cache = get_legacy_rxiv_cache_dir()
         if legacy_rxiv_cache.exists():
@@ -316,20 +315,20 @@ class CleanupManager:
 
     def clean_standardized_cache(self, subfolder: str | None = None) -> bool:
         """Clean standardized cache directories.
-        
+
         Args:
             subfolder: Optional subfolder to clean (e.g., 'doi', 'advanced')
                       If None, cleans the entire cache directory
         """
         from ..utils.cache_utils import get_cache_dir
-        
+
         try:
             cache_dir = get_cache_dir(subfolder)
-            
+
             if cache_dir.exists():
                 cache_type = f" ({subfolder})" if subfolder else ""
                 self.log(f"Cleaning standardized cache{cache_type}: {cache_dir}", "STEP")
-                
+
                 if self.platform.remove_directory(cache_dir):
                     self.log(f"Removed standardized cache directory: {cache_dir}", "SUCCESS")
                     return True
@@ -340,7 +339,7 @@ class CleanupManager:
                 cache_type = f" ({subfolder})" if subfolder else ""
                 self.log(f"No standardized cache{cache_type} to clean", "INFO")
                 return True
-                
+
         except Exception as e:
             self.log(f"Error cleaning standardized cache: {e}", "ERROR")
             return False

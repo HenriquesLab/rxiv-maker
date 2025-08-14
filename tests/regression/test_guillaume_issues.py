@@ -23,8 +23,9 @@ class TestCLIArgumentParsing:
         This tests the specific error from Issue #97:
         'Error: Got unexpected extra argument (paper)'
         """
-        from rxiv_maker.cli.main import main
         from click.testing import CliRunner
+
+        from rxiv_maker.cli.main import main
 
         runner = CliRunner()
 
@@ -43,8 +44,9 @@ class TestCLIArgumentParsing:
 
     def test_clean_command_argument_validation(self):
         """Test clean command argument validation."""
-        from rxiv_maker.cli.main import main
         from click.testing import CliRunner
+
+        from rxiv_maker.cli.main import main
 
         runner = CliRunner()
 
@@ -57,8 +59,9 @@ class TestCLIArgumentParsing:
 
     def test_pdf_command_argument_parsing(self):
         """Test PDF command argument parsing for Google Colab compatibility."""
-        from rxiv_maker.cli.main import main
         from click.testing import CliRunner
+
+        from rxiv_maker.cli.main import main
 
         runner = CliRunner()
 
@@ -136,7 +139,7 @@ plt.savefig('Figure__test.png')
 plt.close()
 """)
 
-            generator = FigureGenerator(figures_dir=str(figures_dir), output_dir=str(figures_dir), engine="local")
+            FigureGenerator(figures_dir=str(figures_dir), output_dir=str(figures_dir), engine="local")
 
             # Should properly resolve paths without looking in parent directories
             python_files = list(figures_dir.glob("*.py"))
@@ -145,8 +148,9 @@ plt.close()
 
     def test_working_directory_independence(self):
         """Test that operations work regardless of current working directory."""
-        from rxiv_maker.cli.main import main
         from click.testing import CliRunner
+
+        from rxiv_maker.cli.main import main
 
         runner = CliRunner()
 
@@ -401,7 +405,7 @@ class TestWidgetInteractionsWithPlaywright:
         <body>
             <div id="notebook-container">
                 <h1>Test Notebook for rxiv-maker Widget</h1>
-                
+
                 <!-- Simulate the author/affiliation widget -->
                 <div class="widget-container author-widget">
                     <h3>Authors</h3>
@@ -413,7 +417,7 @@ class TestWidgetInteractionsWithPlaywright:
                     </div>
                     <button class="button" id="add-author">Add Author</button>
                 </div>
-                
+
                 <div class="widget-container affiliation-widget">
                     <h3>Affiliations</h3>
                     <div id="affiliations-list">
@@ -425,7 +429,7 @@ class TestWidgetInteractionsWithPlaywright:
                     <button class="button" id="add-affiliation">Add Affiliation</button>
                 </div>
             </div>
-            
+
             <script>
                 // Simulate the widget behavior that was causing issues
                 document.getElementById('add-affiliation').addEventListener('click', function() {
@@ -436,12 +440,12 @@ class TestWidgetInteractionsWithPlaywright:
                     newAffiliation.innerHTML = '<input type="text" class="text-input affiliation-name" placeholder="New affiliation">' +
                                               '<button class="button remove-affiliation">Remove</button>';
                     affiliationsList.appendChild(newAffiliation);
-                    
+
                     // The bug: DO NOT clear authors when adding affiliations
                     // This is what the original bug was doing - we test that it doesn't happen
                     console.log('Added affiliation without clearing authors');
                 });
-                
+
                 document.getElementById('add-author').addEventListener('click', function() {
                     var authorsList = document.getElementById('authors-list');
                     var newAuthor = document.createElement('div');
@@ -450,7 +454,7 @@ class TestWidgetInteractionsWithPlaywright:
                                          '<button class="button remove-author">Remove</button>';
                     authorsList.appendChild(newAuthor);
                 });
-                
+
                 // Add event delegation for remove buttons
                 document.addEventListener('click', function(e) {
                     if (e.target.classList.contains('remove-author')) {
@@ -518,7 +522,7 @@ class TestWidgetInteractionsWithPlaywright:
                 <button id="simulate-interaction" class="button">Simulate Interaction</button>
                 <div id="state-display"></div>
             </div>
-            
+
             <script>
                 document.getElementById('simulate-interaction').addEventListener('click', function() {
                     // This simulates the kind of interaction that was causing state loss
@@ -526,8 +530,8 @@ class TestWidgetInteractionsWithPlaywright:
                     var author1 = document.getElementById('author1').value;
                     var author2 = document.getElementById('author2').value;
                     var affiliation1 = document.getElementById('affiliation1').value;
-                    
-                    stateDisplay.innerHTML = 'State preserved: ' + 
+
+                    stateDisplay.innerHTML = 'State preserved: ' +
                         'Author1=' + author1 + ', Author2=' + author2 + ', Affiliation1=' + affiliation1;
                 });
             </script>
@@ -579,7 +583,7 @@ class TestWidgetInteractionsWithPlaywright:
                         }
                     }
                 };
-                
+
                 // Mock Jupyter widgets
                 window.jupyter = {
                     widgets: {
@@ -611,16 +615,16 @@ class TestWidgetInteractionsWithPlaywright:
                 <button class="widget-button" id="update-metadata">Update Metadata</button>
                 <div id="result"></div>
             </div>
-            
+
             <script>
                 document.getElementById('update-metadata').addEventListener('click', function() {
                     var title = document.getElementById('manuscript-title').value;
                     var authors = document.getElementById('authors-textarea').value;
-                    
+
                     // Simulate the widget updating metadata
-                    document.getElementById('result').innerHTML = 
+                    document.getElementById('result').innerHTML =
                         'Updated: Title="' + title + '", Authors="' + authors + '"';
-                    
+
                     // This is where the bug would manifest - losing data during updates
                     console.log('Metadata updated without data loss');
                 });
@@ -669,30 +673,30 @@ class TestWidgetInteractionsWithPlaywright:
                 <div id="colab-status">Unknown</div>
                 <div id="path-info"></div>
             </div>
-            
+
             <script>
                 // Simulate environment detection logic
                 function detectColabEnvironment() {
                     var isColab = window.location.hostname.includes('colab.research.google.com') ||
                                  document.getElementById('site-name') !== null ||
                                  navigator.userAgent.includes('Colab');
-                    
-                    document.getElementById('colab-status').textContent = 
+
+                    document.getElementById('colab-status').textContent =
                         isColab ? 'Google Colab Detected' : 'Local Environment';
-                    
+
                     // Simulate path handling that was problematic in Guillaume's issues
                     var paths = {
                         working_dir: '/content',
                         manuscript_dir: '/content/manuscript',
                         figures_dir: '/content/manuscript/FIGURES'
                     };
-                    
-                    document.getElementById('path-info').innerHTML = 
+
+                    document.getElementById('path-info').innerHTML =
                         'Working Dir: ' + paths.working_dir + '<br>' +
                         'Manuscript Dir: ' + paths.manuscript_dir + '<br>' +
                         'Figures Dir: ' + paths.figures_dir;
                 }
-                
+
                 detectColabEnvironment();
             </script>
         </body>
