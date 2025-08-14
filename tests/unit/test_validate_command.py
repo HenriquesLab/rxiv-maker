@@ -345,7 +345,10 @@ class TestValidateCommandEdgeCases:
 
         # Should use "MANUSCRIPT" as default and fail because it doesn't exist
         assert result.exit_code == 1
-        assert "Manuscript directory 'MANUSCRIPT' does not exist" in result.output
+        # Check for core message components ignoring ANSI color codes
+        assert "Manuscript directory" in result.output
+        assert "'MANUSCRIPT'" in result.output
+        assert "does not exist" in result.output
 
     @patch("rxiv_maker.cli.commands.validate.Progress")
     @patch("rxiv_maker.engine.validate.main")
