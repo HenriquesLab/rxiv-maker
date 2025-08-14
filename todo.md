@@ -1,8 +1,8 @@
 # 📝 RXIV-MAKER TODO LIST
 
-**Last Updated**: 2025-01-14  
+**Last Updated**: 2025-08-14  
 **Current Branch**: dev  
-**Last Scanned**: Full codebase scan completed 2025-01-14
+**Last Scanned**: Full codebase scan completed 2025-08-14 (Cache migration tasks added)
 
 ---
 
@@ -257,11 +257,53 @@ Use the successful `tests/unit/test_setup_environment.py` pattern as the new gol
    - [ ] Clean up LaTeX multi-pass comments ("First pass", "Second pass", etc.)
    - [ ] Standardize error handling patterns across modules
 
+4. **Cache Migration Follow-ups** (Low Priority - System is working):
+   - [ ] **Remove legacy cache references** after 90-day transition period (target: Nov 2025)
+     - Remove `.rxiv_cache` detection code from `cleanup.py`
+     - Remove migration functions from `cache_utils.py` 
+     - Update tests to remove legacy cache scenarios
+   - [ ] **Add cache statistics reporting** - Show cache hit rates and size metrics
+   - [ ] **Implement cache pruning strategy** - Auto-remove old/unused cache entries
+   - [ ] **Add cache integrity checks** - Validate cached data on read
+
 ---
 
 ## ✅ RECENTLY COMPLETED
 
 ### 🎉 **Major Achievements (2025-01-14 to 2025-08-14)**
+
+#### ✅ **Cache Migration to Standardized Locations** (Completed 2025-08-14)
+**Owner**: Infrastructure Team  
+**Tags**: #cache #migration #standardization #cross-platform
+
+**Successfully migrated from legacy `.rxiv_cache` directory to platform-standard cache locations:**
+
+**Files Modified:**
+- `src/rxiv_maker/utils/cache_utils.py`: Enhanced migration capabilities with automatic detection and migration
+- `src/rxiv_maker/config/manager.py`: Updated default configuration to use standardized cache directory
+- `src/rxiv_maker/validators/doi_validator.py`: Updated default behavior to use standardized cache
+- `src/rxiv_maker/engine/cleanup.py`: Enhanced to handle both old and new cache locations with automatic migration
+- `src/rxiv_maker/cli/commands/init.py`: Updated .gitignore template to exclude legacy `.rxiv_cache/`
+- `docs/troubleshooting/cache-migration.md`: Created comprehensive migration documentation
+- Various test files: Updated test suites for new cache behavior
+
+**Key Changes:**
+- ✅ **Environment Variable Support**: Added `RXIV_CACHE_DIR` environment variable for custom cache location
+- ✅ **Automatic Migration**: Implemented automatic detection and migration of legacy `.rxiv_cache` directories
+- ✅ **Cross-Platform Paths**: Now uses platform-specific cache directories:
+  - Linux: `~/.cache/rxiv-maker/`
+  - macOS: `~/Library/Caches/rxiv-maker/`
+  - Windows: `%LOCALAPPDATA%\rxiv-maker\cache\`
+- ✅ **Migration Validation**: Added health checks and validation for successful cache migration
+- ✅ **Cleanup Integration**: Cleanup systems now handle both old and new locations seamlessly
+- ✅ **Documentation Updates**: Updated all references and architecture diagrams to reflect new cache structure
+- ✅ **Backward Compatibility**: Maintains support for legacy locations during transition period
+
+**Testing Verification:**
+- ✅ Cache migration tested across Windows, macOS, and Linux platforms
+- ✅ Legacy cache detection and migration working correctly
+- ✅ Environment variable override functioning as expected
+- ✅ Cleanup properly handles both old and new cache locations
 
 #### ✅ **Task 1: CI Coverage Enforcement** 
 **Files Modified:**

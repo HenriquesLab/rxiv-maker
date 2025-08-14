@@ -1,0 +1,18 @@
+{
+  "result": 0,
+  "sessions": [
+    {
+      "args": {
+        "test_type": "full"
+      },
+      "name": "test",
+      "result": "failed",
+      "result_code": 0,
+      "signatures": [
+        "test(test_type='full')",
+        "test-3.11(test_type='full')",
+        "test-3.11"
+      ]
+    }
+  ]
+}

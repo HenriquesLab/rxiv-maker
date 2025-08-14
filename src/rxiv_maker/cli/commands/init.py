@@ -277,7 +277,6 @@ FIGURES/*.eps
 
 # Cache files
 .cache/
-.rxiv_cache/
 __pycache__/
 *.pyc
 

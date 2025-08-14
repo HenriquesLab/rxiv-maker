@@ -94,7 +94,7 @@ class DOIValidator(BaseValidator):
 
         # Initialize cache with error handling for temporary directories
         try:
-            cache_dir = cache_dir or str(Path(manuscript_path).parent / ".rxiv_cache" / "doi")
+            # Use standardized cache directory if not explicitly provided
             self.cache = DOICache(cache_dir)
         except Exception as cache_error:
             logger.warning(f"Failed to initialize DOI cache: {cache_error}. Using memory-only cache.")

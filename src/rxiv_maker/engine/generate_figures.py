@@ -158,7 +158,6 @@ class FigureGenerator:
             except (ValueError, Exception) as e:
                 # Cache update failed, but don't fail the whole operation
                 print(f"Warning: Failed to update checksum for {source_file.name}: {e}")
-                pass
 
     def generate_all_figures(self, parallel: bool = True, max_workers: int = 4):
         """Generate all figures found in the figures directory.
