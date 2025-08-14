@@ -69,24 +69,24 @@ class TestCLICommandStructure:
 
     def test_config_command_import(self):
         """Test that config command can be imported."""
-        from rxiv_maker.cli.commands.config import config
+        from rxiv_maker.cli.commands.config import config_group
 
-        assert config is not None
-        assert hasattr(config, "callback") or callable(config)
+        assert config_group is not None
+        assert hasattr(config_group, "callback") or callable(config_group)
 
     def test_security_command_import(self):
         """Test that security command can be imported."""
-        from rxiv_maker.cli.commands.security import security
+        from rxiv_maker.cli.commands.security import security_group
 
-        assert security is not None
-        assert hasattr(security, "callback") or callable(security)
+        assert security_group is not None
+        assert hasattr(security_group, "callback") or callable(security_group)
 
     def test_cache_management_command_import(self):
         """Test that cache_management command can be imported."""
-        from rxiv_maker.cli.commands.cache_management import cache
+        from rxiv_maker.cli.commands.cache_management import cache_group
 
-        assert cache is not None
-        assert hasattr(cache, "callback") or callable(cache)
+        assert cache_group is not None
+        assert hasattr(cache_group, "callback") or callable(cache_group)
 
     def test_track_changes_command_import(self):
         """Test that track_changes command can be imported."""
@@ -104,7 +104,7 @@ class TestCLICommandStructure:
 
     def test_completion_command_import(self):
         """Test that completion command can be imported."""
-        from rxiv_maker.cli.commands.completion import completion
+        from rxiv_maker.cli.commands.completion import completion_cmd
 
-        assert completion is not None
-        assert hasattr(completion, "callback") or callable(completion)
+        assert completion_cmd is not None
+        assert hasattr(completion_cmd, "callback") or callable(completion_cmd)

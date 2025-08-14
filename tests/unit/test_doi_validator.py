@@ -320,8 +320,10 @@ class TestDOIValidator(unittest.TestCase):
             # Clean up temporary directory
             shutil.rmtree(unique_temp, ignore_errors=True)
 
+    @pytest.mark.fast
+    @patch.object(DOIValidator, "_check_network_connectivity", return_value=True)
     @patch.object(DOIValidator, "_validate_doi_metadata")
-    def test_validation_with_api_error(self, mock_validate_metadata):
+    def test_validation_with_api_error(self, mock_validate_metadata, mock_network_check):
         """Test validation when metadata validation fails for all sources."""
         # Mock metadata validation to return error indicating no sources available
 
@@ -374,8 +376,9 @@ class TestDOIValidator(unittest.TestCase):
         )
 
     @pytest.mark.fast
+    @patch.object(DOIValidator, "_check_network_connectivity", return_value=True)
     @patch.object(DOIValidator, "_validate_doi_metadata")
-    def test_datacite_fallback_success(self, mock_validate_metadata):
+    def test_datacite_fallback_success(self, mock_validate_metadata, mock_network_check):
         """Test successful DataCite fallback when CrossRef fails."""
         # Mock successful DataCite validation
         from rxiv_maker.validators.base_validator import ValidationError, ValidationLevel
