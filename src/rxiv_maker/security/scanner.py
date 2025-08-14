@@ -687,7 +687,8 @@ class SecurityScanner:
             if not self._should_skip_file(file_path):
                 try:
                     hash_obj.update(file_path.read_bytes())
-                except Exception:
+                except Exception as e:
+                    logging.warning(f"Failed to read file for hashing: {file_path}: {e}")
                     pass
 
         return hash_obj.hexdigest()[:12]

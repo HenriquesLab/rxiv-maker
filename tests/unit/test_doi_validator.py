@@ -561,7 +561,7 @@ class TestDOIValidatorIntegration(unittest.TestCase):
     def test_citation_validator_integration(self, mock_crossref):
         """Test DOI validation integration with citation validator."""
         try:
-            from src.py.validators.citation_validator import CitationValidator
+            from rxiv_maker.validators.citation_validator import CitationValidator
         except ImportError:
             self.skipTest("CitationValidator not available")
 

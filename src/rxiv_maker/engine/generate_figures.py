@@ -155,8 +155,9 @@ class FigureGenerator:
             try:
                 relative_path = source_file.relative_to(self.figures_dir)
                 self.checksum_manager.update_file_checksum(str(relative_path))
-            except (ValueError, Exception):
+            except (ValueError, Exception) as e:
                 # Cache update failed, but don't fail the whole operation
+                print(f"Warning: Failed to update checksum for {source_file.name}: {e}")
                 pass
 
     def generate_all_figures(self, parallel: bool = True, max_workers: int = 4):
@@ -543,7 +544,6 @@ class FigureGenerator:
             print(f"  🐍 Executing {py_file.name}...")
 
             # Execute the Python script - use Docker if engine="docker"
-            import shlex
 
             if self.engine == "docker":
                 # Use Docker execution with centralized manager
@@ -568,14 +568,11 @@ class FigureGenerator:
                         f"os.chdir('{figure_dir.absolute()}'); "
                         f"exec(open('{py_file.absolute()}').read())"
                     )
-                    cmd_parts = ["uv", "run", "python", "-c", exec_code]
-                    # Use manual shell escaping for compatibility
-                    cmd = " ".join(shlex.quote(part) for part in cmd_parts)
+                    cmd = ["uv", "run", "python", "-c", exec_code]
                     # Run from current working directory (project root) not figure_dir
                     cwd = None
                 else:
-                    cmd_parts = [python_cmd, str(py_file.absolute())]
-                    cmd = " ".join(shlex.quote(part) for part in cmd_parts)
+                    cmd = [python_cmd, str(py_file.absolute())]
                     # For other Python commands, run from figure directory
                     cwd = str(figure_dir.absolute())
 

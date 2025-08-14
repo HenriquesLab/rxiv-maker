@@ -562,6 +562,11 @@ class BuildManager:
             # Extract YAML metadata from the manuscript file
             yaml_metadata = extract_yaml_metadata(str(manuscript_md))
 
+            # Inject Rxiv-Maker citation if requested
+            from ..utils import inject_rxiv_citation
+
+            inject_rxiv_citation(yaml_metadata)
+
             # Set MANUSCRIPT_PATH env var for generate_preprint
             original_env = os.environ.get("MANUSCRIPT_PATH")
             os.environ["MANUSCRIPT_PATH"] = os.path.basename(self.manuscript_path)
@@ -753,8 +758,8 @@ class BuildManager:
 
             yaml_metadata = extract_yaml_metadata(manuscript_md)
 
-            # Copy PDF with custom filename using output_dir relative to manuscript
-            result = copy_pdf_to_manuscript_folder(str(self.output_dir.name), yaml_metadata)
+            # Copy PDF with custom filename using full output_dir path
+            result = copy_pdf_to_manuscript_folder(str(self.output_dir), yaml_metadata)
 
             if result:
                 self.log("PDF copied to manuscript directory")

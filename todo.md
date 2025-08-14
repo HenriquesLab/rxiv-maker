@@ -103,24 +103,7 @@
 
 ### 🟠 **Priority 2: Complete Test Coverage Push (Target: 90%)**
 
-**Current Focus Areas**:
-1. **Engine Modules** (Highest Priority):
-   - [ ] `generate_figures.py` - Add comprehensive tests
-   - [ ] `generate_preprint.py` - Add comprehensive tests
-   - [ ] `prepare_arxiv.py` - Add comprehensive tests
-   - [ ] `fix_bibliography.py` - Add comprehensive tests
-   - [ ] `build_manager.py` - Improve from 27% to 80%+ coverage
-
-2. **Utils Modules** (Medium Priority):
-   - [ ] `platform.py` (24% coverage) - Add cross-platform tests
-   - [ ] `file_helpers.py` (20% coverage) - Add file operation tests
-   - [ ] `update_checker.py` - Add version checking tests
-   - [ ] `performance.py` - Add performance monitoring tests
-
-3. **Validator Modules** (Lower Priority):
-   - [ ] DOI validators (8-15% coverage) - Add validation tests
-   - [ ] Figure validators - Add validation tests
-   - [ ] Math validators - Add validation tests
+**Tasks moved to GitHub Issues.**
 
 ### **🚀 RECOMMENDED APPROACH:**
 Use the successful `tests/unit/test_setup_environment.py` pattern as the new gold standard template. Focus on:

@@ -717,7 +717,8 @@ if __name__ == "__main__":
                 )
                 if result.returncode == 0:
                     return True  # Image already available locally
-            except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+            except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as e:
+                print(f"Warning: Unable to check if Docker image is available locally: {e}")
                 pass  # Image not available locally, proceed with pull
 
         # Pull the latest version of the image
@@ -834,7 +835,8 @@ if __name__ == "__main__":
                     "created": container_info.get("Created", "unknown"),
                     "platform": container_info.get("Platform", "unknown"),
                 }
-        except Exception:
+        except Exception as e:
+            print(f"Warning: Failed to get container details: {e}")
             pass
 
         return None
@@ -894,7 +896,8 @@ if __name__ == "__main__":
                         try:
                             cpu_float = float(cpu_percent)
                             stats["total_cpu_percent"] += cpu_float
-                        except ValueError:
+                        except ValueError as e:
+                            print(f"Warning: Invalid CPU percentage value '{cpu_percent}': {e}")
                             pass
 
                         stats["containers"][key] = {

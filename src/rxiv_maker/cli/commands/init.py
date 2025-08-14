@@ -86,7 +86,7 @@ def init(
             author_email = "your.email@example.com"
             author_affiliation = "Your Institution"
         else:
-            console.print("\\n📝 Please provide manuscript information:", style="blue")
+            console.print("\n📝 Please provide manuscript information:", style="blue")
 
             title = Prompt.ask("Title", default="My Research Paper")
             subtitle = Prompt.ask("Subtitle (optional)", default="")
@@ -116,8 +116,11 @@ affiliations:
 
 # Publication metadata
 date: "{today}"                      # Publication date (YYYY-MM-DD format)
-status: "draft"                      # Status: draft, submitted, accepted, published
-enable_doi_validation: true         # Enable DOI validation against CrossRef/DataCite APIs
+status: "draft"                         # Status: draft, submitted, accepted, published
+use_line_numbers: true                  # Enable line numbers for manuscript review
+license: "CC BY 4.0"                    # Creative Commons license (CC BY 4.0, CC BY-SA 4.0, etc.)
+acknowledge_rxiv_maker: true            # Include Rxiv-Maker acknowledgement and citation
+enable_doi_validation: true             # Enable DOI validation against CrossRef/DataCite APIs
 
 # Keywords and abstract
 keywords: ["keyword1", "keyword2", "keyword3"]
@@ -228,11 +231,6 @@ Additional references if needed.
 
 import matplotlib.pyplot as plt
 import numpy as np
-import os
-
-# Create output directory
-output_dir = "Figure__example"
-os.makedirs(output_dir, exist_ok=True)
 
 # Generate example data
 x = np.linspace(0, 2*np.pi, 100)
@@ -247,9 +245,9 @@ plt.title('Example Figure')
 plt.legend()
 plt.grid(True, alpha=0.3)
 
-# Save the figure in the output directory
+# Save the figure directly (rxiv-maker handles the directory)
 plt.tight_layout()
-plt.savefig(os.path.join(output_dir, 'Figure__example.png'), dpi=300, bbox_inches='tight')
+plt.savefig('Figure__example.png', dpi=300, bbox_inches='tight')
 plt.close()
 
 print("✅ Example figure generated successfully!")
@@ -295,7 +293,7 @@ Thumbs.db
         console.print(f"📁 Created in: {manuscript_dir.absolute()}", style="blue")
 
         # Show next steps
-        console.print("\\n🚀 Next steps:", style="blue")
+        console.print("\n🚀 Next steps:", style="blue")
         console.print(f"1. Edit {manuscript_path}/00_CONFIG.yml with your details", style="white")
         console.print(f"2. Write your content in {manuscript_path}/01_MAIN.md", style="white")
         console.print(f"3. Add references to {manuscript_path}/03_REFERENCES.bib", style="white")

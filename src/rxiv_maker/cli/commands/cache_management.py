@@ -231,7 +231,8 @@ def _print_stats_table(stats: Dict[str, Any]) -> None:
                             try:
                                 value = formatter(cache_stats[key])
                                 safe_console_print(console, f"    {label}: {value}")
-                            except (ValueError, TypeError):
+                            except (ValueError, TypeError) as e:
+                                safe_console_print(console, f"    {label}: <formatting error: {e}>")
                                 pass
 
 
