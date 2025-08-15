@@ -18,7 +18,7 @@ class TestBuildDebScript:
     @pytest.fixture
     def script_path(self, project_root):
         """Get path to build-deb.sh script."""
-        return project_root / "scripts" / "build-deb.sh"
+        return project_root / "packaging" / "scripts" / "build-deb.sh"
 
     def test_script_exists_and_executable(self, script_path):
         """Test that build-deb.sh exists and is executable."""
@@ -139,7 +139,7 @@ class TestSetupAptRepoScript:
     @pytest.fixture
     def script_path(self, project_root):
         """Get path to setup-apt-repo.sh script."""
-        return project_root / "scripts" / "setup-apt-repo.sh"
+        return project_root / "packaging" / "scripts" / "setup-apt-repo.sh"
 
     def test_script_exists_and_executable(self, script_path):
         """Test that setup-apt-repo.sh exists and is executable."""

@@ -211,6 +211,7 @@ class TestPlatformDetectorVirtualEnv(unittest.TestCase):
             finally:
                 os.chdir(original_cwd)
 
+    @patch.dict(os.environ, {}, clear=True)  # Clear all environment variables including VIRTUAL_ENV
     def test_get_virtual_env_path_none(self):
         """Test getting virtual environment path when .venv doesn't exist."""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -218,7 +219,9 @@ class TestPlatformDetectorVirtualEnv(unittest.TestCase):
             original_cwd = os.getcwd()
             try:
                 os.chdir(temp_dir)
-                result = self.detector.get_venv_python_path()
+                # Create a fresh detector instance to avoid cached environment
+                detector = PlatformDetector()
+                result = detector.get_venv_python_path()
                 self.assertIsNone(result)
             finally:
                 os.chdir(original_cwd)
