@@ -88,9 +88,32 @@ class BuildManager:
         self.manuscript_dir = self.manuscript_dir_path
         self.figures_dir = self.manuscript_dir / "FIGURES"
 
-        # Find project root (where src directory is located)
-        project_root = Path(__file__).resolve().parent.parent.parent.parent
-        self.style_dir = project_root / "src" / "tex" / "style"
+        # Find style directory - try multiple possible locations
+        possible_style_dirs = [
+            # Installed package location (when installed via pip) - hatch maps src/tex to rxiv_maker/tex
+            Path(__file__).resolve().parent.parent / "tex" / "style",
+            # Development location
+            Path(__file__).resolve().parent.parent.parent.parent / "src" / "tex" / "style",
+            # Alternative development location
+            Path(__file__).resolve().parent.parent.parent / "tex" / "style",
+        ]
+
+        self.style_dir = None
+        for i, style_dir in enumerate(possible_style_dirs):
+            logger.debug(f"Checking style directory {i + 1}: {style_dir}")
+            if style_dir.exists() and any(style_dir.glob("*.cls")):
+                self.style_dir = style_dir
+                logger.debug(f"Found style directory: {style_dir}")
+                break
+            else:
+                logger.debug(
+                    f"  Exists: {style_dir.exists()}, Has .cls: {style_dir.exists() and any(style_dir.glob('*.cls'))}"
+                )
+
+        # If no style directory found, use the first option as default (will be handled in copy_style_files)
+        if self.style_dir is None:
+            self.style_dir = possible_style_dirs[0]
+            logger.warning(f"No style directory found, using default: {self.style_dir}")
 
         self.references_bib = self.manuscript_dir / "03_REFERENCES.bib"
 
@@ -98,12 +121,23 @@ class BuildManager:
         # Strip trailing slashes to ensure basename works correctly
         normalized_path = str(self.manuscript_path).rstrip("/")
         manuscript_name = os.path.basename(normalized_path)
+
+        # Debug logging for manuscript name detection
+        logger.debug(f"Manuscript path: {self.manuscript_path}")
+        logger.debug(f"Normalized path: {normalized_path}")
+        logger.debug(f"Detected manuscript name: {manuscript_name}")
+
         # Validate manuscript name to prevent invalid filenames
         if not manuscript_name or manuscript_name in (".", ".."):
+            logger.warning(f"Invalid manuscript name '{manuscript_name}', using default 'MANUSCRIPT'")
             manuscript_name = "MANUSCRIPT"
         self.manuscript_name = manuscript_name
         self.output_tex = self.output_dir / f"{self.manuscript_name}.tex"
         self.output_pdf = self.output_dir / f"{self.manuscript_name}.pdf"
+
+        logger.debug(f"Final manuscript name: {self.manuscript_name}")
+        logger.debug(f"Output TEX file: {self.output_tex}")
+        logger.debug(f"Output PDF file: {self.output_pdf}")
 
         # Set up logging
         self.warnings_log = self.output_dir / "build_warnings.log"
@@ -488,7 +522,7 @@ class BuildManager:
         """Copy LaTeX style files to output directory."""
         self.log("Copying style files...", "STEP")
 
-        if not self.style_dir.exists():
+        if self.style_dir is None or not self.style_dir.exists():
             self.log("Style directory not found, skipping style file copying", "WARNING")
             return True
 
