@@ -5,7 +5,7 @@ Codename: stable
 Architectures: amd64 arm64 all
 Components: main
 Description: APT repository for rxiv-maker - Automated LaTeX article generation
-SignWith: yes
+SignWith: A3AC17942DBC5173C411B430F062E1A7D703CA85
 DebIndices: Packages Release . .gz .bz2
 DscIndices: Sources Release .gz .bz2
 Contents: .gz .bz2
