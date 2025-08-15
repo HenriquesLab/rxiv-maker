@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.5.5] - 2025-08-15
+
+### Fixed  
+- **🐛 BibTeX Error Code 1 - Trailing Slash Issue**: Fixed manuscript path handling when paths contain trailing slashes
+  - **Root Cause**: When users run `rxiv pdf CCT8_paper/` (with trailing slash), `os.path.basename("CCT8_paper/")` returns empty string, causing filename validation to default to "MANUSCRIPT"
+  - **Mismatch Problem**: This created a mismatch where LaTeX expected to compile `CCT8_paper.tex` but only `MANUSCRIPT.tex` was generated, causing "Emergency stop" and subsequent BibTeX error code 1
+  - **Comprehensive Fix**: Added path normalization using `rstrip("/")` in both BuildManager constructor and environment variable setting to handle trailing slashes correctly
+  - **Regression Testing**: Added comprehensive test suite `test_trailing_slash_regression.py` to prevent future regressions
+  - **User Impact**: Users can now run `rxiv pdf manuscript_name/` (with trailing slash) without encountering BibTeX errors
+- **GitHub Issues**: Resolves remaining cases of #100 (BibTeX returned error code 1) related to trailing slash paths
 ## [v1.5.4] - 2025-08-15
 
 ### Fixed
