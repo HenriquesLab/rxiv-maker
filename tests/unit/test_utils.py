@@ -254,6 +254,38 @@ class TestUtils:
         assert Path(result_file).name == "path.with.dots.tex"
         assert Path(result_file).exists()
 
+    def test_write_manuscript_output_warning_messages(self, temp_dir, monkeypatch, capsys):
+        """Test that warning messages are displayed for invalid MANUSCRIPT_PATH values."""
+        output_dir = temp_dir / "output"
+        output_dir.mkdir()
+
+        latex_content = r"\documentclass{article}\title{Warning Test}"
+
+        # Test empty string shows warning
+        monkeypatch.setenv("MANUSCRIPT_PATH", "")
+        write_manuscript_output(str(output_dir), latex_content)
+        captured = capsys.readouterr()
+        assert "⚠️  Invalid manuscript name detected, using default: MANUSCRIPT" in captured.out
+
+        # Test dot shows warning
+        monkeypatch.setenv("MANUSCRIPT_PATH", ".")
+        write_manuscript_output(str(output_dir), latex_content)
+        captured = capsys.readouterr()
+        assert "⚠️  Invalid manuscript name detected, using default: MANUSCRIPT" in captured.out
+
+        # Test double dot shows warning
+        monkeypatch.setenv("MANUSCRIPT_PATH", "..")
+        write_manuscript_output(str(output_dir), latex_content)
+        captured = capsys.readouterr()
+        assert "⚠️  Invalid manuscript name detected, using default: MANUSCRIPT" in captured.out
+
+        # Test valid path does NOT show warning
+        monkeypatch.setenv("MANUSCRIPT_PATH", "valid_manuscript")
+        write_manuscript_output(str(output_dir), latex_content)
+        captured = capsys.readouterr()
+        assert "⚠️  Invalid manuscript name detected" not in captured.out
+        assert "Generated manuscript:" in captured.out  # Should have normal output
+
 
 class TestManuscriptDirectorySetup:
     """Test setting up new manuscript directories and build validation."""

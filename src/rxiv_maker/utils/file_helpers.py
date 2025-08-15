@@ -80,6 +80,7 @@ def write_manuscript_output(output_dir: str, template_content: str) -> str:
     # Validate manuscript name to prevent invalid filenames
     if not manuscript_name or manuscript_name in (".", ".."):
         manuscript_name = "MANUSCRIPT"
+        print(f"⚠️  Invalid manuscript name detected, using default: {manuscript_name}")
 
     output_file = Path(output_dir) / f"{manuscript_name}.tex"
     with open(output_file, "w", encoding="utf-8") as f:
