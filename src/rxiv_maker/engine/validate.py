@@ -378,7 +378,7 @@ def validate_manuscript(
     # Determine DOI validation setting from config if not explicitly provided
     if enable_doi_validation is None:
         try:
-            manuscript_file = find_manuscript_md()
+            manuscript_file = find_manuscript_md(manuscript_path)
             metadata = extract_yaml_metadata(str(manuscript_file))
             enable_doi_validation = get_doi_validation_setting(metadata)
         except Exception:

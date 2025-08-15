@@ -109,10 +109,15 @@ def figures(
                     output_format="png",  # default format
                     r_only=False,
                     engine=engine,
+                    enable_content_caching=not force,  # Disable caching when --force is used
+                    manuscript_path=manuscript_path,
                 )
 
                 if verbose:
-                    console.print("🎨 Starting figure generation...", style="blue")
+                    if force:
+                        console.print("🎨 Starting figure generation (force mode - ignoring cache)...", style="blue")
+                    else:
+                        console.print("🎨 Starting figure generation...", style="blue")
 
                 if verbose:
                     console.print(

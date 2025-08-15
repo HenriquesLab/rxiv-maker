@@ -48,6 +48,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Python files in base directory only (not subdirectories)
+/*.py
+
 # C extensions
 *.so
 

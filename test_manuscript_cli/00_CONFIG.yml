@@ -15,7 +15,7 @@ affiliations:
     country: ""
 
 # Publication metadata
-date: "2025-08-14"                      # Publication date (YYYY-MM-DD format)
+date: "2025-08-15"                      # Publication date (YYYY-MM-DD format)
 status: "draft"                         # Status: draft, submitted, accepted, published
 use_line_numbers: true                  # Enable line numbers for manuscript review
 license: "CC BY 4.0"                    # Creative Commons license (CC BY 4.0, CC BY-SA 4.0, etc.)

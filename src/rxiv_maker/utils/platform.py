@@ -9,6 +9,7 @@ import os
 import platform
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -103,9 +104,14 @@ class PlatformDetector:
 
     def get_venv_python_path(self) -> str | None:
         """Get the virtual environment Python path."""
-        venv_dir = Path(".venv")
-        if not venv_dir.exists():
-            return None
+        # Check VIRTUAL_ENV first, then local .venv
+        venv_path = os.getenv("VIRTUAL_ENV")
+        if venv_path:
+            venv_dir = Path(venv_path)
+        else:
+            venv_dir = Path(".venv")
+            if not venv_dir.exists():
+                return None
 
         if self.is_windows():
             python_path = venv_dir / "Scripts" / "python.exe"
@@ -116,9 +122,14 @@ class PlatformDetector:
 
     def get_venv_activate_path(self) -> str | None:
         """Get the virtual environment activation script path."""
-        venv_dir = Path(".venv")
-        if not venv_dir.exists():
-            return None
+        # Check VIRTUAL_ENV first, then local .venv
+        venv_path = os.getenv("VIRTUAL_ENV")
+        if venv_path:
+            venv_dir = Path(venv_path)
+        else:
+            venv_dir = Path(".venv")
+            if not venv_dir.exists():
+                return None
 
         if self.is_windows():
             activate_path = venv_dir / "Scripts" / "activate"
@@ -126,6 +137,15 @@ class PlatformDetector:
             activate_path = venv_dir / "bin" / "activate"
 
         return str(activate_path) if activate_path.exists() else None
+
+    def is_in_venv(self) -> bool:
+        """Check if running in a virtual environment."""
+        return (
+            os.getenv("VIRTUAL_ENV") is not None
+            or os.getenv("VENV") is not None
+            or hasattr(sys, "real_prefix")
+            or (hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix)
+        )
 
     def is_in_conda_env(self) -> bool:
         """Check if running in a conda/mamba environment."""
@@ -361,6 +381,11 @@ def is_unix_like() -> bool:
 def run_platform_command(cmd: str | list[str], **kwargs) -> subprocess.CompletedProcess:
     """Run a command with platform-appropriate settings."""
     return platform_detector.run_command(cmd, **kwargs)
+
+
+def is_in_venv() -> bool:
+    """Check if running in a virtual environment."""
+    return platform_detector.is_in_venv()
 
 
 def is_in_conda_env() -> bool:

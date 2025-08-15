@@ -70,40 +70,34 @@ def validate(ctx: click.Context, manuscript_path: str | None, detailed: bool, no
         ) as progress:
             task = progress.add_task("Running validation...", total=None)
 
-            # Import and run validation
-            from ...engine.validate import main as validate_main
+            # Import and run validation directly
+            from ...engine.validate import validate_manuscript
 
-            # Prepare arguments
-            args = [manuscript_path]
-            if detailed:
-                args.append("--detailed")
-            if no_doi:
-                args.append("--no-doi")
-            if verbose:
-                args.append("--verbose")
+            # Determine DOI validation setting: CLI flag overrides config
+            enable_doi_validation = None if not no_doi else False
 
-            # Save original argv and replace
-            original_argv = sys.argv
-            sys.argv = ["validate"] + args
+            # Run validation directly
+            validation_passed = validate_manuscript(
+                manuscript_path=manuscript_path,
+                detailed=detailed,
+                verbose=verbose,
+                include_info=False,  # Don't include info messages in CLI output
+                check_latex=True,  # Always check LaTeX by default
+                enable_doi_validation=enable_doi_validation,
+            )
 
-            try:
-                validate_main()
+            if validation_passed:
                 progress.update(task, description="✅ Validation completed")
                 console.print("✅ Validation passed!", style="green")
-
-            except SystemExit as e:
+            else:
                 progress.update(task, description="❌ Validation failed")
-                if e.code != 0:
-                    console.print("❌ Validation failed. See details above.", style="red")
-                    console.print("💡 Run with --detailed for more information", style="yellow")
-                    console.print(
-                        "💡 Use 'rxiv pdf --skip-validation' to build anyway",
-                        style="yellow",
-                    )
-                    sys.exit(1)
-
-            finally:
-                sys.argv = original_argv
+                console.print("❌ Validation failed. See details above.", style="red")
+                console.print("💡 Run with --detailed for more information", style="yellow")
+                console.print(
+                    "💡 Use 'rxiv pdf --skip-validation' to build anyway",
+                    style="yellow",
+                )
+                sys.exit(1)
 
     except KeyboardInterrupt:
         console.print("\n⏹️  Validation interrupted by user", style="yellow")

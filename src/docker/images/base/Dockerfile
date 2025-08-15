@@ -308,7 +308,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && apt-get install -y --no-install-recommends \
     # Extended packages
     texlive-latex-extra \
-    texlive-science \      # Includes siunitx for units and measurements
+    texlive-science \      # Includes siunitx for units and measurements (required by rxiv_maker_style.cls)
     texlive-pictures \
     texlive-bibtex-extra \
     biber \
@@ -505,6 +505,12 @@ RUN echo '#!/bin/bash' > /usr/local/bin/dev-mode.sh && \
     echo 'echo "Ready for development! Project dependencies are synchronized."' >> /usr/local/bin/dev-mode.sh && \
     echo 'exec /bin/bash "$@"' >> /usr/local/bin/dev-mode.sh
 RUN chmod +x /usr/local/bin/dev-mode.sh
+
+# Verify siunitx package is available
+RUN echo "\\documentclass{article}\\usepackage{siunitx}\\begin{document}Test\\end{document}" > /tmp/test_siunitx.tex \
+    && pdflatex -interaction=nonstopmode /tmp/test_siunitx.tex \
+    && echo "✅ siunitx package verified successfully" \
+    && rm -f /tmp/test_siunitx.*
 
 # Run dependency verification during build to catch issues early
 RUN /usr/local/bin/verify-python-deps.sh
