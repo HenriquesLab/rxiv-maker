@@ -683,7 +683,7 @@ class BuildManager:
         try:
             tex_file = self.output_dir / f"{self.manuscript_name}.tex"
 
-            # Run LaTeX compilation with multiple passes
+            # Execute multi-pass LaTeX compilation (3 passes for bibliography and cross-references)
             if self.container_engine is None:
                 raise RuntimeError("Container engine not initialized")
             results = self.container_engine.run_latex_compilation(

@@ -64,7 +64,7 @@ def format(session):
 
 
 @nox.session(python="3.11", reuse_venv=True)
-@nox.parametrize("test_type", ["unit", "integration", "fast", "full"])
+@nox.parametrize("test_type", ["unit", "integration", "fast", "full", "smoke"])
 def test(session, test_type):
     """Unified test session with different execution modes.
 
@@ -73,6 +73,7 @@ def test(session, test_type):
         nox -s test-integration  # Integration tests only (<5 min)
         nox -s test-fast      # Fast tests only (<2 min)
         nox -s test-full      # Full test suite (<10 min)
+        nox -s test-smoke     # Smoke tests only (ultra-fast, <30s)
         nox -s test           # Default to full test suite
     """
     install_project_deps(session)
@@ -106,6 +107,19 @@ def test(session, test_type):
             "--maxfail=3",
             "--tb=short",
             "-x",  # Stop on first failure for fast feedback
+            *session.posargs,
+        )
+    elif test_type == "smoke":
+        # Ultra-fast smoke tests - quickest validation (<30s)
+        session.run(
+            "pytest",
+            "tests/smoke/",
+            "-m",
+            "smoke",
+            "--maxfail=1",
+            "--tb=short",
+            "-x",  # Stop on first failure for immediate feedback
+            "--disable-warnings",  # Reduce noise for quick feedback
             *session.posargs,
         )
     elif test_type == "full":

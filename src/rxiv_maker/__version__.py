@@ -1,6 +1,6 @@
 """Version information for rxiv-maker."""
 
-__version__ = "1.5.8"
+__version__ = "1.5.9"
 __version_tuple__ = (1, 5, 8)
 
 # Note: Docker images v1.8+ use mermaid.ink API for diagram processing

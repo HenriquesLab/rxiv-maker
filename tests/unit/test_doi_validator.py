@@ -22,18 +22,14 @@ except ImportError:
 
     pytest = MockPytest()
 
-try:
-    from rxiv_maker.utils.doi_cache import DOICache
-    from rxiv_maker.validators.base_validator import ValidationLevel
-    from rxiv_maker.validators.doi_validator import DOIValidator
+from rxiv_maker.utils.doi_cache import DOICache
+from rxiv_maker.validators.base_validator import ValidationLevel
+from rxiv_maker.validators.doi_validator import DOIValidator
 
-    DOI_VALIDATOR_AVAILABLE = True
-except ImportError:
-    DOI_VALIDATOR_AVAILABLE = False
+DOI_VALIDATOR_AVAILABLE = True
 
 
 @pytest.mark.validation
-@unittest.skipUnless(DOI_VALIDATOR_AVAILABLE, "DOI validator not available")
 class TestDOICache(unittest.TestCase):
     """Test DOI cache functionality."""
 
@@ -108,7 +104,6 @@ class TestDOICache(unittest.TestCase):
 
 
 @pytest.mark.validation
-@unittest.skipUnless(DOI_VALIDATOR_AVAILABLE, "DOI validator not available")
 class TestDOIValidator(unittest.TestCase):
     """Test DOI validator functionality."""
 
@@ -541,7 +536,6 @@ class TestDOIValidator(unittest.TestCase):
 
 
 @pytest.mark.validation
-@unittest.skipUnless(DOI_VALIDATOR_AVAILABLE, "DOI validator not available")
 class TestDOIValidatorIntegration(unittest.TestCase):
     """Test DOI validator integration with citation validator."""
 

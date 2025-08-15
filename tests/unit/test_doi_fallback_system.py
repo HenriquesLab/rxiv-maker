@@ -27,25 +27,21 @@ except ImportError:
 
     pytest = MockPytest()
 
-try:
-    from rxiv_maker.validators.doi import (
-        BaseDOIClient,
-        CrossRefClient,
-        DataCiteClient,
-        DOIResolver,
-        HandleSystemClient,
-        JOSSClient,
-        OpenAlexClient,
-        SemanticScholarClient,
-    )
+from rxiv_maker.validators.doi import (
+    BaseDOIClient,
+    CrossRefClient,
+    DataCiteClient,
+    DOIResolver,
+    HandleSystemClient,
+    JOSSClient,
+    OpenAlexClient,
+    SemanticScholarClient,
+)
 
-    DOI_CLIENTS_AVAILABLE = True
-except ImportError:
-    DOI_CLIENTS_AVAILABLE = False
+DOI_CLIENTS_AVAILABLE = True
 
 
 @pytest.mark.validation
-@unittest.skipUnless(DOI_CLIENTS_AVAILABLE, "DOI client classes not available")
 class TestDOIClientIndividual(unittest.TestCase):
     """Test individual DOI client implementations."""
 
@@ -196,7 +192,6 @@ class TestDOIClientIndividual(unittest.TestCase):
 
 
 @pytest.mark.validation
-@unittest.skipUnless(DOI_CLIENTS_AVAILABLE, "DOI client classes not available")
 class TestDOIResolverFallbackChain(unittest.TestCase):
     """Test DOI resolver fallback chain behavior."""
 
@@ -354,7 +349,6 @@ class TestDOIResolverFallbackChain(unittest.TestCase):
 
 
 @pytest.mark.validation
-@unittest.skipUnless(DOI_CLIENTS_AVAILABLE, "DOI client classes not available")
 class TestDOIClientErrorHandling(unittest.TestCase):
     """Test error handling in DOI client fallback scenarios."""
 
@@ -416,7 +410,6 @@ class TestDOIClientErrorHandling(unittest.TestCase):
 
 
 @pytest.mark.validation
-@unittest.skipUnless(DOI_CLIENTS_AVAILABLE, "DOI client classes not available")
 class TestDOIFallbackPerformance(unittest.TestCase):
     """Test performance characteristics of the DOI fallback system."""
 

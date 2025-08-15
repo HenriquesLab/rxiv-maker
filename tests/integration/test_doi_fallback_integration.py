@@ -29,18 +29,14 @@ except ImportError:
 
     pytest = MockPytest()
 
-try:
-    from rxiv_maker.validators.base_validator import ValidationError, ValidationLevel
-    from rxiv_maker.validators.doi import DOIResolver
-    from rxiv_maker.validators.doi_validator import DOIValidator
+from rxiv_maker.validators.base_validator import ValidationError, ValidationLevel
+from rxiv_maker.validators.doi import DOIResolver
+from rxiv_maker.validators.doi_validator import DOIValidator
 
-    DOI_INTEGRATION_AVAILABLE = True
-except ImportError:
-    DOI_INTEGRATION_AVAILABLE = False
+DOI_INTEGRATION_AVAILABLE = True
 
 
 @pytest.mark.integration
-@unittest.skipUnless(DOI_INTEGRATION_AVAILABLE, "DOI integration components not available")
 class TestDOIFallbackIntegration(unittest.TestCase):
     """Integration tests for DOI fallback system in complete workflows."""
 

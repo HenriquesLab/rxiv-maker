@@ -288,8 +288,8 @@ class TrackChangesManager:
             # Extract base name for bibtex
             tex_basename = diff_tex.stem
 
-            # First pdflatex pass
-            self.log("LaTeX pass 1/3")
+            # First LaTeX compilation pass - initial document processing
+            self.log("LaTeX compilation pass 1/3 - processing document structure")
             result1 = subprocess.run(
                 ["pdflatex", "-interaction=nonstopmode", diff_tex.name],
                 capture_output=True,
@@ -299,7 +299,7 @@ class TrackChangesManager:
             )
 
             if result1.returncode != 0:
-                self.log(f"LaTeX pass 1 completed with warnings/errors (return code: {result1.returncode})")
+                self.log(f"LaTeX compilation pass 1 completed with warnings/errors (return code: {result1.returncode})")
                 if self.verbose:
                     self.log(f"LaTeX output: {result1.stdout}")
                     self.log(f"LaTeX errors: {result1.stderr}")
@@ -343,8 +343,8 @@ class TrackChangesManager:
             else:
                 self.log("No bibliography file found, skipping BibTeX")
 
-            # Second pdflatex pass
-            self.log("LaTeX pass 2/3")
+            # Second LaTeX compilation pass - bibliography integration
+            self.log("LaTeX compilation pass 2/3 - integrating bibliography references")
             result2 = subprocess.run(
                 ["pdflatex", "-interaction=nonstopmode", diff_tex.name],
                 capture_output=True,
@@ -354,13 +354,13 @@ class TrackChangesManager:
             )
 
             if result2.returncode != 0:
-                self.log(f"LaTeX pass 2 completed with warnings/errors (return code: {result2.returncode})")
+                self.log(f"LaTeX compilation pass 2 completed with warnings/errors (return code: {result2.returncode})")
                 if self.verbose:
                     self.log(f"LaTeX output: {result2.stdout}")
                     self.log(f"LaTeX errors: {result2.stderr}")
 
-            # Third pdflatex pass
-            self.log("LaTeX pass 3/3")
+            # Final LaTeX compilation pass - cross-references and finalization
+            self.log("LaTeX compilation pass 3/3 - finalizing cross-references and citations")
             result3 = subprocess.run(
                 ["pdflatex", "-interaction=nonstopmode", diff_tex.name],
                 capture_output=True,
@@ -370,7 +370,7 @@ class TrackChangesManager:
             )
 
             if result3.returncode != 0:
-                self.log(f"LaTeX pass 3 completed with warnings/errors (return code: {result3.returncode})")
+                self.log(f"LaTeX compilation pass 3 completed with warnings/errors (return code: {result3.returncode})")
                 if self.verbose:
                     self.log(f"LaTeX output: {result3.stdout}")
                     self.log(f"LaTeX errors: {result3.stderr}")
