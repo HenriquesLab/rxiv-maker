@@ -78,8 +78,8 @@ class TestDockerBuildManagerDockerfileSearch:
     @patch("pathlib.Path.exists")
     def test_find_dockerfile_in_common_locations(self, mock_exists):
         """Test finding Dockerfile in common locations."""
-        # Mock that the first path exists
-        mock_exists.side_effect = [True, False, False, False]
+        # Mock that the first path exists, provide enough return values for all possible calls
+        mock_exists.side_effect = [True] + [False] * 10  # First exists, rest don't
 
         with (
             patch("rxiv_maker.docker.build_manager.DockerBuildOptimizer"),
@@ -125,16 +125,21 @@ class TestDockerBuildManagerPrerequisites:
             MagicMock(returncode=0, stdout=""),  # docker ps --filter
         ]
 
-        # Mock disk usage (10GB available)
-        mock_disk_usage.return_value = (100_000_000_000, 90_000_000_000, 10_000_000_000)
+        # Mock disk usage with proper named tuple structure
+        from collections import namedtuple
+
+        DiskUsage = namedtuple("DiskUsage", ["total", "used", "free"])
+        mock_disk_usage.return_value = DiskUsage(100_000_000_000, 90_000_000_000, 10_000_000_000)
 
         # Mock optimizer memory check
         mock_optimizer_instance = MagicMock()
         mock_optimizer_instance._get_available_memory_gb.return_value = 8.0
         mock_optimizer.return_value = mock_optimizer_instance
 
-        manager = DockerBuildManager()
-        result = manager.check_prerequisites()
+        # Mock the Dockerfile exists check
+        with patch("pathlib.Path.exists", return_value=True):
+            manager = DockerBuildManager()
+            result = manager.check_prerequisites()
 
         assert result["docker_available"] is True
         assert result["buildkit_available"] is True
@@ -233,9 +238,8 @@ class TestDockerBuildManagerExecution:
     def test_execute_build_safe_success(self, mock_resource_manager, mock_optimizer, mock_popen):
         """Test safe build execution success."""
         mock_process = MagicMock()
-        mock_process.poll.return_value = None  # Running
-        mock_process.wait.return_value = 0  # Success
-        mock_process.stdout.readline.side_effect = [b"Step 1/1 : FROM ubuntu\n", b""]
+        mock_process.returncode = 0  # Success
+        mock_process.communicate.return_value = ("Step 1/1 : FROM ubuntu\nSuccessfully built\n", "")
         mock_popen.return_value = mock_process
 
         with patch("rxiv_maker.docker.build_manager.DockerBuildManager._setup_build_logging") as mock_setup_log:
@@ -245,7 +249,7 @@ class TestDockerBuildManagerExecution:
             success, message = manager._execute_build_safe(["docker", "build", "."])
 
             assert success is True
-            assert "completed successfully" in message
+            assert message == ""  # No error message on success
 
 
 if __name__ == "__main__":
