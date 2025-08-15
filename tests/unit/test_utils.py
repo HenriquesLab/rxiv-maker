@@ -223,6 +223,37 @@ class TestUtils:
         assert Path(result_file).name == "CUSTOM_MANUSCRIPT.tex"
         assert "Custom Path Test" in Path(result_file).read_text()
 
+    def test_write_manuscript_output_invalid_paths(self, temp_dir, monkeypatch):
+        """Test write_manuscript_output handles invalid MANUSCRIPT_PATH values gracefully."""
+        output_dir = temp_dir / "output"
+        output_dir.mkdir()
+
+        latex_content = r"\documentclass{article}\title{Invalid Path Test}"
+
+        # Test empty string
+        monkeypatch.setenv("MANUSCRIPT_PATH", "")
+        result_file = write_manuscript_output(str(output_dir), latex_content)
+        assert Path(result_file).name == "MANUSCRIPT.tex"
+        assert Path(result_file).exists()
+
+        # Test dot
+        monkeypatch.setenv("MANUSCRIPT_PATH", ".")
+        result_file = write_manuscript_output(str(output_dir), latex_content)
+        assert Path(result_file).name == "MANUSCRIPT.tex"
+        assert Path(result_file).exists()
+
+        # Test double dot
+        monkeypatch.setenv("MANUSCRIPT_PATH", "..")
+        result_file = write_manuscript_output(str(output_dir), latex_content)
+        assert Path(result_file).name == "MANUSCRIPT.tex"
+        assert Path(result_file).exists()
+
+        # Test path with dots that should work normally
+        monkeypatch.setenv("MANUSCRIPT_PATH", "path.with.dots")
+        result_file = write_manuscript_output(str(output_dir), latex_content)
+        assert Path(result_file).name == "path.with.dots.tex"
+        assert Path(result_file).exists()
+
 
 class TestManuscriptDirectorySetup:
     """Test setting up new manuscript directories and build validation."""
