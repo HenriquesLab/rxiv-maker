@@ -204,16 +204,55 @@ You've used 2 entries,
         self.assertFalse(build_manager.bibtex_log.exists())
 
     def test_log_to_file_handles_exceptions_gracefully(self):
-        """Test that file logging handles exceptions gracefully."""
+        """Test that file logging handles exceptions gracefully and logs them properly."""
         build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
 
-        # Mock file operations to raise exception
-        with patch("builtins.open", side_effect=PermissionError("Permission denied")):
-            # Should not raise exception
-            try:
-                build_manager._log_to_file("Test message", "WARNING")
-            except Exception:
-                self.fail("_log_to_file should handle exceptions gracefully")
+        # Mock the module-level logger to verify it's called when file writing fails
+        with patch("rxiv_maker.engine.build_manager.logger") as mock_logger:
+            # Mock file operations to raise exception
+            with patch("builtins.open", side_effect=PermissionError("Permission denied")):
+                # Should not raise exception but should log the error
+                try:
+                    build_manager._log_to_file("Test message", "WARNING")
+                except Exception:
+                    self.fail("_log_to_file should handle exceptions gracefully")
+
+                # Verify that the exception was properly logged
+                mock_logger.debug.assert_called_once()
+                call_args = mock_logger.debug.call_args[0][0]
+                self.assertIn("Failed to write to warnings log file", call_args)
+                self.assertIn("Permission denied", call_args)
+
+    def test_log_bibtex_warnings_handles_exceptions_gracefully(self):
+        """Test that BibTeX warning extraction handles exceptions gracefully and logs them properly."""
+        build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
+
+        # Create a .blg file to trigger the method
+        blg_file = Path(self.output_dir) / f"{Path(self.manuscript_dir).name}.blg"
+        blg_file.write_text("This is BibTeX, Version 0.99d\nWarning--test warning\n")
+
+        # Mock the module-level logger to verify it's called when BibTeX logging fails
+        with patch("rxiv_maker.engine.build_manager.logger") as mock_logger:
+            # Mock open to raise exception when writing BibTeX log
+            original_open = open
+
+            def failing_open(path, mode="r", **kwargs):
+                if str(path).endswith("bibtex_warnings.log") and "w" in mode:
+                    raise PermissionError("Permission denied for BibTeX log")
+                return original_open(path, mode, **kwargs)
+
+            with patch("builtins.open", side_effect=failing_open):
+                # Should not raise exception but should log the error
+                try:
+                    build_manager._log_bibtex_warnings()
+                except Exception:
+                    self.fail("_log_bibtex_warnings should handle exceptions gracefully")
+
+                # Verify that the exception was properly logged
+                mock_logger.debug.assert_called_once()
+                call_args = mock_logger.debug.call_args[0][0]
+                self.assertIn("Failed to extract BibTeX warnings from", call_args)
+                self.assertIn("Permission denied for BibTeX log", call_args)
 
     def test_build_completion_reports_warning_log_existence(self):
         """Test that build completion reports warning log existence."""

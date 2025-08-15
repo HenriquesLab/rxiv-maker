@@ -16,13 +16,13 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
+from ..utils.advanced_cache import AdvancedCache
+
 try:
     from ..utils.retry import get_with_retry
 except ImportError:
     # Fallback when retry module isn't available
     get_with_retry = None  # type: ignore
-
-from ..utils.advanced_cache import AdvancedCache
 
 logger = logging.getLogger(__name__)
 
@@ -481,7 +481,9 @@ class DependencyManager:
         except ImportError:
             # Fallback to simple string comparison
             return version1 != version2
-        except Exception:
+        except Exception as e:
+            # Log version comparison failure for debugging
+            logger.debug(f"Failed to compare versions {version1} and {version2}: {e}")
             return False
 
     def _classify_update_type(self, current_version: str, latest_version: str) -> str:
@@ -516,7 +518,9 @@ class DependencyManager:
                         return "patch"
 
             return "unknown"
-        except Exception:
+        except Exception as e:
+            # Log version classification failure for debugging
+            logger.debug(f"Failed to classify update type for {current_version} -> {latest_version}: {e}")
             return "unknown"
 
     def _check_security_update(

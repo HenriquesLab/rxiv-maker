@@ -64,18 +64,20 @@ def find_manuscript_md(manuscript_path: str | None = None) -> Path:
     )
 
 
-def write_manuscript_output(output_dir: str, template_content: str) -> str:
+def write_manuscript_output(output_dir: str, template_content: str, manuscript_name: str | None = None) -> str:
     """Write the generated manuscript to the output directory.
 
     Args:
         output_dir: Directory where the manuscript will be written.
         template_content: The processed LaTeX template content.
+        manuscript_name: Name for the manuscript file (optional, defaults to MANUSCRIPT_PATH env var).
 
     Returns:
         Path to the written manuscript file.
     """
-    manuscript_path = os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
-    manuscript_name = os.path.basename(manuscript_path)
+    if manuscript_name is None:
+        manuscript_path = os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
+        manuscript_name = os.path.basename(manuscript_path)
 
     # Validate manuscript name to prevent invalid filenames
     if not manuscript_name or manuscript_name in (".", ".."):

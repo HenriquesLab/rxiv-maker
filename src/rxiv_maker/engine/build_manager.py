@@ -96,7 +96,7 @@ class BuildManager:
 
         # Output file names
         # Strip trailing slashes to ensure basename works correctly
-        normalized_path = self.manuscript_path.rstrip("/")
+        normalized_path = str(self.manuscript_path).rstrip("/")
         manuscript_name = os.path.basename(normalized_path)
         # Validate manuscript name to prevent invalid filenames
         if not manuscript_name or manuscript_name in (".", ".."):
@@ -135,8 +135,9 @@ class BuildManager:
         try:
             with open(self.warnings_log, "a", encoding="utf-8") as f:
                 f.write(log_entry)
-        except Exception:
-            pass  # Don't fail the build if logging fails
+        except Exception as e:
+            # Log failure to write to file, but don't fail the build
+            logger.debug(f"Failed to write to warnings log file {self.warnings_log}: {e}")
 
     def _log_bibtex_warnings(self):
         """Extract and log BibTeX warnings from .blg file."""
@@ -168,8 +169,9 @@ class BuildManager:
                         f.write(f"{i}. {warning}\n")
 
                 self.log(f"BibTeX warnings logged to {self.bibtex_log.name}", "INFO")
-        except Exception:
-            pass  # Don't fail the build if logging fails
+        except Exception as e:
+            # Log BibTeX warning extraction failure, but don't fail the build
+            logger.debug(f"Failed to extract BibTeX warnings from {blg_file}: {e}")
 
     def setup_output_directory(self) -> bool:
         """Create and set up the output directory."""

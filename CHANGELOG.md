@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.5.7] - 2025-08-15
+
+### Fixed
+- **🐛 BibTeX Manuscript Name Detection**: Fixed critical manuscript name passing issue that caused BibTeX compilation failures
+  - **Root Cause**: The `write_manuscript_output` function relied on inconsistent `MANUSCRIPT_PATH` environment variable setting, leading to empty manuscript names and `.tex` filenames
+  - **Systematic Solution**: Enhanced `write_manuscript_output` to accept explicit `manuscript_name` parameter with robust fallback handling
+  - **Direct Name Extraction**: Modified `generate_preprint` to extract manuscript name directly from path and pass it explicitly
+  - **User Impact**: Commands like `rxiv pdf CCT8_paper/` now generate `CCT8_paper.tex` correctly instead of `.tex`, resolving "BibTeX returned error code 1" errors
+  - **Comprehensive Testing**: Updated test suite with new function signature and verified edge case handling
+- **GitHub Issues**: Resolves #100 (BibTeX error with manuscript path handling)
+
+### Added
+- **📚 Comprehensive Test Coverage**: Significantly expanded test coverage for core functionality
+  - **generate_preprint.py**: Added 18 comprehensive tests covering CLI integration, template processing, and error handling
+  - **fix_bibliography.py**: Extended from 18 to 40 tests covering CrossRef API integration, DOI validation, publication matching, and file operations
+  - **Mock-based Testing**: Implemented extensive mocking for external dependencies and network operations
+  - **Error Simulation**: Added tests for network timeouts, API failures, and edge cases
+  - **Complete Workflow Coverage**: End-to-end testing including dry-run scenarios and complex bibliography fixing workflows
+
 ## [v1.5.5] - 2025-08-15
 
 ### Fixed  

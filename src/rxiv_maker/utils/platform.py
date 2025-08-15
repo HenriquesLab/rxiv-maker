@@ -4,11 +4,14 @@ This module provides cross-platform utilities for detecting the operating system
 and handling platform-specific operations like path management and command execution.
 """
 
+import logging
 import os
 import platform
 import shutil
 import subprocess
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 class PlatformDetector:
@@ -281,7 +284,9 @@ class PlatformDetector:
                         pass
 
                 return False
-        except Exception:
+        except Exception as e:
+            # Log uv installation failure for debugging platform issues
+            logger.debug(f"Failed to install uv package manager: {e}")
             return False
 
     def remove_directory(self, path: Path) -> bool:
@@ -291,7 +296,9 @@ class PlatformDetector:
                 shutil.rmtree(path)
                 return True
             return False
-        except Exception:
+        except Exception as e:
+            # Log directory removal failure for debugging
+            logger.debug(f"Failed to remove directory {path}: {e}")
             return False
 
     def copy_file(self, src: Path, dst: Path) -> bool:
@@ -300,7 +307,9 @@ class PlatformDetector:
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dst)
             return True
-        except Exception:
+        except Exception as e:
+            # Log file copy failure for debugging
+            logger.debug(f"Failed to copy file from {src} to {dst}: {e}")
             return False
 
     def make_executable(self, path: Path) -> bool:
@@ -314,7 +323,9 @@ class PlatformDetector:
             current_mode = path.stat().st_mode
             path.chmod(current_mode | stat.S_IEXEC)
             return True
-        except Exception:
+        except Exception as e:
+            # Log file permission change failure for debugging
+            logger.debug(f"Failed to make file executable {path}: {e}")
             return False
 
 

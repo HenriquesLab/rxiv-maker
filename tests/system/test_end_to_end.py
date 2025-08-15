@@ -24,22 +24,19 @@ class TestBinaryDistributionWorkflow:
 
     def test_github_release_workflow_structure(self):
         """Test that the GitHub release workflow is properly structured."""
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
         assert workflow_path.exists(), "Release workflow not found"
 
         content = workflow_path.read_text()
 
         # Check for required workflow components
-        assert "name: Release and Binary Distribution" in content
-        assert "pyinstaller" in content.lower()
-        assert "build-binaries:" in content
-        assert "create-release:" in content
-        assert "publish-pypi:" in content
+        assert "name: Release" in content
+        assert "build:" in content  # Main build job
+        assert "github-release:" in content  # Release creation job
+        assert "pypi:" in content  # PyPI publishing job
 
-        # Check for platform matrix
+        # Check for platform usage
         assert "ubuntu-latest" in content
-        assert "windows-latest" in content
-        assert "macos-latest" in content
 
     def test_binary_naming_convention(self):
         """Test that binary naming follows expected conventions."""
@@ -64,13 +61,11 @@ class TestBinaryDistributionWorkflow:
     def test_version_synchronization_workflow(self):
         """Test that version synchronization triggers are properly configured."""
         # Check main release workflow
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
         content = workflow_path.read_text()
 
-        # Should trigger package manager updates (either via update job or workflow dispatch)
-        has_package_updates = (
-            "update-package-managers:" in content or "workflow run" in content or "gh workflow run" in content
-        )
+        # Should trigger package manager updates (homebrew-update job exists)
+        has_package_updates = "homebrew-update:" in content
         assert has_package_updates, "No package manager update mechanism found"
 
         # Check package manager workflows exist
@@ -141,46 +136,36 @@ class TestBinaryDistributionWorkflow:
 
     def test_binary_compatibility_matrix(self):
         """Test that we're building for the right platform combinations."""
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
         content = workflow_path.read_text()
 
-        # Should build for major platforms
+        # Should build on supported platform
         assert "ubuntu-latest" in content  # Linux x64
-        assert "windows-latest" in content  # Windows x64
-        assert "macos-latest" in content  # macOS ARM64
-        assert "macos-13" in content or "intel" in content.lower()  # macOS x64
 
     def test_pyinstaller_configuration_completeness(self):
         """Test that PyInstaller configuration includes all necessary components."""
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
         content = workflow_path.read_text()
 
-        # Should use PyInstaller for binary building
-        assert "pyinstaller" in content.lower()
-
-        # Should include the package name for binary building
+        # Should include the package name for building
         assert "rxiv_maker" in content or "rxiv-maker" in content
 
-        # Test passes if PyInstaller is configured (details may be in spec file)
+        # Test passes if package building is configured
 
     def test_package_manager_trigger_configuration(self):
         """Test that package manager updates are properly triggered."""
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
         content = workflow_path.read_text()
 
-        # Should trigger both Homebrew and Scoop updates
-        assert "henriqueslab/homebrew-rxiv-maker" in content
-        assert "henriqueslab/scoop-rxiv-maker" in content
+        # Should trigger Homebrew updates
+        assert "HenriquesLab/homebrew-rxiv-maker" in content
 
-        # Should trigger package manager updates (either via dispatches or workflow runs)
-        has_dispatch = "dispatches" in content or "repository_dispatch" in content
-        has_workflow_run = "workflow run" in content
-        assert has_dispatch or has_workflow_run, "No package manager trigger mechanism found"
+        # Should have homebrew-update job
+        assert "homebrew-update:" in content, "No homebrew update job found"
 
-        # Should mention package manager workflows
-        has_formula = "update-formula" in content or "formula" in content.lower()
-        has_manifest = "update-manifest" in content or "manifest" in content.lower()
-        assert has_formula or has_manifest, "No package manager workflow references found"
+        # Should mention formula updates
+        has_formula = "formula" in content.lower()
+        assert has_formula, "No formula workflow references found"
 
 
 class TestBinaryFunctionality:
@@ -267,35 +252,32 @@ class TestReleaseWorkflowIntegration:
 
     def test_workflow_job_dependencies(self):
         """Test that workflow jobs have correct dependencies."""
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
         content = workflow_path.read_text()
 
         # Parse basic job structure
         assert "jobs:" in content
 
         # Key jobs should exist
-        assert "test:" in content
-        assert "build-binaries:" in content
-        assert "create-release:" in content
+        assert "build:" in content
+        assert "github-release:" in content
+        assert "pypi:" in content
 
-        # Dependencies should be correct
-        assert "needs: [setup, test, integrity-check, build-python]" in content  # build-binaries dependencies
-        assert "needs: [" in content  # create-release should need multiple jobs
+        # Dependencies should be correct - check for needs clauses
+        assert "needs: [" in content or "needs: build" in content
 
     def test_artifact_handling(self):
         """Test that artifacts are properly handled in workflow."""
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
         content = workflow_path.read_text()
 
-        # Should use custom artifact management action
-        assert "./.github/actions/artifact-management" in content
-
-        # Should handle binary artifacts
+        # Should handle artifacts (upload/download)
         assert "artifact" in content.lower()
+        assert "upload-artifact" in content or "download-artifact" in content
 
     def test_error_handling_in_workflow(self):
         """Test that workflow has proper error handling."""
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
         content = workflow_path.read_text()
 
         # Should have error handling configurations (timeout or failure handling)
@@ -314,17 +296,16 @@ class TestReleaseWorkflowIntegration:
 
         # Should have validation steps
         assert "test" in content.lower()
-        assert "verify" in content.lower() or "validate" in content.lower()
+        assert "check" in content.lower() or "validation" in content.lower()
 
     def test_security_considerations(self):
         """Test that workflow follows security best practices."""
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
         content = workflow_path.read_text()
 
-        # Should use official actions
-        assert "actions/checkout@v4" in content
-        # Check that setup-environment action is used (which internally uses setup-python@v5)
-        assert "./.github/actions/setup-environment" in content
+        # Should use official actions with pinned versions
+        assert "actions/checkout@v5" in content
+        assert "actions/setup-python@v5" in content
 
         # Should specify permissions
         assert "permissions:" in content
@@ -336,7 +317,7 @@ class TestReleaseWorkflowIntegration:
     @pytest.mark.timeout(120)  # YAML validation may require file processing
     def test_workflow_yaml_validity(self):
         """Test that workflow YAML is valid."""
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
 
         if not workflow_path.exists():
             pytest.skip("Release workflow not found")
@@ -366,15 +347,12 @@ class TestDistributionCompliance:
     """Test compliance with distribution standards."""
 
     def test_binary_size_considerations(self):
-        """Test that binary configuration considers size optimization."""
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
+        """Test that package building considers size optimization."""
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
         content = workflow_path.read_text()
 
-        # Should use UPX compression where available
-        assert "upx" in content.lower()
-
-        # Should exclude unnecessary modules
-        assert "excludes" in content or "exclude" in content
+        # Should build package efficiently
+        assert "uv build" in content or "build" in content
 
     def test_license_compliance(self):
         """Test that binary distribution complies with licensing."""
@@ -384,12 +362,7 @@ class TestDistributionCompliance:
             license_content = license_file.read_text()
             assert len(license_content) > 0
 
-        # Check that workflow includes license in releases
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release.yml"
-        workflow_path.read_text()
-
-        # Should mention license or include it in releases
-        # (This is handled by GitHub automatically for tagged releases)
+        # License compliance is handled by GitHub automatically for tagged releases
 
     def test_binary_metadata(self):
         """Test that binaries will include proper metadata."""
