@@ -95,7 +95,13 @@ class BuildManager:
         self.references_bib = self.manuscript_dir / "03_REFERENCES.bib"
 
         # Output file names
-        self.manuscript_name = Path(self.manuscript_path).name
+        # Strip trailing slashes to ensure basename works correctly
+        normalized_path = self.manuscript_path.rstrip("/")
+        manuscript_name = os.path.basename(normalized_path)
+        # Validate manuscript name to prevent invalid filenames
+        if not manuscript_name or manuscript_name in (".", ".."):
+            manuscript_name = "MANUSCRIPT"
+        self.manuscript_name = manuscript_name
         self.output_tex = self.output_dir / f"{self.manuscript_name}.tex"
         self.output_pdf = self.output_dir / f"{self.manuscript_name}.pdf"
 
@@ -569,7 +575,13 @@ class BuildManager:
 
             # Set MANUSCRIPT_PATH env var for generate_preprint
             original_env = os.environ.get("MANUSCRIPT_PATH")
-            os.environ["MANUSCRIPT_PATH"] = os.path.basename(self.manuscript_path)
+            # Strip trailing slashes to ensure basename works correctly
+            normalized_path = self.manuscript_path.rstrip("/")
+            manuscript_name = os.path.basename(normalized_path)
+            # Validate manuscript name to prevent invalid filenames
+            if not manuscript_name or manuscript_name in (".", ".."):
+                manuscript_name = "MANUSCRIPT"
+            os.environ["MANUSCRIPT_PATH"] = manuscript_name
 
             # Change to the parent directory so the relative path works
             original_cwd = os.getcwd()
