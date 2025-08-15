@@ -110,11 +110,11 @@ jobs:
           uv run nox -s lint
           echo "✅ Linting passed"
 
-      - name: Run fast unit tests with coverage
+      - name: Run fast unit tests
         run: |
-          echo "🧪 Running fast unit tests with coverage..."
-          uv run nox -s "test(test_type='fast')" -- --cov=src --cov-report=term-missing:skip-covered --cov-fail-under=85
-          echo "✅ Fast tests passed with coverage threshold"
+          echo "🧪 Running fast unit tests..."
+          uv run nox -s "test(test_type='fast')"
+          echo "✅ Fast tests passed"
 
   # Job 2: Integration tests (runs on successful fast tests)
   integration-tests:
@@ -159,11 +159,11 @@ jobs:
         run: |
           uv sync --frozen
 
-      - name: Run integration tests with coverage
+      - name: Run integration tests
         run: |
-          echo "🧪 Running integration tests with coverage..."
-          uv run nox -s "test(test_type='integration')" -- --cov=src --cov-report=term-missing:skip-covered --cov-fail-under=85
-          echo "✅ Integration tests passed with coverage threshold"
+          echo "🧪 Running integration tests..."
+          uv run nox -s "test(test_type='integration')"
+          echo "✅ Integration tests passed"
 
   # Job 3: Build validation (runs in parallel with integration tests)
   build-validation:
@@ -197,11 +197,43 @@ jobs:
           uv run nox -s build
           echo "✅ Build validation passed"
 
-  # Job 4: Container engine testing (conditional)
+  # Job 4: Coverage validation (runs after fast and integration tests)
+  coverage-validation:
+    name: Coverage Validation
+    runs-on: ubuntu-latest
+    needs: [fast-tests, integration-tests]
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: 'latest'
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen
+
+      - name: Run full test suite with coverage
+        run: |
+          echo "📊 Running full test suite with coverage validation..."
+          uv run nox -s "test(test_type='full')"
+          echo "✅ Coverage validation passed"
+
+  # Job 5: Container engine testing (conditional)
   container-tests:
     name: Container Tests (${{ matrix.engine }})
     runs-on: ubuntu-latest
-    needs: [fast-tests, integration-tests]
+    needs: [fast-tests, integration-tests, coverage-validation]
     if: |
       github.event.inputs.test_suite == 'system' ||
       github.event.inputs.test_suite == 'full' ||
@@ -371,7 +403,7 @@ jobs:
   ci-summary:
     name: CI Pipeline Summary
     runs-on: ubuntu-latest
-    needs: [fast-tests, integration-tests, build-validation, container-tests, system-tests, security-scan, docs-validation]
+    needs: [fast-tests, integration-tests, build-validation, coverage-validation, container-tests, system-tests, security-scan, docs-validation]
     if: always()
 
     steps:
