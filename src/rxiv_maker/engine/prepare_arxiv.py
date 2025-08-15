@@ -5,11 +5,14 @@ by copying and modifying the necessary files to remove dependencies on minted
 and other shell-escape requiring packages.
 """
 
+import logging
 import os
 import shutil
 import subprocess
 import zipfile
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def prepare_arxiv_package(output_dir="./output", arxiv_dir=None, manuscript_path=None):
@@ -313,8 +316,8 @@ def test_arxiv_compilation(arxiv_path):
             print(f"❌ LaTeX file not found: {tex_file}")
             return False
 
-        # First pass
-        print("  Running first pdflatex pass...")
+        # First LaTeX compilation pass
+        logger.info("Running first pdflatex pass...")
         subprocess.run(
             ["pdflatex", "-interaction=nonstopmode", tex_file],
             stdout=subprocess.DEVNULL,
@@ -322,9 +325,9 @@ def test_arxiv_compilation(arxiv_path):
             check=False,
         )
 
-        # BibTeX pass
+        # BibTeX pass for bibliography processing
         if Path("03_REFERENCES.bib").exists():
-            print("  Running bibtex...")
+            logger.info("Running bibtex for bibliography processing...")
             main_name = tex_file.replace(".tex", "")
             subprocess.run(
                 ["bibtex", main_name],
@@ -333,8 +336,8 @@ def test_arxiv_compilation(arxiv_path):
                 check=False,
             )
 
-        # Second pass
-        print("  Running second pdflatex pass...")
+        # Second LaTeX compilation pass
+        logger.info("Running second pdflatex pass...")
         subprocess.run(
             ["pdflatex", "-interaction=nonstopmode", tex_file],
             stdout=subprocess.DEVNULL,
@@ -342,8 +345,8 @@ def test_arxiv_compilation(arxiv_path):
             check=False,
         )
 
-        # Third pass for cross-references
-        print("  Running final pdflatex pass...")
+        # Final LaTeX compilation pass for cross-references
+        logger.info("Running final pdflatex pass for cross-references...")
         subprocess.run(
             ["pdflatex", "-interaction=nonstopmode", tex_file],
             stdout=subprocess.DEVNULL,

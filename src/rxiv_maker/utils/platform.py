@@ -213,8 +213,8 @@ class PlatformDetector:
                     if line and not line.startswith("#") and "=" in line:
                         key, value = line.split("=", 1)
                         env_vars[key.strip()] = value.strip()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to read conda environment file {env_file}: {e}")
 
         return env_vars
 
@@ -252,8 +252,8 @@ class PlatformDetector:
                     # Clean up temporary script
                     try:
                         os.unlink(temp_script)
-                    except OSError:
-                        pass
+                    except OSError as e:
+                        logger.debug(f"Failed to clean up temporary script {temp_script}: {e}")
             else:
                 # Use curl and sh on Unix-like systems with secure argument list
                 import os
@@ -280,8 +280,8 @@ class PlatformDetector:
                     # Clean up temporary script
                     try:
                         os.unlink(temp_script)
-                    except OSError:
-                        pass
+                    except OSError as e:
+                        logger.debug(f"Failed to clean up temporary script {temp_script}: {e}")
 
                 return False
         except Exception as e:

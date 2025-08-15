@@ -308,7 +308,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && apt-get install -y --no-install-recommends \
     # Extended packages
     texlive-latex-extra \
-    texlive-science \
+    texlive-science \      # Includes siunitx for units and measurements
     texlive-pictures \
     texlive-bibtex-extra \
     biber \

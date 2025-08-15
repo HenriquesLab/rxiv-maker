@@ -77,11 +77,9 @@ rich>=13.0.0         # Beautiful terminal output
 
 </details>
 
-## Quickstart
+## 🚀 Quickstart
 
-### 🚀 Modern CLI (Recommended)
-
-**📦 Universal Install (Recommended)**
+### 📦 Universal Install (Recommended)
 ```bash
 # One command installs everything
 pip install rxiv-maker
@@ -99,7 +97,30 @@ rxiv pdf MY_PAPER/
 rxiv completion zsh              # Install for zsh, bash, or fish
 ```
 
-**🎛️ Installation Options**
+### 📋 Alternative Setup Options
+
+**🌐 Google Colab** (Easiest - no installation)
+- **Prerequisites**: Google account only | **Setup Time**: 2 minutes
+- [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_colab.ipynb)
+
+**🐳 Docker** (Minimal dependencies)
+- **Prerequisites**: [Docker Desktop](https://www.docker.com/products/docker-desktop) + Make | **Setup Time**: 3-5 minutes
+```bash
+git clone https://github.com/henriqueslab/rxiv-maker.git
+cd rxiv-maker
+make pdf RXIV_ENGINE=DOCKER
+```
+
+**🏠 Local Development** (Full control)
+- **Prerequisites**: Python 3.11+, LaTeX, Make ([platform guide](docs/getting-started/installation.md)) | **Setup Time**: 10-30 minutes
+```bash
+git clone https://github.com/henriqueslab/rxiv-maker.git
+cd rxiv-maker
+pip install -e .                    # Install with modern CLI
+rxiv pdf                            # Generate PDF using CLI
+```
+
+### 🛠️ Installation Options
 ```bash
 # Full installation (default)
 pip install rxiv-maker
@@ -111,52 +132,16 @@ RXIV_INSTALL_MODE=minimal pip install rxiv-maker
 RXIV_SKIP_SYSTEM_DEPS=1 pip install rxiv-maker
 ```
 
-### 📋 Alternative Setup Options
-
-**🌐 Google Colab** (Easiest - no installation)
-- **Prerequisites**: Google account only
-- **Setup Time**: 2 minutes
-- [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_colab.ipynb)
-
-**🐳 Docker** (Minimal dependencies)
-- **Prerequisites**: [Docker Desktop](https://www.docker.com/products/docker-desktop) + Make
-- **Setup Time**: 3-5 minutes
-```bash
-git clone https://github.com/henriqueslab/rxiv-maker.git
-cd rxiv-maker
-make pdf RXIV_ENGINE=DOCKER
-```
-
-**🏠 Local Development** (Full control)
-- **Prerequisites**: Python 3.11+, LaTeX, Make ([platform guide](docs/getting-started/installation.md))
-- **Setup Time**: 10-30 minutes
-```bash
-git clone https://github.com/henriqueslab/rxiv-maker.git
-cd rxiv-maker
-pip install -e .                    # Install with modern CLI
-rxiv pdf                            # Generate PDF using CLI
-```
-
-**🛠️ Legacy Make Interface** (Still supported)
-```bash
-git clone https://github.com/henriqueslab/rxiv-maker.git
-cd rxiv-maker
-make setup && make pdf
-```
-
 ## Modern CLI Usage
 
 Rxiv-Maker includes a modern command-line interface with rich output and intuitive commands:
 
-### Quick Start
+### Essential Commands
 ```bash
-# Install from PyPI
-pip install rxiv-maker
-
-# Initialize new manuscript
+# Create new manuscript
 rxiv init MY_PAPER/
 
-# Build PDF
+# Generate PDF
 rxiv pdf MY_PAPER/
 
 # Validate manuscript
