@@ -187,17 +187,35 @@ class TestPlatformDetectorVirtualEnv(unittest.TestCase):
             self.assertFalse(self.detector.is_in_venv())
 
     def test_get_virtual_env_path(self):
-        """Test getting virtual environment path."""
-        with patch.dict(os.environ, {"VIRTUAL_ENV": "/path/to/venv"}):
-            # The platform detector has get_venv_python_path, not venv_python_path
-            result = self.detector.get_venv_python_path()
-            self.assertIsNotNone(result)
+        """Test getting virtual environment path when .venv exists."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create a mock .venv directory with python executable
+            venv_dir = Path(temp_dir) / ".venv"
+            venv_bin = venv_dir / "bin"
+            venv_bin.mkdir(parents=True)
+            python_exe = venv_bin / "python"
+            python_exe.touch()
+
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(temp_dir)
+                result = self.detector.get_venv_python_path()
+                self.assertIsNotNone(result)
+                self.assertTrue(result.endswith("python"))
+            finally:
+                os.chdir(original_cwd)
 
     def test_get_virtual_env_path_none(self):
-        """Test getting virtual environment path when not set."""
-        with patch.dict(os.environ, {}, clear=True):
-            result = self.detector.get_venv_python_path()
-            self.assertIsNone(result)
+        """Test getting virtual environment path when .venv doesn't exist."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Change to temp directory where .venv doesn't exist
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(temp_dir)
+                result = self.detector.get_venv_python_path()
+                self.assertIsNone(result)
+            finally:
+                os.chdir(original_cwd)
 
     @patch("platform.system")
     def test_venv_python_path_windows(self, mock_system):
