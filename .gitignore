@@ -320,3 +320,24 @@ iv-maker/output.md
 lms/todo.md
 pip-audit-report.json
 coverage.json
+
+# Reports and logs (auto-generated)
+*.log
+*.xml
+*-report.json
+coverage*.xml
+coverage*.json
+*.report
+report-*.json
+*.audit
+audit-*.json
+
+# MyPy cache
+.mypy_cache/
+
+# Output directories and generated files
+*/output/*.log
+*/output/*.xml
+*/output/.log
+output/
+build/
