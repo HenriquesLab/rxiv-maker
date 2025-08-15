@@ -294,23 +294,39 @@ class BuildManager:
                 # Change to manuscript directory for relative path resolution
                 os.chdir(manuscript_path.parent)
 
-                # Run validation with proper arguments
-                # DOI validation setting will be read from config automatically
-                result = validate_manuscript(
-                    manuscript_path=manuscript_abs_path,
-                    verbose=self.verbose,
-                    include_info=False,
-                    check_latex=True,
-                    enable_doi_validation=None,  # Read from config
-                    detailed=True,
-                )
+                # Set MANUSCRIPT_PATH environment variable for validation
+                original_env = os.environ.get("MANUSCRIPT_PATH")
+                normalized_path = self.manuscript_path.rstrip("/")
+                manuscript_name = os.path.basename(normalized_path)
+                if not manuscript_name or manuscript_name in (".", ".."):
+                    manuscript_name = "MANUSCRIPT"
+                os.environ["MANUSCRIPT_PATH"] = manuscript_name
 
-                if result:
-                    self.log("Validation completed successfully")
-                    return True
-                else:
-                    self.log("Validation failed", "ERROR")
-                    return False
+                try:
+                    # Run validation with proper arguments
+                    # DOI validation setting will be read from config automatically
+                    result = validate_manuscript(
+                        manuscript_path=manuscript_abs_path,
+                        verbose=self.verbose,
+                        include_info=False,
+                        check_latex=True,
+                        enable_doi_validation=None,  # Read from config
+                        detailed=True,
+                    )
+
+                    if result:
+                        self.log("Validation completed successfully")
+                        return True
+                    else:
+                        self.log("Validation failed", "ERROR")
+                        return False
+
+                finally:
+                    # Restore environment variable
+                    if original_env is not None:
+                        os.environ["MANUSCRIPT_PATH"] = original_env
+                    else:
+                        os.environ.pop("MANUSCRIPT_PATH", None)
 
             finally:
                 # Always restore original working directory
@@ -585,7 +601,15 @@ class BuildManager:
 
             # Change to the parent directory so the relative path works
             original_cwd = os.getcwd()
-            os.chdir(Path(self.manuscript_path).parent)
+            # Ensure we change to the correct parent directory
+            manuscript_path_obj = Path(self.manuscript_path).resolve()
+            if manuscript_path_obj.is_dir():
+                # If manuscript_path is a directory, go to its parent
+                target_dir = manuscript_path_obj.parent
+            else:
+                # If manuscript_path is a file, go to its directory's parent
+                target_dir = manuscript_path_obj.parent.parent
+            os.chdir(target_dir)
 
             try:
                 # Generate the preprint with explicit manuscript path
