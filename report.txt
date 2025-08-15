@@ -1,0 +1,70 @@
+# Rxiv-Maker CLI Battle Test: Final Report
+
+## 1. Overview
+
+This report summarizes the findings from a "battle test" of the `rxiv-maker` command-line interface. The testing process involved a systematic execution of the CLI commands as documented in the project's repository.
+
+**Overall Conclusion:** The `rxiv-maker` CLI is in a pervasively non-functional and unstable state. The core functionality—PDF generation—is broken in all tested environments. Furthermore, a majority of the supplementary commands exhibit critical bugs, including dangerous file operations, non-functional logic, and a severe disconnect between the documented and actual behavior of the tool. The application is not usable in its current state.
+
+## 2. High-Level Summary of Findings
+
+*   **Core Functionality is Broken:** The `rxiv pdf` command fails to produce a PDF in both the local and the recommended Docker environments.
+*   **Critical Bugs in Multiple Commands:** Several commands have critical flaws, such as `rxiv clean` deleting files outside its specified scope, `rxiv validate` ignoring its path argument, and `rxiv figures` having a non-functional cache and force flag.
+*   **Severely Outdated Documentation:** Nearly every command tested has a different set of options than what is described in the `README.md` and `docs/CLI_REFERENCE.md`. Undocumented features were discovered, and documented features were missing.
+*   **Unstable Local Environment Setup:** The tool's own dependency installer (`check-installation --fix`) fails to create a stable local environment, leaving the LaTeX installation incomplete and causing `bibtex` to fail.
+
+## 3. Detailed Bug Reports by Command
+
+### Global / Environment Issues
+*   **Docker Permissions:** The tool requires `sudo` to interact with the Docker daemon in a standard Linux environment, but does not handle this gracefully. The `sudo` command itself fails due to `PATH` issues, requiring a workaround (`sudo /path/to/rxiv ...`).
+*   **Undocumented Global Options:** The `--engine` global option is not clearly documented as such, leading to confusion.
+
+### `rxiv pdf`
+*   **BLOCKER (Docker):** The official Docker image (`henriqueslab/rxiv-maker-base:latest`) is missing the essential LaTeX package `siunitx.sty`, causing all builds of the example manuscript to fail.
+*   **BLOCKER (Local):** The local environment setup via `check-installation --fix` is incomplete. It fails to correctly install all necessary LaTeX components, leading to a fatal `bibtex` error during compilation.
+*   **Documentation:** The help message is out of sync with documentation (incorrectly documents `--engine` as a local option, has an unexpected `--track-changes` option, and has cosmetic formatting bugs).
+
+### `rxiv validate`
+*   **CRITICAL BUG:** This command ignores its `MANUSCRIPT_PATH` argument, always validating the default `MANUSCRIPT/` directory. This makes it impossible to validate any other manuscript.
+*   **CRITICAL BUG:** The command reports `✅ Validation passed!` even after encountering a fatal error (e.g., an unparseable YAML config file), which is dangerously misleading.
+*   **Working Feature:** The command *does* correctly identify undefined citations within a markdown file and reports a failure in that case.
+
+### `rxiv init`
+*   **BUG:** The command defaults to an interactive mode that is unusable in non-interactive environments. The necessary `--no-interactive` flag is not documented.
+*   **BUG:** When run successfully, the command creates an incomplete set of files, most notably missing the main `01_MAIN.md` file.
+*   **Working Feature:** The `--force` flag correctly overwrites an existing directory. Error handling for existing directories (without `--force`) works correctly.
+
+### `rxiv figures`
+*   **CRITICAL BUG:** The command's caching logic is flawed. It does not regenerate figures even when their output files are missing.
+*   **CRITICAL BUG:** The `--force` flag is non-functional and does not override the broken cache, making it impossible to force a regeneration of figures.
+*   **Documentation:** The help message is out of date, missing some options and incorrectly listing others.
+
+### `rxiv bibliography`
+*   **`add` subcommand:**
+    *   **BUG:** The argument parser is brittle. It requires the `MANUSCRIPT_PATH` to be specified before the `DOI`, and fails with a misleading error otherwise.
+    *   **Documentation:** The `--overwrite` option is not documented.
+*   **`fix` subcommand:**
+    *   **CRITICAL BUG:** The command is non-functional. It fails to detect or fix incomplete bibliography entries.
+*   **`validate` subcommand:**
+    *   **Documentation:** This subcommand is documented in `CLI_REFERENCE.md` but is not implemented in the tool.
+
+### `rxiv clean`
+*   **CRITICAL BUG:** The command exhibits dangerous behavior. When given a path, it cleans **both** the specified path's output directory and the default `MANUSCRIPT/` output directory, potentially leading to data loss.
+*   **Logging BUG:** The command produces misleading logs, such as `Output directory doesn't exist` even when it finds and cleans the directory.
+*   **Documentation:** The documentation is severely out of date, missing four options.
+
+### Blocked Commands
+The following commands could not be tested because they depend on the broken `rxiv pdf` command:
+*   `rxiv arxiv`
+*   `rxiv track-changes`
+
+## 4. Recommendations
+
+1.  **Halt All Other Development:** The project is not in a usable state. All effort should be focused on fixing the core functionality.
+2.  **Prioritize the Docker Environment:** The Docker workflow is promoted as the most reliable. The first fix should be to add the missing `siunitx.sty` package (and any others) to the `Dockerfile` and publish a new, working image.
+3.  **Fix Core Commands:** After the Docker image is fixed, address the critical bugs in this order:
+    *   `rxiv figures` (caching and `--force` flag).
+    *   `rxiv validate` (path argument and failure reporting).
+    *   `rxiv clean` (dangerous out-of-scope cleaning).
+    *   `rxiv init` (incomplete file generation).
+4.  **Complete Documentation Overhaul:** Once the tool is functional, the entire documentation (`README.md` and `docs/`) must be updated to reflect the actual commands, options, and arguments. All undocumented features should be documented, and all missing/incorrect features should be removed from the docs.

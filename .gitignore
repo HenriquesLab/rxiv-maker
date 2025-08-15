@@ -302,7 +302,6 @@ GEMINI.md
 !.github/**/*.md
 
 # Specific temporary/working files to ignore
-todo*.md
 DOCKER_ACCELERATION.md
 GEMINI.md
 CLAUDE.md
