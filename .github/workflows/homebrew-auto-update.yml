@@ -71,8 +71,8 @@ jobs:
           # Update the formula file
           echo "📝 Updating formula with new version and SHA256..."
 
-          # Use sed to update version and SHA256 in the formula
-          sed -i 's|url "https://github.com/HenriquesLab/rxiv-maker/archive/refs/tags/v.*\.tar\.gz"|url "${{ steps.release.outputs.tarball_url }}"|g' ${{ env.FORMULA_FILE }}
+          # Use sed to update any URL pattern to the new GitHub release URL
+          sed -i 's|url ".*"|url "${{ steps.release.outputs.tarball_url }}"|g' ${{ env.FORMULA_FILE }}
           sed -i 's|sha256 ".*"|sha256 "${{ steps.sha256.outputs.sha256 }}"|g' ${{ env.FORMULA_FILE }}
 
           # Show the changes
