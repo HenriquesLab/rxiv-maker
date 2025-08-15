@@ -169,8 +169,9 @@ class BuildManager:
                         f.write(f"{i}. {warning}\n")
 
                 self.log(f"BibTeX warnings logged to {self.bibtex_log.name}", "INFO")
-        except Exception:
-            pass  # Don't fail the build if logging fails
+        except Exception as e:
+            # Log BibTeX warning extraction failure, but don't fail the build
+            logger.debug(f"Failed to extract BibTeX warnings from {blg_file}: {e}")
 
     def setup_output_directory(self) -> bool:
         """Create and set up the output directory."""

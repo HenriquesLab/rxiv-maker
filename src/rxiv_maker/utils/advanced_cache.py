@@ -295,8 +295,9 @@ class AdvancedCache:
                         file_path.unlink()
                         removed += 1
 
-                except Exception:
-                    # If we can't load it, remove it
+                except Exception as e:
+                    # If we can't load it, remove it and log the reason
+                    logger.debug(f"Failed to load cache file {file_path}, removing: {e}")
                     file_path.unlink()
                     removed += 1
 
