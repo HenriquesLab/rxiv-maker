@@ -67,7 +67,9 @@ jobs:
             lintian \
             python3-all \
             python3-setuptools \
-            python3-pip
+            python3-pip \
+            python3-hatchling \
+            pybuild-plugin-pyproject
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
