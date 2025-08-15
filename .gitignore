@@ -284,8 +284,31 @@ scripts/safeguards/*.log
 MANUSCRIPT/2025__author_et_al__rxiv.pdf
 EXAMPLE_MANUSCRIPT/2025__Saraiva_et_al__for_arxiv.zip
 GEMINI.md
-# Temporary analysis files
+# Markdown files - ignore by default except important ones
+*.md
+
+# Important markdown files to keep tracked
+!README.md
+!CHANGELOG.md
+!CONTRIBUTING.md
+!CODE_OF_CONDUCT.md
+!docs/**/*.md
+!EXAMPLE_MANUSCRIPT/**/*.md
+!MANUSCRIPT/**/*.md
+!test_init/**/*.md
+!src/**/*.md
+!tests/**/*.md
+!scripts/**/*.md
+!.github/**/*.md
+
+# Specific temporary/working files to ignore
+todo*.md
+DOCKER_ACCELERATION.md
+GEMINI.md
+CLAUDE.md
 output.md
+
+# Temporary analysis files
 .folder2md_ignore
 submodules/vscode-rxiv-maker/node_modules
 test-results
@@ -295,3 +318,5 @@ plan_prompt.md
 bandit-report.json
 iv-maker/output.md
 lms/todo.md
+pip-audit-report.json
+coverage.json
