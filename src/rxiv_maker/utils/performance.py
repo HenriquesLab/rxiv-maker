@@ -8,7 +8,7 @@ from typing import Any
 from ..__version__ import __version__
 from ..core.logging_config import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger()
 
 
 class PerformanceTracker:
