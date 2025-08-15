@@ -1,0 +1,59 @@
+#!/usr/bin/make -f
+
+# See debhelper(7) (uncomment to enable)
+# output every command that modifies files on the build system.
+export DH_VERBOSE = 1
+
+# See FEATURE AREAS in dpkg-buildflags(1)
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+# See ENVIRONMENT in dpkg-buildflags(1)
+# Package maintainers to append CFLAGS
+export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic
+# Package maintainers to append LDFLAGS
+export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+
+# Use pybuild system for Python packages
+export PYBUILD_NAME=rxiv-maker
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild
+
+override_dh_auto_configure:
+	# Configure with pybuild
+	dh_auto_configure
+
+override_dh_auto_build:
+	# Build with pybuild using pyproject.toml
+	dh_auto_build
+
+override_dh_auto_install:
+	# Install the wheel package
+	dh_auto_install
+	# Install additional files
+	mkdir -p debian/rxiv-maker/usr/share/rxiv-maker/tex
+	cp -r src/tex/* debian/rxiv-maker/usr/share/rxiv-maker/tex/
+	# Install man page if exists
+	if [ -f docs/man/rxiv.1 ]; then \
+		mkdir -p debian/rxiv-maker/usr/share/man/man1; \
+		cp docs/man/rxiv.1 debian/rxiv-maker/usr/share/man/man1/; \
+		gzip -9 debian/rxiv-maker/usr/share/man/man1/rxiv.1; \
+	fi
+
+override_dh_auto_test:
+	# Skip tests during package build to avoid complex dependencies
+	# Tests are run in CI/CD pipeline
+	@echo "Skipping tests during Debian package build"
+
+override_dh_installdocs:
+	dh_installdocs
+	# Install additional documentation
+	mkdir -p debian/rxiv-maker/usr/share/doc/rxiv-maker/examples
+	cp -r EXAMPLE_MANUSCRIPT debian/rxiv-maker/usr/share/doc/rxiv-maker/examples/
+	cp -r MANUSCRIPT debian/rxiv-maker/usr/share/doc/rxiv-maker/examples/
+	# Remove sensitive or build-specific files
+	find debian/rxiv-maker/usr/share/doc/rxiv-maker/examples -name "*.pdf" -delete
+	find debian/rxiv-maker/usr/share/doc/rxiv-maker/examples -name "output" -type d -exec rm -rf {} + 2>/dev/null || true
+
+# Don't run dh_auto_test as we handle testing separately
+override_dh_auto_test:

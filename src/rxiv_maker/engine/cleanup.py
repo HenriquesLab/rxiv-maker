@@ -239,17 +239,25 @@ class CleanupManager:
                     except Exception as e:
                         self.log(f"Failed to remove {file.name}: {e}", "WARNING")
 
-        # Clean from current directory
+        # Only clean from current directory if it's the same as manuscript directory
+        # This prevents accidentally cleaning files outside the intended scope
         current_dir = Path.cwd()
-        for pattern in temp_patterns:
-            for file in current_dir.glob(pattern):
-                try:
-                    file.unlink()
-                    cleaned_files.append(str(file))
-                    if self.verbose:
-                        self.log(f"Removed: {file.name}")
-                except Exception as e:
-                    self.log(f"Failed to remove {file.name}: {e}", "WARNING")
+        manuscript_absolute = self.manuscript_dir.resolve()
+        current_absolute = current_dir.resolve()
+
+        if current_absolute == manuscript_absolute or self.manuscript_path == ".":
+            # Only clean current directory if it's explicitly the manuscript directory
+            for pattern in temp_patterns:
+                for file in current_dir.glob(pattern):
+                    try:
+                        file.unlink()
+                        cleaned_files.append(str(file))
+                        if self.verbose:
+                            self.log(f"Removed: {file.name}")
+                    except Exception as e:
+                        self.log(f"Failed to remove {file.name}: {e}", "WARNING")
+        elif self.verbose:
+            self.log("Skipping current directory cleanup (not same as manuscript directory)")
 
         if cleaned_files:
             self.log(f"Cleaned {len(cleaned_files)} temporary files")

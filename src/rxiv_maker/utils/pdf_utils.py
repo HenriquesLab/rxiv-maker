@@ -66,11 +66,11 @@ def copy_pdf_to_manuscript_folder(
     # Determine manuscript directory and name
     if manuscript_dir:
         manuscript_path = manuscript_dir
-        manuscript_name = os.path.basename(manuscript_path)
+        manuscript_name = os.path.basename(manuscript_path.rstrip("/"))
     else:
         # Fallback to environment variable for backward compatibility
         manuscript_path = os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
-        manuscript_name = os.path.basename(manuscript_path)
+        manuscript_name = os.path.basename(manuscript_path.rstrip("/"))
 
     output_pdf = Path(output_dir) / f"{manuscript_name}.pdf"
     if not output_pdf.exists():

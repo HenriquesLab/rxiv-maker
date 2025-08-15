@@ -1,0 +1,350 @@
+# Containerfile for APT package testing
+# Multi-stage container for testing rxiv-maker APT packages across Ubuntu versions
+
+ARG UBUNTU_VERSION=22.04
+FROM ubuntu:${UBUNTU_VERSION} as base
+
+# Metadata
+LABEL maintainer="Rxiv-Maker Contributors <rxiv.maker@gmail.com>"
+LABEL description="Container for testing rxiv-maker APT packages"
+LABEL version="1.0"
+
+# Environment setup
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+# Install base system dependencies
+RUN apt-get update && apt-get install -y \
+    # Essential tools
+    curl \
+    wget \
+    gnupg \
+    ca-certificates \
+    software-properties-common \
+    # Development tools
+    git \
+    build-essential \
+    # Testing tools
+    time \
+    # Text processing
+    less \
+    vim-tiny \
+    # Network tools
+    iputils-ping \
+    net-tools \
+    # Process monitoring
+    htop \
+    procps \
+    # Clean up
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create test user with sudo privileges
+RUN useradd -m -s /bin/bash testuser && \
+    echo 'testuser ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
+    mkdir -p /home/testuser/.config && \
+    chown -R testuser:testuser /home/testuser
+
+# Set up test directories
+RUN mkdir -p /test-results /test-data /test-scripts && \
+    chown -R testuser:testuser /test-results /test-data
+
+# Copy test scripts
+COPY scripts/test-apt-*.sh /test-scripts/
+COPY scripts/validate-apt-*.sh /test-scripts/
+RUN chmod +x /test-scripts/*.sh
+
+# Working directory
+WORKDIR /workspace
+
+# Default user
+USER testuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/ || exit 1
+
+# Default command
+CMD ["/bin/bash"]
+
+# =============================================================================
+# Testing stage - includes additional tools for comprehensive testing
+# =============================================================================
+
+FROM base as testing
+
+# Switch back to root for installations
+USER root
+
+# Install additional testing dependencies
+RUN apt-get update && apt-get install -y \
+    # LaTeX for testing PDF generation
+    texlive-latex-base \
+    texlive-latex-extra \
+    texlive-fonts-recommended \
+    biber \
+    # Python for testing
+    python3 \
+    python3-pip \
+    python3-venv \
+    # R for testing
+    r-base \
+    # Node.js for testing
+    nodejs \
+    npm \
+    # Additional testing tools
+    strace \
+    lsof \
+    tcpdump \
+    # Performance monitoring
+    sysstat \
+    iotop \
+    # Security tools
+    chkrootkit \
+    # Clean up
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Install Python testing packages
+RUN python3 -m pip install --no-cache-dir \
+    pytest \
+    pytest-cov \
+    pytest-timeout \
+    requests \
+    psutil
+
+# Create comprehensive test structure
+RUN mkdir -p \
+    /test-results/logs \
+    /test-results/reports \
+    /test-results/artifacts \
+    /test-data/manuscripts \
+    /test-data/configs \
+    && chown -R testuser:testuser /test-results /test-data
+
+# Copy test manuscripts and data
+COPY EXAMPLE_MANUSCRIPT/ /test-data/manuscripts/EXAMPLE_MANUSCRIPT/
+COPY MANUSCRIPT/ /test-data/manuscripts/MANUSCRIPT/
+RUN chown -R testuser:testuser /test-data/manuscripts/
+
+# Switch back to test user
+USER testuser
+
+# Set up user environment
+RUN echo 'export PATH="/test-scripts:$PATH"' >> /home/testuser/.bashrc && \
+    echo 'cd /workspace' >> /home/testuser/.bashrc
+
+# =============================================================================
+# Minimal stage - lightweight testing environment
+# =============================================================================
+
+FROM base as minimal
+
+# Only essential tools for quick testing
+USER testuser
+
+# Simple test script
+RUN echo '#!/bin/bash\nrxiv --version && echo "APT package test successful"' > /home/testuser/quick-test.sh && \
+    chmod +x /home/testuser/quick-test.sh
+
+# =============================================================================
+# Development stage - includes development tools and source code
+# =============================================================================
+
+FROM testing as development
+
+# Switch to root for development tool installation
+USER root
+
+# Install development dependencies
+RUN apt-get update && apt-get install -y \
+    # Development tools
+    gdb \
+    valgrind \
+    # Documentation tools
+    pandoc \
+    # Container tools
+    podman \
+    # Database tools (if needed)
+    sqlite3 \
+    # Additional LaTeX packages
+    texlive-full \
+    # Clean up
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Install additional Python development packages
+RUN python3 -m pip install --no-cache-dir \
+    black \
+    flake8 \
+    mypy \
+    pre-commit \
+    tox \
+    sphinx \
+    jupyter
+
+# Create development directories
+RUN mkdir -p \
+    /development/source \
+    /development/build \
+    /development/docs \
+    && chown -R testuser:testuser /development
+
+# Switch back to test user
+USER testuser
+
+# Development environment setup
+RUN echo 'export DEVELOPMENT_MODE=true' >> /home/testuser/.bashrc && \
+    echo 'export PYTHONPATH="/workspace/src:$PYTHONPATH"' >> /home/testuser/.bashrc
+
+# =============================================================================
+# CI stage - optimized for CI/CD environments
+# =============================================================================
+
+FROM testing as ci
+
+# Switch to root for CI-specific setup
+USER root
+
+# Install CI-specific tools
+RUN apt-get update && apt-get install -y \
+    # CI tools
+    jq \
+    xmlstarlet \
+    # Report generation
+    html2text \
+    # Artifact handling
+    zip \
+    unzip \
+    tar \
+    # Clean up
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create CI directories
+RUN mkdir -p \
+    /ci/inputs \
+    /ci/outputs \
+    /ci/cache \
+    /ci/logs \
+    && chown -R testuser:testuser /ci
+
+# CI-specific scripts
+COPY scripts/ci-test-*.sh /ci/
+RUN chmod +x /ci/*.sh
+
+# Switch back to test user
+USER testuser
+
+# CI environment variables
+ENV CI=true
+ENV CI_ENVIRONMENT=container
+ENV TEST_RESULTS_FORMAT=junit
+
+# CI-specific aliases
+RUN echo 'alias ci-test="bash /ci/ci-test-apt.sh"' >> /home/testuser/.bashrc && \
+    echo 'alias ci-report="bash /ci/ci-generate-report.sh"' >> /home/testuser/.bashrc
+
+# =============================================================================
+# Performance stage - includes performance monitoring tools
+# =============================================================================
+
+FROM testing as performance
+
+# Switch to root for performance tool installation
+USER root
+
+# Install performance monitoring tools
+RUN apt-get update && apt-get install -y \
+    # Performance tools
+    perf-tools-unstable \
+    linux-tools-generic \
+    # Profiling tools
+    gprof \
+    # Memory tools
+    valgrind \
+    # I/O monitoring
+    iotop \
+    iftop \
+    # System monitoring
+    atop \
+    # Clean up
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Install Python performance packages
+RUN python3 -m pip install --no-cache-dir \
+    memory-profiler \
+    line-profiler \
+    py-spy \
+    psutil
+
+# Create performance monitoring directories
+RUN mkdir -p \
+    /performance/profiles \
+    /performance/reports \
+    /performance/benchmarks \
+    && chown -R testuser:testuser /performance
+
+# Performance monitoring scripts
+COPY scripts/performance-*.sh /performance/
+RUN chmod +x /performance/*.sh
+
+# Switch back to test user
+USER testuser
+
+# Performance environment setup
+ENV PERFORMANCE_MONITORING=true
+RUN echo 'export PATH="/performance:$PATH"' >> /home/testuser/.bashrc
+
+# =============================================================================
+# Security stage - includes security testing tools
+# =============================================================================
+
+FROM testing as security
+
+# Switch to root for security tool installation
+USER root
+
+# Install security testing tools
+RUN apt-get update && apt-get install -y \
+    # Security scanners
+    lynis \
+    rkhunter \
+    clamav \
+    # Network security
+    nmap \
+    # File integrity
+    aide \
+    # GPG tools
+    gnupg2 \
+    # Clean up
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create security directories
+RUN mkdir -p \
+    /security/scans \
+    /security/reports \
+    /security/configs \
+    && chown -R testuser:testuser /security
+
+# Security testing scripts
+COPY scripts/security-*.sh /security/
+RUN chmod +x /security/*.sh
+
+# Switch back to test user
+USER testuser
+
+# Security environment setup
+ENV SECURITY_TESTING=true
+RUN echo 'export PATH="/security:$PATH"' >> /home/testuser/.bashrc
+
+# =============================================================================
+# Default target
+# =============================================================================
+
+# Default to testing stage for most use cases
+FROM testing

@@ -34,13 +34,14 @@ rxiv pdf [OPTIONS] [MANUSCRIPT_PATH]
 - `MANUSCRIPT_PATH`: Path to manuscript directory (default: MANUSCRIPT/)
 
 **Options:**
-- `--force-figures`: Force regeneration of all figures
-- `--skip-validation`: Skip validation step (useful for debugging)
-- `--engine [local|docker]`: Use specified engine
+- `--force-figures, -f`: Force regeneration of all figures
+- `--skip-validation, -s`: Skip validation step (useful for debugging)
+- `--track-changes TAG, -t TAG`: Track changes against specified git tag
+- `--output-dir PATH, -o PATH`: Custom output directory
 - `--verbose, -v`: Show detailed output
 - `--quiet, -q`: Suppress non-essential output
 - `--debug, -d`: Enable debug output
-- `--output-dir PATH, -o PATH`: Custom output directory
+- `--engine [local|docker]`: Use specified engine
 
 **Note:** PDF generation includes validation step which respects DOI validation settings in `00_CONFIG.yml`
 
@@ -49,6 +50,7 @@ rxiv pdf [OPTIONS] [MANUSCRIPT_PATH]
 rxiv pdf                          # Build from MANUSCRIPT/
 rxiv pdf MY_PAPER/                # Build from custom directory
 rxiv pdf --force-figures          # Force figure regeneration
+rxiv pdf --track-changes v1.0.0   # Track changes against git tag
 rxiv pdf --engine docker          # Use Docker engine
 rxiv pdf --skip-validation        # Skip validation for debugging
 ```
@@ -94,14 +96,17 @@ rxiv init [OPTIONS] [MANUSCRIPT_PATH]
 - `MANUSCRIPT_PATH`: Path for new manuscript (default: MANUSCRIPT/)
 
 **Options:**
-- `--template NAME`: Use specific template
-- `--force`: Overwrite existing directory
+- `--template NAME, -t NAME`: Use specific template (basic, research, preprint)
+- `--force, -f`: Overwrite existing directory
+- `--no-interactive`: Skip interactive prompts and use defaults
 
 **Examples:**
 ```bash
 rxiv init                         # Create MANUSCRIPT/
 rxiv init MY_PAPER/               # Create custom directory
-rxiv init --template article      # Use article template
+rxiv init --template research     # Use research template
+rxiv init --no-interactive        # Skip prompts, use defaults
+rxiv init --force                 # Overwrite existing directory
 ```
 
 ### `rxiv figures`
@@ -116,7 +121,8 @@ rxiv figures [OPTIONS] [MANUSCRIPT_PATH]
 - `MANUSCRIPT_PATH`: Path to manuscript directory (default: MANUSCRIPT/)
 
 **Options:**
-- `--force`: Force regeneration of all figures
+- `--force, -f`: Force regeneration of all figures
+- `--figures-dir PATH, -d PATH`: Custom figures directory path
 - `--verbose`: Show detailed output
 - `--engine [local|docker]`: Use specified engine
 
@@ -157,32 +163,29 @@ rxiv bibliography fix --dry-run   # Preview fixes
 
 #### `rxiv bibliography add`
 
-Add bibliography entry from DOI.
+Add bibliography entries from DOIs or URLs.
 
 ```bash
-rxiv bibliography add [OPTIONS] DOI [MANUSCRIPT_PATH]
+rxiv bibliography add [OPTIONS] DOI1 [DOI2 ...]
 ```
 
 **Arguments:**
-- `DOI`: DOI to add (e.g., 10.1000/journal.123)
-- `MANUSCRIPT_PATH`: Path to manuscript directory (default: MANUSCRIPT/)
+- `DOIS`: One or more DOIs or URLs containing DOIs to add
+
+**Options:**
+- `--manuscript-path PATH, -m PATH`: Path to manuscript directory (default: MANUSCRIPT/)
+- `--overwrite, -o`: Overwrite existing entries
 
 **Examples:**
 ```bash
 rxiv bibliography add 10.1038/nature12373
-rxiv bibliography add 10.1038/nature12373 MY_PAPER/
+rxiv bibliography add 10.1038/nature12373 10.1000/example.doi
+rxiv bibliography add https://www.nature.com/articles/d41586-022-00563-z
+rxiv bibliography add --manuscript-path MY_PAPER/ 10.1038/nature12373
+rxiv bibliography add --overwrite 10.1038/nature12373
 ```
 
-#### `rxiv bibliography validate`
-
-Validate bibliography entries.
-
-```bash
-rxiv bibliography validate [OPTIONS] [MANUSCRIPT_PATH]
-```
-
-**Options:**
-- `--no-doi`: Skip DOI validation
+**Note:** Bibliography validation is now integrated into the main `rxiv validate` command for comprehensive manuscript validation.
 
 ### `rxiv clean`
 
@@ -196,16 +199,21 @@ rxiv clean [OPTIONS] [MANUSCRIPT_PATH]
 - `MANUSCRIPT_PATH`: Path to manuscript directory (default: MANUSCRIPT/)
 
 **Options:**
-- `--figures-only`: Clean only generated figures
-- `--cache-only`: Clean only cache files
-- `--all`: Clean everything including logs
+- `--output-dir DIR, -o DIR`: Output directory to clean (default: output)
+- `--figures-only, -f`: Clean only generated figures
+- `--output-only, -O`: Clean only output directory
+- `--arxiv-only, -a`: Clean only arXiv files
+- `--temp-only, -t`: Clean only temporary files
+- `--cache-only, -c`: Clean only cache files
+- `--all, -A`: Clean all generated files
 
 **Examples:**
 ```bash
-rxiv clean                        # Clean output directory
+rxiv clean                        # Clean all generated files
 rxiv clean --figures-only         # Clean only figures
 rxiv clean --cache-only           # Clean only cache
-rxiv clean --all                  # Deep clean
+rxiv clean --temp-only            # Clean only temporary LaTeX files
+rxiv clean --output-dir custom/   # Clean custom output directory
 ```
 
 ### `rxiv arxiv`
