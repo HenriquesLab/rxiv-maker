@@ -328,9 +328,37 @@ jobs:
           VERSION="${{ needs.build.outputs.version }}"
           echo "Updating Homebrew formula for version ${VERSION}..."
 
-          # Get PyPI package information
+          # Wait for PyPI to propagate with retry mechanism
           PYPI_URL="https://pypi.org/pypi/rxiv-maker/${VERSION}/json"
-          PACKAGE_INFO=$(curl -s "$PYPI_URL")
+
+          echo "⏳ Waiting for PyPI API to be available for version ${VERSION}..."
+          RETRY_COUNT=0
+          MAX_RETRIES=6
+          BACKOFF_BASE=10
+
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            echo "🔍 Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES: Checking PyPI API..."
+
+            # Get PyPI package information with timeout
+            PACKAGE_INFO=$(curl -s --max-time 30 "$PYPI_URL")
+
+            # Check if the API response is valid and contains our version
+            if echo "$PACKAGE_INFO" | jq -e '.releases."'${VERSION}'" | map(select(.filename | endswith(".tar.gz"))) | .[0].url' >/dev/null 2>&1; then
+              echo "✅ PyPI API ready for version ${VERSION}"
+              break
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                WAIT_TIME=$((BACKOFF_BASE * RETRY_COUNT))
+                echo "⏳ PyPI not ready yet. Waiting ${WAIT_TIME}s before retry..."
+                sleep $WAIT_TIME
+              else
+                echo "❌ Failed to get package info from PyPI after $MAX_RETRIES attempts"
+                echo "Response received: $PACKAGE_INFO"
+                exit 1
+              fi
+            fi
+          done
 
           # Extract download URL and SHA256 for tar.gz file
           DOWNLOAD_URL=$(echo "$PACKAGE_INFO" | jq -r '.releases."'${VERSION}'" | map(select(.filename | endswith(".tar.gz"))) | .[0].url')
