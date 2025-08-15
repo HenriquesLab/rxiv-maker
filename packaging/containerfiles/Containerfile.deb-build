@@ -1,0 +1,60 @@
+# Containerfile for building rxiv-maker Debian packages
+# Based on Ubuntu 22.04 for compatibility with GitHub Actions
+FROM ubuntu:22.04
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    # Core build tools
+    build-essential \
+    debhelper \
+    devscripts \
+    dh-python \
+    dpkg-dev \
+    fakeroot \
+    lintian \
+    # Python build dependencies
+    python3 \
+    python3-dev \
+    python3-pip \
+    python3-setuptools \
+    python3-wheel \
+    python3-venv \
+    python3-all \
+    python3-hatchling \
+    pybuild-plugin-pyproject \
+    # Version control and utilities
+    git \
+    curl \
+    ca-certificates \
+    # LaTeX and documentation tools
+    texlive-latex-base \
+    texlive-latex-extra \
+    texlive-fonts-recommended \
+    # Additional utilities
+    file \
+    tree \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv for modern Python package management
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.cargo/bin:$PATH"
+
+# Create build user (non-root for security)
+RUN useradd -m -s /bin/bash builder && \
+    echo 'builder ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+# Set working directory
+WORKDIR /workspace
+
+# Switch to builder user
+USER builder
+
+# Copy uv to builder user path
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/home/builder/.cargo/bin:$PATH"
+
+# Default command
+CMD ["/bin/bash"]

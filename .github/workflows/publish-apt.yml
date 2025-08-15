@@ -1,0 +1,436 @@
+name: Publish APT Repository
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version to publish'
+        required: true
+        type: string
+      dry-run:
+        description: 'Dry run mode (skip actual publishing)'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      GPG_PRIVATE_KEY:
+        description: 'GPG private key for signing packages'
+        required: true
+      GPG_PASSPHRASE:
+        description: 'GPG passphrase'
+        required: true
+
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 1.5.10)'
+        required: true
+        type: string
+      dry-run:
+        description: 'Dry run mode (skip actual publishing)'
+        type: boolean
+        default: true
+
+# Required permissions
+permissions:
+  contents: write  # Required for pushing to apt-repo branch
+
+jobs:
+  build-deb:
+    name: Build Debian Package
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      deb-file: ${{ steps.build.outputs.deb-file }}
+      package-info: ${{ steps.build.outputs.package-info }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            debhelper \
+            dh-python \
+            dpkg-dev \
+            build-essential \
+            fakeroot \
+            lintian \
+            python3-all \
+            python3-setuptools \
+            python3-pip
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: 'latest'
+          enable-cache: true
+
+      - name: Verify version
+        run: |
+          PACKAGE_VERSION=$(python -c "exec(open('src/rxiv_maker/__version__.py').read()); print(__version__)")
+          INPUT_VERSION="${{ inputs.version }}"
+
+          echo "Package version: $PACKAGE_VERSION"
+          echo "Input version: $INPUT_VERSION"
+
+          if [[ "$PACKAGE_VERSION" != "$INPUT_VERSION" ]]; then
+            echo "❌ Version mismatch!"
+            echo "Package version ($PACKAGE_VERSION) does not match input version ($INPUT_VERSION)"
+            exit 1
+          fi
+
+          echo "✅ Version verified: $PACKAGE_VERSION"
+
+      - name: Build Debian package
+        id: build
+        run: |
+          echo "🔨 Building Debian package for version ${{ inputs.version }}"
+
+          # Update changelog with current version
+          VERSION="${{ inputs.version }}"
+          CHANGELOG_ENTRY="rxiv-maker ($VERSION-1) stable; urgency=medium\n\n"
+          CHANGELOG_ENTRY="${CHANGELOG_ENTRY}  * Release version $VERSION\n"
+          CHANGELOG_ENTRY="${CHANGELOG_ENTRY}  * See CHANGELOG.md for detailed changes\n"
+          CHANGELOG_ENTRY="${CHANGELOG_ENTRY}  * Automated build from GitHub Actions\n\n"
+          CHANGELOG_ENTRY="${CHANGELOG_ENTRY} -- Rxiv-Maker Contributors <rxiv.maker@gmail.com>  $(date -R)\n\n"
+
+          # Copy packaging files to build location
+          cp -r packaging/debian .
+
+          # Prepend to existing changelog
+          if [[ -f debian/changelog ]]; then
+            echo -e "${CHANGELOG_ENTRY}$(cat debian/changelog)" > debian/changelog
+          else
+            echo -e "$CHANGELOG_ENTRY" > debian/changelog
+          fi
+
+          # Build the package
+          dpkg-buildpackage -us -uc -b --build-profiles=nocheck
+
+          # Find the built package
+          DEB_FILE=$(find .. -name "rxiv-maker_*.deb" -type f | head -1)
+          if [[ -z "$DEB_FILE" ]]; then
+            echo "❌ No .deb file found!"
+            exit 1
+          fi
+
+          # Get absolute path and filename
+          DEB_FILE=$(realpath "$DEB_FILE")
+          DEB_FILENAME=$(basename "$DEB_FILE")
+
+          echo "✅ Built package: $DEB_FILENAME"
+          echo "📂 Full path: $DEB_FILE"
+
+          # Move to workspace for artifact upload
+          mkdir -p dist
+          mv "$DEB_FILE" dist/
+          DEB_FILE="dist/$DEB_FILENAME"
+
+          # Package information
+          echo "📦 Package information:"
+          dpkg-deb --info "$DEB_FILE"
+
+          # Package size
+          SIZE=$(stat -c%s "$DEB_FILE")
+          echo "📊 Package size: $SIZE bytes"
+
+          # Export outputs
+          echo "deb-file=$DEB_FILE" >> $GITHUB_OUTPUT
+          echo "package-info=$DEB_FILENAME ($SIZE bytes)" >> $GITHUB_OUTPUT
+
+      - name: Validate package
+        run: |
+          DEB_FILE="${{ steps.build.outputs.deb-file }}"
+
+          echo "🔍 Validating package: $DEB_FILE"
+
+          # Run lintian checks
+          if lintian "$DEB_FILE"; then
+            echo "✅ Lintian checks passed"
+          else
+            echo "⚠️ Lintian found issues (non-fatal for release)"
+          fi
+
+          # Test package contents
+          echo "📋 Package contents:"
+          dpkg-deb --contents "$DEB_FILE" | head -20
+
+          # Test package installation (dry run)
+          echo "🧪 Testing package installation (dry run):"
+          sudo dpkg --dry-run -i "$DEB_FILE" || true
+
+      - name: Upload Debian package
+        uses: actions/upload-artifact@v4
+        with:
+          name: debian-package
+          path: dist/
+          retention-days: 7
+
+  setup-apt-repo:
+    name: Set up APT Repository
+    runs-on: ubuntu-latest
+    needs: build-deb
+    timeout-minutes: 20
+    if: ${{ !inputs.dry-run }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download Debian package
+        uses: actions/download-artifact@v5
+        with:
+          name: debian-package
+          path: dist/
+
+      - name: Install APT repository tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y reprepro gnupg2
+
+      - name: Import GPG key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          echo "🔐 Importing GPG key for repository signing..."
+
+          # Import private key
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+
+          # Get key ID
+          GPG_KEY_ID=$(gpg --list-secret-keys --with-colons | grep '^sec:' | cut -d: -f5 | head -1)
+          echo "GPG_KEY_ID=$GPG_KEY_ID" >> $GITHUB_ENV
+
+          echo "✅ GPG key imported: $GPG_KEY_ID"
+
+      - name: Set up APT repository branch
+        run: |
+          echo "🌿 Setting up apt-repo branch..."
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Check if apt-repo branch exists
+          if git show-ref --verify --quiet refs/remotes/origin/apt-repo; then
+            echo "📥 Checking out existing apt-repo branch..."
+            git checkout apt-repo
+            git pull origin apt-repo
+          else
+            echo "🆕 Creating new apt-repo branch..."
+            git checkout --orphan apt-repo
+            git rm -rf .
+
+            # Create initial repository structure
+            mkdir -p conf
+            cat > conf/distributions << EOF
+          Origin: Rxiv-Maker Project
+          Label: Rxiv-Maker APT Repository
+          Suite: stable
+          Codename: stable
+          Architectures: amd64 arm64 all
+          Components: main
+          Description: APT repository for rxiv-maker - Automated LaTeX article generation
+          SignWith: $GPG_KEY_ID
+          DebIndices: Packages Release . .gz .bz2
+          DscIndices: Sources Release .gz .bz2
+          Contents: .gz .bz2
+          EOF
+
+            cat > conf/options << EOF
+          verbose
+          ask-passphrase
+          export=changed
+          verify
+          EOF
+
+            # Export GPG public key
+            gpg --armor --export $GPG_KEY_ID > pubkey.gpg
+
+            # Create initial README
+            cat > README.md << 'EOF'
+          # Rxiv-Maker APT Repository
+
+          This repository contains Debian packages for rxiv-maker.
+
+          ## Usage
+
+          Add this repository to your system:
+
+          ```bash
+          # Add GPG key
+          curl -fsSL https://raw.githubusercontent.com/henriqueslab/rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg
+
+          # Add repository
+          echo "deb [arch=amd64] https://raw.githubusercontent.com/henriqueslab/rxiv-maker/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/rxiv-maker.list
+
+          # Update package list
+          sudo apt update
+
+          # Install rxiv-maker
+          sudo apt install rxiv-maker
+          ```
+
+          ## Packages
+
+          - `rxiv-maker` - Main package with all dependencies
+          EOF
+
+            git add .
+            git commit -m "Initialize APT repository for rxiv-maker"
+          fi
+
+      - name: Add package to repository
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          echo "📦 Adding package to APT repository..."
+
+          DEB_FILE=$(find dist -name "*.deb" | head -1)
+          if [[ -z "$DEB_FILE" ]]; then
+            echo "❌ No .deb file found in dist/"
+            exit 1
+          fi
+
+          echo "Adding package: $(basename "$DEB_FILE")"
+
+          # Add package to incoming directory
+          mkdir -p incoming
+          cp "$DEB_FILE" incoming/
+
+          # Configure GPG agent for non-interactive use
+          export GPG_TTY=$(tty)
+          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
+          echo "RELOADAGENT" | gpg-connect-agent
+
+          # Add package to repository
+          PACKAGE_NAME=$(basename "$DEB_FILE")
+          echo "$GPG_PASSPHRASE" | reprepro --pinentry-mode loopback -Vb . includedeb stable "incoming/$PACKAGE_NAME"
+
+          # Clean up
+          rm "incoming/$PACKAGE_NAME"
+
+          echo "✅ Package added to repository"
+
+      - name: Update repository metadata
+        run: |
+          echo "🔄 Updating repository metadata..."
+
+          # Regenerate repository metadata
+          reprepro -Vb . export
+
+          # Update README with package list
+          if [[ -f "dists/stable/main/binary-all/Packages" ]]; then
+            echo "📋 Updating package list in README..."
+            # This could be enhanced to parse package information
+          fi
+
+          echo "✅ Repository metadata updated"
+
+      - name: Commit and push changes
+        run: |
+          echo "💾 Committing repository changes..."
+
+          # Add all changes
+          git add .
+
+          # Check if there are changes to commit
+          if git diff --cached --quiet; then
+            echo "ℹ️ No changes to commit"
+          else
+            git commit -m "Add rxiv-maker package v${{ inputs.version }}
+
+          - Added rxiv-maker_${{ inputs.version }}-1_all.deb
+          - Updated repository metadata
+          - Package available in stable/main component
+
+          Package info: ${{ needs.build-deb.outputs.package-info }}
+
+          🤖 Automated update from release workflow"
+
+            echo "🚀 Pushing to apt-repo branch..."
+            git push origin apt-repo
+
+            echo "✅ APT repository updated successfully"
+          fi
+
+  summary:
+    name: APT Repository Summary
+    runs-on: ubuntu-latest
+    needs: [build-deb, setup-apt-repo]
+    if: always()
+    timeout-minutes: 5
+
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# 📦 APT Repository Update Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version**: ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Dry Run**: ${{ inputs.dry-run }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Job status
+          echo "## 📊 Job Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.build-deb.result }}" == "success" ]]; then
+            echo "✅ **Build Debian Package**: Success" >> $GITHUB_STEP_SUMMARY
+            echo "   - Package: ${{ needs.build-deb.outputs.package-info }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Build Debian Package**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "${{ inputs.dry-run }}" == "true" ]]; then
+            echo "⏭️ **APT Repository**: Skipped (dry-run mode)" >> $GITHUB_STEP_SUMMARY
+          else
+            if [[ "${{ needs.setup-apt-repo.result }}" == "success" ]]; then
+              echo "✅ **APT Repository**: Updated and published to apt-repo branch" >> $GITHUB_STEP_SUMMARY
+              echo "   - Repository URL: https://raw.githubusercontent.com/henriqueslab/rxiv-maker/apt-repo" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **APT Repository**: Failed" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📋 Installation Instructions" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ inputs.dry-run }}" != "true" ]] && [[ "${{ needs.setup-apt-repo.result }}" == "success" ]]; then
+            echo "### APT Repository (Ubuntu/Debian)" >> $GITHUB_STEP_SUMMARY
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            echo "# Add GPG key" >> $GITHUB_STEP_SUMMARY
+            echo "curl -fsSL https://raw.githubusercontent.com/henriqueslab/rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "# Add repository" >> $GITHUB_STEP_SUMMARY
+            echo 'echo "deb [arch=amd64] https://raw.githubusercontent.com/henriqueslab/rxiv-maker/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/rxiv-maker.list' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "# Install package" >> $GITHUB_STEP_SUMMARY
+            echo "sudo apt update && sudo apt install rxiv-maker" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "${{ needs.build-deb.result }}" == "success" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Direct Package Installation" >> $GITHUB_STEP_SUMMARY
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            echo "# Download and install directly" >> $GITHUB_STEP_SUMMARY
+            echo "wget https://github.com/${{ github.repository }}/releases/download/v${{ inputs.version }}/rxiv-maker_${{ inputs.version }}-1_all.deb" >> $GITHUB_STEP_SUMMARY
+            echo "sudo dpkg -i rxiv-maker_${{ inputs.version }}-1_all.deb" >> $GITHUB_STEP_SUMMARY
+            echo "sudo apt-get install -f  # Fix any dependency issues" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi

@@ -121,6 +121,29 @@ rxiv pdf                            # Generate PDF using CLI
 ```
 
 ### 🛠️ Installation Options
+
+**🐧 APT Repository (Ubuntu/Debian)**
+```bash
+# Add GPG key and repository
+curl -fsSL https://raw.githubusercontent.com/henriqueslab/rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg
+echo "deb [arch=amd64] https://raw.githubusercontent.com/henriqueslab/rxiv-maker/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/rxiv-maker.list
+
+# Install with system dependencies
+sudo apt update && sudo apt install rxiv-maker
+```
+
+📋 **Installation Guide**: [Complete APT installation guide](docs/getting-started/apt-repository-guide.md) | **Container Testing**: [Multi-distribution testing](docs/testing/apt-container-testing.md)
+
+**🍺 Homebrew (macOS/Linux)**
+```bash
+# One-time tap setup
+brew tap henriqueslab/rxiv-maker
+
+# Install with dependencies
+brew install rxiv-maker
+```
+
+**🐍 PyPI (Cross-platform)**
 ```bash
 # Full installation (default)
 pip install rxiv-maker
@@ -445,6 +468,59 @@ make pdf RXIV_ENGINE=DOCKER
 - **Multi-platform**: AMD64 support with ARM64 compatibility via Rosetta
 
 For detailed Docker documentation, see the [Docker infrastructure directory](src/docker/) and [Docker Engine Mode Guide](docs/workflows/docker-engine-mode.md).
+
+## 🧪 Testing & Validation
+
+Rxiv-Maker includes comprehensive testing infrastructure to ensure reliability across different environments and distributions.
+
+### Container-Based Testing
+
+**Multi-Distribution Validation**: Automated testing across Ubuntu 20.04, 22.04, and 24.04 using Podman containers.
+
+```bash
+# Quick validation test
+./scripts/test-apt-container.sh --ubuntu-version 22.04 --test-type quick
+
+# Comprehensive multi-container testing
+./scripts/run-container-tests.sh --ubuntu-versions "20.04,22.04,24.04" --test-types "installation,functionality"
+
+# APT repository validation
+./scripts/validate-apt-repo.sh --verbose
+```
+
+**Test Types Available**:
+- `quick` - Fast validation (installation + version check)
+- `installation` - Full package installation testing  
+- `functionality` - Comprehensive manuscript operations
+- `security` - GPG signatures and security validation
+- `performance` - Installation and runtime benchmarks
+- `comprehensive` - All tests combined
+
+### Integration Testing
+
+Python-based integration tests with container orchestration:
+
+```bash
+# Run integration test suite
+python -m pytest tests/integration/test_apt_container_workflow.py -v --ubuntu-version 22.04
+
+# Direct execution with custom parameters
+python tests/integration/test_apt_container_workflow.py --ubuntu-version 22.04 --verbose
+```
+
+### Repository Validation
+
+Validate APT repository integrity and accessibility:
+
+```bash
+# Validate repository structure and signatures
+./scripts/validate-apt-repo.sh --repo-url "https://henriqueslab.github.io/rxiv-maker/"
+
+# Check package integrity and metadata
+./scripts/validate-apt-repo.sh --verbose --output validation-results/
+```
+
+📚 **Documentation**: [Container Testing Guide](docs/testing/apt-container-testing.md) | [Workflow Integration](docs/workflows/container-apt-testing.md)
 
 ## Contributing
 

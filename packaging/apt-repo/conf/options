@@ -1,0 +1,13 @@
+# reprepro configuration options for rxiv-maker APT repository
+
+# Verbose output for debugging
+verbose
+
+# Ask for passphrase when needed for GPG signing
+ask-passphrase
+
+# Export changed files
+export=changed
+
+# Verify signatures on incoming packages
+verify

@@ -366,11 +366,24 @@ jobs:
 
           echo "✅ Homebrew formula updated successfully"
 
+  # APT Repository Update
+  apt-repository:
+    name: Update APT Repository
+    uses: ./.github/workflows/publish-apt.yml
+    needs: [build, pypi]
+    if: needs.pypi.result == 'success' && !inputs.dry-run
+    with:
+      version: ${{ needs.build.outputs.version }}
+      dry-run: false
+    secrets:
+      GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+      GPG_PASSPHRASE: ${{ secrets.APT_GPG_PASSPHRASE }}
+
   # Summary
   summary:
     name: Release Summary
     runs-on: ubuntu-latest
-    needs: [build, github-release, docker, pypi, homebrew-update]
+    needs: [build, github-release, docker, pypi, homebrew-update, apt-repository]
     if: always()
     timeout-minutes: 5
 
@@ -436,6 +449,16 @@ jobs:
             echo "❌ **Homebrew**: Failed to update formula" >> $GITHUB_STEP_SUMMARY
           fi
 
+          if [ "${{ needs.apt-repository.result }}" == "success" ]; then
+            echo "✅ **APT Repository**: Updated" >> $GITHUB_STEP_SUMMARY
+            echo "   - [View Repository](https://henriqueslab.github.io/rxiv-maker/)" >> $GITHUB_STEP_SUMMARY
+            echo "   - Install: \`sudo apt update && sudo apt install rxiv-maker\`" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.apt-repository.result }}" == "skipped" ]; then
+            echo "⏭️ **APT Repository**: Skipped (dry-run or PyPI failed)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **APT Repository**: Failed to update" >> $GITHUB_STEP_SUMMARY
+          fi
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📦 Installation" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -461,6 +484,19 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "# Or use latest tag" >> $GITHUB_STEP_SUMMARY
             echo "docker run -it --rm -v \$PWD:/workspace henriqueslab/rxiv-maker-base:latest dev-mode.sh" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.apt-repository.result }}" == "success" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### APT Repository (Ubuntu/Debian)" >> $GITHUB_STEP_SUMMARY
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            echo "# Add GPG key and repository (one-time setup)" >> $GITHUB_STEP_SUMMARY
+            echo "curl -fsSL https://raw.githubusercontent.com/henriqueslab/rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg" >> $GITHUB_STEP_SUMMARY
+            echo 'echo "deb [signed-by=/usr/share/keyrings/rxiv-maker.gpg] https://henriqueslab.github.io/rxiv-maker/ stable main" | sudo tee /etc/apt/sources.list.d/rxiv-maker.list' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "# Install rxiv-maker with all dependencies" >> $GITHUB_STEP_SUMMARY
+            echo "sudo apt update && sudo apt install rxiv-maker" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
           fi
 
@@ -492,4 +528,8 @@ jobs:
 
           if [ "${{ needs.homebrew-update.result }}" == "success" ]; then
             echo "- [Homebrew Tap](https://github.com/HenriquesLab/homebrew-rxiv-maker)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ needs.apt-repository.result }}" == "success" ]; then
+            echo "- [APT Repository](https://henriqueslab.github.io/rxiv-maker/)" >> $GITHUB_STEP_SUMMARY
           fi
