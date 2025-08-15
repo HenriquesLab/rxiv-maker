@@ -17,7 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Regression Testing**: Added comprehensive test suite `test_trailing_slash_regression.py` to prevent future regressions
   - **User Impact**: Users can now run `rxiv pdf manuscript_name/` (with trailing slash) without encountering BibTeX errors
 - **GitHub Issues**: Resolves remaining cases of #100 (BibTeX returned error code 1) related to trailing slash paths
-
 ## [v1.5.4] - 2025-08-15
 
 ### Fixed
