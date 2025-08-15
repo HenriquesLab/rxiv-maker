@@ -335,6 +335,22 @@ report-*.json
 *.audit
 audit-*.json
 
+# Distribution artifacts (should be generated via CI/CD)
+dist/
+*.whl
+*.tar.gz
+
+# Backup directories
+backup/
+
+# Environment files (local overrides only)
+.env.local
+.env.*.local
+
+# Tool configuration files
+.folder2md_ignore
+.bandit
+
 # MyPy cache
 .mypy_cache/
 
