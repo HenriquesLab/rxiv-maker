@@ -40,14 +40,15 @@
 
 ### **High Priority Issues**
 - [x] **Fix 15+ silent exception handlers** - Errors swallowed without logging:
-  - [x] `build_manager.py:139` - Fixed silent exception in logging with debug logging
-  - [x] `generate_figures.py:160,201,395,678` - Replaced print statements with proper logging
-  - [x] Enhanced test coverage to verify logging behavior
-  - [ ] `cache_management.py:235` - ValueError/TypeError ignored
-  - [ ] `engines/factory.py:128` - Engine detection failure
-  - [ ] `docker/manager.py:262,570,838,898` - Multiple silent failures
-  - [ ] `security/scanner.py:691` - Exception ignored
-  - [ ] Continue with remaining silent handlers
+  - [x] **Phase 1**: `build_manager.py:139` - Fixed silent exception in logging with debug logging
+  - [x] **Phase 1**: `generate_figures.py:160,201,395,678` - Replaced print statements with proper logging
+  - [x] **Phase 2**: `build_manager.py:172` - Fixed BibTeX warning extraction silent failure
+  - [x] **Phase 2**: `security/dependency_manager.py:484,523` - Fixed version comparison/classification failures
+  - [x] **Phase 2**: `utils/advanced_cache.py:298` - Fixed cache file loading failure
+  - [x] **Phase 3**: `utils/platform.py:284,299,308,326` - Fixed platform operation failures (UV install, file ops, permissions)
+  - [x] Enhanced comprehensive test coverage for all new logging paths
+  - [x] Added logging infrastructure to modules missing it
+  - [ ] Continue systematic review of remaining silent handlers (estimated 15+ more)
 
 ### **Medium Priority Issues**  
 - [ ] **Fix 17 skipped tests**:
