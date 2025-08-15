@@ -374,8 +374,6 @@ jobs:
     if: needs.pypi.result == 'success' && !inputs.dry-run
     permissions:
       contents: write  # Required for pushing to apt-repo branch
-      pages: write     # Required for GitHub Pages deployment
-      id-token: write  # Required for OIDC attestations
     with:
       version: ${{ needs.build.outputs.version }}
       dry-run: false
