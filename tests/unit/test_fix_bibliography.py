@@ -703,7 +703,7 @@ class TestBibliographyFixerDOIValidation:
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     @patch("rxiv_maker.engine.fix_bibliography.DOICache")
-    @patch("rxiv_maker.engine.fix_bibliography.get_publication_as_json")
+    @patch("crossref_commons.retrieval.get_publication_as_json")
     def test_is_doi_valid_success(self, mock_get_pub, mock_cache):
         """Test DOI validation with valid DOI."""
         # Mock cache to return None (not cached)
@@ -720,7 +720,7 @@ class TestBibliographyFixerDOIValidation:
         assert result is True
 
     @patch("rxiv_maker.engine.fix_bibliography.DOICache")
-    @patch("rxiv_maker.engine.fix_bibliography.get_publication_as_json")
+    @patch("crossref_commons.retrieval.get_publication_as_json")
     def test_is_doi_valid_not_found(self, mock_get_pub, mock_cache):
         """Test DOI validation with invalid DOI."""
         # Mock cache to return None (not cached)
@@ -737,10 +737,15 @@ class TestBibliographyFixerDOIValidation:
         assert result is False
 
     @patch("rxiv_maker.engine.fix_bibliography.DOICache")
-    @patch("rxiv_maker.engine.fix_bibliography.requests.head")
-    def test_is_doi_valid_timeout(self, mock_head, mock_cache):
+    @patch("crossref_commons.retrieval.get_publication_as_json")
+    def test_is_doi_valid_timeout(self, mock_get_pub, mock_cache):
         """Test DOI validation with timeout."""
-        mock_head.side_effect = requests.exceptions.Timeout("Request timed out")
+        # Mock cache to return None (not cached)
+        mock_cache_instance = MagicMock()
+        mock_cache_instance.get.return_value = None
+        mock_cache.return_value = mock_cache_instance
+
+        mock_get_pub.side_effect = requests.exceptions.Timeout("Request timed out")
 
         fixer = BibliographyFixer(str(self.manuscript_path))
         result = fixer._is_doi_valid("10.1000/timeout")
@@ -748,10 +753,15 @@ class TestBibliographyFixerDOIValidation:
         assert result is False
 
     @patch("rxiv_maker.engine.fix_bibliography.DOICache")
-    @patch("rxiv_maker.engine.fix_bibliography.requests.head")
-    def test_is_doi_valid_connection_error(self, mock_head, mock_cache):
+    @patch("crossref_commons.retrieval.get_publication_as_json")
+    def test_is_doi_valid_connection_error(self, mock_get_pub, mock_cache):
         """Test DOI validation with connection error."""
-        mock_head.side_effect = requests.exceptions.ConnectionError("Connection failed")
+        # Mock cache to return None (not cached)
+        mock_cache_instance = MagicMock()
+        mock_cache_instance.get.return_value = None
+        mock_cache.return_value = mock_cache_instance
+
+        mock_get_pub.side_effect = requests.exceptions.ConnectionError("Connection failed")
 
         fixer = BibliographyFixer(str(self.manuscript_path))
         result = fixer._is_doi_valid("10.1000/connection")
@@ -832,15 +842,36 @@ class TestBibliographyFixerIntegration:
         bib_content = "@article{test, title={Test}}"
         bib_file.write_text(bib_content)
 
-        # Mock validation
+        # Mock validation to return an error so dry run actually runs
         mock_validator = MagicMock()
+        mock_error = MagicMock()
+        mock_error.line_number = 1
+        mock_error.message = "Could not retrieve metadata for DOI"
         mock_result = MagicMock()
-        mock_result.errors = []
+        mock_result.errors = [mock_error]
         mock_validator.validate.return_value = mock_result
         mock_validator_class.return_value = mock_validator
 
-        fixer = BibliographyFixer(str(self.manuscript_path))
-        result = fixer.fix_bibliography(dry_run=True)
+        # Mock both identify_problematic_entries and attempt_fix_entry to simulate fixable entries
+        with (
+            patch.object(
+                BibliographyFixer,
+                "_identify_problematic_entries",
+                return_value=[{"key": "test", "title": "Test", "validation_error": mock_error}],
+            ),
+            patch.object(
+                BibliographyFixer,
+                "_attempt_fix_entry",
+                return_value={
+                    "original_entry": {"key": "test", "match_start": 0, "match_end": 10, "title": "Test"},
+                    "fixed_entry": "@article{test, title={Fixed Test}}",
+                    "confidence": 0.9,
+                    "crossref_data": {"title": "Fixed Test", "doi": "10.1000/fixed"},
+                },
+            ),
+        ):
+            fixer = BibliographyFixer(str(self.manuscript_path))
+            result = fixer.fix_bibliography(dry_run=True)
 
         assert result["success"] is True
         assert "dry_run" in result
