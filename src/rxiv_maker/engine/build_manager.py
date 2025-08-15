@@ -135,8 +135,9 @@ class BuildManager:
         try:
             with open(self.warnings_log, "a", encoding="utf-8") as f:
                 f.write(log_entry)
-        except Exception:
-            pass  # Don't fail the build if logging fails
+        except Exception as e:
+            # Log failure to write to file, but don't fail the build
+            logger.debug(f"Failed to write to warnings log file {self.warnings_log}: {e}")
 
     def _log_bibtex_warnings(self):
         """Extract and log BibTeX warnings from .blg file."""

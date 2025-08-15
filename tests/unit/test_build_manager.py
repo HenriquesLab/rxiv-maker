@@ -204,16 +204,24 @@ You've used 2 entries,
         self.assertFalse(build_manager.bibtex_log.exists())
 
     def test_log_to_file_handles_exceptions_gracefully(self):
-        """Test that file logging handles exceptions gracefully."""
+        """Test that file logging handles exceptions gracefully and logs them properly."""
         build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
 
-        # Mock file operations to raise exception
-        with patch("builtins.open", side_effect=PermissionError("Permission denied")):
-            # Should not raise exception
-            try:
-                build_manager._log_to_file("Test message", "WARNING")
-            except Exception:
-                self.fail("_log_to_file should handle exceptions gracefully")
+        # Mock the module-level logger to verify it's called when file writing fails
+        with patch("rxiv_maker.engine.build_manager.logger") as mock_logger:
+            # Mock file operations to raise exception
+            with patch("builtins.open", side_effect=PermissionError("Permission denied")):
+                # Should not raise exception but should log the error
+                try:
+                    build_manager._log_to_file("Test message", "WARNING")
+                except Exception:
+                    self.fail("_log_to_file should handle exceptions gracefully")
+
+                # Verify that the exception was properly logged
+                mock_logger.debug.assert_called_once()
+                call_args = mock_logger.debug.call_args[0][0]
+                self.assertIn("Failed to write to warnings log file", call_args)
+                self.assertIn("Permission denied", call_args)
 
     def test_build_completion_reports_warning_log_existence(self):
         """Test that build completion reports warning log existence."""

@@ -8,6 +8,7 @@ publication-ready output files. It supports:
 """
 
 import base64
+import logging
 import os
 import re
 import sys
@@ -88,6 +89,7 @@ class FigureGenerator:
         self.enable_content_caching = enable_content_caching
         self.supported_formats = ["png", "svg", "pdf", "eps"]
         self.platform = platform_detector
+        self.logger = logging.getLogger(__name__)
         self.verbose = False
 
         # Initialize content-based caching if enabled
@@ -157,7 +159,7 @@ class FigureGenerator:
                 self.checksum_manager.update_file_checksum(str(relative_path))
             except (ValueError, Exception) as e:
                 # Cache update failed, but don't fail the whole operation
-                print(f"Warning: Failed to update checksum for {source_file.name}: {e}")
+                self.logger.warning(f"Failed to update checksum for {source_file.name}: {e}")
 
     def generate_all_figures(self, parallel: bool = True, max_workers: int = 4):
         """Generate all figures found in the figures directory.
@@ -196,7 +198,7 @@ class FigureGenerator:
                 self._generate_figures_sequential(mermaid_files, python_files, r_files)
 
         except Exception as e:
-            print(f"Error in figure generation: {e}")
+            self.logger.error(f"Error in figure generation: {e}")
             raise
 
     def _generate_figures_sequential(self, mermaid_files, python_files, r_files):
@@ -390,7 +392,7 @@ class FigureGenerator:
             self._update_figure_cache(mmd_file)
 
         except Exception as e:
-            print(f"  ❌ Error processing {mmd_file.name}: {e}")
+            self.logger.error(f"Error processing {mmd_file.name}: {e}")
 
     def _parse_mermaid_file(self, mermaid_content):
         """Parse mermaid file content, extracting config and diagram content."""
@@ -673,7 +675,7 @@ class FigureGenerator:
             self._update_figure_cache(py_file)
 
         except Exception as e:
-            print(f"  ❌ Error executing {py_file.name}: {e}")
+            self.logger.error(f"Error executing {py_file.name}: {e}")
 
     def generate_r_figure(self, r_file):
         """Generate figure from R script."""

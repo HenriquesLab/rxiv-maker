@@ -60,7 +60,6 @@
   - [ ] Clean up deprecation warnings in engine modules
 
 ### **Code Quality**
-- [ ] Remove XXSUBNOTEPROTECTEDXX placeholder system
 - [ ] Clean up LaTeX multi-pass comments
 - [ ] Standardize error handling patterns
 - [ ] Remove hardcoded DEBUG references
