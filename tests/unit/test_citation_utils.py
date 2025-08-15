@@ -189,9 +189,19 @@ class TestInjectRxivCitation:
 
         yaml_metadata = {"acknowledge_rxiv_maker": True}
 
-        # Don't set MANUSCRIPT_PATH environment variable
-        with patch("pathlib.Path.cwd", return_value=Path(self.temp_dir)):
-            inject_rxiv_citation(yaml_metadata)
+        # Don't set MANUSCRIPT_PATH environment variable - explicitly clear it
+        with patch.dict(os.environ, {}, clear=False):
+            with patch("os.getenv") as mock_getenv:
+
+                def getenv_side_effect(key, default=None):
+                    if key == "MANUSCRIPT_PATH":
+                        return default
+                    return os.environ.get(key, default)
+
+                mock_getenv.side_effect = getenv_side_effect
+
+                with patch("pathlib.Path.cwd", return_value=Path(self.temp_dir)):
+                    inject_rxiv_citation(yaml_metadata)
 
         # Default bibliography file should be created
         assert default_bib_file.exists()
