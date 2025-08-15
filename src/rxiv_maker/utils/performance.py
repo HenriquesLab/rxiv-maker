@@ -6,6 +6,9 @@ from pathlib import Path
 from typing import Any
 
 from ..__version__ import __version__
+from ..core.logging_config import get_logger
+
+logger = get_logger()
 
 
 class PerformanceTracker:
@@ -35,8 +38,8 @@ class PerformanceTracker:
             try:
                 with open(self.baseline_file) as f:
                     return json.load(f)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to load performance baselines from {self.baseline_file}: {e}")
         return {}
 
     def _save_baselines(self) -> None:
@@ -44,8 +47,8 @@ class PerformanceTracker:
         try:
             with open(self.baseline_file, "w") as f:
                 json.dump(self.baselines, f, indent=2)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to save performance baselines to {self.baseline_file}: {e}")
 
     def start_operation(self, operation_id: str) -> float:
         """Start timing an operation.

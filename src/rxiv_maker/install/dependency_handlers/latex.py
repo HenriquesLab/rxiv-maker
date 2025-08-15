@@ -45,6 +45,7 @@ class LaTeXHandler:
             subprocess.CalledProcessError,
             subprocess.TimeoutExpired,
             FileNotFoundError,
+            PermissionError,
         ):
             return False
 
@@ -63,6 +64,7 @@ class LaTeXHandler:
             subprocess.CalledProcessError,
             subprocess.TimeoutExpired,
             FileNotFoundError,
+            PermissionError,
         ):
             return None
 
@@ -109,4 +111,5 @@ class LaTeXHandler:
             "amsmath",
             "amsfonts",
             "amssymb",
+            "siunitx",
         ]

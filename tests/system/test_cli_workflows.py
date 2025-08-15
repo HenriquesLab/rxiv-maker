@@ -112,13 +112,13 @@ authors:
 
                 mock_add.assert_called_once()
 
-            # Test bibliography validate command
+            # Test validate command (replaces deprecated bibliography validate)
             with patch("rxiv_maker.engine.validate.main") as mock_validate:
                 mock_validate.return_value = None
 
                 self.runner.invoke(
                     main,
-                    ["bibliography", "validate", str(manuscript_dir)],
+                    ["validate", str(manuscript_dir)],
                     obj={"verbose": False, "engine": "local"},
                 )
 
