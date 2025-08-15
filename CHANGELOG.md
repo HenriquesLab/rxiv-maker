@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.5.8] - 2025-08-15
+
+### Fixed
+- **🔧 Style File Path Resolution for Installed Packages**: Fixed "Style directory not found" warning when using installed rxiv-maker package
+  - **Root Cause**: Style file detection was hardcoded for development directory structure and failed when rxiv-maker was installed via pip
+  - **Multi-Location Detection**: Enhanced `BuildManager` to check multiple possible style file locations (installed package vs development)
+  - **Robust Package Structure**: Improved path resolution to work with hatch build system mapping (`src/tex` → `rxiv_maker/tex`)
+  - **Enhanced Error Handling**: Added graceful fallback when style directories don't exist with improved debug logging
+  - **User Impact**: Eliminates "Style directory not found" warnings and ensures LaTeX style files are properly copied for all installation methods
+  - **Verification**: Comprehensive package installation testing confirms fix works end-to-end in PyPI package scenario
+
+### Added  
+- **📋 Style File Resolution Tests**: Added comprehensive test suite for style file detection and error handling
+  - **Development Environment Testing**: Verification of style directory detection in development setup
+  - **Fallback Behavior Testing**: Tests for graceful handling when no style directory is found
+  - **Error Handling Coverage**: Tests for None and non-existent style directory scenarios
+  - **Package Integration Testing**: End-to-end verification of style file packaging and detection in installed packages
+
 ## [v1.5.7] - 2025-08-15
 
 ### Fixed
