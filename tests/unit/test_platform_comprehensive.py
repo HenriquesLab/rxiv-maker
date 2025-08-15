@@ -189,14 +189,14 @@ class TestPlatformDetectorVirtualEnv(unittest.TestCase):
     def test_get_virtual_env_path(self):
         """Test getting virtual environment path."""
         with patch.dict(os.environ, {"VIRTUAL_ENV": "/path/to/venv"}):
-            # The platform detector has venv_python_path, not get_venv_path
-            result = self.detector.venv_python_path()
+            # The platform detector has get_venv_python_path, not venv_python_path
+            result = self.detector.get_venv_python_path()
             self.assertIsNotNone(result)
 
     def test_get_virtual_env_path_none(self):
         """Test getting virtual environment path when not set."""
         with patch.dict(os.environ, {}, clear=True):
-            result = self.detector.venv_python_path()
+            result = self.detector.get_venv_python_path()
             self.assertIsNone(result)
 
     @patch("platform.system")
