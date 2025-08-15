@@ -132,7 +132,7 @@ LD_LIBRARY_PATH=/usr/lib:/usr/lib/x86_64-linux-gnu:/usr/lib/aarch64-linux-gnu
 ```
 /workspace/              # Main working directory
 ├── output/              # Generated files
-├── .rxiv_cache/         # Build cache
+├── .cache/              # Legacy local cache (migrated to user cache dirs)
 └── [user-content]       # Mounted manuscript content
 
 /home/rxivmaker/         # User home directory

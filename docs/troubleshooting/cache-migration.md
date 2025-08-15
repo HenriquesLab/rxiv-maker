@@ -5,12 +5,25 @@ Rxiv-Maker has migrated to using platform-standard cache directories for better 
 ## What Changed
 
 ### Old Cache Locations
-Previously, cache files were stored in a local `.cache` directory within your project:
+Previously, cache files were stored in local directories within your project:
+
+**Legacy `.cache` directory:**
 ```
 project/.cache/
 ├── doi_cache.json
 ├── bibliography_checksum_MANUSCRIPT.json
 └── figure_checksums_MANUSCRIPT.json
+```
+
+**Legacy `.rxiv_cache` directory:**
+```
+project/.rxiv_cache/
+├── doi/
+│   └── doi_cache.json
+├── bibliography/
+│   └── bibliography_cache.json
+└── figures/
+    └── figure_cache.json
 ```
 
 ### New Cache Locations
@@ -51,9 +64,9 @@ C:\Users\username\AppData\Local\rxiv-maker\Cache\
 
 **Migration is handled automatically** when you first use rxiv-maker after the update:
 
-1. **Detection**: Rxiv-maker checks for cache files in the old `.cache` directory
+1. **Detection**: Rxiv-maker checks for cache files in the old `.cache` and `.rxiv_cache` directories
 2. **Migration**: Files are moved to the new platform-standard location
-3. **Cleanup**: Empty `.cache` directory is removed (if empty)
+3. **Cleanup**: Empty legacy cache directories are removed (if empty)
 4. **Logging**: Migration activities are logged for transparency
 
 ### Migration Example
@@ -62,8 +75,9 @@ C:\Users\username\AppData\Local\rxiv-maker\Cache\
 rxiv pdf
 
 # You'll see log messages like:
-# INFO: Migrated DOI cache from .cache/doi_cache.json to ~/.cache/rxiv-maker/doi/doi_cache.json
-# INFO: Migrated bibliography checksum from .cache/bibliography_checksum_MANUSCRIPT.json to ~/.cache/rxiv-maker/bibliography/bibliography_checksum_MANUSCRIPT.json
+# INFO: Migrated cache: .rxiv_cache/doi -> ~/.cache/rxiv-maker/doi
+# INFO: Migrated cache: .rxiv_cache/bibliography -> ~/.cache/rxiv-maker/bibliography  
+# INFO: Successfully migrated .rxiv_cache to standardized location
 ```
 
 ## Manual Migration (If Needed)
@@ -75,13 +89,20 @@ If automatic migration fails or you want to migrate manually:
 mkdir -p ~/.cache/rxiv-maker/{doi,bibliography,figures,updates}  # Linux/macOS
 # or create equivalent Windows directories
 
-# Move cache files
-mv .cache/doi_cache*.json ~/.cache/rxiv-maker/doi/
-mv .cache/bibliography_checksum*.json ~/.cache/rxiv-maker/bibliography/
-mv .cache/figure_checksums*.json ~/.cache/rxiv-maker/figures/
+# Move cache files from .cache directory
+mv .cache/doi_cache*.json ~/.cache/rxiv-maker/doi/ 2>/dev/null || true
+mv .cache/bibliography_checksum*.json ~/.cache/rxiv-maker/bibliography/ 2>/dev/null || true
+mv .cache/figure_checksums*.json ~/.cache/rxiv-maker/figures/ 2>/dev/null || true
 
-# Remove old cache directory if empty
-rmdir .cache
+# Move cache files from .rxiv_cache directory
+mv .rxiv_cache/doi/* ~/.cache/rxiv-maker/doi/ 2>/dev/null || true
+mv .rxiv_cache/bibliography/* ~/.cache/rxiv-maker/bibliography/ 2>/dev/null || true
+mv .rxiv_cache/figures/* ~/.cache/rxiv-maker/figures/ 2>/dev/null || true
+
+# Remove old cache directories if empty
+rmdir .cache 2>/dev/null || true
+rmdir .rxiv_cache/{doi,bibliography,figures} 2>/dev/null || true
+rmdir .rxiv_cache 2>/dev/null || true
 ```
 
 ## Backward Compatibility
@@ -112,8 +133,8 @@ cache = DOICache()
 If migration doesn't work automatically:
 
 ```bash
-# Check if old cache exists
-ls -la .cache/
+# Check if old caches exist
+ls -la .cache/ .rxiv_cache/
 
 # Check if new cache directory was created
 ls -la ~/.cache/rxiv-maker/  # Linux/macOS

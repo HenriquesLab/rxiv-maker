@@ -77,6 +77,10 @@ def write_manuscript_output(output_dir: str, template_content: str) -> str:
     manuscript_path = os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
     manuscript_name = os.path.basename(manuscript_path)
 
+    # Validate manuscript name to prevent invalid filenames
+    if not manuscript_name or manuscript_name in (".", ".."):
+        manuscript_name = "MANUSCRIPT"
+
     output_file = Path(output_dir) / f"{manuscript_name}.tex"
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(template_content)

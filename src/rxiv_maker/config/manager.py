@@ -341,7 +341,7 @@ class ConfigManager:
             "validation": {"enabled": True, "strict": False, "skip_doi_check": False},
             "figures": {"directory": "FIGURES", "generate": True, "formats": ["png", "svg"]},
             "bibliography": {"file": "03_REFERENCES.bib", "style": "nature"},
-            "cache": {"enabled": True, "ttl_hours": 24, "directory": ".rxiv_cache"},
+            "cache": {"enabled": True, "ttl_hours": 24, "directory": None},
             "version": "1.0",
             "acknowledge_rxiv_maker": True,
         }
@@ -421,6 +421,7 @@ class ConfigManager:
             "RXIV_ENGINE_TYPE": ("engine", "type"),
             "RXIV_OUTPUT_DIR": ("output", "directory"),
             "RXIV_CACHE_ENABLED": ("cache", "enabled"),
+            "RXIV_CACHE_DIR": ("cache", "directory"),
             "RXIV_VALIDATION_STRICT": ("validation", "strict"),
             "MANUSCRIPT_PATH": ("manuscript", "path"),
         }

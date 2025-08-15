@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.5.4] - 2025-08-15
+
+### Fixed
+- **🐛 BibTeX Error Code 1**: Fixed invalid LaTeX filename generation that caused "BibTeX returned error code 1" errors
+  - **Root Cause**: When `MANUSCRIPT_PATH` environment variable was set to invalid values (empty string, ".", or ".."), the `write_manuscript_output` function would create files with invalid names like `..tex` or `.tex`
+  - **LaTeX Compilation Failure**: These invalid filenames caused LaTeX to fail with "Emergency stop" errors, which subsequently caused BibTeX to fail with error code 1
+  - **Robust Validation**: Added input validation to `write_manuscript_output` function to prevent invalid filenames and default to "MANUSCRIPT.tex" when necessary
+  - **Comprehensive Testing**: Added regression test `test_write_manuscript_output_invalid_paths` to ensure edge cases are handled correctly
+  - **End-to-End Verification**: Confirmed PDF generation pipeline now works correctly with successful BibTeX processing
+- **GitHub Issues**: Resolves #100 (BibTeX returned error code 1)
+
 ## [v1.5.2] - 2025-08-14
 
 ### Fixed

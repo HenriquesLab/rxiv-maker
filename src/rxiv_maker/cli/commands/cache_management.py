@@ -233,7 +233,6 @@ def _print_stats_table(stats: Dict[str, Any]) -> None:
                                 safe_console_print(console, f"    {label}: {value}")
                             except (ValueError, TypeError) as e:
                                 safe_console_print(console, f"    {label}: <formatting error: {e}>")
-                                pass
 
 
 def _generate_optimization_recommendations(stats: Dict[str, Any]) -> Dict[str, list]:

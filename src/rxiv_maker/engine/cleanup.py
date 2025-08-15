@@ -262,7 +262,29 @@ class CleanupManager:
         """Clean cache files."""
         self.log("Cleaning cache files...", "STEP")
 
+        # Import migration utilities
+        from ..utils.cache_utils import (
+            cleanup_legacy_rxiv_cache_dir,
+            get_legacy_rxiv_cache_dir,
+            migrate_rxiv_cache_directory,
+        )
+
+        # Legacy cache directories in current directory
         cache_dirs = [Path(".cache"), Path(".rxiv_cache"), Path("__pycache__"), Path(".pytest_cache")]
+
+        # Check for .rxiv_cache and offer migration before cleanup
+        legacy_rxiv_cache = get_legacy_rxiv_cache_dir()
+        if legacy_rxiv_cache.exists():
+            self.log("Found legacy .rxiv_cache directory. Attempting migration...", "INFO")
+            try:
+                if migrate_rxiv_cache_directory(force=False):
+                    self.log("Successfully migrated .rxiv_cache to standardized location", "SUCCESS")
+                    # Clean up the now-empty legacy directory
+                    cleanup_legacy_rxiv_cache_dir()
+                else:
+                    self.log("No migration needed or migration failed", "WARNING")
+            except Exception as e:
+                self.log(f"Migration failed: {e}", "WARNING")
 
         # Add Python cache directories
         for py_dir in Path("src/py").rglob("__pycache__"):
@@ -290,6 +312,37 @@ class CleanupManager:
             self.log("No cache directories to clean")
 
         return True
+
+    def clean_standardized_cache(self, subfolder: str | None = None) -> bool:
+        """Clean standardized cache directories.
+
+        Args:
+            subfolder: Optional subfolder to clean (e.g., 'doi', 'advanced')
+                      If None, cleans the entire cache directory
+        """
+        from ..utils.cache_utils import get_cache_dir
+
+        try:
+            cache_dir = get_cache_dir(subfolder)
+
+            if cache_dir.exists():
+                cache_type = f" ({subfolder})" if subfolder else ""
+                self.log(f"Cleaning standardized cache{cache_type}: {cache_dir}", "STEP")
+
+                if self.platform.remove_directory(cache_dir):
+                    self.log(f"Removed standardized cache directory: {cache_dir}", "SUCCESS")
+                    return True
+                else:
+                    self.log(f"Failed to remove standardized cache directory: {cache_dir}", "WARNING")
+                    return False
+            else:
+                cache_type = f" ({subfolder})" if subfolder else ""
+                self.log(f"No standardized cache{cache_type} to clean", "INFO")
+                return True
+
+        except Exception as e:
+            self.log(f"Error cleaning standardized cache: {e}", "ERROR")
+            return False
 
     def run_full_cleanup(self) -> bool:
         """Run the complete cleanup process."""

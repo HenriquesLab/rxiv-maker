@@ -689,7 +689,6 @@ class SecurityScanner:
                     hash_obj.update(file_path.read_bytes())
                 except Exception as e:
                     logging.warning(f"Failed to read file for hashing: {file_path}: {e}")
-                    pass
 
         return hash_obj.hexdigest()[:12]
 

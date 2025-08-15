@@ -126,7 +126,6 @@ class ContainerEngineFactory:
             except RuntimeError as e:
                 # Engine specified in env var is not available, continue to auto-detect
                 logging.warning(f"Engine '{env_engine}' specified in environment variable is not available: {e}")
-                pass
 
         # Auto-detect available engines in priority order
         priority_engines = ["docker", "podman"]
