@@ -315,7 +315,7 @@ class AbstractContainerEngine(ABC):
         environment: Optional[Dict[str, str]] = None,
         session_key: Optional[str] = None,
         capture_output: bool = True,
-        timeout: Optional[int] = None,
+        timeout: Optional[int] = 1800,  # Default 30 minute timeout to prevent infinite hangs
         **kwargs,
     ) -> subprocess.CompletedProcess:
         """Execute a command in a container with optimization.
@@ -328,7 +328,7 @@ class AbstractContainerEngine(ABC):
             environment: Additional environment variables
             session_key: Session key for container reuse (enables session reuse)
             capture_output: Whether to capture stdout/stderr
-            timeout: Command timeout in seconds
+            timeout: Command timeout in seconds (default: 30 minutes)
             **kwargs: Additional arguments passed to subprocess.run
 
         Returns:
@@ -766,9 +766,16 @@ if __name__ == "__main__":
             )
 
     def run_latex_compilation(
-        self, tex_file: Path, working_dir: Optional[Path] = None, passes: int = 3
+        self, tex_file: Path, working_dir: Optional[Path] = None, passes: int = 3, timeout: int = 300
     ) -> List[subprocess.CompletedProcess]:
-        """Run LaTeX compilation with multiple passes in container."""
+        """Run LaTeX compilation with multiple passes in container.
+
+        Args:
+            tex_file: Path to the TeX file to compile
+            working_dir: Working directory for compilation
+            passes: Number of LaTeX passes to run
+            timeout: Timeout in seconds for each LaTeX command (default: 5 minutes)
+        """
         try:
             tex_rel = tex_file.relative_to(self.workspace_dir)
         except ValueError:
@@ -791,6 +798,7 @@ if __name__ == "__main__":
                 command=["pdflatex", "-interaction=nonstopmode", tex_rel.name],
                 working_dir=docker_working_dir,
                 session_key=session_key,
+                timeout=timeout,
             )
             results.append(result)
 
@@ -805,6 +813,7 @@ if __name__ == "__main__":
                     ],
                     working_dir=docker_working_dir,
                     session_key=session_key,
+                    timeout=60,  # BibTeX should be much faster
                 )
                 results.append(bib_result)
 

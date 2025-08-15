@@ -96,7 +96,7 @@ class BuildManager:
 
         # Output file names
         # Strip trailing slashes to ensure basename works correctly
-        normalized_path = self.manuscript_path.rstrip("/")
+        normalized_path = str(self.manuscript_path).rstrip("/")
         manuscript_name = os.path.basename(normalized_path)
         # Validate manuscript name to prevent invalid filenames
         if not manuscript_name or manuscript_name in (".", ".."):

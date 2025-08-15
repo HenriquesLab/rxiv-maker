@@ -4,6 +4,7 @@ This module provides efficient Docker container management with session reuse,
 volume caching, and optimized command construction for all Rxiv-Maker operations.
 """
 
+import contextlib
 import logging
 import os
 import platform
@@ -965,8 +966,6 @@ finally:
 
     def __del__(self):
         """Cleanup when manager is destroyed."""
-        import contextlib
-
         with contextlib.suppress(Exception):
             self.cleanup_all_sessions()
 
