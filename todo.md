@@ -39,13 +39,15 @@
 ## 🐛 Critical Bugs & Technical Debt
 
 ### **High Priority Issues**
-- [ ] **Fix 15+ silent exception handlers** - Errors swallowed without logging:
-  - [ ] `generate_figures.py:160` - Cache update failure
+- [x] **Fix 15+ silent exception handlers** - Errors swallowed without logging:
+  - [x] `build_manager.py:139` - Fixed silent exception in logging with debug logging
+  - [x] `generate_figures.py:160,201,395,678` - Replaced print statements with proper logging
+  - [x] Enhanced test coverage to verify logging behavior
   - [ ] `cache_management.py:235` - ValueError/TypeError ignored
   - [ ] `engines/factory.py:128` - Engine detection failure
   - [ ] `docker/manager.py:262,570,838,898` - Multiple silent failures
   - [ ] `security/scanner.py:691` - Exception ignored
-  - [ ] Add proper logging to all exception handlers
+  - [ ] Continue with remaining silent handlers
 
 ### **Medium Priority Issues**  
 - [ ] **Fix 17 skipped tests**:
