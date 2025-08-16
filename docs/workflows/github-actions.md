@@ -408,6 +408,28 @@ on:
     - cron: '0 2 * * *'  # Daily at 2 AM
 ```
 
+### Workflow Reliability and Intelligent Skipping
+
+Rxiv-Maker includes intelligent workflow systems that automatically skip unnecessary builds while maintaining proper success status:
+
+#### Docker Build Workflow
+- **Smart path detection**: Only triggers when Docker-related files change
+- **Success gates**: Ensures skipped workflows show as successful rather than failed
+- **Multi-platform support**: Builds for both amd64 and arm64 architectures
+- **Intelligent caching**: Uses GitHub Actions cache for faster builds
+
+#### Container Testing Workflow  
+- **Path-based triggering**: Only runs when APT/container-related changes occur
+- **Conditional execution**: Skips testing when no relevant changes are detected
+- **Success reporting**: Provides clear success status for appropriately skipped tests
+- **Multiple test matrices**: Supports different Ubuntu versions and test types
+
+#### Homebrew Formula Updates
+- **Automatic formula updates**: Updates Homebrew tap when new releases are published
+- **Conflict resolution**: Uses timestamp-based branch naming to avoid conflicts
+- **Retry mechanisms**: Automatically retries failed pushes with new branch names
+- **Cleanup process**: Removes old update branches to maintain repository hygiene
+
 ### Custom Build Commands
 
 Override default build commands:

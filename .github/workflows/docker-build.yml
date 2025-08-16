@@ -5,8 +5,9 @@ on:
     branches: [main, dev]
     paths:
       - 'src/docker/**'
+      - 'src/py/**'
       - 'pyproject.toml'
-      - 'Dockerfile*'
+      - 'requirements*.txt'
       - '.github/workflows/docker-build.yml'
     paths-ignore:
       - '**.md'
@@ -16,8 +17,9 @@ on:
     branches: [main, dev]
     paths:
       - 'src/docker/**'
+      - 'src/py/**'
       - 'pyproject.toml'
-      - 'Dockerfile*'
+      - 'requirements*.txt'
       - '.github/workflows/docker-build.yml'
 
   release:
@@ -93,15 +95,23 @@ jobs:
           echo "$CHANGED_FILES"
 
           # Check for Docker-related changes
-          if echo "$CHANGED_FILES" | grep -qE '^src/docker/|Dockerfile'; then
+          if echo "$CHANGED_FILES" | grep -qE '^src/docker/'; then
             echo "dockerfile=true" >> $GITHUB_OUTPUT
             echo "📝 Docker files changed"
           else
             echo "dockerfile=false" >> $GITHUB_OUTPUT
           fi
 
+          # Check for Python code changes (affects Docker image)
+          if echo "$CHANGED_FILES" | grep -qE '^src/py/'; then
+            echo "python_code=true" >> $GITHUB_OUTPUT
+            echo "🐍 Python code changed"
+          else
+            echo "python_code=false" >> $GITHUB_OUTPUT
+          fi
+
           # Check for dependency changes
-          if echo "$CHANGED_FILES" | grep -qE '^pyproject.toml$'; then
+          if echo "$CHANGED_FILES" | grep -qE '^pyproject.toml$|^requirements.*\.txt$'; then
             echo "dependencies=true" >> $GITHUB_OUTPUT
             echo "📦 Dependencies changed"
           else
@@ -118,16 +128,42 @@ jobs:
             SHOULD_BUILD=true
             echo "🚀 Manual trigger - building"
           elif [ "${{ github.event_name }}" == "release" ]; then
-            SHOULD_BUILD=true
-            echo "🏷️ Release trigger - building"
+            echo "🏷️ Release event detected - analyzing changes since last Docker image..."
+
+            # Check if this release includes Docker-affecting changes
+            # Get the last Docker image tag from registry
+            LAST_DOCKER_TAG=$(git tag --list | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -2 | head -1 || echo "")
+
+            if [ -z "$LAST_DOCKER_TAG" ]; then
+              echo "📦 No previous Docker tag found - building for first release"
+              SHOULD_BUILD=true
+            else
+              echo "🔍 Comparing changes since last tag: $LAST_DOCKER_TAG"
+
+              # Check if Docker-affecting files changed since last tag
+              DOCKER_CHANGES=$(git diff --name-only "$LAST_DOCKER_TAG"..HEAD | grep -E '^src/docker/|^src/py/|^pyproject.toml$|^requirements.*\.txt$' || echo "")
+
+              if [ -n "$DOCKER_CHANGES" ]; then
+                echo "📝 Docker-affecting changes found since $LAST_DOCKER_TAG:"
+                echo "$DOCKER_CHANGES"
+                SHOULD_BUILD=true
+                echo "✅ Building Docker image for release"
+              else
+                echo "⏭️ No Docker-affecting changes since $LAST_DOCKER_TAG - skipping Docker build"
+                SHOULD_BUILD=false
+              fi
+            fi
           elif [ "${{ steps.changes.outputs.dockerfile }}" == "true" ]; then
             SHOULD_BUILD=true
-            echo "📝 Docker changes detected - building"
+            echo "📝 Docker files changed - building"
+          elif [ "${{ steps.changes.outputs.python_code }}" == "true" ]; then
+            SHOULD_BUILD=true
+            echo "🐍 Python code changed - building"
           elif [ "${{ steps.changes.outputs.dependencies }}" == "true" ]; then
             SHOULD_BUILD=true
             echo "📦 Dependencies changed - building"
           else
-            echo "⏭️ No relevant changes - skipping"
+            echo "⏭️ No relevant changes detected - skipping build"
           fi
 
           echo "should-build=$SHOULD_BUILD" >> $GITHUB_OUTPUT
@@ -344,15 +380,21 @@ jobs:
         run: |
           echo "## ⏭️ Docker Pipeline Skipped Successfully" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Reason:** No Docker-related changes detected" >> $GITHUB_STEP_SUMMARY
+          echo "**Reason:** No Docker-affecting changes detected" >> $GITHUB_STEP_SUMMARY
           echo "**Status:** ✅ Success (pipeline intelligently skipped)" >> $GITHUB_STEP_SUMMARY
+          echo "**Event:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Skip Conditions Met:" >> $GITHUB_STEP_SUMMARY
-          echo "- ❌ No Dockerfile changes" >> $GITHUB_STEP_SUMMARY
-          echo "- ❌ No dependency changes (pyproject.toml)" >> $GITHUB_STEP_SUMMARY
-          echo "- ❌ Not a manual trigger or release" >> $GITHUB_STEP_SUMMARY
+          echo "### Skip Conditions Analysis:" >> $GITHUB_STEP_SUMMARY
+          echo "- 📁 Docker files: ${{ needs.detect-changes.outputs.dockerfile-changed == 'true' && '✅ Changed' || '❌ Unchanged' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🐍 Python code: ${{ needs.detect-changes.outputs.python-code-changed == 'true' && '✅ Changed' || '❌ Unchanged' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 Dependencies: ${{ needs.detect-changes.outputs.dependencies-changed == 'true' && '✅ Changed' || '❌ Unchanged' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🚀 Manual trigger: ${{ github.event_name == 'workflow_dispatch' && '✅ Yes' || '❌ No' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "This is the expected behavior for efficiency - no Docker rebuild needed." >> $GITHUB_STEP_SUMMARY
+          echo "### Docker Image Efficiency:" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Skipping unnecessary Docker builds saves resources and time**" >> $GITHUB_STEP_SUMMARY
+          echo "- No changes to container dependencies or application code" >> $GITHUB_STEP_SUMMARY
+          echo "- Existing Docker images remain valid and current" >> $GITHUB_STEP_SUMMARY
+          echo "- This intelligent skipping reduces CI/CD costs and environmental impact" >> $GITHUB_STEP_SUMMARY
 
   # Job 6: Summary and cleanup
   docker-summary:
@@ -369,7 +411,9 @@ jobs:
 
           if [ "${{ needs.detect-changes.outputs.should-build }}" == "true" ]; then
             echo "**Build Triggered:** ✅ Yes" >> $GITHUB_STEP_SUMMARY
-            echo "**Dockerfile Changed:** ${{ needs.detect-changes.outputs.dockerfile-changed }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Event Type:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Docker Files Changed:** ${{ needs.detect-changes.outputs.dockerfile-changed }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Python Code Changed:** ${{ needs.detect-changes.outputs.python-code-changed }}" >> $GITHUB_STEP_SUMMARY
             echo "**Dependencies Changed:** ${{ needs.detect-changes.outputs.dependencies-changed }}" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
@@ -382,12 +426,42 @@ jobs:
             echo "- ✅ Multi-platform builds (amd64, arm64)" >> $GITHUB_STEP_SUMMARY
             echo "- ✅ Multi-engine testing (Docker, Podman)" >> $GITHUB_STEP_SUMMARY
             echo "- ✅ Intelligent change detection" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Release-aware Docker builds" >> $GITHUB_STEP_SUMMARY
             echo "- ✅ Advanced caching strategies" >> $GITHUB_STEP_SUMMARY
             echo "- ✅ Security attestations (SBOM, provenance)" >> $GITHUB_STEP_SUMMARY
           else
-            echo "**Build Triggered:** ⏭️ No (no relevant changes)" >> $GITHUB_STEP_SUMMARY
+            echo "**Build Triggered:** ⏭️ No (no Docker-affecting changes)" >> $GITHUB_STEP_SUMMARY
+            echo "**Event Type:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "No Docker-related changes detected - pipeline skipped for efficiency." >> $GITHUB_STEP_SUMMARY
+            echo "### 💡 Intelligent Docker Build Skipping" >> $GITHUB_STEP_SUMMARY
+            echo "No Docker-affecting changes detected - pipeline intelligently skipped for efficiency." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Benefits of skipping:**" >> $GITHUB_STEP_SUMMARY
+            echo "- Reduces unnecessary resource consumption" >> $GITHUB_STEP_SUMMARY
+            echo "- Faster CI/CD pipeline execution" >> $GITHUB_STEP_SUMMARY
+            echo "- Lower environmental impact" >> $GITHUB_STEP_SUMMARY
+            echo "- Existing Docker images remain current" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Workflow success verification
+        run: |
+          # Ensure workflow reports success even when skipped
+          if [ "${{ needs.skip-success.result }}" == "success" ]; then
+            echo "✅ Workflow completed successfully (skipped appropriately)"
+            exit 0
+          elif [ "${{ needs.detect-changes.outputs.should-build }}" == "true" ]; then
+            # Check if build pipeline succeeded
+            if [ "${{ needs.build-images.result }}" == "success" ] &&
+               [ "${{ needs.test-images.result }}" == "success" ]; then
+              echo "✅ Workflow completed successfully (build pipeline passed)"
+              exit 0
+            else
+              echo "❌ Workflow failed in build pipeline"
+              exit 1
+            fi
+          else
+            echo "✅ Workflow completed successfully"
+            exit 0
           fi
 
       - name: Workflow success verification
