@@ -332,11 +332,33 @@ jobs:
           provenance: true
           sbom: true
 
-  # Job 5: Summary and cleanup
+  # Job 5: Success gate for skipped workflows
+  skip-success:
+    name: Skip Success Gate
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.should-build != 'true'
+
+    steps:
+      - name: Report successful skip
+        run: |
+          echo "## ⏭️ Docker Pipeline Skipped Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Reason:** No Docker-related changes detected" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ✅ Success (pipeline intelligently skipped)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Skip Conditions Met:" >> $GITHUB_STEP_SUMMARY
+          echo "- ❌ No Dockerfile changes" >> $GITHUB_STEP_SUMMARY
+          echo "- ❌ No dependency changes (pyproject.toml)" >> $GITHUB_STEP_SUMMARY
+          echo "- ❌ Not a manual trigger or release" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "This is the expected behavior for efficiency - no Docker rebuild needed." >> $GITHUB_STEP_SUMMARY
+
+  # Job 6: Summary and cleanup
   docker-summary:
     name: Docker Pipeline Summary
     runs-on: ubuntu-latest
-    needs: [detect-changes, build-images, test-images, push-to-registry]
+    needs: [detect-changes, build-images, test-images, push-to-registry, skip-success]
     if: always()
 
     steps:
@@ -366,4 +388,25 @@ jobs:
             echo "**Build Triggered:** ⏭️ No (no relevant changes)" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "No Docker-related changes detected - pipeline skipped for efficiency." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Workflow success verification
+        run: |
+          # Ensure workflow reports success even when skipped
+          if [ "${{ needs.skip-success.result }}" == "success" ]; then
+            echo "✅ Workflow completed successfully (skipped appropriately)"
+            exit 0
+          elif [ "${{ needs.detect-changes.outputs.should-build }}" == "true" ]; then
+            # Check if build pipeline succeeded
+            if [ "${{ needs.build-images.result }}" == "success" ] &&
+               [ "${{ needs.test-images.result }}" == "success" ]; then
+              echo "✅ Workflow completed successfully (build pipeline passed)"
+              exit 0
+            else
+              echo "❌ Workflow failed in build pipeline"
+              exit 1
+            fi
+          else
+            echo "✅ Workflow completed successfully"
+            exit 0
           fi
