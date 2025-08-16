@@ -342,7 +342,7 @@ jobs:
           echo "🔒 SHA256: ${SHA256}"
 
           # Clone homebrew tap repo
-          git clone https://${{ secrets.DISPATCH_PAT }}@github.com/HenriquesLab/homebrew-rxiv-maker.git homebrew-tap
+          git clone https://x-access-token:${{ secrets.DISPATCH_PAT }}@github.com/HenriquesLab/homebrew-rxiv-maker.git homebrew-tap
           cd homebrew-tap
 
           # Configure git
@@ -378,6 +378,7 @@ jobs:
 
           # Create pull request using GitHub CLI
           gh pr create \
+            --repo HenriquesLab/homebrew-rxiv-maker \
             --title "🚀 Auto-update rxiv-maker to v${VERSION}" \
             --body "$(cat <<'EOF'
           ## 📦 Automatic Formula Update
