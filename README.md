@@ -15,7 +15,7 @@ Rxiv-Maker enhances the capabilities of traditional scientific writing by ensuri
 ## Key Features
 
 - **20+ Enhanced Markdown Features** - Scientific cross-references, citations, subscript/superscript (**rxiv-markdown**)
-- **Automated Figure Generation** - Python/R scripts and Mermaid diagrams with smart caching
+- **Automated Figure Generation** - Python/R scripts and Mermaid diagrams with smart caching and advanced positioning control
 - **Intelligent Validation** - Pre-build error detection with actionable feedback
 - **Professional Output** - LaTeX-quality PDFs with various citation styles
 - **Multi-Environment** - Local, Docker, Google Colab, and GitHub Actions support
@@ -23,7 +23,7 @@ Rxiv-Maker enhances the capabilities of traditional scientific writing by ensuri
 - **VS Code Integration** - Dedicated extension with syntax highlighting
 - **Modern CLI** - Beautiful command-line interface with rich output and auto-completion
 
-**Key rxiv-markdown features:** Scientific cross-references (`@fig:label`, `@eq:label`), citations (`@citation`), text formatting (`~subscript~`, `^superscript^`), document control (`<newpage>`), and automated figure generation.
+**Key rxiv-markdown features:** Scientific cross-references (`@fig:label`, `@eq:label`), citations (`@citation`), text formatting (`~subscript~`, `^superscript^`), document control (`<newpage>`), automated figure generation, and precise figure positioning (`tex_position="t"`, `width="\textwidth"`).
 
 ## Key Benefits
 
@@ -372,6 +372,9 @@ Existing users can continue using Make commands or migrate to the CLI:
 - **[Google Colab Tutorial](docs/tutorials/google_colab.md)** - Browser-based PDF generation
 - **[GitHub Actions Guide](docs/workflows/github-actions.md)** - Automated cloud builds
 
+### Tutorials
+- **[Figure Positioning Guide](docs/tutorials/figure-positioning.md)** - Complete guide to figure placement, sizing, and positioning
+
 ### Advanced Features
 - **[Change Tracking](docs/workflows/change-tracking.md)** - Version diff PDFs
 - **[Troubleshooting](docs/troubleshooting/troubleshooting-missing-figures.md)** - Common issues and fixes
@@ -380,6 +383,10 @@ Existing users can continue using Make commands or migrate to the CLI:
 ### Development
 - **[VS Code Extension](https://github.com/HenriquesLab/vscode-rxiv-maker)** - Enhanced editing experience
 - **[API Documentation](docs/api/)** - Code reference
+
+### Reference
+- **[Rxiv-Markdown Syntax Guide](docs/reference/rxiv-markdown-syntax.md)** - Complete syntax reference for scientific writing
+- **[Command Reference](docs/CLI_REFERENCE.md)** - Complete CLI command documentation
 
 </details>
 
@@ -396,6 +403,7 @@ make setup                            # Install dependencies
 
 ### Quick Help
 - **Issues?** Check [Troubleshooting Guide](docs/troubleshooting/troubleshooting-missing-figures.md)
+- **Figure positioning problems?** See [Figure Positioning Guide](docs/tutorials/figure-positioning.md)
 - **Platform problems?** See [Installation Guide](docs/getting-started/installation.md) 
 - **Need help?** Visit [GitHub Discussions](https://github.com/henriqueslab/rxiv-maker/discussions)
 

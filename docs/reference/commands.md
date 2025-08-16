@@ -92,6 +92,13 @@ make pdf FORCE_FIGURES=true
 make pdf-no-validate
 ```
 
+### Figure Positioning & Layout
+For advanced control over figure positioning, sizing, and layout in your PDFs, see the **[Figure Positioning Guide](../tutorials/figure-positioning.md)**. This comprehensive guide covers:
+- Positioning attributes (`tex_position="t"`, `tex_position="h"`, etc.)
+- Width control (`width="\textwidth"`, `width="0.8\linewidth"`)
+- Panel references without unwanted spaces
+- Troubleshooting layout issues
+
 ## Change Tracking
 
 Generate PDFs highlighting differences against git tags:

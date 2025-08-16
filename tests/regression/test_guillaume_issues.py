@@ -774,24 +774,52 @@ class TestDiscordReportedIssues:
 
         Guillaume reported: need to have Fig1.png in both Figure/ and Figure/Fig1/Fig1.png
         """
+        import os
         import tempfile
+        from pathlib import Path
 
         from rxiv_maker.converters.figure_processor import create_latex_figure_environment
 
-        with tempfile.TemporaryDirectory():
-            # Test that the figure processor logic checks for ready files
-            # The actual behavior: if ready file exists, use it directly
-            latex_result = create_latex_figure_environment(
-                path="FIGURES/Fig1.png", caption="Test figure caption", attributes={}
-            )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir_path = Path(tmpdir)
+            original_cwd = os.getcwd()
+            os.chdir(tmpdir)
 
-            # Should convert to subdirectory format when ready file doesn't exist
-            # This is expected behavior - the test verifies the logic is in place
-            # The fix ensures that IF a ready file exists at the original path, it uses that
-            assert "Figures/Fig1" in latex_result, "Should handle figure path conversion"
+            try:
+                # Test Case 1: With ready file - should use direct path
+                figures_dir = tmpdir_path / "FIGURES"
+                figures_dir.mkdir()
+                ready_file = figures_dir / "Fig1.png"
+                ready_file.write_text("fake png content")
 
-            # The fix is in the logic that checks os.path.exists() for ready files
-            # This test verifies the structure handles both cases properly
+                latex_result_with_ready = create_latex_figure_environment(
+                    path="FIGURES/Fig1.png", caption="Test figure caption", attributes={}
+                )
+
+                # Should use direct path, not subdirectory format
+                assert "Figures/Fig1.png" in latex_result_with_ready, "Should use ready file directly: Figures/Fig1.png"
+                assert "Figures/Fig1/Fig1.png" not in latex_result_with_ready, (
+                    "Should NOT use subdirectory format when ready file exists"
+                )
+
+                # Test Case 2: Without ready file - should use subdirectory format
+                ready_file.unlink()  # Remove the ready file
+
+                latex_result_without_ready = create_latex_figure_environment(
+                    path="FIGURES/Fig1.png", caption="Test figure caption", attributes={}
+                )
+
+                # Should use subdirectory format when no ready file
+                assert "Figures/Fig1/Fig1.png" in latex_result_without_ready, (
+                    "Should use subdirectory format when no ready file exists"
+                )
+                assert (
+                    "Figures/Fig1.png" not in latex_result_without_ready
+                    or "Figures/Fig1/Fig1.png" in latex_result_without_ready
+                ), "When no ready file, should prefer subdirectory format"
+
+            finally:
+                os.chdir(original_cwd)
 
     def test_section_header_introduction_preservation(self):
         """Test that ## Introduction stays as Introduction, not mapped to Main.
@@ -831,29 +859,68 @@ This is the methods content.
             "Introduction content should be preserved"
         )
 
+        # NEW: Test the actual template processing - this was the real issue!
+        from rxiv_maker.processors.template_processor import process_template_replacements
+
+        # Create minimal template content with the main section placeholder
+        template_content = """
+<PY-RPL:MAIN-SECTION>
+
+<PY-RPL:METHODS>
+"""
+
+        # Process template with introduction section
+        yaml_metadata = {}
+        result = process_template_replacements(template_content, yaml_metadata, test_markdown)
+
+        # Should create an Introduction section, not Main
+        assert "\\section*{Introduction}" in result, "Template should create Introduction section header, not Main"
+        assert "This is the introduction content" in result, "Introduction content should be in final template"
+        assert "\\section*{Main}" not in result, "Should NOT create Main section when Introduction exists"
+
     def test_full_page_figure_positioning_fix(self):
         """Test that full-page figures with textwidth don't break positioning.
 
-        Guillaume reported: width=textwidth with tex_position="t" causes figures on last page with broken legends
+        Guillaume reported: tex_position="p" with width=textwidth creates 2-column layout instead of dedicated page
         """
         from rxiv_maker.converters.figure_processor import create_latex_figure_environment
 
-        # Test the specific case Guillaume reported
+        # Test Guillaume's specific case: textwidth with position p should NOT use figure*
         latex_result = create_latex_figure_environment(
             path="FIGURES/Figure__workflow.svg",
-            caption="Long caption that might cause issues with full-width figures in two-column layout",
+            caption="Test figure caption",
+            attributes={"width": "\\textwidth", "tex_position": "p", "id": "fig:workflow"},
+        )
+
+        # Should use regular figure environment for dedicated page, NOT figure*
+        assert "\\begin{figure}[p]" in latex_result, (
+            "Dedicated page figures should use regular figure environment, not figure*"
+        )
+        assert "\\begin{figure*}" not in latex_result, (
+            "Should NOT use figure* when user explicitly wants dedicated page"
+        )
+
+        # Test comparison: textwidth without explicit position should use figure*
+        latex_result2 = create_latex_figure_environment(
+            path="FIGURES/Figure__workflow.svg",
+            caption="Test figure caption",
+            attributes={"width": "\\textwidth", "id": "fig:workflow"},  # No tex_position
+        )
+
+        # Should use figure* for 2-column spanning when no explicit position
+        assert "\\begin{figure*}" in latex_result2, (
+            "Full-width figures should use figure* for 2-column spanning by default"
+        )
+
+        # Test that other positioning is preserved with figure*
+        latex_result3 = create_latex_figure_environment(
+            path="FIGURES/Figure__workflow.svg",
+            caption="Test figure caption",
             attributes={"width": "\\textwidth", "tex_position": "t", "id": "fig:workflow"},
         )
 
-        # Should use figure* environment for textwidth (two-column spanning)
-        assert "\\begin{figure*}[t]" in latex_result, "Full-width figures should use figure* with original positioning"
-
-        # Should NOT force to dedicated page when user specifies 't'
-        assert "\\begin{figure*}[p]" not in latex_result, "Should respect user's tex_position='t' preference"
-
-        # Should include caption formatting for long captions
-        if len("Long caption that might cause issues") > 200:
-            assert "\\raggedright" in latex_result, "Long captions should have raggedright formatting"
+        # Should use figure* with user's positioning
+        assert "\\begin{figure*}[t]" in latex_result3, "Should respect user's tex_position when using figure*"
 
     def test_latex_package_installation_verification(self):
         """Test that LaTeX package installation verification works for Guillaume's packages."""
@@ -926,6 +993,146 @@ This is the methods content.
         assert "\\begin{figure*}[t]" in figure_latex, "Should respect user's positioning preference"
 
         print("✅ All Guillaume's fixes are working together correctly")
+
+    def test_end_to_end_tex_generation_with_guillaume_fixes(self):
+        """End-to-end test that generates actual .tex file to verify Guillaume's fixes work in practice."""
+        import os
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir_path = Path(tmpdir)
+            original_cwd = os.getcwd()
+            os.chdir(tmpdir)
+
+            try:
+                # Create manuscript structure with Introduction section
+                manuscript_dir = tmpdir_path / "TEST_MANUSCRIPT"
+                manuscript_dir.mkdir()
+
+                # Create main manuscript file with Introduction section
+                main_md = manuscript_dir / "01_MAIN.md"
+                main_md.write_text("""---
+title:
+  long: "Test Article with Introduction Section"
+  short: "Test Article"
+authors:
+  - name: "Test Author"
+    affiliation: "Test University"
+keywords: ["test", "Guillaume", "fixes"]
+acknowledge_rxiv_maker: false
+---
+
+# Abstract
+
+This is the abstract.
+
+## Introduction
+
+This is the introduction content that should appear under "Introduction" header, not "Main".
+
+## Methods
+
+This is the methods section.
+
+## Results
+
+These are the results.
+""")
+
+                # Create YAML front matter file
+                yaml_file = manuscript_dir / "00_FRONT_MATTER.yaml"
+                yaml_file.write_text("""
+title:
+  long: "Test Article with Introduction Section"
+  short: "Test Article"
+authors:
+  - name: "Test Author"
+    affiliation: "Test University"
+keywords: ["test", "Guillaume", "fixes"]
+acknowledge_rxiv_maker: false
+""")
+
+                # Create FIGURES directory with ready file
+                figures_dir = manuscript_dir / "FIGURES"
+                figures_dir.mkdir()
+                ready_fig = figures_dir / "TestFig.png"
+                ready_fig.write_text("fake png content")
+
+                # Create a figure with Guillaume's specific positioning case
+                figures_md = """
+![Test Figure with Ready File](FIGURES/TestFig.png)
+
+![](FIGURES/TestFig.png){#fig:fullpage width="\\textwidth" tex_position="p"}
+**This figure should be on a dedicated page, not 2-column layout.**
+"""
+
+                # Add figures to main content
+                current_content = main_md.read_text()
+                main_md.write_text(current_content + "\n\n" + figures_md)
+
+                # Generate the manuscript using the actual CLI
+                os.environ["MANUSCRIPT_PATH"] = str(manuscript_dir)
+
+                # Change to manuscript directory like real usage
+                os.chdir(manuscript_dir)
+
+                # Import and use the actual generation functions
+                from rxiv_maker.engine.generate_preprint import generate_preprint
+                from rxiv_maker.processors.yaml_processor import extract_yaml_metadata
+
+                # Generate output
+                output_dir = tmpdir_path / "output"
+                output_dir.mkdir()
+
+                # Extract metadata and generate preprint
+                yaml_metadata = extract_yaml_metadata(str(main_md))
+                tex_file = generate_preprint(str(output_dir), yaml_metadata)
+
+                # Verify the generated .tex file contains Guillaume's fixes
+                tex_content = Path(tex_file).read_text()
+
+                # 1. Should have Introduction section, not Main
+                assert "\\section*{Introduction}" in tex_content, (
+                    "Generated .tex should contain Introduction section header"
+                )
+                assert "This is the introduction content" in tex_content, (
+                    "Generated .tex should contain introduction content"
+                )
+                # Should NOT have hardcoded Main section when Introduction exists
+                assert tex_content.count("\\section*{Main}") == 0, (
+                    "Generated .tex should NOT contain Main section when Introduction exists"
+                )
+
+                # 2. Should use ready file path for TestFig
+                assert "Figures/TestFig.png" in tex_content, "Generated .tex should use ready file path directly"
+                assert "Figures/TestFig/TestFig.png" not in tex_content, (
+                    "Generated .tex should NOT use subdirectory format for ready files"
+                )
+
+                # 3. Should use regular figure environment for full-page textwidth figures
+                # Look for the pattern of a figure with tex_position="p" and width=textwidth
+                import re
+
+                fullpage_pattern = (
+                    r"\\begin{figure}\[p\].*?width=\\textwidth.*?This figure should be on a dedicated page"
+                )
+                assert re.search(fullpage_pattern, tex_content, re.DOTALL), (
+                    "Generated .tex should use regular figure[p] for dedicated page textwidth figures"
+                )
+                # Should NOT use figure* for this case
+                fullpage_bad_pattern = r"\\begin{figure\*}\[p\].*?This figure should be on a dedicated page"
+                assert not re.search(fullpage_bad_pattern, tex_content, re.DOTALL), (
+                    "Generated .tex should NOT use figure* for dedicated page figures"
+                )
+
+                print(f"✅ End-to-end test passed! Generated .tex file: {tex_file}")
+                print("✅ All Guillaume's fixes verified in actual .tex generation")
+
+            finally:
+                os.chdir(original_cwd)
+                if "MANUSCRIPT_PATH" in os.environ:
+                    del os.environ["MANUSCRIPT_PATH"]
 
 
 if __name__ == "__main__":

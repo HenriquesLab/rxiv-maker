@@ -162,6 +162,7 @@ def create_latex_figure_environment(
         ready_figure_path = latex_path
         if os.path.exists(ready_figure_path.replace("Figures/", "FIGURES/")):
             # Ready figure exists, use it directly without subdirectory conversion
+            # latex_path already contains the correct ready file path
             pass
         else:
             # Convert to subdirectory format: Figures/Figure__name/Figure__name.ext
@@ -183,16 +184,16 @@ def create_latex_figure_environment(
             # Assume fraction of linewidth if no backslash
             width = f"{width}\\linewidth"
 
+    # Get positioning first to inform 2-column decision
+    position: FigurePosition = attributes.get("tex_position", "ht")
+
     # Check if this should be a 2-column spanning figure
     is_twocolumn = (
         attributes.get("span") == "2col"
         or attributes.get("twocolumn") == "true"
         or attributes.get("twocolumn") is True
-        or width == "\\textwidth"  # Auto-detect: \textwidth in 2-col docs means span both
+        or (width == "\\textwidth" and position != "p")  # Auto-detect, but not for dedicated page figures
     )
-
-    # Get positioning - preserve user's positioning preferences
-    position: FigurePosition = attributes.get("tex_position", "ht")
 
     # Only adjust positioning for two-column spanning figures that don't have explicit positioning
     if is_twocolumn and position == "ht":
