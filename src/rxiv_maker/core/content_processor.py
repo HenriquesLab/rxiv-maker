@@ -119,6 +119,7 @@ class ContentProcessor(RecoveryEnhancedMixin):
             protect_math_expressions,
             restore_math_expressions,
         )
+        from ..converters.md2tex import _convert_headers
         from ..converters.text_formatters import (
             convert_subscript_superscript_to_latex,
             escape_special_characters,
@@ -218,13 +219,24 @@ class ContentProcessor(RecoveryEnhancedMixin):
         )
 
         self.register_processor(
+            "headers",
+            lambda content, **kwargs: _convert_headers(content, kwargs.get("is_supplementary", False)),
+            ProcessorConfig(
+                name="headers",
+                priority=ProcessorPriority.NORMAL,
+                stage=ProcessingStage.CONVERSION,
+                dependencies=["figures"],
+            ),
+        )
+
+        self.register_processor(
             "citations",
             lambda content, **kwargs: self._process_citations_enhanced(content, **kwargs),
             ProcessorConfig(
                 name="citations",
                 priority=ProcessorPriority.NORMAL,
                 stage=ProcessingStage.CONVERSION,
-                dependencies=["tables"],
+                dependencies=["headers"],
             ),
         )
 

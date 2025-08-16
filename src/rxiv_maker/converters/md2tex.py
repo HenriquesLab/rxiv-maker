@@ -58,34 +58,39 @@ def convert_markdown_to_latex(content: MarkdownContent, is_supplementary: bool =
         LaTeX formatted content
     """
     # Use the new centralized ContentProcessor for enhanced processing
-    try:
-        from ..core.content_processor import get_content_processor
+    # TEMPORARY: Disable ContentProcessor until text formatting processors are complete
+    # This ensures backward compatibility while the ContentProcessor is being developed
+    use_content_processor = False
 
-        processor = get_content_processor()
-        result = processor.process(content, is_supplementary=is_supplementary)
-
-        if result.success:
-            return result.content
-        else:
-            # Log warnings but continue with legacy logic for graceful degradation
-            from ..core.logging_config import get_logger
-
-            logger = get_logger()
-            logger.warning(f"ContentProcessor completed with {len(result.errors)} errors: {result.errors}")
-            logger.warning("Falling back to legacy conversion logic")
-
-    except ImportError:
-        # Fallback for environments where core modules aren't available
-        pass
-    except Exception as e:
-        # Graceful degradation on any error
+    if use_content_processor:
         try:
-            from ..core.logging_config import get_logger
+            from ..core.content_processor import get_content_processor
 
-            logger = get_logger()
-            logger.warning(f"ContentProcessor failed: {e}, falling back to legacy conversion")
-        except Exception:
-            pass  # Continue silently if logging also fails
+            processor = get_content_processor()
+            result = processor.process(content, is_supplementary=is_supplementary)
+
+            if result.success:
+                return result.content
+            else:
+                # Log warnings but continue with legacy logic for graceful degradation
+                from ..core.logging_config import get_logger
+
+                logger = get_logger()
+                logger.warning(f"ContentProcessor completed with {len(result.errors)} errors: {result.errors}")
+                logger.warning("Falling back to legacy conversion logic")
+
+        except ImportError:
+            # Fallback for environments where core modules aren't available
+            pass
+        except Exception as e:
+            # Graceful degradation on any error
+            try:
+                from ..core.logging_config import get_logger
+
+                logger = get_logger()
+                logger.warning(f"ContentProcessor failed: {e}, falling back to legacy conversion")
+            except Exception:
+                pass  # Continue silently if logging also fails
 
     # Legacy conversion logic (original implementation)
     # FIRST: Convert fenced code blocks BEFORE protecting backticks
