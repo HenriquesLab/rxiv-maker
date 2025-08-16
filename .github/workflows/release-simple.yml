@@ -325,7 +325,7 @@ jobs:
     steps:
       - name: Update Homebrew formula
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.DISPATCH_PAT }}
         run: |
           VERSION="${{ needs.build.outputs.version }}"
           TAG="v${VERSION}"

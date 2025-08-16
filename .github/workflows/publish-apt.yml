@@ -321,7 +321,7 @@ jobs:
 
           # Add package to repository
           PACKAGE_NAME=$(basename "$DEB_FILE")
-          echo "$GPG_PASSPHRASE" | reprepro --pinentry-mode loopback -Vb . includedeb stable "incoming/$PACKAGE_NAME"
+          echo "$GPG_PASSPHRASE" | reprepro -Vb . includedeb stable "incoming/$PACKAGE_NAME"
 
           # Clean up
           rm "incoming/$PACKAGE_NAME"
