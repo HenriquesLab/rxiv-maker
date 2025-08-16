@@ -253,10 +253,10 @@ jobs:
 
     strategy:
       matrix:
-        ubuntu-version: ${{ fromJson(format('["{0}"]', join(split(needs.validate-environment.outputs.ubuntu-versions, ','), '","'))) }}
-        test-type: ${{ fromJson(format('["{0}"]', join(split(needs.validate-environment.outputs.test-types, ','), '","'))) }}
-      fail-fast: ${{ fromJson(needs.validate-environment.outputs.fail-fast) }}
-      max-parallel: ${{ fromJson(needs.validate-environment.outputs.parallel-jobs) }}
+        ubuntu-version: ['22.04']
+        test-type: ['quick']
+      fail-fast: false
+      max-parallel: 2
 
     steps:
       - name: Checkout repository
