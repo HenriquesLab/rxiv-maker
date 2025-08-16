@@ -4,7 +4,9 @@ This module handles conversion of markdown figures to LaTeX figure environments,
 including figure attributes, captions, and references.
 """
 
+import os
 import re
+from pathlib import Path
 
 from .types import (
     FigureAttributes,
@@ -153,14 +155,18 @@ def create_latex_figure_environment(
     # Handle new subdirectory structure: Figure__name.svg -> Figure__name/Figure__name.png
     if "/" not in latex_path.split("Figures/")[-1]:  # Only if not already in subdirectory
         # Extract figure name from path like "Figures/Figure__name.svg"
-        import os
-
         figure_name = os.path.splitext(os.path.basename(latex_path))[0]
         figure_ext = os.path.splitext(latex_path)[1]
 
-        # Check if figure already exists as ready file (direct in Figures/ directory)
-        ready_figure_path = latex_path
-        if os.path.exists(ready_figure_path.replace("Figures/", "FIGURES/")):
+        # Check if figure already exists as ready file (direct in FIGURES/ directory)
+        # Resolve against manuscript path when available to avoid false negatives
+        manuscript_root = os.getenv("MANUSCRIPT_PATH")
+        if manuscript_root:
+            ready_figure_fullpath = Path(manuscript_root) / "FIGURES" / f"{figure_name}{figure_ext}"
+        else:
+            ready_figure_fullpath = Path("FIGURES") / f"{figure_name}{figure_ext}"
+
+        if ready_figure_fullpath.exists():
             # Ready figure exists, use it directly without subdirectory conversion
             # latex_path already contains the correct ready file path
             pass

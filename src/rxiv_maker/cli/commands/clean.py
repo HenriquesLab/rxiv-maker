@@ -1,11 +1,13 @@
 """Clean command for rxiv-maker CLI."""
 
-import os
 import sys
 
 import click
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
+
+from ...core.environment_manager import EnvironmentManager
+from ...core.path_manager import PathManager, PathResolutionError
 
 console = Console()
 
@@ -42,11 +44,21 @@ def clean(
     - Cache files
     - arXiv submission packages
     """
-    verbose = ctx.obj.get("verbose", False)
+    verbose = ctx.obj.get("verbose", False) or EnvironmentManager.is_verbose()
 
-    # Default to MANUSCRIPT if not specified
-    if manuscript_path is None:
-        manuscript_path = os.environ.get("MANUSCRIPT_PATH", "MANUSCRIPT")
+    # Use PathManager for path resolution and validation
+    try:
+        # Default to environment variable or fallback if not specified
+        if manuscript_path is None:
+            manuscript_path = EnvironmentManager.get_manuscript_path() or "MANUSCRIPT"
+
+        # Use PathManager for path validation and resolution
+        path_manager = PathManager(manuscript_path=manuscript_path, output_dir=output_dir)
+
+    except PathResolutionError as e:
+        console.print(f"❌ Path resolution error: {e}", style="red")
+        console.print(f"💡 Run 'rxiv init {manuscript_path}' to create a new manuscript", style="yellow")
+        sys.exit(1)
 
     try:
         with Progress(
@@ -75,9 +87,9 @@ def clean(
             if verbose:
                 args.append("--verbose")
 
-            # Add paths
-            args.extend(["--manuscript-path", manuscript_path])
-            args.extend(["--output-dir", output_dir])
+            # Add paths using PathManager
+            args.extend(["--manuscript-path", str(path_manager.manuscript_path)])
+            args.extend(["--output-dir", str(path_manager.output_dir)])
 
             # Save original argv and replace
             original_argv = sys.argv

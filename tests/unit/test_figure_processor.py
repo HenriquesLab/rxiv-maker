@@ -3,6 +3,7 @@
 from rxiv_maker.converters.figure_processor import (
     convert_figure_references_to_latex,
     convert_figures_to_latex,
+    create_latex_figure_environment,
 )
 
 
@@ -249,3 +250,271 @@ class TestEdgeCases:
         assert r"\label{fig:second}" in result
         assert r"Fig. \ref{fig:first}" in result
         assert r"Fig. \ref{fig:second}" in result
+
+
+class TestGuillaumeFigureIssues:
+    """Test specific issues reported by Guillaume in Discord/conversation."""
+
+    def test_panel_references_no_space_fix(self):
+        """Test that panel references don't have unwanted spaces (Guillaume Issue #1)."""
+        text = "As shown in (@fig:Figure1 A), the results indicate..."
+        result = convert_figure_references_to_latex(text)
+
+        # Should render as Fig. \ref{fig:Figure1}A (no space between 1 and A)
+        assert "Fig. \\ref{fig:Figure1}A)" in result, (
+            f"Expected no space between figure ref and panel letter, got: {result}"
+        )
+
+        # Should NOT have a space
+        assert "Fig. \\ref{fig:Figure1} A)" not in result, "Should not have space between figure ref and panel letter"
+
+    def test_multiple_panel_references_no_space(self):
+        """Test multiple panel references in one sentence."""
+        text = "See (@fig:test A) and (@fig:test B) for details."
+        result = convert_figure_references_to_latex(text)
+
+        assert "Fig. \\ref{fig:test}A)" in result
+        assert "Fig. \\ref{fig:test}B)" in result
+        assert "Fig. \\ref{fig:test} A)" not in result
+        assert "Fig. \\ref{fig:test} B)" not in result
+
+    def test_supplementary_panel_references_no_space(self):
+        """Test supplementary figure panel references."""
+        text = "As shown in (@sfig:SupFig1 B), the analysis shows..."
+        result = convert_figure_references_to_latex(text)
+
+        assert "Fig. \\ref{sfig:SupFig1}B)" in result
+        assert "Fig. \\ref{sfig:SupFig1} B)" not in result
+
+    def test_ready_file_detection_with_manuscript_path(self):
+        """Test ready file detection with proper manuscript path resolution (Guillaume Issue #2)."""
+        import os
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir_path = Path(tmpdir)
+            original_cwd = os.getcwd()
+            original_manuscript_path = os.getenv("MANUSCRIPT_PATH")
+
+            try:
+                # Set up test environment
+                os.environ["MANUSCRIPT_PATH"] = str(tmpdir_path)
+                os.chdir(tmpdir)
+
+                # Create FIGURES directory with ready file
+                figures_dir = tmpdir_path / "FIGURES"
+                figures_dir.mkdir()
+                ready_file = figures_dir / "Fig1.png"
+                ready_file.write_text("fake png content")
+
+                # Test with ready file - should use direct path
+                latex_result_with_ready = create_latex_figure_environment(
+                    path="FIGURES/Fig1.png", caption="Test figure caption", attributes={}
+                )
+
+                # Should use direct path, not subdirectory format
+                assert "Figures/Fig1.png" in latex_result_with_ready, "Should use ready file directly: Figures/Fig1.png"
+                assert "Figures/Fig1/Fig1.png" not in latex_result_with_ready, (
+                    "Should NOT use subdirectory format when ready file exists"
+                )
+
+            finally:
+                os.chdir(original_cwd)
+                if original_manuscript_path is not None:
+                    os.environ["MANUSCRIPT_PATH"] = original_manuscript_path
+                elif "MANUSCRIPT_PATH" in os.environ:
+                    del os.environ["MANUSCRIPT_PATH"]
+
+    def test_ready_file_detection_without_manuscript_path(self):
+        """Test ready file detection falls back correctly when no MANUSCRIPT_PATH."""
+        import os
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir_path = Path(tmpdir)
+            original_cwd = os.getcwd()
+            original_manuscript_path = os.getenv("MANUSCRIPT_PATH")
+
+            try:
+                # Remove MANUSCRIPT_PATH to test fallback
+                if "MANUSCRIPT_PATH" in os.environ:
+                    del os.environ["MANUSCRIPT_PATH"]
+
+                os.chdir(tmpdir)
+
+                # Create FIGURES directory with ready file
+                figures_dir = tmpdir_path / "FIGURES"
+                figures_dir.mkdir()
+                ready_file = figures_dir / "Fig1.png"
+                ready_file.write_text("fake png content")
+
+                # Test with ready file - should use direct path
+                latex_result_with_ready = create_latex_figure_environment(
+                    path="FIGURES/Fig1.png", caption="Test figure caption", attributes={}
+                )
+
+                # Should use direct path when ready file exists
+                assert "Figures/Fig1.png" in latex_result_with_ready, (
+                    "Should use ready file directly even without MANUSCRIPT_PATH"
+                )
+
+            finally:
+                os.chdir(original_cwd)
+                if original_manuscript_path is not None:
+                    os.environ["MANUSCRIPT_PATH"] = original_manuscript_path
+
+    def test_ready_file_vs_generated_file_behavior(self):
+        """Test the difference between ready files and generated files."""
+        import os
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir_path = Path(tmpdir)
+            original_cwd = os.getcwd()
+            original_manuscript_path = os.getenv("MANUSCRIPT_PATH")
+
+            try:
+                os.environ["MANUSCRIPT_PATH"] = str(tmpdir_path)
+                os.chdir(tmpdir)
+
+                figures_dir = tmpdir_path / "FIGURES"
+                figures_dir.mkdir()
+
+                # Test Case 1: Without ready file - should use subdirectory format
+                latex_result_without_ready = create_latex_figure_environment(
+                    path="FIGURES/GeneratedFig.png", caption="Generated figure caption", attributes={}
+                )
+
+                # Should use subdirectory format when no ready file
+                assert "Figures/GeneratedFig/GeneratedFig.png" in latex_result_without_ready, (
+                    "Should use subdirectory format when no ready file exists"
+                )
+
+                # Test Case 2: With ready file - should use direct format
+                ready_file = figures_dir / "ReadyFig.png"
+                ready_file.write_text("fake png content")
+
+                latex_result_with_ready = create_latex_figure_environment(
+                    path="FIGURES/ReadyFig.png", caption="Ready figure caption", attributes={}
+                )
+
+                # Should use direct path when ready file exists
+                assert "Figures/ReadyFig.png" in latex_result_with_ready, "Should use ready file directly"
+                assert "Figures/ReadyFig/ReadyFig.png" not in latex_result_with_ready, (
+                    "Should NOT use subdirectory format for ready files"
+                )
+
+            finally:
+                os.chdir(original_cwd)
+                if original_manuscript_path is not None:
+                    os.environ["MANUSCRIPT_PATH"] = original_manuscript_path
+                elif "MANUSCRIPT_PATH" in os.environ:
+                    del os.environ["MANUSCRIPT_PATH"]
+
+    def test_full_page_figure_positioning_fix(self):
+        """Test that full-page figures with textwidth use correct environment (Guillaume Issue #4)."""
+
+        # Guillaume's case: textwidth with position p should use figure[p], not figure*[p]
+        latex_result = create_latex_figure_environment(
+            path="FIGURES/Figure__workflow.svg",
+            caption="Test figure caption",
+            attributes={"width": "\\textwidth", "tex_position": "p", "id": "fig:workflow"},
+        )
+
+        # Should use regular figure environment for dedicated page, NOT figure*
+        assert "\\begin{figure}[p]" in latex_result, (
+            "Dedicated page figures should use regular figure environment, not figure*"
+        )
+        assert "\\begin{figure*}" not in latex_result, (
+            "Should NOT use figure* when user explicitly wants dedicated page"
+        )
+
+    def test_full_page_vs_two_column_positioning(self):
+        """Test the difference between full-page and two-column figure positioning."""
+
+        # Test Case 1: textwidth without explicit position should use figure*
+        latex_result_2col = create_latex_figure_environment(
+            path="FIGURES/test.svg",
+            caption="Two-column spanning figure",
+            attributes={"width": "\\textwidth", "id": "fig:test"},
+        )
+
+        # Should use figure* for 2-column spanning when no explicit position
+        assert "\\begin{figure*}" in latex_result_2col, (
+            "Full-width figures should use figure* for 2-column spanning by default"
+        )
+
+        # Test Case 2: textwidth with position t should use figure*[t]
+        latex_result_2col_t = create_latex_figure_environment(
+            path="FIGURES/test.svg",
+            caption="Two-column spanning figure at top",
+            attributes={"width": "\\textwidth", "tex_position": "t", "id": "fig:test"},
+        )
+
+        # Should use figure* with user's positioning
+        assert "\\begin{figure*}[t]" in latex_result_2col_t, "Should respect user's tex_position when using figure*"
+
+        # Test Case 3: textwidth with position p should use figure[p]
+        latex_result_fullpage = create_latex_figure_environment(
+            path="FIGURES/test.svg",
+            caption="Dedicated page figure",
+            attributes={"width": "\\textwidth", "tex_position": "p", "id": "fig:test"},
+        )
+
+        # Should use regular figure for dedicated page
+        assert "\\begin{figure}[p]" in latex_result_fullpage, (
+            "Dedicated page figures should use figure[p], not figure*[p]"
+        )
+
+    def test_guillaume_integration_all_fixes_together(self):
+        """Integration test that all Guillaume's fixes work together."""
+
+        # Test all fixes work in combination
+        import os
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir_path = Path(tmpdir)
+            original_cwd = os.getcwd()
+            original_manuscript_path = os.getenv("MANUSCRIPT_PATH")
+
+            try:
+                os.environ["MANUSCRIPT_PATH"] = str(tmpdir_path)
+                os.chdir(tmpdir)
+
+                # Create ready figure file
+                figures_dir = tmpdir_path / "FIGURES"
+                figures_dir.mkdir()
+                ready_file = figures_dir / "Figure1.png"
+                ready_file.write_text("fake png content")
+
+                # Test 1: Panel references should work correctly
+                panel_ref = convert_figure_references_to_latex("(@fig:Figure1 A)")
+                assert "Fig. \\ref{fig:Figure1}A)" in panel_ref, "Panel references should have no space"
+
+                # Test 2: Ready file should be detected and use direct path
+                figure_latex = create_latex_figure_environment(
+                    path="FIGURES/Figure1.png", caption="Test caption", attributes={"id": "fig:Figure1"}
+                )
+                assert "Figures/Figure1.png" in figure_latex, "Ready file should use direct path"
+                assert "Figures/Figure1/Figure1.png" not in figure_latex, "Ready file should NOT use subdirectory path"
+
+                # Test 3: Full-page positioning should work correctly
+                fullpage_latex = create_latex_figure_environment(
+                    path="FIGURES/Figure1.png",
+                    caption="Full page caption",
+                    attributes={"width": "\\textwidth", "tex_position": "p", "id": "fig:fullpage"},
+                )
+                assert "\\begin{figure}[p]" in fullpage_latex, "Full-page textwidth should use figure[p]"
+                assert "\\begin{figure*}" not in fullpage_latex, "Full-page should NOT use figure*"
+
+            finally:
+                os.chdir(original_cwd)
+                if original_manuscript_path is not None:
+                    os.environ["MANUSCRIPT_PATH"] = original_manuscript_path
+                elif "MANUSCRIPT_PATH" in os.environ:
+                    del os.environ["MANUSCRIPT_PATH"]

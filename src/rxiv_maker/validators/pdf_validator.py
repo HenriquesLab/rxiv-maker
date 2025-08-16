@@ -71,6 +71,10 @@ class PDFValidator(BaseValidator):
         self.malformed_equation_pattern = re.compile(r"\\[a-zA-Z]+\{[^}]*$|\\[a-zA-Z]+$|\$[^$]*$")
         self.missing_figure_pattern = re.compile(r"Figure\s*\?\?|\?\?\s*Figure", re.IGNORECASE)
 
+        # Guillaume's specific issue patterns
+        self.panel_ref_with_space_pattern = re.compile(r"Fig\.\s*\d+\s+[A-Z]\)", re.IGNORECASE)
+        self.proper_panel_ref_pattern = re.compile(r"Fig\.\s*\d+[A-Z]\)", re.IGNORECASE)
+
     def _find_pdf_file(self) -> Path | None:
         """Find the PDF file to validate."""
         if self.pdf_path:
@@ -250,6 +254,25 @@ class PDFValidator(BaseValidator):
                     )
                 )
 
+        # Guillaume Issue #1: Check for panel references with unwanted spaces
+        panel_refs_with_space = self.panel_ref_with_space_pattern.findall(self.pdf_text)
+        if panel_refs_with_space:
+            errors.append(
+                self._create_error(
+                    ValidationLevel.WARNING,
+                    f"Found {len(panel_refs_with_space)} figure panel references with unwanted spaces",
+                    context=f"Panel references with spaces: {', '.join(panel_refs_with_space[:3])}{'...' if len(panel_refs_with_space) > 3 else ''}",
+                    suggestion="Panel references should be formatted as 'Fig. 1A)' not 'Fig. 1 A)' - check figure reference conversion",
+                    error_code="PDF_PANEL_REFS_WITH_SPACE",
+                )
+            )
+
+        # Check for proper panel reference formatting (Guillaume Issue #1 validation)
+        proper_panel_refs = self.proper_panel_ref_pattern.findall(self.pdf_text)
+        if proper_panel_refs:
+            # This is actually good - just count for statistics
+            pass
+
         return errors
 
     def _validate_tables(self) -> list[ValidationError]:
@@ -367,6 +390,9 @@ class PDFValidator(BaseValidator):
             "table_references": len(self.table_ref_pattern.findall(self.pdf_text)),
             "equation_references": len(self.equation_ref_pattern.findall(self.pdf_text)),
             "section_references": len(self.section_ref_pattern.findall(self.pdf_text)),
+            # Guillaume-specific metrics
+            "proper_panel_references": len(self.proper_panel_ref_pattern.findall(self.pdf_text)),
+            "panel_refs_with_spaces": len(self.panel_ref_with_space_pattern.findall(self.pdf_text)),
         }
 
         # Add page statistics

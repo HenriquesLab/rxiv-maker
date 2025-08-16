@@ -157,7 +157,7 @@ class TestFigureWorkflowValidation:
 
             # Extract metadata and generate LaTeX
             yaml_metadata = extract_yaml_metadata(str(main_md))
-            tex_file = generate_preprint(str(output_dir), yaml_metadata)
+            tex_file = generate_preprint(str(output_dir), yaml_metadata, str(manuscript_dir))
 
             # Read generated LaTeX content
             tex_content = Path(tex_file).read_text()
@@ -487,6 +487,262 @@ class TestFigureWorkflowValidation:
         assert 'tex_position="p"' in main_content, "Has full-page positioning (Issue #4)"
 
         print("✅ E2E framework comprehensively covers Guillaume's reported issues")
+
+    def test_guillaume_ready_file_workflow_e2e(self, figure_test_manuscript):
+        """E2E test for Guillaume's ready file detection issue (Issue #2)."""
+        from rxiv_maker.engine.generate_preprint import generate_preprint
+        from rxiv_maker.processors.yaml_processor import extract_yaml_metadata
+
+        manuscript_dir = figure_test_manuscript.get_manuscript_path()
+        output_dir = figure_test_manuscript.get_output_path()
+        figures_dir = manuscript_dir / "FIGURES"
+
+        # Create Guillaume's specific ready file scenario
+        ready_file = figures_dir / "Guillaume_Fig.png"
+        ready_file.write_text("Guillaume's ready PNG content")
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(manuscript_dir)
+
+            # Create markdown with Guillaume's figure reference style
+            main_md = manuscript_dir / "01_MAIN.md"
+            content = main_md.read_text()
+            guillaume_content = (
+                content
+                + """
+
+## Guillaume Test Section
+
+![Guillaume's Ready Figure](FIGURES/Guillaume_Fig.png)
+{#fig:guillaume} **Guillaume's Test Figure.** This tests ready file detection.
+
+Panel references: (@fig:guillaume A) and (@fig:guillaume B).
+"""
+            )
+            main_md.write_text(guillaume_content)
+
+            # Generate preprint with Guillaume's content
+            yaml_metadata = extract_yaml_metadata(str(main_md))
+            tex_file = generate_preprint(str(output_dir), yaml_metadata)
+
+            # Verify Guillaume's fixes in generated LaTeX
+            tex_content = Path(tex_file).read_text()
+
+            # Issue #2: Ready file should use direct path
+            assert "Figures/Guillaume_Fig.png" in tex_content, "Guillaume's ready file should use direct path in LaTeX"
+            assert "Figures/Guillaume_Fig/Guillaume_Fig.png" not in tex_content, (
+                "Guillaume's ready file should NOT use subdirectory format"
+            )
+
+            # Issue #1: Panel references should have no space
+            assert "Fig. \\ref{fig:guillaume}A)" in tex_content, "Guillaume's panel references should have no space"
+
+            print("✅ Guillaume's ready file workflow works end-to-end")
+
+        finally:
+            os.chdir(original_cwd)
+
+    def test_guillaume_full_page_positioning_e2e(self, figure_test_manuscript):
+        """E2E test for Guillaume's full-page positioning issue (Issue #4)."""
+        from rxiv_maker.engine.generate_preprint import generate_preprint
+        from rxiv_maker.processors.yaml_processor import extract_yaml_metadata
+
+        manuscript_dir = figure_test_manuscript.get_manuscript_path()
+        output_dir = figure_test_manuscript.get_output_path()
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(manuscript_dir)
+
+            # Create manuscript with Guillaume's full-page positioning
+            main_md = manuscript_dir / "01_MAIN.md"
+            content = main_md.read_text()
+
+            fullpage_content = (
+                content
+                + """
+
+## Full-Page Test
+
+![](FIGURES/ready_figure.png)
+{#fig:fullpage width="\\textwidth" tex_position="p"} **Full-page test figure.** This should appear on a dedicated page using figure[p], not figure*[p].
+
+![](FIGURES/ready_figure.png)
+{#fig:twocol width="\\textwidth"} **Two-column spanning figure.** This should use figure* for two-column layout.
+"""
+            )
+            main_md.write_text(fullpage_content)
+
+            # Generate preprint
+            yaml_metadata = extract_yaml_metadata(str(main_md))
+            tex_file = generate_preprint(str(output_dir), yaml_metadata)
+
+            # Verify positioning in generated LaTeX
+            tex_content = Path(tex_file).read_text()
+
+            # Issue #4: Full-page textwidth + position p should use figure[p]
+            fullpage_match = re.search(r"\\begin\{figure\}\[p\].*?Full-page test figure", tex_content, re.DOTALL)
+            assert fullpage_match, "Full-page textwidth with position p should use figure[p] environment"
+
+            # Two-column spanning should use figure*
+            twocol_match = re.search(r"\\begin\{figure\*\}.*?Two-column spanning figure", tex_content, re.DOTALL)
+            assert twocol_match, "Two-column spanning should use figure* environment"
+
+            print("✅ Guillaume's full-page positioning works end-to-end")
+
+        finally:
+            os.chdir(original_cwd)
+
+    def test_guillaume_section_headers_e2e(self, figure_test_manuscript):
+        """E2E test for Guillaume's section header issue (Issue #3)."""
+        from rxiv_maker.engine.generate_preprint import generate_preprint
+        from rxiv_maker.processors.yaml_processor import extract_yaml_metadata
+
+        manuscript_dir = figure_test_manuscript.get_manuscript_path()
+        output_dir = figure_test_manuscript.get_output_path()
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(manuscript_dir)
+
+            # Create manuscript with Introduction section (Guillaume's case)
+            main_md = manuscript_dir / "01_MAIN.md"
+            intro_content = """---
+title:
+  long: "Guillaume Section Test"
+  short: "Section Test"
+authors:
+  - name: "Test Author"
+    affiliation: "Test University"
+keywords: ["test"]
+acknowledge_rxiv_maker: false
+---
+
+# Abstract
+
+This tests Guillaume's section header issue.
+
+## Introduction
+
+This introduction section should appear as "Introduction" not "Main" in the PDF.
+
+## Methods
+
+This is the methods section.
+"""
+            main_md.write_text(intro_content)
+
+            # Generate preprint
+            yaml_metadata = extract_yaml_metadata(str(main_md))
+            tex_file = generate_preprint(str(output_dir), yaml_metadata)
+
+            # Verify section headers in generated LaTeX
+            tex_content = Path(tex_file).read_text()
+
+            # Issue #3: Should have Introduction section, not Main
+            assert "\\section*{Introduction}" in tex_content, "Should generate Introduction section header"
+            assert "This introduction section should appear" in tex_content, "Introduction content should be included"
+
+            # Should NOT have hardcoded Main section when Introduction exists
+            main_section_count = tex_content.count("\\section*{Main}")
+            assert main_section_count == 0, "Should NOT generate Main section when Introduction exists"
+
+            print("✅ Guillaume's section headers work end-to-end")
+
+        finally:
+            os.chdir(original_cwd)
+
+    def test_guillaume_all_issues_integration_e2e(self, figure_test_manuscript):
+        """E2E integration test for all Guillaume's issues working together."""
+        from rxiv_maker.engine.build_manager import BuildManager
+
+        manuscript_dir = figure_test_manuscript.get_manuscript_path()
+        output_dir = figure_test_manuscript.get_output_path()
+        figures_dir = manuscript_dir / "FIGURES"
+
+        # Create comprehensive Guillaume test content
+        ready_file = figures_dir / "Guillaume_Integration.png"
+        ready_file.write_text("Guillaume integration test PNG")
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(manuscript_dir)
+
+            # Create comprehensive test manuscript
+            main_md = manuscript_dir / "01_MAIN.md"
+            integration_content = """---
+title:
+  long: "Guillaume Issues Integration Test"
+  short: "Guillaume Integration"
+authors:
+  - name: "Guillaume Jacquemet"
+    affiliation: "Test University"
+keywords: ["integration", "test"]
+acknowledge_rxiv_maker: false
+---
+
+# Abstract
+
+This tests all Guillaume's issues together.
+
+## Introduction
+
+Testing Guillaume's Introduction section (Issue #3).
+
+Panel references with no spaces: (@fig:integration A) and (@fig:integration B).
+
+![](FIGURES/Guillaume_Integration.png)
+{#fig:integration} **Guillaume Integration Test.** Ready file detection test (Issue #2).
+
+![](FIGURES/Guillaume_Integration.png)
+{#fig:fullpage width="\\textwidth" tex_position="p"} **Full-page positioning test.** Testing Issue #4.
+
+## Results
+
+All Guillaume's issues should be resolved in this manuscript.
+"""
+            main_md.write_text(integration_content)
+
+            # Build complete manuscript
+            build_manager = BuildManager(
+                manuscript_path=str(manuscript_dir), output_dir=str(output_dir), engine="local", skip_validation=True
+            )
+
+            # Copy figures and generate LaTeX
+            build_manager.copy_figures()
+            build_manager.copy_style_files()
+            build_manager.generate_tex_files()
+
+            # Find generated .tex file
+            tex_files = list(output_dir.glob("*.tex"))
+            assert len(tex_files) > 0, "Should generate .tex file"
+
+            tex_file = tex_files[0]
+            tex_content = tex_file.read_text()
+
+            # Verify all Guillaume's fixes
+            checks = [
+                ("Introduction section", "\\section*{Introduction}" in tex_content),
+                ("Ready file direct path", "Figures/Guillaume_Integration.png" in tex_content),
+                ("No subdirectory path", "Figures/Guillaume_Integration/Guillaume_Integration.png" not in tex_content),
+                ("Panel ref no space", "Fig. \\ref{fig:integration}A)" in tex_content),
+                ("Full-page positioning", "\\begin{figure}[p]" in tex_content),
+            ]
+
+            all_passed = True
+            for check_name, passed in checks:
+                if passed:
+                    print(f"   ✅ {check_name}")
+                else:
+                    print(f"   ❌ {check_name}")
+                    all_passed = False
+
+            assert all_passed, "All Guillaume's fixes should work together"
+            print("✅ Guillaume's all issues integration test passed")
+
+        finally:
+            os.chdir(original_cwd)
 
 
 if __name__ == "__main__":

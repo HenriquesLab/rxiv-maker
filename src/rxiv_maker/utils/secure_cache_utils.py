@@ -16,7 +16,7 @@ import shutil
 import tempfile
 import time
 from pathlib import Path
-from typing import Any, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import platformdirs
 
@@ -458,7 +458,7 @@ def validate_cache_security() -> dict[str, Any]:
     Returns:
         Dictionary with security validation results
     """
-    results = {
+    results: Dict[str, Any] = {
         "secure": True,
         "issues": [],
         "warnings": [],
@@ -468,6 +468,11 @@ def validate_cache_security() -> dict[str, Any]:
         "disk_space_ok": True,
         "size_within_limits": True,
     }
+
+    # Initialize typed lists explicitly to help mypy
+    issues: List[str] = results["issues"]
+    warnings: List[str] = results["warnings"]
+    symlinks_found: List[Dict[str, Any]] = results["symlinks_found"]
 
     try:
         cache_dir = get_secure_cache_dir()
@@ -479,14 +484,14 @@ def validate_cache_security() -> dict[str, Any]:
 
         if mode & 0o022:  # Check for world/group write
             results["secure"] = False
-            results["issues"].append(f"Cache directory has insecure permissions: {oct(mode)}")
+            issues.append(f"Cache directory has insecure permissions: {oct(mode)}")
             results["permissions_ok"] = False
 
         # Check for symlinks
         for item in cache_dir.rglob("*"):
             if item.is_symlink():
                 target = Path(os.readlink(item))
-                results["symlinks_found"].append(
+                symlinks_found.append(
                     {
                         "link": str(item),
                         "target": str(target),
@@ -494,16 +499,16 @@ def validate_cache_security() -> dict[str, Any]:
                     }
                 )
 
-        if any(not link["safe"] for link in results["symlinks_found"]):
+        if any(not link["safe"] for link in symlinks_found):
             results["secure"] = False
-            results["issues"].append("Unsafe symlinks detected in cache")
+            issues.append("Unsafe symlinks detected in cache")
 
         # Check disk space
         has_space, available_mb = _check_disk_space(cache_dir)
         results["disk_space_ok"] = has_space
 
         if available_mb < 100:
-            results["warnings"].append(f"Low disk space: {available_mb}MB available")
+            warnings.append(f"Low disk space: {available_mb}MB available")
 
         # Check cache size
         total_size = sum(f.stat().st_size for f in cache_dir.rglob("*") if f.is_file())
@@ -511,11 +516,11 @@ def validate_cache_security() -> dict[str, Any]:
 
         if total_size_mb > MAX_CACHE_SIZE_MB:
             results["size_within_limits"] = False
-            results["warnings"].append(f"Cache exceeds size limit: {total_size_mb:.1f}MB > {MAX_CACHE_SIZE_MB}MB")
+            warnings.append(f"Cache exceeds size limit: {total_size_mb:.1f}MB > {MAX_CACHE_SIZE_MB}MB")
 
     except Exception as e:
         results["secure"] = False
-        results["issues"].append(f"Security validation error: {e}")
+        issues.append(f"Security validation error: {e}")
 
     return results
 

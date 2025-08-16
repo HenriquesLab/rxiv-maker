@@ -52,7 +52,7 @@ authors:
 
             with (
                 patch(
-                    "rxiv_maker.cli.commands.build.os.environ.get",
+                    "rxiv_maker.core.environment_manager.EnvironmentManager.get_manuscript_path",
                     return_value=str(manuscript_dir),
                 ),
                 patch("rxiv_maker.engine.build_manager.BuildManager") as mock_build_manager,

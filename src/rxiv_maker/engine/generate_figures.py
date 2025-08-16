@@ -13,6 +13,7 @@ import os
 import re
 import sys
 from pathlib import Path
+from typing import Optional
 
 try:
     import requests
@@ -46,6 +47,8 @@ if __name__ == "__main__":
 
 # Import platform utilities and Docker manager with proper fallback handling
 try:
+    from ..core.environment_manager import EnvironmentManager
+    from ..core.path_manager import PathManager
     from ..docker.manager import get_docker_manager
     from ..utils.platform import platform_detector
 except ImportError:
@@ -53,6 +56,8 @@ except ImportError:
     import sys
 
     sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    from rxiv_maker.core.environment_manager import EnvironmentManager  # type: ignore[no-redef]
+    from rxiv_maker.core.path_manager import PathManager  # type: ignore[no-redef]
     from rxiv_maker.docker.manager import get_docker_manager  # type: ignore[no-redef]
     from rxiv_maker.utils.platform import platform_detector  # type: ignore[no-redef]
 
@@ -66,7 +71,7 @@ class FigureGenerator:
         output_dir="FIGURES",
         output_format="png",
         r_only=False,
-        engine="local",
+        engine=None,
         enable_content_caching=True,
         manuscript_path=None,
     ):
@@ -77,20 +82,36 @@ class FigureGenerator:
             output_dir: Directory for generated output files
             output_format: Default output format for figures
             r_only: Only process R files if True
-            engine: Execution engine ("local" or "docker")
+            engine: Execution engine ("local" or "docker") - uses environment if None
             enable_content_caching: Enable content-based caching to avoid unnecessary rebuilds
             manuscript_path: Path to manuscript directory (for caching, defaults to current directory)
         """
-        self.figures_dir = Path(figures_dir).resolve()
+        # Initialize path management
+        try:
+            # Try to use PathManager if manuscript_path can be resolved
+            if manuscript_path:
+                self.path_manager: Optional[PathManager] = PathManager(manuscript_path=manuscript_path)
+                self.figures_dir = self.path_manager.figures_dir
+            else:
+                # Fallback to manual path resolution
+                self.figures_dir = Path(figures_dir).resolve()
+                self.path_manager = None
+        except Exception:
+            # Fallback to manual path resolution if PathManager fails
+            self.figures_dir = Path(figures_dir).resolve()
+            self.path_manager = None
+
         self.output_dir = Path(output_dir).resolve()
         self.output_format = output_format.lower()
         self.r_only = r_only
-        self.engine = engine
+
+        # Use EnvironmentManager for engine configuration
+        self.engine = engine or EnvironmentManager.get_rxiv_engine()
         self.enable_content_caching = enable_content_caching
         self.supported_formats = ["png", "svg", "pdf", "eps"]
         self.platform = platform_detector
         self.logger = logging.getLogger(__name__)
-        self.verbose = False
+        self.verbose = EnvironmentManager.is_verbose()
 
         # Initialize content-based caching if enabled
         self.checksum_manager = None
@@ -99,11 +120,15 @@ class FigureGenerator:
                 # Import here to avoid circular dependencies
                 from ..utils.figure_checksum import FigureChecksumManager
 
-                # Use provided manuscript path or default to parent of figures_dir
-                if manuscript_path is None:
-                    manuscript_path = self.figures_dir.parent
+                # Use PathManager if available, otherwise use figures_dir parent
+                if self.path_manager:
+                    manuscript_cache_path = str(self.path_manager.manuscript_path)
+                elif manuscript_path:
+                    manuscript_cache_path = str(Path(manuscript_path).resolve())
+                else:
+                    manuscript_cache_path = str(self.figures_dir.parent)
 
-                self.checksum_manager = FigureChecksumManager(str(manuscript_path))
+                self.checksum_manager = FigureChecksumManager(manuscript_cache_path)
             except ImportError as e:
                 print(f"Warning: Content caching disabled due to import error: {e}")
                 self.enable_content_caching = False
@@ -111,8 +136,11 @@ class FigureGenerator:
         # Initialize Docker manager if using docker engine
         self.docker_manager = None
         if self.engine == "docker":
-            # Set workspace directory to current working directory to include all files
-            workspace_dir = Path.cwd().resolve()
+            # Use PathManager's working directory if available
+            if self.path_manager:
+                workspace_dir = self.path_manager._working_dir
+            else:
+                workspace_dir = Path.cwd().resolve()
             self.docker_manager = get_docker_manager(workspace_dir=workspace_dir)
 
         if self.output_format not in self.supported_formats:

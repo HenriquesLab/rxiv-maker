@@ -1,6 +1,5 @@
 """ArXiv command for rxiv-maker CLI."""
 
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -12,6 +11,9 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from rxiv_maker.engine.build_manager import BuildManager
 from rxiv_maker.engine.prepare_arxiv import main as prepare_arxiv_main
+
+from ...core.environment_manager import EnvironmentManager
+from ...core.path_manager import PathManager, PathResolutionError
 
 console = Console()
 
@@ -87,26 +89,24 @@ def arxiv(
     """
     # Determine verbosity from context object
     verbose = ctx.obj.get("verbose", False) if ctx.obj else False
+    verbose = verbose or EnvironmentManager.is_verbose()
 
-    # Default to MANUSCRIPT if not specified
-    if manuscript_path is None:
-        manuscript_path = os.environ.get("MANUSCRIPT_PATH", "MANUSCRIPT")
+    # Use PathManager for path resolution and validation
+    try:
+        # Default to environment variable or fallback if not specified
+        if manuscript_path is None:
+            manuscript_path = EnvironmentManager.get_manuscript_path() or "MANUSCRIPT"
 
-    # Validate manuscript path exists
-    if not Path(manuscript_path).exists():
-        # Print errors via click so that runner.invoke captures output
-        click.secho(
-            f"❌ Error: Manuscript directory '{manuscript_path}' does not exist",
-            fg="red",
-        )
-        click.secho(
-            f"💡 Run 'rxiv init {manuscript_path}' to create a new manuscript",
-            fg="yellow",
-        )
+        # Use PathManager for path validation and resolution
+        path_manager = PathManager(manuscript_path=manuscript_path, output_dir=output_dir)
+
+    except PathResolutionError as e:
+        click.secho(f"❌ Path resolution error: {e}", fg="red")
+        click.secho(f"💡 Run 'rxiv init {manuscript_path}' to create a new manuscript", fg="yellow")
         sys.exit(1)
 
-    # Set defaults - make paths relative to manuscript directory
-    manuscript_output_dir = str(Path(manuscript_path) / output_dir)
+    # Set defaults using PathManager
+    manuscript_output_dir = str(path_manager.output_dir)
     if arxiv_dir is None:
         arxiv_dir = str(Path(manuscript_output_dir) / "arxiv_submission")
     if zip_filename is None:
@@ -121,16 +121,16 @@ def arxiv(
         ) as progress:
             # First, ensure PDF is built
             task = progress.add_task("Checking PDF exists...", total=None)
-            # Build full PDF path string so Path() mock can be intercepted correctly
-            pdf_filename = f"{Path(manuscript_path).name}.pdf"
-            pdf_path = Path(os.path.join(manuscript_output_dir, pdf_filename))
+            # Build full PDF path using PathManager
+            pdf_filename = f"{path_manager.manuscript_name}.pdf"
+            pdf_path = path_manager.output_dir / pdf_filename
 
             if not pdf_path.exists():
                 progress.update(task, description="Building PDF first...")
-                # Use BuildManager imported at module level
+                # Use BuildManager with PathManager paths
                 build_manager = BuildManager(
-                    manuscript_path=manuscript_path,
-                    output_dir=output_dir,  # BuildManager handles making this relative to manuscript_path
+                    manuscript_path=str(path_manager.manuscript_path),
+                    output_dir=str(path_manager.output_dir),
                     verbose=verbose,
                 )
                 success = build_manager.run()
@@ -144,14 +144,14 @@ def arxiv(
             # Prepare arXiv package
             progress.update(task, description="Preparing arXiv package...")
 
-            # Prepare arguments
+            # Prepare arguments using PathManager
             args = [
                 "--output-dir",
                 manuscript_output_dir,
                 "--arxiv-dir",
                 arxiv_dir,
                 "--manuscript-path",
-                manuscript_path,
+                str(path_manager.manuscript_path),
             ]
 
             if not no_zip:
@@ -174,12 +174,12 @@ def arxiv(
                     # Copy to manuscript directory with proper naming
                     import shutil
 
-                    config_path = Path(manuscript_path) / "00_CONFIG.yml"
+                    config_path = path_manager.manuscript_path / "00_CONFIG.yml"
                     year, first_author = _extract_author_and_year(config_path)
 
                     # Create proper filename
                     arxiv_filename = f"{year}__{first_author}_et_al__for_arxiv.zip"
-                    final_path = Path(manuscript_path) / arxiv_filename
+                    final_path = path_manager.manuscript_path / arxiv_filename
 
                     # Copy file
                     shutil.copy2(zip_filename, final_path)
