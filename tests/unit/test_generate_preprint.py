@@ -57,7 +57,7 @@ class TestGeneratePreprintCore(unittest.TestCase):
         mock_get_template.assert_called_once()
         mock_find_md.assert_called_once_with(None)
         mock_process_template.assert_called_once_with("template content", self.yaml_metadata, "/fake/manuscript.md")
-        mock_write_output.assert_called_once_with(self.output_dir, "processed template content", None)
+        mock_write_output.assert_called_once_with(self.output_dir, "processed template content", manuscript_name=None)
         mock_generate_supp.assert_called_once_with(self.output_dir, self.yaml_metadata)
 
         # Verify result
@@ -330,7 +330,7 @@ class TestGeneratePreprintIntegration(unittest.TestCase):
         mock_find_md.assert_called_once_with("/custom/manuscript.md")
         mock_process_template.assert_called_once_with(template_content, yaml_metadata, "/manuscripts/paper.md")
         mock_write_output.assert_called_once_with(
-            self.output_dir, "\\documentclass{article}\\begin{document}...", "manuscript.md"
+            self.output_dir, "\\documentclass{article}\\begin{document}...", manuscript_name=None
         )
         mock_generate_supp.assert_called_once_with(self.output_dir, yaml_metadata)
 
