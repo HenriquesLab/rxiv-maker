@@ -18,11 +18,21 @@ Rxiv-Maker helps address these challenges by providing a developer-centric frame
 
 Manuscript preparation becomes a transparent process that gives researchers access to professional typesetting tools. A Visual Studio Code extension provides syntax highlighting and automated citation management. Researchers can leverage familiar development environments while maintaining rigorous version control and reproducibility guarantees. This bridges traditional authoring workflows with contemporary best practices in computational research.
 
+<!-- Example 1: Standard single-column figure positioning -->
+<!-- tex_position="t" places the figure at the top of the page (recommended default) -->
+<!-- width not specified defaults to \linewidth (full column width) -->
 ![](FIGURES/Figure__system_diagram/Figure__system_diagram.svg)
 {#fig:system_diagram tex_position="t"} **The Rxiv-Maker System Diagram.** The system integrates Markdown content, YAML metadata, Python and R scripts, and bibliography files through a processing engine. This engine leverages GitHub Actions, virtual environments, and LaTeX to produce a publication-ready scientific article, demonstrating a fully automated and reproducible pipeline.
 
+<!-- Example 2: Full-width two-column spanning figure -->
+<!-- width="\textwidth" makes the figure span both columns (use figure* environment) -->
+<!-- tex_position="t" maintains top placement preference -->  
+<!-- This combination is perfect for detailed workflow diagrams that need maximum width -->
 ![](FIGURES/Figure__workflow/Figure__workflow.svg)
 {#fig:workflow width="\textwidth" tex_position="t"} **Rxiv-Maker Workflow: User Input vs. Automated Processing.** The framework clearly separates user responsibilities (content creation and configuration) from automated processes (parsing, conversion, compilation, and output generation). Users only need to write content and set preferences. At the same time, the system handles all technical aspects of manuscript preparation automatically, ensuring a streamlined workflow from markdown input to publication-ready PDF output.
+
+<!-- For comprehensive figure positioning guidance, see docs/tutorials/figure-positioning.md -->
+<!-- This covers positioning attributes, width control, panel references, and troubleshooting -->
 
 The framework enables programmatic generation of figures and tables using Python and R scripting with visualisation libraries including Matplotlib [@Hunter2007_matplotlib] and Seaborn [@Waskom2021_seaborn]. 
 

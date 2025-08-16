@@ -1,0 +1,29 @@
+# Ubuntu R Packages Optimization Patch for Dockerfile
+# This replaces the problematic R package compilation section (lines 201-246)
+# with Ubuntu's pre-compiled R packages that install in seconds instead of 44+ minutes
+
+# Install essential R packages using Ubuntu's pre-compiled packages (MUCH FASTER!)
+# 🚀 BuildKit cache mount for Ubuntu R packages (instant install vs 44-minute compilation)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+    # Core infrastructure packages (instant install from Ubuntu)
+    r-cran-cli \
+    r-cran-rlang \
+    r-cran-lifecycle \
+    r-cran-vctrs \
+    r-cran-magrittr \
+    r-cran-stringi \
+    r-cran-stringr \
+    # Network and data packages (instant install from Ubuntu)
+    r-cran-httr \
+    r-cran-jsonlite \
+    r-cran-xml2 \
+    # Graphics packages (these were the problematic ones taking 44+ minutes!)
+    r-cran-systemfonts \
+    r-cran-ragg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Note: textshaping is not available as Ubuntu package, but systemfonts + ragg are sufficient
+# for most use cases. If textshaping is absolutely required, it can be installed separately
+# as a fallback with a much shorter timeout since other packages are already available.

@@ -36,6 +36,8 @@ Depends: ${python3:Depends},
          texlive-latex-base,
          texlive-latex-extra,
          texlive-fonts-recommended,
+         texlive-science,
+         texlive-fonts-extra,
          biber
 Recommends: docker.io | podman,
             nodejs (>= 16),

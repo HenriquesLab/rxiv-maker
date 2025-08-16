@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.5.14] - 2025-08-16
+
+### Fixed
+- **🐛 Introduction Section Header Mapping**: Fixed "## Introduction" sections being rendered as "Main" in PDF output
+  - **Root Cause**: Template processor was using hardcoded `\section*{Main}` header regardless of actual section type
+  - **Dynamic Section Headers**: Modified template processor to generate appropriate section headers based on content type
+  - **Template Update**: Replaced hardcoded LaTeX section with dynamic `<PY-RPL:MAIN-SECTION>` placeholder
+  - **User Impact**: Users writing `## Introduction` now get "Introduction" header in PDF, not "Main"
+  - **Comprehensive Testing**: Added end-to-end tests that verify actual .tex file generation
+
+- **🐛 Figure Ready File Duplication Requirement**: Fixed requirement to duplicate figure files in both direct and subdirectory locations
+  - **Root Cause**: Ready file detection logic was incomplete - when ready file existed, code still converted to subdirectory format
+  - **Smart Path Resolution**: Enhanced figure processor to use ready file path directly when file exists at `Figures/Fig1.png`
+  - **Fallback Behavior**: Maintains subdirectory format `Figures/Fig1/Fig1.png` when no ready file exists
+  - **User Impact**: Users can now place `Fig1.png` only in `Figures/` directory without requiring `Figures/Fig1/Fig1.png`
+  - **Working Directory Independence**: Fixes work correctly regardless of current working directory
+
+- **🐛 Full-Page Figure Positioning with Textwidth**: Fixed `tex_position="p"` being ignored for `width="\textwidth"` figures
+  - **Root Cause**: Code automatically forced 2-column spanning (`figure*`) for textwidth figures, overriding explicit positioning
+  - **Respect User Intent**: Modified logic to honor explicit `tex_position="p"` even with `width="\textwidth"`
+  - **Smart Environment Selection**: Uses regular `figure[p]` for dedicated page figures instead of `figure*[p]`
+  - **Preserved Behavior**: Maintains `figure*` for textwidth figures without explicit dedicated page positioning
+  - **User Impact**: Full-width figures with `tex_position="p"` now appear on dedicated pages, not forced into 2-column layout
+
+### Added
+- **📋 Comprehensive Regression Testing**: Added extensive test suite covering all three reported issues
+  - **End-to-End Validation**: Tests that verify actual .tex file generation, not just internal logic
+  - **Real Environment Simulation**: Tests run in realistic manuscript directory structures
+  - **Multiple Scenarios**: Tests cover both working and non-working cases for each fix
+  - **Integration Testing**: Validates fixes work together without conflicts
+
 ## [v1.5.8] - 2025-08-15
 
 ### Fixed

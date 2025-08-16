@@ -61,6 +61,7 @@ def convert_figure_references_to_latex(text: MarkdownContent) -> LatexContent:
     r"""Convert figure references from @fig:id and @sfig:id to LaTeX.
 
     Converts @fig:id to Fig. \\ref{fig:id} and @sfig:id to Fig. \\ref{sfig:id}.
+    Handles panel references like @fig:Figure1 A to produce Fig. \\ref{fig:Figure1}A (no space).
 
     Args:
         text: Text containing figure references
@@ -68,8 +69,14 @@ def convert_figure_references_to_latex(text: MarkdownContent) -> LatexContent:
     Returns:
         Text with figure references converted to LaTeX format with "Figure" prefix
     """
-    # Convert @fig:id to Figure \ref{fig:id}
+    # Convert @fig:id followed by space and panel letter to Figure \ref{fig:id}PanelLetter (no space)
+    text = re.sub(r"@fig:([a-zA-Z0-9_-]+)\s+([A-Z])", r"Fig. \\ref{fig:\1}\2", text)
+
+    # Convert @fig:id to Figure \ref{fig:id} (remaining basic references)
     text = re.sub(r"@fig:([a-zA-Z0-9_-]+)", r"Fig. \\ref{fig:\1}", text)
+
+    # Convert @sfig:id followed by space and panel letter to Figure \ref{sfig:id}PanelLetter (no space)
+    text = re.sub(r"@sfig:([a-zA-Z0-9_-]+)\s+([A-Z])", r"Fig. \\ref{sfig:\1}\2", text)
 
     # Convert @sfig:id to Figure \ref{sfig:id} (supplementary figures)
     text = re.sub(r"@sfig:([a-zA-Z0-9_-]+)", r"Fig. \\ref{sfig:\1}", text)
@@ -151,15 +158,19 @@ def create_latex_figure_environment(
         figure_name = os.path.splitext(os.path.basename(latex_path))[0]
         figure_ext = os.path.splitext(latex_path)[1]
 
-        # Convert to subdirectory format: Figures/Figure__name/Figure__name.ext
-        latex_path = f"Figures/{figure_name}/{figure_name}{figure_ext}"
+        # Check if figure already exists as ready file (direct in Figures/ directory)
+        ready_figure_path = latex_path
+        if os.path.exists(ready_figure_path.replace("Figures/", "FIGURES/")):
+            # Ready figure exists, use it directly without subdirectory conversion
+            # latex_path already contains the correct ready file path
+            pass
+        else:
+            # Convert to subdirectory format: Figures/Figure__name/Figure__name.ext
+            latex_path = f"Figures/{figure_name}/{figure_name}{figure_ext}"
 
     # Convert SVG to PNG for LaTeX compatibility
     if latex_path.endswith(".svg"):
         latex_path = latex_path.replace(".svg", ".png")
-
-    # Get positioning (default to 'ht' if not specified)
-    position: FigurePosition = attributes.get("tex_position", "ht")
 
     # Get width (default to '\linewidth' if not specified)
     width: FigureWidth = attributes.get("width", "\\linewidth")
@@ -173,17 +184,30 @@ def create_latex_figure_environment(
             # Assume fraction of linewidth if no backslash
             width = f"{width}\\linewidth"
 
+    # Get positioning first to inform 2-column decision
+    position: FigurePosition = attributes.get("tex_position", "ht")
+
     # Check if this should be a 2-column spanning figure
     is_twocolumn = (
         attributes.get("span") == "2col"
         or attributes.get("twocolumn") == "true"
         or attributes.get("twocolumn") is True
-        or width == "\\textwidth"  # Auto-detect: \textwidth in 2-col docs means span both
+        or (width == "\\textwidth" and position != "p")  # Auto-detect, but not for dedicated page figures
     )
+
+    # Only adjust positioning for two-column spanning figures that don't have explicit positioning
+    if is_twocolumn and position == "ht":
+        # For two-column spanning figures with default positioning, use 'tp' for better placement
+        position = "tp"
 
     # Process caption text to remove markdown formatting
     processed_caption = re.sub(r"\*\*([^*]+)\*\*", r"\\textbf{\1}", caption)
     processed_caption = re.sub(r"\*([^*]+)\*", r"\\textit{\1}", processed_caption)
+
+    # For full-width figures with long captions, add line breaks to prevent overflow
+    if width == "\\textwidth" and len(processed_caption) > 200:
+        # Add some formatting to help with caption wrapping
+        processed_caption = f"\\raggedright {processed_caption}"
 
     # Create LaTeX figure environment - use figure* for 2-column spanning
     figure_env = "figure*" if is_twocolumn else "figure"

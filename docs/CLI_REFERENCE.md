@@ -55,6 +55,8 @@ rxiv pdf --engine docker          # Use Docker engine
 rxiv pdf --skip-validation        # Skip validation for debugging
 ```
 
+**Figure Issues?** If you encounter figure positioning, layout, or spacing problems in your PDF, see the **[Figure Positioning Guide](tutorials/figure-positioning.md)** for comprehensive troubleshooting and positioning control.
+
 ### `rxiv validate`
 
 Validate manuscript structure and content.
@@ -132,6 +134,9 @@ rxiv figures                      # Generate missing figures
 rxiv figures --force              # Regenerate all figures
 rxiv figures --verbose            # Show generation details
 ```
+
+**Figure Positioning:**
+For advanced figure positioning, sizing, and layout control, see the **[Figure Positioning Guide](tutorials/figure-positioning.md)**. This covers `tex_position` attributes, width control, panel references, and troubleshooting layout issues.
 
 ### `rxiv bibliography`
 

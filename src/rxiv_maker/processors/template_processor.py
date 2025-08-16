@@ -377,7 +377,21 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
 
     # Replace content placeholders with extracted sections
     template_content = template_content.replace("<PY-RPL:ABSTRACT>", content_sections.get("abstract", ""))
-    template_content = template_content.replace("<PY-RPL:MAIN-CONTENT>", content_sections.get("main", ""))
+
+    # Handle main/introduction section with proper header
+    if content_sections.get("introduction"):
+        # If there's an introduction section, use it with "Introduction" header
+        main_section_content = content_sections["introduction"]
+        main_section = f"\\section*{{Introduction}}\n{main_section_content}"
+    elif content_sections.get("main"):
+        # If there's a main section (but no introduction), use it with "Main" header
+        main_section_content = content_sections["main"]
+        main_section = f"\\section*{{Main}}\n{main_section_content}"
+    else:
+        # No main content found
+        main_section = ""
+
+    template_content = template_content.replace("<PY-RPL:MAIN-SECTION>", main_section)
     template_content = template_content.replace("<PY-RPL:METHODS>", content_sections.get("methods", ""))
 
     # Handle main content sections conditionally
