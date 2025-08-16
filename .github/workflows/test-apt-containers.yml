@@ -88,6 +88,7 @@ jobs:
       ubuntu-versions: ${{ steps.config.outputs.ubuntu-versions }}
       test-types: ${{ steps.config.outputs.test-types }}
       parallel-jobs: ${{ steps.config.outputs.parallel-jobs }}
+      fail-fast: ${{ steps.config.outputs.fail-fast }}
       skip-repo-validation: ${{ steps.config.outputs.skip-repo-validation }}
 
     steps:

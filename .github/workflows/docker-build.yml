@@ -71,6 +71,7 @@ jobs:
       should-build: ${{ steps.decision.outputs.should-build }}
       dockerfile-changed: ${{ steps.changes.outputs.dockerfile }}
       dependencies-changed: ${{ steps.changes.outputs.dependencies }}
+      python-code-changed: ${{ steps.changes.outputs.python_code }}
       image-tags: ${{ steps.meta.outputs.tags }}
       image-labels: ${{ steps.meta.outputs.labels }}
 
@@ -441,27 +442,6 @@ jobs:
             echo "- Faster CI/CD pipeline execution" >> $GITHUB_STEP_SUMMARY
             echo "- Lower environmental impact" >> $GITHUB_STEP_SUMMARY
             echo "- Existing Docker images remain current" >> $GITHUB_STEP_SUMMARY
-          fi
-
-      - name: Workflow success verification
-        run: |
-          # Ensure workflow reports success even when skipped
-          if [ "${{ needs.skip-success.result }}" == "success" ]; then
-            echo "✅ Workflow completed successfully (skipped appropriately)"
-            exit 0
-          elif [ "${{ needs.detect-changes.outputs.should-build }}" == "true" ]; then
-            # Check if build pipeline succeeded
-            if [ "${{ needs.build-images.result }}" == "success" ] &&
-               [ "${{ needs.test-images.result }}" == "success" ]; then
-              echo "✅ Workflow completed successfully (build pipeline passed)"
-              exit 0
-            else
-              echo "❌ Workflow failed in build pipeline"
-              exit 1
-            fi
-          else
-            echo "✅ Workflow completed successfully"
-            exit 0
           fi
 
       - name: Workflow success verification
