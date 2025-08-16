@@ -342,7 +342,7 @@ jobs:
           echo "🔒 SHA256: ${SHA256}"
 
           # Clone homebrew tap repo
-          git clone https://${{ secrets.GITHUB_TOKEN }}@github.com/HenriquesLab/homebrew-rxiv-maker.git homebrew-tap
+          git clone https://${{ secrets.DISPATCH_PAT }}@github.com/HenriquesLab/homebrew-rxiv-maker.git homebrew-tap
           cd homebrew-tap
 
           # Configure git
