@@ -524,7 +524,7 @@ Panel references: (@fig:guillaume A) and (@fig:guillaume B).
 
             # Generate preprint with Guillaume's content
             yaml_metadata = extract_yaml_metadata(str(main_md))
-            tex_file = generate_preprint(str(output_dir), yaml_metadata)
+            tex_file = generate_preprint(str(output_dir), yaml_metadata, str(manuscript_dir))
 
             # Verify Guillaume's fixes in generated LaTeX
             tex_content = Path(tex_file).read_text()
@@ -576,7 +576,7 @@ Panel references: (@fig:guillaume A) and (@fig:guillaume B).
 
             # Generate preprint
             yaml_metadata = extract_yaml_metadata(str(main_md))
-            tex_file = generate_preprint(str(output_dir), yaml_metadata)
+            tex_file = generate_preprint(str(output_dir), yaml_metadata, str(manuscript_dir))
 
             # Verify positioning in generated LaTeX
             tex_content = Path(tex_file).read_text()
@@ -635,7 +635,7 @@ This is the methods section.
 
             # Generate preprint
             yaml_metadata = extract_yaml_metadata(str(main_md))
-            tex_file = generate_preprint(str(output_dir), yaml_metadata)
+            tex_file = generate_preprint(str(output_dir), yaml_metadata, str(manuscript_dir))
 
             # Verify section headers in generated LaTeX
             tex_content = Path(tex_file).read_text()
