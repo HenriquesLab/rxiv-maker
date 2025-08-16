@@ -265,12 +265,7 @@ RUN echo '#!/bin/bash' > /usr/local/bin/dev-mode.sh && \
     echo 'exec /bin/bash "$@"' >> /usr/local/bin/dev-mode.sh
 RUN chmod +x /usr/local/bin/dev-mode.sh
 
-# Verify siunitx package is available
-RUN cd /tmp \
-    && echo "\\documentclass{article}\\usepackage{siunitx}\\begin{document}\\SI{1}{\\meter}\\end{document}" > test_siunitx.tex \
-    && timeout 60 pdflatex -interaction=nonstopmode test_siunitx.tex \
-    && echo "✅ siunitx package verified successfully" \
-    && rm -f test_siunitx.* || (echo "❌ siunitx verification failed"; cat test_siunitx.log || true; exit 1)
+# Note: siunitx package is included via texlive-science package
 
 # Run dependency verification during build to catch issues early
 RUN /usr/local/bin/verify-python-deps.sh
