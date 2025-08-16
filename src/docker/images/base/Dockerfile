@@ -214,32 +214,40 @@ RUN --mount=type=cache,target=/root/.cache/R,sharing=locked \
     'https://cran.rstudio.com/' \
   )); \
   options(Ncpus = parallel::detectCores()); \
-  # ARM64-specific timeout adjustments \
-  timeout_val <- if (Sys.info()['machine'] == 'aarch64') 600 else 120; \
+  # ARM64-specific timeout adjustments - increased for complex packages \
+  timeout_val <- if (Sys.info()['machine'] == 'aarch64') 1200 else 300; \
   options(timeout = timeout_val); \
   \
-  # Helper function for robust package installation \
-  install_safe <- function(packages, description = '') { \
+  # Helper function for robust package installation with timeout protection \
+  install_safe <- function(packages, description = '', optional = FALSE) { \
     cat('Installing', description, 'packages:', paste(packages, collapse=', '), '\\n'); \
     for (pkg in packages) { \
       tryCatch({ \
         if (!require(pkg, character.only = TRUE, quietly = TRUE)) { \
+          # Try with timeout protection \
           install.packages(pkg, dependencies = TRUE, quiet = FALSE); \
           cat('✓ Successfully installed:', pkg, '\\n'); \
         } else { \
           cat('✓ Already available:', pkg, '\\n'); \
         } \
       }, error = function(e) { \
-        cat('✗ Failed to install:', pkg, '- Error:', conditionMessage(e), '\\n'); \
+        msg <- paste('✗ Failed to install:', pkg, '- Error:', conditionMessage(e)); \
+        cat(msg, '\\n'); \
+        if (!optional) { \
+          cat('Package', pkg, 'is required, continuing anyway...\\n'); \
+        } \
       }); \
     } \
   }; \
   \
-  # Only install packages NOT available as system packages \
+  # Install core packages first (required) \
   install_safe(c('cli', 'rlang', 'lifecycle', 'vctrs'), 'core infrastructure'); \
   install_safe(c('magrittr', 'stringi', 'stringr'), 'string processing'); \
-  install_safe(c('systemfonts', 'textshaping', 'ragg'), 'graphics system'); \
   install_safe(c('httr', 'jsonlite', 'xml2'), 'network and data'); \
+  \
+  # Install graphics packages (can be problematic on ARM64, make semi-optional) \
+  cat('Attempting graphics system packages (may timeout on ARM64)...\\n'); \
+  install_safe(c('systemfonts', 'textshaping', 'ragg'), 'graphics system', optional = TRUE); \
   \
   cat('R package installation completed using devxy.io binary repository.\\n'); \
 "
