@@ -4,7 +4,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 try:
     import pytest
@@ -316,12 +316,37 @@ class TestDOIValidator(unittest.TestCase):
             shutil.rmtree(unique_temp, ignore_errors=True)
 
     @pytest.mark.fast
+    @patch("requests.Session.get")
+    @patch("requests.Session.head")
+    @patch("requests.get")
+    @patch("requests.head")
+    @patch("crossref_commons.retrieval.get_publication_as_json")
     @patch.object(DOIValidator, "_check_network_connectivity", return_value=True)
     @patch.object(DOIValidator, "_validate_doi_metadata")
-    def test_validation_with_api_error(self, mock_validate_metadata, mock_network_check):
+    def test_validation_with_api_error(
+        self,
+        mock_validate_metadata,
+        mock_network_check,
+        mock_crossref,
+        mock_requests_head,
+        mock_requests_get,
+        mock_session_head,
+        mock_session_get,
+    ):
         """Test validation when metadata validation fails for all sources."""
-        # Mock metadata validation to return error indicating no sources available
+        # Configure mocks to prevent actual network calls
+        import requests
 
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {}
+        mock_session_get.return_value = mock_response
+        mock_session_head.return_value = mock_response
+        mock_requests_get.return_value = mock_response
+        mock_requests_head.return_value = mock_response
+        mock_crossref.side_effect = requests.exceptions.RequestException("Mocked network error")
+
+        # Mock metadata validation to return error indicating no sources available
         from rxiv_maker.validators.base_validator import ValidationError, ValidationLevel
 
         mock_validate_metadata.return_value = [
@@ -371,10 +396,36 @@ class TestDOIValidator(unittest.TestCase):
         )
 
     @pytest.mark.fast
+    @patch("requests.Session.get")
+    @patch("requests.Session.head")
+    @patch("requests.get")
+    @patch("requests.head")
+    @patch("crossref_commons.retrieval.get_publication_as_json")
     @patch.object(DOIValidator, "_check_network_connectivity", return_value=True)
     @patch.object(DOIValidator, "_validate_doi_metadata")
-    def test_datacite_fallback_success(self, mock_validate_metadata, mock_network_check):
+    def test_datacite_fallback_success(
+        self,
+        mock_validate_metadata,
+        mock_network_check,
+        mock_crossref,
+        mock_requests_head,
+        mock_requests_get,
+        mock_session_head,
+        mock_session_get,
+    ):
         """Test successful DataCite fallback when CrossRef fails."""
+        # Configure mocks to prevent actual network calls
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {}
+        mock_session_get.return_value = mock_response
+        mock_session_head.return_value = mock_response
+        mock_requests_get.return_value = mock_response
+        mock_requests_head.return_value = mock_response
+        import requests
+
+        mock_crossref.side_effect = requests.exceptions.RequestException("Mocked network error")
+
         # Mock successful DataCite validation
         from rxiv_maker.validators.base_validator import ValidationError, ValidationLevel
 
@@ -551,23 +602,38 @@ class TestDOIValidatorIntegration(unittest.TestCase):
 
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
+    @patch("requests.Session.get")
+    @patch("requests.Session.head")
+    @patch("requests.get")
+    @patch("requests.head")
     @patch("crossref_commons.retrieval.get_publication_as_json")
-    def test_citation_validator_integration(self, mock_crossref):
+    def test_citation_validator_integration(
+        self, mock_crossref, mock_requests_head, mock_requests_get, mock_session_head, mock_session_get
+    ):
         """Test DOI validation integration with citation validator."""
         try:
             from rxiv_maker.validators.citation_validator import CitationValidator
         except ImportError:
             self.skipTest("CitationValidator not available")
 
+        # Configure mocks to prevent actual network calls
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {}
+        mock_session_get.return_value = mock_response
+        mock_session_head.return_value = mock_response
+        mock_requests_get.return_value = mock_response
+        mock_requests_head.return_value = mock_response
+
         # Mock CrossRef response
-        mock_response = {
+        crossref_response = {
             "message": {
                 "title": ["Integrated Test Article"],
                 "container-title": ["Integration Journal"],
                 "published-print": {"date-parts": [[2023]]},
             }
         }
-        mock_crossref.return_value = mock_response
+        mock_crossref.return_value = crossref_response
 
         # Create manuscript files
         main_content = """
