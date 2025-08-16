@@ -1,13 +1,13 @@
 """Track changes command for rxiv-maker CLI."""
 
-import os
 import sys
-from pathlib import Path
 
 import click
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
+from ...core.environment_manager import EnvironmentManager
+from ...core.path_manager import PathManager, PathResolutionError
 from ...engine.build_manager import BuildManager
 
 console = Console()
@@ -33,22 +33,20 @@ def track_changes(
     MANUSCRIPT_PATH: Path to manuscript directory (default: MANUSCRIPT)
     TAG: Git tag to track changes against
     """
-    verbose = ctx.obj.get("verbose", False)
+    verbose = ctx.obj.get("verbose", False) or EnvironmentManager.is_verbose()
 
-    # Default to MANUSCRIPT if not specified
-    if manuscript_path is None:
-        manuscript_path = os.environ.get("MANUSCRIPT_PATH", "MANUSCRIPT")
+    # Use PathManager for path resolution and validation
+    try:
+        # Default to environment variable or fallback if not specified
+        if manuscript_path is None:
+            manuscript_path = EnvironmentManager.get_manuscript_path() or "MANUSCRIPT"
 
-    # Validate manuscript path exists
-    if not Path(manuscript_path).exists():
-        console.print(
-            f"❌ Error: Manuscript directory '{manuscript_path}' does not exist",
-            style="red",
-        )
-        console.print(
-            f"💡 Run 'rxiv init {manuscript_path}' to create a new manuscript",
-            style="yellow",
-        )
+        # Use PathManager for path validation and resolution
+        path_manager = PathManager(manuscript_path=manuscript_path, output_dir=output_dir)
+
+    except PathResolutionError as e:
+        console.print(f"❌ Path resolution error: {e}", style="red")
+        console.print(f"💡 Run 'rxiv init {manuscript_path}' to create a new manuscript", style="yellow")
         sys.exit(1)
 
     try:
@@ -58,11 +56,11 @@ def track_changes(
             console=console,
             transient=True,
         ) as progress:
-            # Create build manager with track changes enabled
+            # Create build manager with track changes enabled using PathManager
             task = progress.add_task("Initializing change tracking build...", total=None)
             build_manager = BuildManager(
-                manuscript_path=manuscript_path,
-                output_dir=output_dir,
+                manuscript_path=str(path_manager.manuscript_path),
+                output_dir=str(path_manager.output_dir),
                 force_figures=force_figures,
                 skip_validation=skip_validation,
                 track_changes_tag=tag,
@@ -79,7 +77,7 @@ def track_changes(
             if success:
                 progress.update(task, description="✅ Change-tracked PDF generated successfully!")
                 console.print(
-                    f"📄 PDF with change tracking generated: {output_dir}/{Path(manuscript_path).name}.pdf",
+                    f"📄 PDF with change tracking generated: {path_manager.output_dir}/{path_manager.manuscript_name}.pdf",
                     style="green",
                 )
                 console.print(

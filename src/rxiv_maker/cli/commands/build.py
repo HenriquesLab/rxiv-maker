@@ -1,13 +1,13 @@
 """PDF command for rxiv-maker CLI."""
 
-import os
 import sys
-from pathlib import Path
 
 import rich_click as click
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
+from ...core.environment_manager import EnvironmentManager
 from ...core.logging_config import get_logger, set_debug, set_log_directory, set_quiet
+from ...core.path_manager import PathManager, PathResolutionError
 from ...engine.build_manager import BuildManager
 
 logger = get_logger()
@@ -85,23 +85,31 @@ def build(
     elif quiet:
         set_quiet(True)
 
-    # Use local verbose flag if provided, otherwise fall back to global context
-    verbose = verbose or ctx.obj.get("verbose", False)
-    engine = ctx.obj.get("engine", "local")
+    # Use local verbose flag if provided, otherwise fall back to global context and environment
+    verbose = verbose or ctx.obj.get("verbose", False) or EnvironmentManager.is_verbose()
+    engine = ctx.obj.get("engine") or EnvironmentManager.get_rxiv_engine()
 
-    # Default to MANUSCRIPT if not specified
-    if manuscript_path is None:
-        manuscript_path = os.environ.get("MANUSCRIPT_PATH", "MANUSCRIPT")
+    # Validate and resolve manuscript path using PathManager
+    try:
+        # Default to environment variable or fallback if not specified
+        if manuscript_path is None:
+            manuscript_path = EnvironmentManager.get_manuscript_path() or "MANUSCRIPT"
 
-    # Set up preliminary log directory (will be updated by BuildManager)
-    manuscript_dir = Path(manuscript_path)
-    if Path(output_dir).is_absolute():
-        preliminary_output_dir = Path(output_dir)
-    else:
-        preliminary_output_dir = manuscript_dir / output_dir
+        # Use PathManager for path validation and resolution
+        path_manager = PathManager(manuscript_path=manuscript_path, output_dir=output_dir)
 
-    # Set up logging to the output directory early
-    set_log_directory(preliminary_output_dir)
+        # Set up logging to the output directory early using PathManager
+        set_log_directory(path_manager.output_dir)
+
+        logger.debug(f"Using PathManager: manuscript={path_manager.manuscript_path}, output={path_manager.output_dir}")
+
+    except PathResolutionError as e:
+        logger.error(f"Path resolution error: {e}")
+        logger.tip(f"Run 'rxiv init {manuscript_path}' to create a new manuscript")
+        from ...core.logging_config import cleanup
+
+        cleanup()
+        sys.exit(1)
 
     # Docker engine optimization: verify Docker readiness for build pipeline
     if engine == "docker":
@@ -127,15 +135,6 @@ def build(
             cleanup()
             sys.exit(1)
 
-    # Validate manuscript path exists
-    if not Path(manuscript_path).exists():
-        logger.error(f"Manuscript directory '{manuscript_path}' does not exist")
-        logger.tip(f"Run 'rxiv init {manuscript_path}' to create a new manuscript")
-        from ...core.logging_config import cleanup
-
-        cleanup()
-        sys.exit(1)
-
     try:
         from rich.progress import BarColumn, MofNCompleteColumn, TaskProgressColumn, TimeElapsedColumn
 
@@ -149,11 +148,11 @@ def build(
             console=logger.console,
             transient=True,
         ) as progress:
-            # Create build manager
+            # Create build manager with PathManager
             initialization_task = progress.add_task("Initializing build manager...", total=None)
             build_manager = BuildManager(
-                manuscript_path=manuscript_path,
-                output_dir=output_dir,
+                manuscript_path=str(path_manager.manuscript_path),
+                output_dir=output_dir,  # Pass original relative path
                 force_figures=force_figures,
                 skip_validation=skip_validation,
                 track_changes_tag=track_changes,
@@ -191,7 +190,7 @@ def build(
 
             if success:
                 progress.update(main_task, completed=len(build_steps), description="✅ PDF generated successfully!")
-                logger.success(f"PDF generated: {output_dir}/{Path(manuscript_path).name}.pdf")
+                logger.success(f"PDF generated: {path_manager.output_dir}/{path_manager.manuscript_name}.pdf")
 
                 # Show additional info
                 if track_changes:

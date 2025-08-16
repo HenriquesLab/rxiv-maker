@@ -5,7 +5,7 @@ Provides standardized cache directory management following platform conventions.
 
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List
 
 import platformdirs
 
@@ -256,7 +256,7 @@ def validate_cache_migration() -> dict[str, Any]:
 
     logger = logging.getLogger(__name__)
 
-    validation_results = {
+    validation_results: Dict[str, Any] = {
         "success": True,
         "standardized_cache_exists": False,
         "legacy_caches_found": [],
@@ -265,6 +265,11 @@ def validate_cache_migration() -> dict[str, Any]:
         "errors": [],
         "warnings": [],
     }
+
+    # Initialize typed lists explicitly to help mypy
+    errors: List[str] = validation_results["errors"]
+    warnings: List[str] = validation_results["warnings"]
+    legacy_caches_found: List[Dict[str, Any]] = validation_results["legacy_caches_found"]
 
     try:
         # Check if standardized cache directory exists and is accessible
@@ -275,7 +280,7 @@ def validate_cache_migration() -> dict[str, Any]:
             # Check permissions
             if not os.access(cache_dir, os.R_OK | os.W_OK):
                 validation_results["permissions_ok"] = False
-                validation_results["errors"].append(f"No read/write access to cache directory: {cache_dir}")
+                errors.append(f"No read/write access to cache directory: {cache_dir}")
                 validation_results["success"] = False
 
             # Check disk space (warn if less than 100MB available)
@@ -285,9 +290,9 @@ def validate_cache_migration() -> dict[str, Any]:
                 free_space = shutil.disk_usage(cache_dir).free
                 if free_space < 100 * 1024 * 1024:  # 100MB
                     validation_results["disk_space_ok"] = False
-                    validation_results["warnings"].append(f"Low disk space: {free_space // (1024 * 1024)}MB available")
+                    warnings.append(f"Low disk space: {free_space // (1024 * 1024)}MB available")
             except Exception as e:
-                validation_results["warnings"].append(f"Could not check disk space: {e}")
+                warnings.append(f"Could not check disk space: {e}")
 
         # Check for remaining legacy cache directories
         legacy_locations = [
@@ -308,20 +313,20 @@ def validate_cache_migration() -> dict[str, Any]:
 
         for legacy_path, location in legacy_locations:
             if legacy_path.exists():
-                validation_results["legacy_caches_found"].append(
+                legacy_caches_found.append(
                     {
                         "path": str(legacy_path),
                         "location": location,
                         "size": sum(f.stat().st_size for f in legacy_path.rglob("*") if f.is_file()),
                     }
                 )
-                validation_results["warnings"].append(f"Legacy cache found at {legacy_path}")
+                warnings.append(f"Legacy cache found at {legacy_path}")
 
         logger.info(f"Cache migration validation: {'PASSED' if validation_results['success'] else 'FAILED'}")
 
     except Exception as e:
         validation_results["success"] = False
-        validation_results["errors"].append(f"Validation error: {e}")
+        errors.append(f"Validation error: {e}")
         logger.error(f"Cache migration validation failed: {e}")
 
     return validation_results
@@ -341,7 +346,7 @@ def check_cache_health(detailed: bool = False) -> dict[str, Any]:
 
     logger = logging.getLogger(__name__)
 
-    health_info = {
+    health_info: Dict[str, Any] = {
         "healthy": True,
         "cache_directory": str(get_cache_dir()),
         "subdirectories": {},
@@ -351,25 +356,29 @@ def check_cache_health(detailed: bool = False) -> dict[str, Any]:
         "recommendations": [],
     }
 
+    # Initialize typed lists explicitly to help mypy
+    errors: List[str] = health_info["errors"]
+    recommendations: List[str] = health_info["recommendations"]
+
     try:
         cache_dir = get_cache_dir()
 
         if not cache_dir.exists():
             health_info["healthy"] = False
-            health_info["errors"].append("Cache directory does not exist")
+            errors.append("Cache directory does not exist")
             return health_info
 
         # Check permissions
         if not os.access(cache_dir, os.R_OK | os.W_OK):
             health_info["healthy"] = False
-            health_info["errors"].append("No read/write access to cache directory")
+            errors.append("No read/write access to cache directory")
 
         # Analyze subdirectories
         common_subdirs = ["doi", "bibliography", "figures", "advanced", "updates"]
 
         for subdir_name in common_subdirs:
             subdir_path = cache_dir / subdir_name
-            subdir_info = {
+            subdir_info: Dict[str, Any] = {
                 "exists": subdir_path.exists(),
                 "size": 0,
                 "files": 0,
@@ -394,17 +403,17 @@ def check_cache_health(detailed: bool = False) -> dict[str, Any]:
                         subdir_info["file_list"] = [str(f.relative_to(subdir_path)) for f in file_files]
 
                 except Exception as e:
-                    health_info["errors"].append(f"Error analyzing {subdir_name}: {e}")
+                    errors.append(f"Error analyzing {subdir_name}: {e}")
                     subdir_info["error"] = str(e)
 
             health_info["subdirectories"][subdir_name] = subdir_info
 
         # Generate recommendations
         if health_info["total_size"] > 500 * 1024 * 1024:  # 500MB
-            health_info["recommendations"].append("Cache size is large (>500MB). Consider cleaning old entries.")
+            recommendations.append("Cache size is large (>500MB). Consider cleaning old entries.")
 
         if health_info["total_files"] > 10000:
-            health_info["recommendations"].append("Many cache files (>10k). Performance may be impacted.")
+            recommendations.append("Many cache files (>10k). Performance may be impacted.")
 
         # Check for very old files (older than 6 months)
         import time
@@ -418,7 +427,7 @@ def check_cache_health(detailed: bool = False) -> dict[str, Any]:
                     old_files.append(subdir_info)
 
             if old_files:
-                health_info["recommendations"].append("Some cache files are older than 6 months. Consider cleaning.")
+                recommendations.append("Some cache files are older than 6 months. Consider cleaning.")
         except Exception:
             pass  # Not critical
 
@@ -426,7 +435,7 @@ def check_cache_health(detailed: bool = False) -> dict[str, Any]:
 
     except Exception as e:
         health_info["healthy"] = False
-        health_info["errors"].append(f"Health check error: {e}")
+        errors.append(f"Health check error: {e}")
         logger.error(f"Cache health check failed: {e}")
 
     return health_info

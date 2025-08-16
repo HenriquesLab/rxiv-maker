@@ -108,13 +108,17 @@ class SecurityMonitor:
         self.blocked_ips: Set[str] = set()
 
         # Statistics
-        self.stats = {
+        self.stats: Dict[str, Any] = {
             "total_events": 0,
             "events_by_type": {},
             "events_by_severity": {},
             "blocked_attempts": 0,
             "alerts_sent": 0,
         }
+
+        # Initialize typed dictionaries to help mypy
+        self.events_by_type: Dict[str, int] = self.stats["events_by_type"]
+        self.events_by_severity: Dict[str, int] = self.stats["events_by_severity"]
 
         # Ensure log directory exists
         self.log_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -130,12 +134,8 @@ class SecurityMonitor:
         """
         # Update statistics
         self.stats["total_events"] += 1
-        self.stats["events_by_type"][event.event_type.value] = (
-            self.stats["events_by_type"].get(event.event_type.value, 0) + 1
-        )
-        self.stats["events_by_severity"][event.severity.value] = (
-            self.stats["events_by_severity"].get(event.severity.value, 0) + 1
-        )
+        self.events_by_type[event.event_type.value] = self.events_by_type.get(event.event_type.value, 0) + 1
+        self.events_by_severity[event.severity.value] = self.events_by_severity.get(event.severity.value, 0) + 1
 
         # Add to in-memory storage
         self.events.append(event)
@@ -329,13 +329,13 @@ class SecurityMonitor:
         last_day_events = [e for e in self.events if now - e.timestamp < 86400]
 
         # Group events by type for last hour
-        recent_by_type = {}
+        recent_by_type: Dict[str, int] = {}
         for event in last_hour_events:
             event_type = event.event_type.value
             recent_by_type[event_type] = recent_by_type.get(event_type, 0) + 1
 
         # Find most common security issues
-        top_issues = sorted(self.stats["events_by_type"].items(), key=lambda x: x[1], reverse=True)[:5]
+        top_issues = sorted(self.events_by_type.items(), key=lambda x: x[1], reverse=True)[:5]
 
         return {
             "summary": {
@@ -345,8 +345,8 @@ class SecurityMonitor:
                 "events_last_hour": len(last_hour_events),
                 "events_last_day": len(last_day_events),
             },
-            "events_by_severity": self.stats["events_by_severity"],
-            "events_by_type": self.stats["events_by_type"],
+            "events_by_severity": self.events_by_severity,
+            "events_by_type": self.events_by_type,
             "recent_activity": recent_by_type,
             "top_issues": top_issues,
             "blocked_entities": {
