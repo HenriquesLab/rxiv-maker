@@ -112,6 +112,34 @@ make validate RXIV_ENGINE=DOCKER   # Validate in container
 
 </details>
 
+### Installation Options
+
+Rxiv-Maker supports several installation modes to customize the setup based on your needs.
+
+- **Full Installation (Default):**
+  ```bash
+  pip install rxiv-maker
+  ```
+  This installs the core application along with all the necessary Python packages for figure generation, such as `matplotlib` and `seaborn`.
+
+- **Minimal Installation:**
+  ```bash
+  RXIV_INSTALL_MODE=minimal pip install rxiv-maker
+  ```
+  This installs only the essential dependencies required for PDF generation, skipping the scientific libraries. This is useful for environments where you only need to build PDFs and do not need to generate figures.
+
+- **Core Installation:**
+  ```bash
+  RXIV_INSTALL_MODE=core pip install rxiv-maker
+  ```
+  This installs the Python and LaTeX dependencies but skips other large dependencies like Node.js and R.
+
+- **Skip System Dependencies:**
+  ```bash
+  RXIV_SKIP_SYSTEM_DEPS=1 pip install rxiv-maker
+  ```
+  This option installs only the Python packages and skips the installation of system-level dependencies like LaTeX. This is useful for containerized environments or systems where you want to manage system dependencies manually.
+
 ---
 
 ## Manuscript Validation
