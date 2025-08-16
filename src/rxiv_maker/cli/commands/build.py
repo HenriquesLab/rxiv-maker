@@ -151,7 +151,7 @@ def build(
             # Create build manager with PathManager
             initialization_task = progress.add_task("Initializing build manager...", total=None)
             build_manager = BuildManager(
-                manuscript_path=str(path_manager.manuscript_path),
+                manuscript_path=manuscript_path,  # Pass original path, not resolved path
                 output_dir=output_dir,  # Pass original relative path
                 force_figures=force_figures,
                 skip_validation=skip_validation,
