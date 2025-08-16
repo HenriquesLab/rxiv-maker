@@ -113,6 +113,7 @@ class TestFindManuscriptMd(unittest.TestCase):
         self.assertIn("01_MAIN.md not found", str(context.exception))
         self.assertIn(manuscript_dir, str(context.exception))
 
+    @patch.dict(os.environ, {}, clear=True)
     def test_find_manuscript_md_current_directory(self):
         """Test finding manuscript in current directory."""
         # Change to test directory and create manuscript

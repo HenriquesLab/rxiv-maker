@@ -49,21 +49,35 @@ def find_manuscript_md(manuscript_path: str | None = None) -> Path:
             # Use EnvironmentManager for environment variable handling
             from ..core.environment_manager import EnvironmentManager
 
-            # Default to environment variable or fallback if not specified
-            if manuscript_path is None:
-                manuscript_path = EnvironmentManager.get_manuscript_path() or "MANUSCRIPT"
+            # Handle explicit manuscript_path or environment variable
+            if manuscript_path is not None:
+                # Explicit path provided
+                path_manager = PathManager(manuscript_path=manuscript_path, output_dir="output")
+                manuscript_md = path_manager.manuscript_path / "01_MAIN.md"
 
-            # Use PathManager for path resolution
-            path_manager = PathManager(manuscript_path=manuscript_path, output_dir="output")
-            manuscript_md = path_manager.manuscript_path / "01_MAIN.md"
+                if manuscript_md.exists():
+                    return manuscript_md
 
-            if manuscript_md.exists():
-                return manuscript_md
+                raise FileNotFoundError(
+                    f"Main manuscript file 01_MAIN.md not found in {path_manager.manuscript_path}/. "
+                    f"Make sure you specify the correct manuscript directory."
+                )
+            else:
+                # Check environment variable
+                env_path = EnvironmentManager.get_manuscript_path()
+                if env_path:
+                    # Environment variable is set
+                    path_manager = PathManager(manuscript_path=env_path, output_dir="output")
+                    manuscript_md = path_manager.manuscript_path / "01_MAIN.md"
 
-            raise FileNotFoundError(
-                f"Main manuscript file 01_MAIN.md not found in {path_manager.manuscript_path}/. "
-                f"Make sure you specify the correct manuscript directory."
-            )
+                    if manuscript_md.exists():
+                        return manuscript_md
+
+                    raise FileNotFoundError(
+                        f"Main manuscript file 01_MAIN.md not found in {path_manager.manuscript_path}/. "
+                        f"Make sure you specify the correct manuscript directory."
+                    )
+                # If no environment variable, fall back to legacy logic
         except Exception:
             # Fall back to legacy logic if PathManager fails
             pass
