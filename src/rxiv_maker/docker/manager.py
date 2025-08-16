@@ -13,6 +13,7 @@ import time
 from pathlib import Path
 from typing import Any
 
+from ..core.environment_manager import EnvironmentManager
 from ..utils.platform import platform_detector
 
 
@@ -85,7 +86,7 @@ class DockerManager:
 
     def __init__(
         self,
-        default_image: str = "henriqueslab/rxiv-maker-base:latest",
+        default_image: str | None = None,
         workspace_dir: Path | None = None,
         enable_session_reuse: bool = True,
         memory_limit: str = "2g",
@@ -94,13 +95,14 @@ class DockerManager:
         """Initialize Docker manager.
 
         Args:
-            default_image: Default Docker image to use
+            default_image: Default Docker image to use (defaults to environment or fallback)
             workspace_dir: Workspace directory (defaults to current working directory)
             enable_session_reuse: Whether to reuse Docker containers across operations
             memory_limit: Memory limit for Docker containers (e.g., "2g", "512m")
             cpu_limit: CPU limit for Docker containers (e.g., "2.0" for 2 cores)
         """
-        self.default_image = default_image
+        # Use EnvironmentManager for Docker image configuration
+        self.default_image = default_image or EnvironmentManager.get_docker_image()
         self.workspace_dir = workspace_dir or Path.cwd().resolve()
         self.enable_session_reuse = enable_session_reuse
         self.platform = platform_detector
@@ -138,22 +140,55 @@ class DockerManager:
 
     def _get_base_environment(self) -> dict[str, str]:
         """Get base environment variables for Docker containers."""
-        env = {}
+        # Use EnvironmentManager to get all rxiv-maker variables
+        return EnvironmentManager.get_all_rxiv_vars()
 
-        # Pass through Rxiv-specific environment variables
-        rxiv_vars = [
-            "RXIV_ENGINE",
-            "RXIV_VERBOSE",
-            "RXIV_NO_UPDATE_CHECK",
-            "MANUSCRIPT_PATH",
-            "FORCE_FIGURES",
-        ]
+    def translate_path_to_container(self, host_path: Path, workspace_mount: str = "/workspace") -> str:
+        """Translate host path to container path.
 
-        for var in rxiv_vars:
-            if var in os.environ:
-                env[var] = os.environ[var]
+        This provides compatibility with PathManager's path translation methods.
 
-        return env
+        Args:
+            host_path: Path on host system
+            workspace_mount: Container mount point for workspace
+
+        Returns:
+            Path as it appears inside container
+        """
+        host_path = Path(host_path).resolve()
+
+        # If path is within workspace, translate it
+        try:
+            relative_path = host_path.relative_to(self.workspace_dir)
+            return str(Path(workspace_mount) / relative_path).replace("\\", "/")
+        except ValueError:
+            # Path is outside workspace, use absolute path
+            return str(host_path).replace("\\", "/")
+
+    def translate_path_from_container(self, container_path: str, workspace_mount: str = "/workspace") -> Path:
+        """Translate container path to host path.
+
+        This provides compatibility with PathManager's path translation methods.
+
+        Args:
+            container_path: Path as it appears inside container
+            workspace_mount: Container mount point for workspace
+
+        Returns:
+            Corresponding path on host system
+        """
+        container_path_obj = Path(container_path)
+
+        # If path is within workspace mount, translate it
+        if str(container_path_obj).startswith(workspace_mount):
+            try:
+                relative_path = container_path_obj.relative_to(workspace_mount)
+                return self.workspace_dir / relative_path
+            except ValueError:
+                pass
+
+        # Return as-is for absolute paths outside workspace
+        return container_path_obj
 
     def _build_docker_command(
         self,

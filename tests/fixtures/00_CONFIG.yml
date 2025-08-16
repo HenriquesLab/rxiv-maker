@@ -1,0 +1,9 @@
+title:
+  long: "Testing Guillaume's Figure Issues"
+  short: "Guillaume Test"
+authors:
+  - name: "Guillaume Jacquemet"
+    affiliation: "University of Testing"
+    orcid: "0000-0000-0000-0000"
+keywords: ["figure", "positioning", "testing", "ready files"]
+acknowledge_rxiv_maker: false

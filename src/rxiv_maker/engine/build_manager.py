@@ -5,12 +5,13 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
+from ..core.environment_manager import EnvironmentManager
 from ..core.logging_config import get_logger, set_log_directory
+from ..core.path_manager import PathManager
 from ..engines.factory import get_container_engine
 from ..utils.figure_checksum import get_figure_checksum_manager
 from ..utils.operation_ids import create_operation
 from ..utils.performance import get_performance_tracker
-from ..utils.platform import platform_detector
 
 logger = get_logger()
 
@@ -54,94 +55,53 @@ class BuildManager:
             track_changes_tag: Git tag to track changes against
             engine: Execution engine ("local" or "docker")
         """
-        manuscript_path_resolved = manuscript_path or os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
-        if manuscript_path_resolved is None:
-            manuscript_path_resolved = "MANUSCRIPT"
-        self.manuscript_path: str = manuscript_path_resolved
-        # Make output_dir absolute relative to manuscript directory
-        self.manuscript_dir_path = Path(self.manuscript_path)
-        if Path(output_dir).is_absolute():
-            self.output_dir = Path(output_dir)
-        else:
-            self.output_dir = self.manuscript_dir_path / output_dir
-        self.force_figures = force_figures
+        # Initialize centralized path management
+        self.path_manager = PathManager(manuscript_path=manuscript_path, output_dir=output_dir)
+
+        # Store configuration
+        self.force_figures = force_figures or EnvironmentManager.is_force_figures()
         self.skip_validation = skip_validation
         self.skip_pdf_validation = skip_pdf_validation
-        self.verbose = verbose
+        self.verbose = verbose or EnvironmentManager.is_verbose()
         self.track_changes_tag = track_changes_tag
-        self.engine = engine
-        self.platform = platform_detector
+        self.engine = engine or EnvironmentManager.get_rxiv_engine()
 
         # Initialize container engine if using container engine
         self.container_engine = None
         if self.engine in ["docker", "podman"]:
             try:
                 self.container_engine = get_container_engine(
-                    engine_type=self.engine, workspace_dir=Path.cwd().resolve()
+                    engine_type=self.engine, workspace_dir=self.path_manager._working_dir
                 )
             except RuntimeError as e:
                 # Container engine not available, will fall back to local execution
                 logger.warning(f"{self.engine.title()} engine not available: {e}")
                 self.container_engine = None
 
-        # Set up paths
-        self.manuscript_dir = self.manuscript_dir_path
-        self.figures_dir = self.manuscript_dir / "FIGURES"
+        # Provide legacy interface for backward compatibility
+        self.manuscript_path = str(self.path_manager.manuscript_path)
+        self.manuscript_dir = self.path_manager.manuscript_path
+        self.manuscript_dir_path = self.path_manager.manuscript_path
+        self.output_dir = self.path_manager.output_dir
+        self.figures_dir = self.path_manager.figures_dir
+        self.style_dir = self.path_manager.style_dir
+        self.references_bib = self.path_manager.references_bib
+        self.manuscript_name = self.path_manager.manuscript_name
+        self.output_tex = self.path_manager.get_manuscript_tex_path()
+        self.output_pdf = self.path_manager.get_manuscript_pdf_path()
 
-        # Find style directory - try multiple possible locations
-        possible_style_dirs = [
-            # Installed package location (when installed via pip) - hatch maps src/tex to rxiv_maker/tex
-            Path(__file__).resolve().parent.parent / "tex" / "style",
-            # Development location
-            Path(__file__).resolve().parent.parent.parent.parent / "src" / "tex" / "style",
-            # Alternative development location
-            Path(__file__).resolve().parent.parent.parent / "tex" / "style",
-        ]
-
-        self.style_dir = None
-        for i, style_dir in enumerate(possible_style_dirs):
-            logger.debug(f"Checking style directory {i + 1}: {style_dir}")
-            if style_dir.exists() and any(style_dir.glob("*.cls")):
-                self.style_dir = style_dir
-                logger.debug(f"Found style directory: {style_dir}")
-                break
-            else:
-                logger.debug(
-                    f"  Exists: {style_dir.exists()}, Has .cls: {style_dir.exists() and any(style_dir.glob('*.cls'))}"
-                )
-
-        # If no style directory found, use the first option as default (will be handled in copy_style_files)
-        if self.style_dir is None:
-            self.style_dir = possible_style_dirs[0]
-            logger.warning(f"No style directory found, using default: {self.style_dir}")
-
-        self.references_bib = self.manuscript_dir / "03_REFERENCES.bib"
-
-        # Output file names
-        # Strip trailing slashes to ensure basename works correctly
-        normalized_path = str(self.manuscript_path).rstrip("/")
-        manuscript_name = os.path.basename(normalized_path)
-
-        # Debug logging for manuscript name detection
-        logger.debug(f"Manuscript path: {self.manuscript_path}")
-        logger.debug(f"Normalized path: {normalized_path}")
-        logger.debug(f"Detected manuscript name: {manuscript_name}")
-
-        # Validate manuscript name to prevent invalid filenames
-        if not manuscript_name or manuscript_name in (".", ".."):
-            logger.warning(f"Invalid manuscript name '{manuscript_name}', using default 'MANUSCRIPT'")
-            manuscript_name = "MANUSCRIPT"
-        self.manuscript_name = manuscript_name
-        self.output_tex = self.output_dir / f"{self.manuscript_name}.tex"
-        self.output_pdf = self.output_dir / f"{self.manuscript_name}.pdf"
-
-        logger.debug(f"Final manuscript name: {self.manuscript_name}")
-        logger.debug(f"Output TEX file: {self.output_tex}")
-        logger.debug(f"Output PDF file: {self.output_pdf}")
+        logger.debug("PathManager initialized:")
+        logger.debug(f"  Manuscript path: {self.manuscript_path}")
+        logger.debug(f"  Manuscript name: {self.manuscript_name}")
+        logger.debug(f"  Output directory: {self.output_dir}")
+        logger.debug(f"  Figures directory: {self.figures_dir}")
+        logger.debug(f"  Style directory: {self.style_dir}")
+        logger.debug(f"  Output TEX: {self.output_tex}")
+        logger.debug(f"  Output PDF: {self.output_pdf}")
 
         # Set up logging
-        self.warnings_log = self.output_dir / "build_warnings.log"
-        self.bibtex_log = self.output_dir / "bibtex_warnings.log"
+        self.warnings_log = self.path_manager.get_output_file_path("build_warnings.log")
+        self.bibtex_log = self.path_manager.get_output_file_path("bibtex_warnings.log")
 
         # Configure centralized logging to write to output directory
         set_log_directory(self.output_dir)
@@ -277,28 +237,18 @@ class BuildManager:
     def _validate_manuscript_container(self) -> bool:
         """Run manuscript validation using container engine."""
         try:
-            manuscript_path = Path(self.manuscript_path)
-
-            # Convert to absolute path, then make relative to workspace directory
-            manuscript_abs = manuscript_path.resolve()
             if self.container_engine is None:
                 raise RuntimeError("Container engine not initialized")
-            workspace_dir = self.container_engine.workspace_dir
 
-            try:
-                manuscript_rel = manuscript_abs.relative_to(workspace_dir)
-            except ValueError:
-                # If manuscript is not within workspace, use just the name
-                manuscript_rel = Path(manuscript_path.name)
+            # Use PathManager for container path translation
+            manuscript_container_path = self.path_manager.to_container_path(self.path_manager.manuscript_path)
 
             # Build validation command for container using installed CLI
-            validation_cmd = ["rxiv", "validate", str(manuscript_rel), "--detailed"]
+            validation_cmd = ["rxiv", "validate", manuscript_container_path, "--detailed"]
 
             if self.verbose:
                 validation_cmd.append("--verbose")
 
-            if self.container_engine is None:
-                raise RuntimeError("Container engine not initialized")
             result = self.container_engine.run_command(command=validation_cmd, session_key="validation")
 
             if result.returncode == 0:
@@ -321,22 +271,17 @@ class BuildManager:
             # Import and run validation directly instead of subprocess
             from .validate import validate_manuscript
 
-            # Set up environment and working directory
+            # Set up environment and working directory using PathManager
             original_cwd = os.getcwd()
-            manuscript_path = Path(self.manuscript_path)
-            manuscript_abs_path = str(manuscript_path.resolve())
+            manuscript_abs_path = str(self.path_manager.manuscript_path)
 
             try:
                 # Change to manuscript directory for relative path resolution
-                os.chdir(manuscript_path.parent)
+                os.chdir(self.path_manager.manuscript_path.parent)
 
-                # Set MANUSCRIPT_PATH environment variable for validation
-                original_env = os.environ.get("MANUSCRIPT_PATH")
-                normalized_path = self.manuscript_path.rstrip("/")
-                manuscript_name = os.path.basename(normalized_path)
-                if not manuscript_name or manuscript_name in (".", ".."):
-                    manuscript_name = "MANUSCRIPT"
-                os.environ["MANUSCRIPT_PATH"] = manuscript_name
+                # Set environment variables using EnvironmentManager
+                original_env = EnvironmentManager.get_manuscript_path()
+                EnvironmentManager.set_manuscript_path(self.path_manager.manuscript_name)
 
                 try:
                     # Run validation with proper arguments
@@ -358,9 +303,9 @@ class BuildManager:
                         return False
 
                 finally:
-                    # Restore environment variable
+                    # Restore environment variable using EnvironmentManager
                     if original_env is not None:
-                        os.environ["MANUSCRIPT_PATH"] = original_env
+                        EnvironmentManager.set_manuscript_path(original_env)
                     else:
                         os.environ.pop("MANUSCRIPT_PATH", None)
 
@@ -626,20 +571,14 @@ class BuildManager:
 
             inject_rxiv_citation(yaml_metadata)
 
-            # Set MANUSCRIPT_PATH env var for generate_preprint
-            original_env = os.environ.get("MANUSCRIPT_PATH")
-            # Strip trailing slashes to ensure basename works correctly
-            normalized_path = self.manuscript_path.rstrip("/")
-            manuscript_name = os.path.basename(normalized_path)
-            # Validate manuscript name to prevent invalid filenames
-            if not manuscript_name or manuscript_name in (".", ".."):
-                manuscript_name = "MANUSCRIPT"
-            os.environ["MANUSCRIPT_PATH"] = manuscript_name
+            # Set environment variables using EnvironmentManager
+            original_env = EnvironmentManager.get_manuscript_path()
+            EnvironmentManager.set_manuscript_path(self.path_manager.manuscript_name)
 
             # Change to the parent directory so the relative path works
             original_cwd = os.getcwd()
-            # Ensure we change to the correct parent directory
-            manuscript_path_obj = Path(self.manuscript_path).resolve()
+            # Use PathManager for directory navigation
+            manuscript_path_obj = self.path_manager.manuscript_path
             if manuscript_path_obj.is_dir():
                 # If manuscript_path is a directory, go to its parent
                 target_dir = manuscript_path_obj.parent
@@ -659,12 +598,14 @@ class BuildManager:
                     self.log("LaTeX generation failed", "ERROR")
                     return False
             finally:
-                # Restore environment and working directory
+                # Restore environment and working directory using EnvironmentManager
                 os.chdir(original_cwd)
                 if original_env is not None:
-                    os.environ["MANUSCRIPT_PATH"] = original_env
+                    EnvironmentManager.set_manuscript_path(original_env)
                 else:
-                    os.environ.pop("MANUSCRIPT_PATH", None)
+                    # Clear the environment variable
+                    if EnvironmentManager.MANUSCRIPT_PATH in os.environ:
+                        del os.environ[EnvironmentManager.MANUSCRIPT_PATH]
 
         except Exception as e:
             self.log(f"Error generating LaTeX files: {e}", "ERROR")
@@ -939,31 +880,18 @@ class BuildManager:
             # Convert paths to be relative to container workspace
             if self.container_engine is None:
                 raise RuntimeError("Container engine not initialized")
-            workspace_dir = self.container_engine.workspace_dir
 
-            # Handle manuscript path
-            manuscript_path = Path(self.manuscript_path)
-            manuscript_abs = manuscript_path.resolve()
-            try:
-                manuscript_rel = manuscript_abs.relative_to(workspace_dir)
-            except ValueError:
-                manuscript_rel = Path(manuscript_path.name)
-
-            # Handle PDF path
-            pdf_abs = self.output_pdf.resolve()
-            try:
-                pdf_rel = pdf_abs.relative_to(workspace_dir)
-            except ValueError:
-                # Fallback to output directory relative path
-                pdf_rel = Path("output") / self.output_pdf.name
+            # Use PathManager for container path translation
+            manuscript_container_path = self.path_manager.to_container_path(self.path_manager.manuscript_path)
+            pdf_container_path = self.path_manager.to_container_path(self.path_manager.get_manuscript_pdf_path())
 
             # Build PDF validation command for container
             pdf_validation_cmd = [
                 "python",
                 "/workspace/src/rxiv_maker/validators/pdf_validator.py",
-                str(manuscript_rel),
+                manuscript_container_path,
                 "--pdf-path",
-                f"/workspace/{pdf_rel}",
+                pdf_container_path,
             ]
 
             if self.container_engine is None:

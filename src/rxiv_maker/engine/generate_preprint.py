@@ -36,18 +36,9 @@ def generate_preprint(output_dir, yaml_metadata, manuscript_path=None):
     # Process all template replacements
     template_content = process_template_replacements(template_content, yaml_metadata, str(manuscript_md))
 
-    # Extract manuscript name from path for reliable filename generation
-    manuscript_name = None
-    if manuscript_path:
-        # Strip trailing slashes and extract basename
-        normalized_path = str(manuscript_path).rstrip("/")
-        manuscript_name = os.path.basename(normalized_path)
-        # Validate manuscript name to prevent invalid filenames
-        if not manuscript_name or manuscript_name in (".", ".."):
-            manuscript_name = None
-
-    # Write the generated manuscript to the output directory
-    manuscript_output = write_manuscript_output(output_dir, template_content, manuscript_name)
+    # Extract manuscript name using centralized logic (PathManager handles this via write_manuscript_output)
+    # The write_manuscript_output function now uses PathManager internally for consistent name extraction
+    manuscript_output = write_manuscript_output(output_dir, template_content, manuscript_name=None)
 
     # Generate supplementary information
     generate_supplementary_tex(output_dir, yaml_metadata)
