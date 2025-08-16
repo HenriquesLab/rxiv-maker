@@ -3,6 +3,16 @@ name: Auto-update Homebrew Formula
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      use_direct_push:
+        description: 'Use direct push instead of PR workflow'
+        type: boolean
+        default: false
+      tag_name:
+        description: 'Tag name for manual runs (e.g., v1.5.0)'
+        type: string
+        required: false
 
 permissions:
   contents: read
@@ -10,6 +20,8 @@ permissions:
 env:
   HOMEBREW_TAP_REPO: HenriquesLab/homebrew-rxiv-maker
   FORMULA_FILE: Formula/rxiv-maker.rb
+  # Feature flag: set to 'true' to enable direct push mode
+  USE_DIRECT_PUSH: ${{ github.event.inputs.use_direct_push || vars.HOMEBREW_DIRECT_PUSH || 'false' }}
 
 jobs:
   update-homebrew-formula:
@@ -23,22 +35,46 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Homebrew (for direct push mode)
+        if: env.USE_DIRECT_PUSH == 'true'
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Choose workflow mode
+        run: |
+          if [ "${{ env.USE_DIRECT_PUSH }}" == "true" ]; then
+            echo "🚀 Using DIRECT PUSH mode - streamlined workflow"
+            echo "mode=direct" >> $GITHUB_ENV
+          else
+            echo "📋 Using PR mode - traditional workflow"
+            echo "mode=pr" >> $GITHUB_ENV
+          fi
+
       - name: Get release information
         id: release
         run: |
+          # Handle manual workflow dispatch with custom tag
+          if [ -n "${{ github.event.inputs.tag_name }}" ]; then
+            TAG_NAME="${{ github.event.inputs.tag_name }}"
+            echo "Using manual tag: $TAG_NAME"
+          else
+            TAG_NAME="${GITHUB_REF_NAME}"
+            echo "Using release tag: $TAG_NAME"
+          fi
+
           # Extract version from tag (remove 'v' prefix if present)
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${TAG_NAME#v}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
           # Get release tarball URL
-          TARBALL_URL="https://github.com/${{ github.repository }}/archive/refs/tags/${GITHUB_REF_NAME}.tar.gz"
+          TARBALL_URL="https://github.com/${{ github.repository }}/archive/refs/tags/${TAG_NAME}.tar.gz"
           echo "tarball_url=$TARBALL_URL" >> $GITHUB_OUTPUT
 
           echo "📦 Release version: $VERSION"
           echo "🔗 Tarball URL: $TARBALL_URL"
 
-      - name: Download and calculate SHA256
-        id: sha256
+      - name: Download and calculate SHA256 (PR mode)
+        if: env.mode == 'pr'
+        id: sha256_pr
         run: |
           # Download the release tarball
           echo "⬇️ Downloading release tarball..."
@@ -54,6 +90,37 @@ jobs:
           # Verify download
           ls -la rxiv-maker-${{ steps.release.outputs.version }}.tar.gz
 
+      - name: Download and verify tarball (Direct push mode)
+        if: env.mode == 'direct'
+        id: sha256_direct
+        run: |
+          echo "⬇️ Downloading and verifying release tarball..."
+          curl -L -f -o rxiv-maker-${{ steps.release.outputs.version }}.tar.gz \
+            "${{ steps.release.outputs.tarball_url }}"
+
+          if [ ! -f "rxiv-maker-${{ steps.release.outputs.version }}.tar.gz" ]; then
+            echo "❌ Failed to download tarball"
+            exit 1
+          fi
+
+          SHA256=$(sha256sum rxiv-maker-${{ steps.release.outputs.version }}.tar.gz | cut -d' ' -f1)
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+          echo "🔒 SHA256: $SHA256"
+
+          # Verify tarball integrity
+          tar -tzf rxiv-maker-${{ steps.release.outputs.version }}.tar.gz > /dev/null
+          echo "✅ Tarball integrity verified"
+
+      # Set unified sha256 output for subsequent steps
+      - name: Set SHA256 output
+        id: sha256
+        run: |
+          if [ "${{ env.mode }}" == "direct" ]; then
+            echo "sha256=${{ steps.sha256_direct.outputs.sha256 }}" >> $GITHUB_OUTPUT
+          else
+            echo "sha256=${{ steps.sha256_pr.outputs.sha256 }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Checkout Homebrew tap repository
         uses: actions/checkout@v5
         with:
@@ -61,7 +128,157 @@ jobs:
           path: homebrew-tap
           token: ${{ secrets.HOMEBREW_UPDATE_TOKEN }}
 
-      - name: Update formula
+      # ===============================
+      # DIRECT PUSH MODE (STREAMLINED)
+      # ===============================
+
+      - name: Create backup and update formula (Direct push)
+        if: env.mode == 'direct'
+        working-directory: homebrew-tap
+        run: |
+          # Store current commit for rollback
+          BACKUP_COMMIT=$(git rev-parse HEAD)
+          echo "backup_commit=$BACKUP_COMMIT" >> $GITHUB_ENV
+          echo "🔄 Backup commit: $BACKUP_COMMIT"
+
+          # Create backup of current formula
+          cp ${{ env.FORMULA_FILE }} formula.backup
+
+          # Update formula
+          echo "📝 Updating formula..."
+          sed -i 's|url ".*"|url "${{ steps.release.outputs.tarball_url }}"|g' ${{ env.FORMULA_FILE }}
+          sed -i 's|sha256 ".*"|sha256 "${{ steps.sha256.outputs.sha256 }}"|g' ${{ env.FORMULA_FILE }}
+
+          echo "📋 Formula changes:"
+          git diff ${{ env.FORMULA_FILE }}
+
+      - name: Validate formula syntax (Direct push)
+        if: env.mode == 'direct'
+        working-directory: homebrew-tap
+        run: |
+          echo "🔍 Validating formula syntax..."
+
+          # Check Ruby syntax
+          ruby -c ${{ env.FORMULA_FILE }}
+          echo "✅ Ruby syntax valid"
+
+          # Run brew audit
+          brew audit --strict --online ${{ env.FORMULA_FILE }}
+          echo "✅ Brew audit passed"
+
+      - name: Test formula installation (Direct push)
+        if: env.mode == 'direct'
+        working-directory: homebrew-tap
+        run: |
+          echo "🧪 Testing formula installation..."
+
+          # Install from local formula
+          brew install --build-from-source ${{ env.FORMULA_FILE }}
+
+          # Verify installation
+          if ! command -v rxiv &> /dev/null; then
+            echo "❌ rxiv command not found after installation"
+            exit 1
+          fi
+
+          # Verify version
+          INSTALLED_VERSION=$(rxiv --version | grep -o 'v[0-9.]*' | head -1)
+          EXPECTED_VERSION="v${{ steps.release.outputs.version }}"
+
+          if [ "$INSTALLED_VERSION" != "$EXPECTED_VERSION" ]; then
+            echo "❌ Version mismatch: expected $EXPECTED_VERSION, got $INSTALLED_VERSION"
+            exit 1
+          fi
+
+          echo "✅ Formula test successful: $INSTALLED_VERSION"
+
+      - name: Commit and push directly to main (Direct push)
+        if: env.mode == 'direct'
+        working-directory: homebrew-tap
+        run: |
+          # Configure git
+          git config user.name "rxiv-maker-bot"
+          git config user.email "noreply@henriqueslab.org"
+
+          # Check if there are changes to commit
+          if git diff --quiet ${{ env.FORMULA_FILE }}; then
+            echo "📝 No changes detected, formula already up to date"
+            exit 0
+          fi
+
+          # Commit changes
+          git add ${{ env.FORMULA_FILE }}
+          git commit -m "chore: update rxiv-maker to v${{ steps.release.outputs.version }}
+
+          Auto-generated direct update from rxiv-maker release v${{ steps.release.outputs.version }}
+
+          - Updated URL: ${{ steps.release.outputs.tarball_url }}
+          - Updated SHA256: ${{ steps.sha256.outputs.sha256 }}
+          - Formula validated and tested successfully
+
+          🤖 Generated by streamlined GitHub Actions workflow"
+
+          # Push directly to main
+          echo "📤 Pushing directly to main..."
+          git push origin main
+          echo "✅ Successfully pushed to main"
+
+      - name: Post-push verification (Direct push)
+        if: env.mode == 'direct'
+        working-directory: homebrew-tap
+        run: |
+          echo "🔍 Verifying push was successful..."
+
+          # Wait for GitHub to process the push
+          sleep 10
+
+          # Fetch latest changes to verify
+          git fetch origin main
+          LATEST_COMMIT=$(git rev-parse origin/main)
+          LOCAL_COMMIT=$(git rev-parse HEAD)
+
+          if [ "$LATEST_COMMIT" != "$LOCAL_COMMIT" ]; then
+            echo "❌ Push verification failed: commits don't match"
+            echo "Local: $LOCAL_COMMIT"
+            echo "Remote: $LATEST_COMMIT"
+            exit 1
+          fi
+
+          echo "✅ Push verification successful"
+
+      - name: Cleanup test installation (Direct push)
+        if: env.mode == 'direct' && always()
+        run: |
+          # Clean up test installation
+          brew uninstall rxiv-maker || true
+          echo "🧹 Cleanup completed"
+
+      - name: Rollback on failure (Direct push)
+        if: env.mode == 'direct' && failure()
+        working-directory: homebrew-tap
+        run: |
+          echo "❌ Workflow failed, initiating rollback..."
+
+          if [ -n "${{ env.backup_commit }}" ]; then
+            echo "🔄 Rolling back to commit: ${{ env.backup_commit }}"
+
+            # Reset to backup commit
+            git reset --hard ${{ env.backup_commit }}
+
+            # Force push to restore previous state
+            git push --force origin main
+
+            echo "✅ Rollback completed"
+          else
+            echo "⚠️ No backup commit found, manual intervention required"
+          fi
+
+      # ========================
+      # PR MODE (TRADITIONAL)
+      # ========================
+
+      - name: Update formula (PR mode)
+        if: env.mode == 'pr'
         working-directory: homebrew-tap
         run: |
           # Create new branch for the update with timestamp to avoid conflicts
@@ -94,7 +311,8 @@ jobs:
           echo "📋 Formula changes:"
           git diff ${{ env.FORMULA_FILE }}
 
-      - name: Commit and create pull request
+      - name: Commit and create pull request (PR mode)
+        if: env.mode == 'pr'
         working-directory: homebrew-tap
         env:
           GH_TOKEN: ${{ secrets.HOMEBREW_UPDATE_TOKEN }}
@@ -202,16 +420,41 @@ jobs:
             echo "✅ Pull request created successfully"
           fi
 
-      - name: Summary
+      - name: Unified Summary
+        if: always()
         run: |
-          echo "## 🎉 Homebrew Formula Update Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Successfully updated Homebrew formula for rxiv-maker v${{ steps.release.outputs.version }}**" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📋 Details" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version**: v${{ steps.release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tarball URL**: ${{ steps.release.outputs.tarball_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **SHA256**: \`${{ steps.sha256.outputs.sha256 }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Homebrew Repository**: [${{ env.HOMEBREW_TAP_REPO }}](https://github.com/${{ env.HOMEBREW_TAP_REPO }})" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 **Next Steps**: Review and merge the auto-generated pull request in the Homebrew tap repository." >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "## ✅ Homebrew Formula Update Summary" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            if [ "${{ env.mode }}" == "direct" ]; then
+              echo "**Mode**: 🚀 Direct Push (Streamlined)" >> $GITHUB_STEP_SUMMARY
+              echo "**Status**: ✅ Formula updated and pushed directly to main" >> $GITHUB_STEP_SUMMARY
+              echo "**Validation**: All tests passed before push" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "🍺 **Users can now install immediately with**: \`brew install HenriquesLab/rxiv-maker/rxiv-maker\`" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "**Mode**: 📋 Pull Request (Traditional)" >> $GITHUB_STEP_SUMMARY
+              echo "**Status**: ✅ Pull request created successfully" >> $GITHUB_STEP_SUMMARY
+              echo "**Next Steps**: Review and merge the auto-generated pull request" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 📋 Details" >> $GITHUB_STEP_SUMMARY
+            echo "- **Version**: v${{ steps.release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Tarball URL**: ${{ steps.release.outputs.tarball_url }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **SHA256**: \`${{ steps.sha256.outputs.sha256 }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Repository**: [${{ env.HOMEBREW_TAP_REPO }}](https://github.com/${{ env.HOMEBREW_TAP_REPO }})" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ Homebrew Formula Update Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Version**: v${{ steps.release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Mode**: ${{ env.mode == 'direct' && '🚀 Direct Push' || '📋 Pull Request' }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Status**: Update failed" >> $GITHUB_STEP_SUMMARY
+
+            if [ "${{ env.mode }}" == "direct" ]; then
+              echo "**Action**: Automatic rollback initiated" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "**Action**: Manual review required" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
