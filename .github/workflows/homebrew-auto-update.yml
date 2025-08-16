@@ -175,8 +175,8 @@ jobs:
         run: |
           echo "🧪 Testing formula installation..."
 
-          # Install from tapped formula (tap was already added in validation step)
-          brew install --build-from-source rxiv-maker
+          # Install from tapped formula (use bottles for faster installation)
+          brew install rxiv-maker
 
           # Verify installation
           if ! command -v rxiv &> /dev/null; then
