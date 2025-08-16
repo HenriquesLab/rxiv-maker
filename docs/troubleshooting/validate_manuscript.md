@@ -74,6 +74,8 @@ ERROR: Figure file FIGURES/missing.png not found
 SUGGESTION: Create the figure file or update the figure path
 ```
 
+**Note:** Figure validation checks for file existence and basic syntax, but doesn't validate figure positioning and layout. For comprehensive guidance on figure positioning, sizing, and troubleshooting layout issues, see the **[Figure Positioning Guide](../tutorials/figure-positioning.md)**.
+
 ### 5. Mathematical Expression Validation
 **What it checks:**
 - LaTeX math syntax (`$...$`, `$$...$$`)
@@ -380,4 +382,18 @@ make validate || {
 
 ---
 
-*This validation system helps ensure high-quality, error-free manuscripts while providing clear guidance for fixing any issues that arise. For more information, see the [User Guide](user_guide.md) and [API Reference](api/README.md).*
+## Related Resources
+
+### Troubleshooting Guides
+- **[Figure Positioning Guide](../tutorials/figure-positioning.md)** - Complete guide to figure placement, sizing, and layout control
+- **[Common Issues Guide](common-issues.md)** - General troubleshooting for all Rxiv-Maker problems  
+- **[Missing Figures Guide](troubleshooting-missing-figures.md)** - Resolving figure generation and file issues
+
+### Documentation
+- **[User Guide](../getting-started/user_guide.md)** - Complete usage instructions
+- **[Rxiv-Markdown Syntax Guide](../reference/rxiv-markdown-syntax.md)** - Complete syntax reference
+- **[CLI Reference](../CLI_REFERENCE.md)** - Command-line interface documentation
+
+---
+
+*This validation system helps ensure high-quality, error-free manuscripts while providing clear guidance for fixing any issues that arise. The validation process works hand-in-hand with the figure positioning guide and other troubleshooting resources to provide comprehensive manuscript quality assurance.*

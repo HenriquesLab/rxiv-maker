@@ -78,3 +78,18 @@ Even with automatic generation, generated figure files (PNG, PDF, SVG) remain tr
 - They provide immediate availability without requiring script execution
 - They serve as fallbacks when figure generation environments differ
 - They guarantee consistent output across different versions of plotting libraries
+
+## Related Issues
+
+### Figure Positioning and Layout Problems
+After resolving missing figure files, you might encounter figure positioning, spacing, or layout issues in your PDF. For comprehensive guidance on controlling figure placement and resolving positioning problems, see the **[Figure Positioning Guide](../tutorials/figure-positioning.md)**.
+
+Common positioning issues include:
+- Figures appearing on wrong pages
+- Poor spacing between figures and text
+- Panel reference formatting problems
+- Full-width figure layout issues
+
+### Other Troubleshooting Resources
+- **[Common Issues Guide](common-issues.md)** - General troubleshooting for all Rxiv-Maker problems
+- **[Validation Guide](validate_manuscript.md)** - Manuscript validation and error resolution

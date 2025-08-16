@@ -112,4 +112,5 @@ class LaTeXHandler:
             "amsfonts",
             "amssymb",
             "siunitx",
+            "ifsym",
         ]

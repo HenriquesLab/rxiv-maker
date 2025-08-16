@@ -566,6 +566,7 @@ class BuildManager:
         self.log("Copying figure files...", "STEP")
 
         figures_output = self.output_dir / "Figures"
+        figures_output.mkdir(parents=True, exist_ok=True)
         copied_files = []
 
         # Copy all files from FIGURES directory

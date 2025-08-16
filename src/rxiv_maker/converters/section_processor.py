@@ -98,7 +98,7 @@ def map_section_title_to_key(title: SectionTitle) -> SectionKey:
     if "abstract" in title_lower:
         return "abstract"
     elif "introduction" in title_lower:
-        return "main"
+        return "introduction"
     elif "method" in title_lower:
         return "methods"
     elif "result" in title_lower and "discussion" in title_lower:

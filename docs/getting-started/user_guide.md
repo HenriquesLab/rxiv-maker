@@ -6,6 +6,7 @@ This guide covers everything from getting started to advanced workflows, practic
 - [Getting Started](#getting-started)
 - [Manuscript Validation](#manuscript-validation)
 - [Advanced Usage](#advanced-usage)
+- [Figure Management](#figure-management)
 - [Examples & Cookbook](#examples--cookbook)
 - [Troubleshooting & Debugging](#troubleshooting--debugging)
 - [Where to Get Help](#where-to-get-help)
@@ -257,6 +258,44 @@ For more detailed validation information, see [Manuscript Validation Guide](vali
 
 ---
 
+## Figure Management
+
+Rxiv-Maker provides comprehensive figure management capabilities, from automated generation to precise positioning control.
+
+### Figure Generation
+- **Python/R Scripts**: Place `.py` or `.R` files in `MANUSCRIPT/FIGURES/`
+- **Mermaid Diagrams**: Use `.mmd` files for technical diagrams
+- **Static Images**: Support for PNG, SVG, PDF, and JPEG formats
+
+### Figure Positioning & Layout
+Control how figures appear in your PDF with precise positioning attributes:
+
+```markdown
+![Caption](FIGURES/figure.svg)
+{#fig:label tex_position="t" width="0.8\linewidth"}
+```
+
+**Common positioning options:**
+- `tex_position="t"` - Top of page (recommended)
+- `tex_position="h"` - Here (near the text)
+- `tex_position="p"` - Dedicated page (for large figures)
+- `width="\textwidth"` - Full-width (spans both columns)
+- `width="0.8\linewidth"` - 80% of column width
+
+### Advanced Figure Control
+For complete guidance on figure positioning, sizing, panel references, and troubleshooting layout issues, see the **[Figure Positioning Guide](../tutorials/figure-positioning.md)**.
+
+### Force Figure Regeneration
+```bash
+# Modern CLI
+rxiv pdf --force-figures
+
+# Legacy command
+make pdf FORCE_FIGURES=true
+```
+
+---
+
 ## Examples & Cookbook
 
 ### Local Development Examples
@@ -298,11 +337,12 @@ For more detailed validation information, see [Manuscript Validation Guide](vali
   ```
 - **Adding Figures:**
   - Place `.py` or `.mmd` files in `MANUSCRIPT/FIGURES/`
-  - Reference in Markdown:
+  - Reference in Markdown with positioning control:
     ```markdown
-    ![My Plot](FIGURES/my_plot.py){#fig:plot}
+    ![My Plot](FIGURES/my_plot.py){#fig:plot tex_position="t" width="0.8\linewidth"}
     See @fig:plot for details.
     ```
+  - For complex positioning needs, see [Figure Positioning Guide](../tutorials/figure-positioning.md)
 - **Customizing Templates:**
   - Add `.sty` or `.cls` files to `src/tex/style/`
   - Reference in `00_CONFIG.yml`
@@ -343,6 +383,10 @@ For more detailed validation information, see [Manuscript Validation Guide](vali
     - Check Python scripts in `FIGURES/` for errors
     - Use `rxiv pdf --force-figures` or `make pdf FORCE_FIGURES=true`
     - Check for missing data files
+- **Figure Positioning Issues:**
+  - Error: Figures appear on wrong pages, poor spacing, or layout problems
+  - Solution: See [Figure Positioning Guide](../tutorials/figure-positioning.md) for comprehensive positioning control
+  - Common fixes: Use `tex_position="t"` for top placement, `width="\textwidth"` for full-width figures
 - **Build Fails on GitHub Actions:**
   - Check: Is the manuscript directory path correct?
   - Check: Are all dependencies listed in `pyproject.toml`?
