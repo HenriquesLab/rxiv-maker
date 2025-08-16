@@ -481,6 +481,18 @@ class TestEnvironmentManagement:
 class TestEnvironmentValidation:
     """Test environment validation functionality."""
 
+    def setup_method(self):
+        """Set up test environment."""
+        # Clear environment before each test
+        self.original_env = os.environ.copy()
+        EnvironmentManager.clear_rxiv_vars()
+
+    def teardown_method(self):
+        """Clean up after each test."""
+        # Restore original environment
+        os.environ.clear()
+        os.environ.update(self.original_env)
+
     def test_validate_environment_valid_manuscript_path(self, tmp_path):
         """Test validation with valid manuscript path."""
         manuscript_dir = tmp_path / "manuscript"

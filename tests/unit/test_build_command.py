@@ -406,28 +406,30 @@ class TestBuildCommandEdgeCases:
         # These messages should appear in the logs, not necessarily in CLI output
         # The test verifies the command completes successfully with these options
 
-    @patch("rxiv_maker.cli.commands.build.Path")
-    def test_absolute_output_path_handling(self, mock_path):
-        """Test handling of absolute output paths."""
-        # Mock manuscript path exists
-        mock_manuscript_path = MagicMock()
-        mock_manuscript_path.exists.return_value = True
+    @patch("rxiv_maker.cli.commands.build.set_log_directory")
+    @patch("rxiv_maker.cli.commands.build.PathManager")
+    def test_absolute_output_path_handling(self, mock_path_manager, mock_set_log_directory):
+        """Test handling of absolute output paths through PathManager."""
+        # Mock PathManager instance
+        mock_path_manager_instance = MagicMock()
+        mock_path_manager_instance.manuscript_path = "/absolute/path/to/manuscript"
+        mock_path_manager_instance.output_dir = "/absolute/path/to/output"
+        mock_path_manager.return_value = mock_path_manager_instance
 
-        # Mock output path as absolute
-        mock_output_path = MagicMock()
-        mock_output_path.is_absolute.return_value = True
+        # Use a real temporary directory that exists to pass Click validation
+        with self.runner.isolated_filesystem():
+            # Create a test manuscript directory
+            os.makedirs("test_manuscript")
 
-        def path_side_effect(path_str):
-            if "output" in str(path_str):
-                return mock_output_path
-            else:
-                return mock_manuscript_path
+            # Test with absolute output path - this should work through PathManager
+            self.runner.invoke(
+                build,
+                ["test_manuscript", "--output-dir", "/absolute/output/path"],
+                obj={"verbose": False, "engine": "local"},
+            )
 
-        mock_path.side_effect = path_side_effect
-
-        # This test mainly verifies the path handling logic doesn't crash
-        # The actual BuildManager and Progress mocking would make this test too complex
-        # So we just test that the path logic works correctly
-
-        # Test that absolute path handling logic works
-        assert mock_output_path.is_absolute() is True
+        # The command should handle absolute paths through PathManager
+        # Even if it fails later (due to missing BuildManager setup),
+        # the PathManager should be created successfully
+        mock_path_manager.assert_called_once()
+        mock_set_log_directory.assert_called_once_with(mock_path_manager_instance.output_dir)
