@@ -258,6 +258,48 @@ Rscript Figure__example.R
 echo $?  # Should be 0 for success
 ```
 
+### Issue: Figure positioning and layout problems
+
+**Symptoms:**
+- Figures appear on wrong pages or at incorrect positions
+- Poor spacing between figure and text  
+- Figure panel references have unwanted spaces (e.g., "Fig. 1 A" instead of "Fig. 1A")
+- Full-width figures break layout or appear on dedicated pages unexpectedly
+- Section headers incorrectly mapped (e.g., "Introduction" becomes "Main")
+
+**Root Cause:**
+These issues often stem from incorrect figure positioning attributes, LaTeX positioning conflicts, or missing dependencies (particularly LaTeX packages like `siunitx` and `ifsym`).
+
+**Solutions:**
+
+#### 1. Check figure positioning syntax
+```markdown
+# Correct syntax with positioning control
+![Caption](FIGURES/figure.svg)
+{#fig:label tex_position="t" width="0.8\linewidth"}
+
+# For full-width figures spanning two columns
+![Caption](FIGURES/workflow.svg)  
+{#fig:workflow width="\textwidth" tex_position="t"}
+```
+
+#### 2. Fix common positioning issues
+```bash
+# Install missing LaTeX packages (if using local LaTeX)
+sudo tlmgr install siunitx ifsym
+
+# Use container mode to avoid package issues
+rxiv pdf --engine docker
+```
+
+#### 3. Comprehensive positioning guidance
+For complete troubleshooting of figure positioning, panel references, and layout issues, see the **[Figure Positioning Guide](../tutorials/figure-positioning.md)**.
+
+**Prevention:**
+- Always use `tex_position="t"` for consistent top placement
+- Use `width="\textwidth"` only for figures that should span both columns
+- Test figure positioning with `rxiv validate` before building PDF
+
 ---
 
 ## Container Engine Issues
