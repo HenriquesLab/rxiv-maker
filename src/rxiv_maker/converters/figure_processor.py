@@ -182,6 +182,9 @@ def create_latex_figure_environment(
     if latex_path.endswith(".svg"):
         latex_path = latex_path.replace(".svg", ".png")
 
+    # Get positioning first to inform 2-column decision
+    position: FigurePosition = attributes.get("tex_position", "ht")
+
     # Get width (default to '\linewidth' if not specified)
     width: FigureWidth = attributes.get("width", "\\linewidth")
     if not width.startswith("\\"):
@@ -194,17 +197,13 @@ def create_latex_figure_environment(
             # Assume fraction of linewidth if no backslash
             width = f"{width}\\linewidth"
 
-    # Get positioning first to inform 2-column decision
-    position: FigurePosition = attributes.get("tex_position", "ht")
-
     # Check if this should be a 2-column spanning figure
-    # IMPORTANT: Do NOT use figure* for position="p" (dedicated page) regardless of width
     is_twocolumn = (
         attributes.get("span") == "2col" or attributes.get("twocolumn") == "true" or attributes.get("twocolumn") is True
-    ) and position != "p"  # Never use figure* for dedicated page figures
+    )
 
-    # Auto-detect 2-column for full-width figures, but NOT for dedicated page
-    if not is_twocolumn and width == "\\textwidth" and position != "p":
+    # Auto-detect 2-column for full-width figures
+    if not is_twocolumn and width == "\\textwidth":
         is_twocolumn = True
 
     # Only adjust positioning for two-column spanning figures that don't have explicit positioning
@@ -216,14 +215,43 @@ def create_latex_figure_environment(
     processed_caption = re.sub(r"\*\*([^*]+)\*\*", r"\\textbf{\1}", caption)
     processed_caption = re.sub(r"\*([^*]+)\*", r"\\textit{\1}", processed_caption)
 
-    # For full-width figures with long captions, add line breaks to prevent overflow
-    if width == "\\textwidth" and len(processed_caption) > 200:
-        # Add some formatting to help with caption wrapping
+    # For 2-column spanning figures (figure*), ensure caption spans full width
+    if is_twocolumn:
+        # Use \captionsetup to make caption span full width in 2-column layout
+        # This ensures both figure and caption use the full text width
+        if len(processed_caption) > 150:
+            # For longer captions, add justified text formatting
+            processed_caption = f"\\captionsetup{{width=\\textwidth,justification=justified}}\n{processed_caption}"
+        else:
+            # For shorter captions, just ensure full width
+            processed_caption = f"\\captionsetup{{width=\\textwidth}}\n{processed_caption}"
+    elif width == "\\textwidth" and len(processed_caption) > 200:
+        # For full-width figures with long captions, use raggedright formatting
         processed_caption = f"\\raggedright {processed_caption}"
 
     # Create LaTeX figure environment - use figure* for 2-column spanning
     figure_env = "figure*" if is_twocolumn else "figure"
-    latex_figure = f"""\\begin{{{figure_env}}}[{position}]
+
+    # For figures with captionsetup, extract and place it before \caption
+    if "\\captionsetup" in processed_caption:
+        # Extract the captionsetup command and the actual caption text
+        if processed_caption.startswith("\\captionsetup"):
+            lines = processed_caption.split("\n", 1)
+            captionsetup_cmd = lines[0]
+            actual_caption = lines[1] if len(lines) > 1 else ""
+
+            latex_figure = f"""\\begin{{{figure_env}}}[{position}]
+\\centering
+\\includegraphics[width={width}]{{{latex_path}}}
+{captionsetup_cmd}
+\\caption{{{actual_caption}}}"""
+        else:
+            latex_figure = f"""\\begin{{{figure_env}}}[{position}]
+\\centering
+\\includegraphics[width={width}]{{{latex_path}}}
+\\caption{{{processed_caption}}}"""
+    else:
+        latex_figure = f"""\\begin{{{figure_env}}}[{position}]
 \\centering
 \\includegraphics[width={width}]{{{latex_path}}}
 \\caption{{{processed_caption}}}"""

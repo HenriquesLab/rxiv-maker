@@ -1,0 +1,67 @@
+title:
+  - long: '{\color{red}R}$\chi$iv-Maker: an automated template engine for streamlined scientific publications'
+  - short: '{\color{red}R}$\chi$iv-Maker'
+  - lead_author: "Saraiva"
+
+date: "2025-06-20"
+# status: "draft"
+use_line_numbers: false
+license: "CC BY 4.0"
+acknowledge_rxiv_maker: false
+enable_doi_validation: true            # Enable DOI validation against CrossRef/DataCite APIs
+
+keywords:
+  - "article template"
+  - "scientific publishing"
+  - "preprints"
+
+authors:
+  - name: "Bruno M. Saraiva"
+    affiliations:
+      - "ITQB NOVA"
+    corresponding_author: true
+    co_first_author: false
+    email64: "YnNhcmFpdmFAaXRxYi51bmwucHQ="
+    orcid: 0000-0002-9151-5477
+    x: "@Bruno_MSaraiva"
+    linkedin: "bruno-saraiva"
+  - name: "Guillaume Jaquemet"
+    affiliations:
+      - "Åbo"
+      - "InFlames"
+      - "Turku Bioscience"
+    corresponding_author: true
+    co_first_author: false
+    email64: "Z3VpbGxhdW1lLmphY3F1ZW1ldEBhYm8uZmk="
+    orcid: 0000-0002-9286-920X
+    twitter: "@guijacquemet"
+    bluesky: "@guijacquemet.bsky.social"
+  - name: "Ricardo Henriques"
+    affiliations:
+      - "ITQB NOVA"
+      - "UCL"
+    corresponding_author: true
+    co_first_author: false
+    email64: "cmljYXJkby5oZW5yaXF1ZXNAaXRxYi51bmwucHQ="
+    orcid: 0000-0002-2043-5234
+    bluesky: "@henriqueslab.bsky.social"
+    x: "@HenriquesLab"
+    linkedin: "ricardo-henriques"
+affiliations:
+  - shortname: "ITQB NOVA"
+    full_name: "Instituto de Tecnologia Química e Biológica António Xavier, Universidade Nova de Lisboa"
+    location: "Oeiras, Portugal"
+  - shortname: "UCL"
+    full_name: "UCL Laboratory for Molecular Cell Biology, University College London"
+    location: "London, United Kingdom"
+  - shortname: "Åbo"
+    full_name: "Faculty of Science and Engineering, Cell Biology, Åbo Akademi University"
+    location: "Turku, Finland"
+  - shortname: "InFlames"
+    full_name: "InFLAMES Research Flagship Center, University of Turku"
+    location: "Turku, Finland"
+  - shortname: "Turku Bioscience"
+    full_name: "Turku Bioscience Centre, University of Turku and Åbo Akademi University"
+    location: "Turku, Finland"
+
+bibliography: 03_REFERENCES.bib
