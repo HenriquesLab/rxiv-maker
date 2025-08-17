@@ -240,23 +240,23 @@ jobs:
             # Create initial repository structure
             mkdir -p conf
             cat > conf/distributions << EOF
-          Origin: Rxiv-Maker Project
-          Label: Rxiv-Maker APT Repository
-          Suite: stable
-          Codename: stable
-          Architectures: amd64 arm64 all
-          Components: main
-          Description: APT repository for rxiv-maker - Automated LaTeX article generation
-          SignWith: $GPG_KEY_ID
-          DebIndices: Packages Release . .gz .bz2
-          DscIndices: Sources Release .gz .bz2
-          Contents: .gz .bz2
-          EOF
+Origin: Rxiv-Maker Project
+Label: Rxiv-Maker APT Repository
+Suite: stable
+Codename: stable
+Architectures: amd64 arm64
+Components: main
+Description: APT repository for rxiv-maker - Automated LaTeX article generation
+SignWith: $GPG_KEY_ID
+DebIndices: Packages Release . .gz .bz2
+DscIndices: Sources Release .gz .bz2
+Contents: .gz .bz2
+EOF
 
-            cat > conf/options << EOF
-          verbose
-          ask-passphrase
-          EOF
+            cat > conf/options << 'EOF'
+verbose
+basedir .
+EOF
 
             # Export GPG public key
             gpg --armor --export $GPG_KEY_ID > pubkey.gpg
@@ -308,21 +308,32 @@ jobs:
 
           echo "Adding package: $(basename "$DEB_FILE")"
 
+          # Debug: Check configuration files
+          echo "=== Debug: conf/distributions ==="
+          cat conf/distributions
+          echo "=== Debug: conf/options ==="
+          cat conf/options
+          echo "=== End Debug ==="
+
           # Add package to incoming directory
           mkdir -p incoming
           cp "$DEB_FILE" incoming/
 
           # Configure GPG agent for non-interactive use
           export GPG_TTY=$(tty)
+          mkdir -p ~/.gnupg
+          chmod 700 ~/.gnupg
           echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
+          echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
           echo "RELOADAGENT" | gpg-connect-agent
 
           # Clear any aliases that might interfere with reprepro
           unalias -a 2>/dev/null || true
 
-          # Add package to repository
+          # Add package to repository with GPG passphrase
           PACKAGE_NAME=$(basename "$DEB_FILE")
-          echo "$GPG_PASSPHRASE" | /usr/bin/reprepro -Vb . includedeb stable "incoming/$PACKAGE_NAME"
+          export GNUPGHOME="$HOME/.gnupg"
+          echo "$GPG_PASSPHRASE" | reprepro --ask-passphrase -Vb . includedeb stable "incoming/$PACKAGE_NAME"
 
           # Clean up
           rm "incoming/$PACKAGE_NAME"
@@ -330,11 +341,14 @@ jobs:
           echo "✅ Package added to repository"
 
       - name: Update repository metadata
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           echo "🔄 Updating repository metadata..."
 
           # Regenerate repository metadata
-          /usr/bin/reprepro -Vb . export
+          export GNUPGHOME="$HOME/.gnupg"
+          echo "$GPG_PASSPHRASE" | reprepro --ask-passphrase -Vb . export
 
           # Update README with package list
           if [[ -f "dists/stable/main/binary-all/Packages" ]]; then
