@@ -8,7 +8,7 @@ on:
       use_direct_push:
         description: 'Use direct push instead of PR workflow'
         type: boolean
-        default: false
+        default: true
       tag_name:
         description: 'Tag name for manual runs (e.g., v1.5.0)'
         type: string
