@@ -256,8 +256,6 @@ jobs:
             cat > conf/options << EOF
           verbose
           ask-passphrase
-          export=changed
-          verify
           EOF
 
             # Export GPG public key

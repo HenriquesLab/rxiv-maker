@@ -13,7 +13,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -319,8 +319,13 @@ class TestExecutionManagerFactory:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
 
-            # This might fail if docker/podman not available, so we mock
-            with patch("rxiv_maker.engines.factory.get_container_engine"):
+            # Mock the global container manager to avoid actual container engine initialization
+            with patch("rxiv_maker.core.global_container_manager.get_global_container_manager") as mock_global_manager:
+                mock_manager = MagicMock()
+                mock_engine = MagicMock()
+                mock_manager.get_container_engine.return_value = mock_engine
+                mock_global_manager.return_value = mock_manager
+
                 manager = create_execution_manager(mode=ExecutionMode.DOCKER, working_dir=temp_path)
 
                 assert isinstance(manager, ContainerExecutionManager)

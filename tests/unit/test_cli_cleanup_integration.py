@@ -279,7 +279,7 @@ class TestCLIContainerCleanupIntegration(unittest.TestCase):
         except ImportError:
             self.skipTest("Memory management integration imports not available")
 
-    @patch("rxiv_maker.engines.factory.ContainerEngineFactory.cleanup_all_engines")
+    @patch("rxiv_maker.core.global_container_manager.cleanup_global_containers")
     def test_verbose_cleanup_output(self, mock_cleanup):
         """Test that verbose cleanup provides proper user feedback."""
         try:
@@ -338,7 +338,7 @@ class TestCLIContainerCleanupIntegration(unittest.TestCase):
         except ImportError:
             self.skipTest("Verbose cleanup imports not available")
 
-    @patch("rxiv_maker.engines.factory.ContainerEngineFactory.cleanup_all_engines")
+    @patch("rxiv_maker.core.global_container_manager.cleanup_global_containers")
     def test_cleanup_error_verbose_handling(self, mock_cleanup):
         """Test that cleanup errors are properly reported in verbose mode."""
         try:
