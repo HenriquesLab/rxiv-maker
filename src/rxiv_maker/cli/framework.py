@@ -97,7 +97,7 @@ class BaseCommand(ABC):
                 # Use PathManager workspace directory for consistency
                 if self.path_manager is None:
                     raise CommandExecutionError("Path manager not initialized")
-                docker_manager = get_docker_manager(workspace_dir=self.path_manager.workspace_dir)
+                docker_manager = get_docker_manager(workspace_dir=self.path_manager._working_dir)
 
                 if not docker_manager.check_docker_available():
                     self.console.print("❌ Docker is not available. Please ensure Docker is running.", style="red")
