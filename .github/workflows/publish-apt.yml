@@ -249,6 +249,13 @@ jobs:
           sed "s/SignWith: .*/SignWith: $GPG_KEY_ID/" /tmp/apt-templates/distributions > conf/distributions
           cp /tmp/apt-templates/options conf/options
 
+          # Debug: Show what's in the configuration files
+          echo "=== Debug: Contents of conf/options ==="
+          cat -n conf/options
+          echo "=== Debug: Contents of conf/distributions ==="
+          head -10 conf/distributions
+          echo "=== End Debug ==="
+
           # Export GPG public key
           gpg --armor --export $GPG_KEY_ID > pubkey.gpg
 
