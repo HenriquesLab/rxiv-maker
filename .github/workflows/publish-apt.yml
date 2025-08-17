@@ -227,34 +227,33 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Check if apt-repo branch exists
-          if git show-ref --verify --quiet refs/remotes/origin/apt-repo; then
-            echo "📥 Checking out existing apt-repo branch..."
-            git checkout apt-repo
-            git pull origin apt-repo
-          else
-            echo "🆕 Creating new apt-repo branch..."
+          # Always create a fresh apt-repo branch to ensure clean configuration
+          echo "🆕 Creating fresh apt-repo branch..."
 
-            # Save template files before clearing
-            mkdir -p /tmp/apt-templates
-            cp packaging/apt-repo/conf/distributions /tmp/apt-templates/
-            cp packaging/apt-repo/conf/options /tmp/apt-templates/
+          # Save template files before clearing
+          mkdir -p /tmp/apt-templates
+          cp packaging/apt-repo/conf/distributions /tmp/apt-templates/
+          cp packaging/apt-repo/conf/options /tmp/apt-templates/
 
-            git checkout --orphan apt-repo
-            git rm -rf .
+          # Delete existing branch if it exists
+          git branch -D apt-repo 2>/dev/null || true
+          git push origin --delete apt-repo 2>/dev/null || true
 
-            # Create initial repository structure from templates
-            mkdir -p conf
+          git checkout --orphan apt-repo
+          git rm -rf .
 
-            # Use template files and substitute GPG key
-            sed "s/SignWith: .*/SignWith: $GPG_KEY_ID/" /tmp/apt-templates/distributions > conf/distributions
-            cp /tmp/apt-templates/options conf/options
+          # Create initial repository structure from templates
+          mkdir -p conf
 
-            # Export GPG public key
-            gpg --armor --export $GPG_KEY_ID > pubkey.gpg
+          # Use template files and substitute GPG key
+          sed "s/SignWith: .*/SignWith: $GPG_KEY_ID/" /tmp/apt-templates/distributions > conf/distributions
+          cp /tmp/apt-templates/options conf/options
 
-            # Create initial README
-            cat > README.md << 'EOF'
+          # Export GPG public key
+          gpg --armor --export $GPG_KEY_ID > pubkey.gpg
+
+          # Create initial README
+          cat > README.md << 'EOF'
           # Rxiv-Maker APT Repository
 
           This repository contains Debian packages for rxiv-maker.
@@ -282,9 +281,8 @@ jobs:
           - `rxiv-maker` - Main package with all dependencies
           EOF
 
-            git add .
-            git commit -m "Initialize APT repository for rxiv-maker"
-          fi
+          git add .
+          git commit -m "Initialize APT repository for rxiv-maker"
 
       - name: Add package to repository
         env:
