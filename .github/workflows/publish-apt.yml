@@ -234,29 +234,21 @@ jobs:
             git pull origin apt-repo
           else
             echo "🆕 Creating new apt-repo branch..."
+
+            # Save template files before clearing
+            mkdir -p /tmp/apt-templates
+            cp packaging/apt-repo/conf/distributions /tmp/apt-templates/
+            cp packaging/apt-repo/conf/options /tmp/apt-templates/
+
             git checkout --orphan apt-repo
             git rm -rf .
 
-            # Create initial repository structure
+            # Create initial repository structure from templates
             mkdir -p conf
-            cat > conf/distributions << EOF
-          Origin: Rxiv-Maker Project
-          Label: Rxiv-Maker APT Repository
-          Suite: stable
-          Codename: stable
-          Architectures: amd64 arm64
-          Components: main
-          Description: APT repository for rxiv-maker - Automated LaTeX article generation
-          SignWith: $GPG_KEY_ID
-          DebIndices: Packages Release . .gz .bz2
-          DscIndices: Sources Release .gz .bz2
-          Contents: .gz .bz2
-          EOF
 
-            cat > conf/options << 'EOF'
-          verbose
-          basedir .
-          EOF
+            # Use template files and substitute GPG key
+            sed "s/SignWith: .*/SignWith: $GPG_KEY_ID/" /tmp/apt-templates/distributions > conf/distributions
+            cp /tmp/apt-templates/options conf/options
 
             # Export GPG public key
             gpg --armor --export $GPG_KEY_ID > pubkey.gpg

@@ -2,7 +2,7 @@ Origin: Rxiv-Maker Project
 Label: Rxiv-Maker APT Repository
 Suite: stable
 Codename: stable
-Architectures: amd64 arm64 all
+Architectures: amd64 arm64
 Components: main
 Description: APT repository for rxiv-maker - Automated LaTeX article generation
 SignWith: A3AC17942DBC5173C411B430F062E1A7D703CA85
