@@ -240,23 +240,23 @@ jobs:
             # Create initial repository structure
             mkdir -p conf
             cat > conf/distributions << EOF
-Origin: Rxiv-Maker Project
-Label: Rxiv-Maker APT Repository
-Suite: stable
-Codename: stable
-Architectures: amd64 arm64
-Components: main
-Description: APT repository for rxiv-maker - Automated LaTeX article generation
-SignWith: $GPG_KEY_ID
-DebIndices: Packages Release . .gz .bz2
-DscIndices: Sources Release .gz .bz2
-Contents: .gz .bz2
-EOF
+          Origin: Rxiv-Maker Project
+          Label: Rxiv-Maker APT Repository
+          Suite: stable
+          Codename: stable
+          Architectures: amd64 arm64
+          Components: main
+          Description: APT repository for rxiv-maker - Automated LaTeX article generation
+          SignWith: $GPG_KEY_ID
+          DebIndices: Packages Release . .gz .bz2
+          DscIndices: Sources Release .gz .bz2
+          Contents: .gz .bz2
+          EOF
 
             cat > conf/options << 'EOF'
-verbose
-basedir .
-EOF
+          verbose
+          basedir .
+          EOF
 
             # Export GPG public key
             gpg --armor --export $GPG_KEY_ID > pubkey.gpg
