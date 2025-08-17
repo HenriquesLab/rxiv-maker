@@ -1,6 +1,9 @@
-rxiv-maker (1.5.10-1) stable; urgency=medium
+rxiv-maker (1.5.18-1) stable; urgency=medium
 
-  * Initial Debian package release
+  * Fix Ubuntu 24.04 dependency compatibility
+  * Updated python3-matplotlib requirement: ≥3.7.0 → ≥3.6.0
+  * Updated python3-pypdf requirement: ≥6.0.0 → ≥4.0.0
+  * Added missing dependency: python3-crossrefapi
   * Automated LaTeX article generation with modern CLI
   * Figure creation capabilities with Python/R integration
   * DOI validation and bibliography management
