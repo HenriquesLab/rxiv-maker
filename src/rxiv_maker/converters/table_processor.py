@@ -1,7 +1,29 @@
-"""Table processing for markdown to LaTeX conversion.
+r"""Table processing for markdown to LaTeX conversion.
 
 This module handles conversion of markdown tables to LaTeX table environments,
 including table formatting, rotation, and special syntax handling.
+
+CRITICAL ESCAPING NOTES:
+========================
+This module contains critical fixes for LaTeX special character escaping in tables,
+particularly for the "%" character which starts LaTeX comments. Key issues resolved:
+
+1. LaTeX Comments in Code Spans: Content like `% comment` in markdown tables
+   must be escaped as `\\% comment` inside \texttt{} environments to prevent
+   LaTeX from treating "%" as the start of a comment, which would consume
+   everything after it including closing braces.
+
+2. Detection Logic: The _format_markdown_syntax_cell function checks for both
+   "\" AND "%" at the start of code content to determine if it's LaTeX syntax.
+   Previously only checked for "\", causing "% comment" to be misclassified.
+
+3. ContentProcessor Bypass: The new ContentProcessor is temporarily disabled
+   in md2tex.py because it doesn't use the same table processing pipeline
+   and would bypass these critical escaping fixes.
+
+These fixes are essential for markdown syntax tables that demonstrate LaTeX
+comment syntax. Without proper escaping, the LaTeX compilation fails with
+unmatched brace errors.
 """
 
 import re
@@ -139,7 +161,22 @@ def convert_tables_to_latex(
         result_lines.append(line)
         i += 1
 
-    return "\n".join(result_lines)
+    # Clean up double escaping that may have occurred during processing
+    result = "\n".join(result_lines)
+    result = _cleanup_double_escaping(result)
+    return result
+
+
+def _cleanup_double_escaping(text: str) -> str:
+    r"""Clean up double-escaped backslashes in texttt environments.
+
+    Fixes patterns like \\textbackslash{}textbackslash that break LaTeX parsing.
+    """
+    # Fix the specific pattern of double-escaped backslashes
+    # Replace \\textbackslash{}textbackslash (with space) with just \\textbackslash{}
+    text = re.sub(r"\\textbackslash\{\}textbackslash\s+", r"\\textbackslash{}", text)
+
+    return text
 
 
 def generate_latex_table(
@@ -241,6 +278,13 @@ def generate_latex_table(
                     protected_backtick_content=protected_backtick_content,
                 )
             )
+        # For Markdown Syntax table, ensure the LaTeX Equivalent column (index 1)
+        # is always wrapped in \texttt{}, even if the source cell had no backticks
+        if is_markdown_syntax_table and len(formatted_row) > 1:
+            if "\\texttt{" not in formatted_row[1]:
+                # Escape unescaped % to avoid LaTeX comments inside tabular
+                safe_content = re.sub(r"(?<!\\)%", r"\\%", formatted_row[1])
+                formatted_row[1] = f"\\texttt{{{safe_content}}}"
         formatted_data_rows.append(formatted_row)
 
     # Determine table environment
@@ -315,7 +359,24 @@ def generate_latex_table(
     # Close environment
     latex_lines.append(f"\\end{{{table_env}}}")
 
-    return "\n".join(latex_lines)
+    # Join lines to form the complete table
+    table_str = "\n".join(latex_lines)
+
+    # Final safety pass: ensure unescaped % are escaped inside any \texttt{...} blocks
+    # This belt-and-suspenders step guarantees table integrity even if earlier
+    # per-cell logic misses a case during complex pipeline transformations.
+    try:
+        parts = _split_on_latex_commands(table_str, ["texttt"])  # preserve balanced texttt blocks
+        for i, part in enumerate(parts):
+            if part.startswith("\\texttt{"):
+                # Escape any unescaped % so they don't start LaTeX comments inside tabular/tabularx
+                parts[i] = re.sub(r"(?<!\\)%", r"\\%", part)
+        table_str = "".join(parts)
+    except Exception:
+        # If anything goes wrong, return the original string (better to not alter output)
+        pass
+
+    return table_str
 
 
 def _format_table_cell(
@@ -357,8 +418,11 @@ def _format_markdown_syntax_cell(cell: str) -> str:
     def process_code_only(match: re.Match[str]) -> str:
         code_content = match.group(1)
 
-        # Check if this looks like LaTeX syntax (starts with backslash)
-        if code_content.startswith("\\"):
+        # Check if this looks like LaTeX syntax (starts with backslash or % for comments)
+        # CRITICAL FIX: Must include "%" check for LaTeX comments like "% comment"
+        # Previously only checked for "\", causing "% comment" to be treated as markdown
+        # This resulted in unescaped % inside \texttt{} breaking LaTeX parsing
+        if code_content.startswith("\\") or code_content.startswith("%"):
             # This is LaTeX syntax - use special LaTeX escaping
             code_content = _escape_latex_syntax_for_texttt(code_content)
         else:
@@ -381,10 +445,16 @@ def _format_markdown_syntax_cell(cell: str) -> str:
         return text
 
     # Split by \texttt blocks and apply formatting only to the non-texttt parts
-    parts = re.split(r"(\\texttt\{[^}]*\})", cell)
+    parts = _split_on_latex_commands(cell, ["texttt"])
     for i in range(len(parts)):
         if not parts[i].startswith("\\texttt{"):
             parts[i] = apply_markdown_formatting(parts[i])
+
+    # Also ensure percent signs inside \texttt blocks are escaped so they don't start comments
+    for i in range(len(parts)):
+        if parts[i].startswith("\\texttt{"):
+            # Escape unescaped % inside texttt
+            parts[i] = re.sub(r"(?<!\\)%", r"\\%", parts[i])
 
     return "".join(parts)
 
@@ -395,9 +465,19 @@ def _format_regular_table_cell(cell: str) -> str:
     # First, process code blocks to protect them from markdown formatting
     def process_code_in_table(match: re.Match[str]) -> str:
         code_content = match.group(1)
-        # Replace problematic characters that break tables
-        # Order matters - do backslashes first, then other characters
-        code_content = _escape_for_texttt(code_content)
+
+        # Check if content contains LaTeX commands (backslashes) and use proper escaping
+        if "\\" in code_content:
+            # For LaTeX syntax examples, use manual escaping mechanism
+            if _is_latex_command(code_content):
+                code_content = _escape_latex_syntax_for_texttt(code_content)
+            else:
+                code_content = _escape_literal_markdown_for_texttt(code_content)
+        else:
+            # For regular code spans, use conservative texttt escaping so % doesn't start a comment
+            # and other table-breaking characters are safe inside \texttt{}
+            code_content = _escape_literal_markdown_for_texttt(code_content)
+
         # For multiline code in tables, replace newlines with spaces
         code_content = code_content.replace("\n", " ")
         # Remove multiple spaces
@@ -409,7 +489,7 @@ def _format_regular_table_cell(cell: str) -> str:
     # inner backticks)
     cell = re.sub(
         r"``\s*`([^`]+)`\s*``",
-        lambda m: f"\\texttt{{{_escape_for_texttt(m.group(1))}}}",
+        process_code_in_table,
         cell,
     )
     # Then handle regular double backticks
@@ -431,6 +511,9 @@ def _format_regular_table_cell(cell: str) -> str:
 
 def _escape_latex_special_chars(text: str) -> str:
     """Escape LaTeX special characters in text."""
+    # Skip processing if text already contains any form of textbackslash
+    if "textbackslash" in text:
+        return text
     text = text.replace("\\", "\\textbackslash{}")
     text = text.replace("{", "\\{")
     text = text.replace("}", "\\}")
@@ -447,61 +530,62 @@ def _escape_latex_special_chars(text: str) -> str:
     return text
 
 
+def _is_latex_command(text: str) -> bool:
+    """Check if text contains LaTeX commands that should use manual escaping."""
+    # Look for LaTeX command patterns like \textbf{}, \emph{}, etc.
+    import re
+
+    latex_command_pattern = r"\\[a-zA-Z]+\{"
+    return bool(re.search(latex_command_pattern, text))
+
+
 def _escape_latex_syntax_for_texttt(text: str) -> str:
-    r"""Escape LaTeX syntax examples for display in texttt without double-escaping.
+    r"""Escape LaTeX syntax examples for display in texttt using conservative escaping.
 
     This function is specifically for LaTeX command examples (like \textbf{bold})
     that should be displayed literally in tables without breaking LaTeX parsing.
+    Uses conservative manual escaping to prevent double-escaping by later processors and
+    avoid table structure issues.
     """
-    # For LaTeX syntax examples, we want to show the command as-is
-    # The key insight: \textbackslash{} renders as a single backslash in LaTeX
-    # So \textbackslash{}textbf\{bold\} should render as \textbf{bold}
+    # Use very conservative escaping for texttt environment
+    # In texttt, most characters are literal, so we only escape what's absolutely necessary
+    escaped_content = text
 
-    # Replace backslashes with \textbackslash (no {})
-    text = text.replace("\\", "\\textbackslash ")
+    # Replace backslashes - this is the most important one for LaTeX commands
+    escaped_content = escaped_content.replace("\\", "\\textbackslash{}")
 
-    # Escape curly braces so they display as literal braces
-    text = text.replace("{", "\\{")
-    text = text.replace("}", "\\}")
+    # Handle ellipsis that might cause parsing issues
+    escaped_content = escaped_content.replace("...", "\\ldots{}")
 
-    # Escape other special characters that could break table parsing
-    text = text.replace("&", "\\&")
-    text = text.replace("%", "\\%")
-    text = text.replace("$", "\\$")
-    text = text.replace("#", "\\#")
-    text = text.replace("^", "\\textasciicircum{}")
-    text = text.replace("~", "\\textasciitilde{}")
-    text = text.replace("_", "\\_")
+    # Don't escape braces inside texttt - they should be literal
+    # Only escape characters that would actually break LaTeX parsing
+    # Important: escape percent so it doesn't start a comment inside \texttt
+    escaped_content = escaped_content.replace("%", "\\%")
+    escaped_content = escaped_content.replace("#", "\\#")
+    escaped_content = escaped_content.replace("$", "\\$")
 
-    return text
+    return escaped_content
 
 
 def _escape_literal_markdown_for_texttt(text: str) -> str:
-    """Escape literal markdown syntax for display in texttt without breaking LaTeX.
+    r"""Escape literal markdown syntax for display in texttt using conservative escaping.
 
     This function is specifically for markdown syntax examples that should be displayed
     literally in tables (e.g., showing `**bold**` instead of converting to LaTeX).
+    Uses conservative manual escaping to prevent issues in texttt environment.
     """
-    # For literal markdown syntax, we want minimal escaping to preserve readability
-    # Only escape characters that would break LaTeX parsing
+    # Use very conservative escaping for texttt environment
+    # For markdown, we usually don't need much escaping since most chars are literal in texttt
+    escaped_content = text
 
-    # Handle backslashes carefully - don't add extra spaces for literal syntax
-    text = text.replace("\\", "\\textbackslash{}")
+    # Only escape characters that would actually break LaTeX parsing
+    # Important: escape percent so it doesn't start a comment inside \texttt
+    escaped_content = escaped_content.replace("%", "\\%")
+    escaped_content = escaped_content.replace("#", "\\#")
+    escaped_content = escaped_content.replace("$", "\\$")
+    escaped_content = escaped_content.replace("^", "\\^{}")
 
-    # Escape curly braces
-    text = text.replace("{", "\\{")
-    text = text.replace("}", "\\}")
-
-    # Escape other LaTeX special characters
-    text = text.replace("&", "\\&")
-    text = text.replace("%", "\\%")
-    text = text.replace("$", "\\$")
-    text = text.replace("#", "\\#")
-    text = text.replace("^", "\\textasciicircum{}")
-    text = text.replace("~", "\\textasciitilde{}")
-    text = text.replace("_", "\\_")
-
-    return text
+    return escaped_content
 
 
 def _escape_latex_for_texttt_safe(text: str) -> str:
@@ -514,7 +598,9 @@ def _escape_latex_for_texttt_safe(text: str) -> str:
     # Only escape the minimal set of characters that actually cause problems
 
     # Replace backslashes with a safer representation
-    # Remove the extra space that was causing LaTeX parsing issues
+    # Skip processing if text already contains any form of textbackslash
+    if "textbackslash" in text:
+        return text
     text = text.replace("\\", "\\textbackslash{}")
 
     # Use simpler curly brace escaping that doesn't break parsing
@@ -555,6 +641,18 @@ def _escape_for_texttt(text: str) -> str:
     # For texttt, only escape characters that really need it
     # Most characters are literal in texttt, so avoid over-escaping
 
+    # Check if this contains problematic patterns that need special handling
+    if "$(" in text or "$)" in text or "\\" in text or "^" in text:
+        # Use conservative manual escaping for complex cases
+        escaped_content = text
+        # Replace backslashes - this is the most important one
+        escaped_content = escaped_content.replace("\\", "\\textbackslash{}")
+        # Only escape characters that would actually break LaTeX parsing in texttt
+        escaped_content = escaped_content.replace("#", "\\#")
+        escaped_content = escaped_content.replace("$", "\\$")
+        escaped_content = escaped_content.replace("^", "\\^{}")
+        return escaped_content
+
     return text
 
 
@@ -563,7 +661,7 @@ def _apply_formatting_outside_texttt(text: str) -> str:
 
     # Handle bold first (double asterisks) - but only outside \texttt{}
     def replace_bold_outside_texttt(text: str) -> str:
-        parts = re.split(r"(\\texttt\{[^}]*\})", text)
+        parts = _split_on_latex_commands(text, ["texttt"])  # protect code spans
         result: list[str] = []
         for _i, part in enumerate(parts):
             if part.startswith("\\texttt{"):
@@ -575,7 +673,7 @@ def _apply_formatting_outside_texttt(text: str) -> str:
 
     # Handle italic (single asterisks) - but only outside \texttt{}
     def replace_italic_outside_texttt(text: str) -> str:
-        parts = re.split(r"(\\texttt\{[^}]*\})", text)
+        parts = _split_on_latex_commands(text, ["texttt"])  # protect code spans
         result: list[str] = []
         for _i, part in enumerate(parts):
             if part.startswith("\\texttt{"):
@@ -592,6 +690,58 @@ def _apply_formatting_outside_texttt(text: str) -> str:
     text = replace_bold_outside_texttt(text)
     text = replace_italic_outside_texttt(text)
     return text
+
+
+def _split_on_latex_commands(text: str, commands: list[str]) -> list[str]:
+    r"""Split text preserving LaTeX command blocks with balanced braces.
+
+    Safely extracts blocks like \texttt{...}, \textbf{...}, \textit{...}
+    even when their content contains nested brace groups or literal braces (\{, \}).
+    Returns parts in order, with command blocks intact.
+    """
+    parts: list[str] = []
+    i = 0
+    n = len(text)
+    while i < n:
+        if text[i] == "\\":
+            matched = None
+            for cmd in commands:
+                prefix = "\\" + cmd + "{"
+                if text.startswith(prefix, i):
+                    matched = cmd
+                    break
+            if matched is None:
+                # Not a tracked command, consume until next backslash or end
+                start = i
+                i += 1
+                while i < n and text[i] != "\\":
+                    i += 1
+                parts.append(text[start:i])
+                continue
+
+            # Capture full balanced block for the matched command
+            start = i
+            i += len(matched) + 2  # skip \cmd{
+            depth = 1
+            while i < n and depth > 0:
+                ch = text[i]
+                if ch == "\\" and i + 1 < n and text[i + 1] in "{}":
+                    # skip escaped braces like \{ or \}
+                    i += 2
+                    continue
+                if ch == "{":
+                    depth += 1
+                elif ch == "}":
+                    depth -= 1
+                i += 1
+            parts.append(text[start:i])
+        else:
+            # Accumulate plain text until next backslash or end
+            start = i
+            while i < n and text[i] != "\\":
+                i += 1
+            parts.append(text[start:i])
+    return parts
 
 
 def _escape_underscores_outside_cite(text: str) -> str:
@@ -613,17 +763,21 @@ def _escape_underscores_outside_cite(text: str) -> str:
 def _escape_outside_latex_commands(text: str) -> str:
     """Escape special characters outside LaTeX formatting commands."""
     # Split on all LaTeX formatting commands to protect them
-    parts = re.split(r"(\\texttt\{[^}]*\}|\\textbf\{[^}]*\}|\\textit\{[^}]*\})", text)
+    parts = _split_on_latex_commands(text, ["texttt", "textbf", "textit"])
     result: list[str] = []
     for _i, part in enumerate(parts):
         if part.startswith(("\\texttt{", "\\textbf{", "\\textit{")):
+            # For code blocks, ensure % is escaped so it doesn't start a LaTeX comment
+            if part.startswith("\\texttt{"):
+                # Replace unescaped % with \%
+                part = re.sub(r"(?<!\\)%", r"\\%", part)
             result.append(part)
         else:
             part = part.replace("&", "\\&")
             part = part.replace("%", "\\%")
             part = part.replace("$", "\\$")
             part = part.replace("#", "\\#")
-            part = part.replace("^", "\\^{}")
+            part = part.replace("^", "\\textasciicircum{}")
             part = part.replace("~", "\\~{}")
             # Escape underscores but not inside \cite{} commands
             part = _escape_underscores_outside_cite(part)

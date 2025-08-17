@@ -62,6 +62,18 @@ def find_supplementary_md():
     manuscript_path = os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
 
     # Look for supplementary file: 02_SUPPLEMENTARY_INFO.md
+    # CRITICAL FIX: Handle both directory contexts properly
+    # Issue: When rxiv is called from within manuscript directory, the function
+    # was incorrectly appending manuscript_path again, looking for files like:
+    # /EXAMPLE_MANUSCRIPT/MANUSCRIPT/02_SUPPLEMENTARY_INFO.md (wrong)
+    # instead of /EXAMPLE_MANUSCRIPT/02_SUPPLEMENTARY_INFO.md (correct)
+
+    # First try directly in current directory (when already in manuscript dir)
+    supplementary_md = current_dir / "02_SUPPLEMENTARY_INFO.md"
+    if supplementary_md.exists():
+        return supplementary_md
+
+    # Then try in manuscript_path subdirectory (when called from parent dir)
     supplementary_md = current_dir / manuscript_path / "02_SUPPLEMENTARY_INFO.md"
     if supplementary_md.exists():
         return supplementary_md

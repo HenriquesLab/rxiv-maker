@@ -58,9 +58,13 @@ def convert_markdown_to_latex(content: MarkdownContent, is_supplementary: bool =
         LaTeX formatted content
     """
     # Use the new centralized ContentProcessor for enhanced processing
-    # TEMPORARY: Disable ContentProcessor until text formatting processors are complete
-    # This ensures backward compatibility while the ContentProcessor is being developed
-    use_content_processor = False
+    # ContentProcessor is now complete with all processors from legacy logic
+    # TEMPORARY DISABLE: ContentProcessor bypasses table_processor.py fixes for % escaping
+    # Issue: LaTeX comment "% comment" in markdown tables wasn't being escaped properly
+    # The ContentProcessor doesn't use the same table conversion pipeline that has
+    # the critical fix for detecting LaTeX syntax starting with "%"
+    # TODO: Port table escaping fixes to ContentProcessor, then re-enable
+    use_content_processor = False  # Disabled due to table escaping issues
 
     if use_content_processor:
         try:

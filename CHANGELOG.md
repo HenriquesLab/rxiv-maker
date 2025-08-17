@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.5.17] - 2025-08-17
+
+### Fixed
+- **🐛 LaTeX Comment Escaping in Table Cells**: Fixed LaTeX compilation failure when markdown tables contain LaTeX comment syntax
+  - **Root Cause**: Cell content like `` `% comment` `` wasn't properly escaping the `%` character inside `\texttt{}` environments
+  - **LaTeX Error**: Unescaped `%` caused LaTeX to treat everything after as a comment, breaking table structure with unmatched braces
+  - **Detection Logic Fix**: Enhanced `_format_markdown_syntax_cell` to recognize content starting with `%` as LaTeX syntax (not just `\`)
+  - **Proper Escaping**: LaTeX comments are now escaped as `\% comment` inside `\texttt{}` to prevent interpretation as comments
+  - **User Impact**: Markdown syntax overview tables with LaTeX comment examples now compile successfully
+  - **Comprehensive Documentation**: Added detailed comments explaining the escaping strategy and ContentProcessor bypass
+
+- **🐛 Supplementary File Detection**: Fixed supplementary markdown files not being found when working from within manuscript directory
+  - **Root Cause**: Path resolution incorrectly appended manuscript path twice when already inside manuscript directory
+  - **Directory Context**: Enhanced `find_supplementary_md` to handle both parent and manuscript directory execution contexts
+  - **Fallback Logic**: Checks current directory first, then manuscript_path subdirectory for maximum compatibility
+  - **User Impact**: `02_SUPPLEMENTARY_INFO.md` files are now properly detected regardless of working directory
+
+### Technical Notes
+- **ContentProcessor Temporarily Disabled**: Disabled new ContentProcessor to use legacy table conversion pipeline with critical escaping fixes
+- **Future TODO**: Port table escaping fixes to ContentProcessor before re-enabling
+
 ## [v1.5.14] - 2025-08-16
 
 ### Fixed
