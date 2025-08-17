@@ -378,7 +378,7 @@ class TestPyPIPackageIntegration:
         # Find the wheel file
         wheel_files = list(Path("dist").glob("rxiv_maker-*.whl"))
         if not wheel_files:
-            pytest.skip("No wheel file found. Run 'rye build --wheel' first.")
+            pytest.skip("No wheel file found. Run 'uv build --wheel' first.")
 
         wheel_path = wheel_files[0]
 

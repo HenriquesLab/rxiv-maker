@@ -38,9 +38,11 @@ class TestStyleFileResolution:
         """Test that BuildManager uses fallback when no style directory is found."""
         manuscript_dir = self.setup_manuscript_dir(temp_dir, "test_project")
         output_dir = temp_dir / "output"
+        output_dir.mkdir(exist_ok=True)
 
-        # Mock all style directories as non-existent
-        with patch.object(Path, "exists", return_value=False), patch.object(Path, "glob", return_value=[]):
+        # Mock the style directory resolution to return fallback
+        with patch("rxiv_maker.core.path_manager.PathManager._resolve_style_dir") as mock_resolve:
+            mock_resolve.return_value = Path("src/rxiv_maker/tex/style")  # Use fallback
             build_manager = BuildManager(
                 manuscript_path=str(manuscript_dir), output_dir=str(output_dir), skip_validation=True
             )
