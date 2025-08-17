@@ -203,8 +203,7 @@ def create_latex_figure_environment(
     )
 
     # Auto-detect 2-column for full-width figures
-    # But NOT when user explicitly wants dedicated page (position 'p')
-    if not is_twocolumn and width == "\\textwidth" and position != "p":
+    if not is_twocolumn and width == "\\textwidth":
         is_twocolumn = True
 
     # Only adjust positioning for two-column spanning figures that don't have explicit positioning
