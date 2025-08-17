@@ -1,0 +1,32 @@
+Package: rxiv-maker
+Version: 1.5.18-1
+Architecture: all
+Maintainer: Rxiv-Maker Contributors <rxiv.maker@gmail.com>
+Installed-Size: 2940
+Depends: python3-click (>= 8.0.0), python3-dotenv (>= 1.0.0), python3-matplotlib (>= 3.6.0), python3-numpy (>= 1.24.0), python3-packaging (>= 21.0.0), python3-pandas (>= 2.0.0), python3-pil (>= 9.0.0), python3-platformdirs (>= 4.0.0), python3-psutil, python3-pypdf (>= 4.0.0), python3-requests (>= 2.28.0), python3-rich (>= 13.0.0), python3-rich-click, python3-seaborn (>= 0.12.0), python3-tomli-w, python3-typing-extensions (>= 4.0.0), python3-yaml (>= 6.0.0), python3:any, python3-crossrefapi, texlive-latex-base, texlive-latex-extra, texlive-fonts-recommended, texlive-science, texlive-fonts-extra, biber
+Recommends: docker.io | podman, nodejs (>= 16), npm, r-base, git
+Suggests: texlive-full, pandoc, python3-playwright
+Filename: ./rxiv-maker_1.5.18-1_all.deb
+Size: 975418
+MD5sum: aff5a011c8761c8d4e1cdf963394f71c
+SHA1: 91e37b65be54df644a493736c9b43ee00667d2a2
+SHA256: 87a48bb2b92cfd504d738a9924e8be2a8873f6771f242819455746d9f5b7f8b4
+Section: science
+Priority: optional
+Homepage: https://github.com/henriqueslab/rxiv-maker
+Description: Automated LaTeX article generation with modern CLI
+ Rxiv-Maker is a comprehensive tool for automated LaTeX article generation
+ with modern CLI and figure creation capabilities. It streamlines the process
+ of creating scientific manuscripts by:
+ .
+  * Converting Markdown to LaTeX with advanced formatting
+  * Automatic figure generation from Python/R scripts
+  * DOI validation and bibliography management
+  * Cross-platform compatibility (Docker/Podman support)
+  * Modern CLI with rich output formatting
+  * Comprehensive validation and error handling
+ .
+ The tool supports multiple workflows including local development,
+ containerized execution, and integration with CI/CD pipelines.
+ Perfect for researchers, academics, and anyone who needs to generate
+ high-quality scientific documents efficiently.

@@ -1,0 +1,35 @@
+Format: 1.8
+Date: Thu, 15 Aug 2025 12:00:00 +0000
+Source: rxiv-maker
+Binary: rxiv-maker
+Built-For-Profiles: noudeb
+Architecture: all
+Version: 1.5.18-1
+Distribution: stable
+Urgency: medium
+Maintainer: Rxiv-Maker Contributors <rxiv.maker@gmail.com>
+Changed-By: Rxiv-Maker Contributors <rxiv.maker@gmail.com>
+Description:
+ rxiv-maker - Automated LaTeX article generation with modern CLI
+Changes:
+ rxiv-maker (1.5.18-1) stable; urgency=medium
+ .
+   * Fix Ubuntu 24.04 dependency compatibility
+   * Updated python3-matplotlib requirement: ≥3.7.0 → ≥3.6.0
+   * Updated python3-pypdf requirement: ≥6.0.0 → ≥4.0.0
+   * Added missing dependency: python3-crossrefapi
+   * Automated LaTeX article generation with modern CLI
+   * Figure creation capabilities with Python/R integration
+   * DOI validation and bibliography management
+   * Cross-platform compatibility with Docker/Podman support
+   * Comprehensive validation and error handling
+   * Rich CLI output formatting and progress indicators
+Checksums-Sha1:
+ 91e37b65be54df644a493736c9b43ee00667d2a2 975418 rxiv-maker_1.5.18-1_all.deb
+ 55cdcac543f54c8c11374b127d0c02dc48f050cc 6983 rxiv-maker_1.5.18-1_arm64.buildinfo
+Checksums-Sha256:
+ 87a48bb2b92cfd504d738a9924e8be2a8873f6771f242819455746d9f5b7f8b4 975418 rxiv-maker_1.5.18-1_all.deb
+ 794c21491dfeecef51b468f3c24907a6a43f5044021d5620039a29cc6fbfd9fc 6983 rxiv-maker_1.5.18-1_arm64.buildinfo
+Files:
+ aff5a011c8761c8d4e1cdf963394f71c 975418 science optional rxiv-maker_1.5.18-1_all.deb
+ 3f643e3c744e596596d876da5317cedf 6983 science optional rxiv-maker_1.5.18-1_arm64.buildinfo
