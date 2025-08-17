@@ -47,10 +47,10 @@ Docker Engine Mode uses the mermaid.ink API for all diagram generation (`.mmd` f
 **All Platforms (AMD64 & ARM64):**
 ```bash
 # Docker mode with native performance on all architectures
-make pdf RXIV_ENGINE=DOCKER
+rxiv pdf --engine docker
 
 # Local installation (requires system dependencies)
-make setup && make pdf
+rxiv setup && rxiv pdf
 ```
 
 **Key Benefits of Docker Mode:**
@@ -100,13 +100,13 @@ git clone https://github.com/henriqueslab/rxiv-maker.git
 cd rxiv-maker
 
 # Generate PDF immediately (no local setup required)
-make pdf RXIV_ENGINE=DOCKER
+rxiv pdf --engine docker
 
 # Validate manuscript
-make validate RXIV_ENGINE=DOCKER
+rxiv validate --engine docker
 
 # Run tests
-make test RXIV_ENGINE=DOCKER
+rxiv test --engine docker
 ```
 
 That's it! No Python virtual environments, no LaTeX installation, no dependency management.
@@ -153,12 +153,12 @@ docker run hello-world
 ### Set Default Mode (Optional)
 Make Docker mode the default for your session:
 ```bash
-# Add to your shell profile (.bashrc, .zshrc, etc.)
-export RXIV_ENGINE=DOCKER
+# Set Docker as default engine
+rxiv config set general.default_engine docker
 
 # Now all commands use Docker automatically
-make pdf        # Runs in container
-make validate   # Runs in container
+rxiv pdf        # Runs in container
+rxiv validate   # Runs in container
 ```
 
 ---
@@ -168,48 +168,44 @@ make validate   # Runs in container
 ### Basic Commands
 ```bash
 # PDF generation
-make pdf RXIV_ENGINE=DOCKER
+rxiv pdf --engine docker
 
 # Manuscript validation
-make validate RXIV_ENGINE=DOCKER
+rxiv validate --engine docker
 
 # Figure generation with forcing
-make pdf RXIV_ENGINE=DOCKER FORCE_FIGURES=true
+rxiv pdf --engine docker --force-figures
 
 # Clean outputs
-make clean RXIV_ENGINE=DOCKER
+rxiv clean --engine docker
 ```
 
 ### Custom Manuscript Paths
 ```bash
 # Use different manuscript directory
-MANUSCRIPT_PATH=MY_PAPER RXIV_ENGINE=DOCKER make pdf
+rxiv pdf MY_PAPER/ --engine docker
 
-# Multiple environment variables
-MANUSCRIPT_PATH=research/paper1 RXIV_ENGINE=DOCKER make validate
+# Validate different manuscript
+rxiv validate research/paper1/ --engine docker
 ```
 
 ### Advanced Workflows
 ```bash
-# Complete workflow in Docker
-export RXIV_ENGINE=DOCKER
-make validate           # Check for issues
-make pdf               # Generate PDF
-make arxiv             # Prepare arXiv submission
+# Complete workflow in Docker (with default engine set)
+rxiv config set general.default_engine docker
+rxiv validate           # Check for issues
+rxiv pdf               # Generate PDF
+rxiv arxiv             # Prepare arXiv submission
 ```
 
 ### Testing and Development
 ```bash
 # Run all tests in container
-make test RXIV_ENGINE=DOCKER
-
-# Run specific test categories
-make test-unit RXIV_ENGINE=DOCKER
-make test-integration RXIV_ENGINE=DOCKER
+rxiv test --engine docker
 
 # Linting and formatting
-make lint RXIV_ENGINE=DOCKER
-make format RXIV_ENGINE=DOCKER
+rxiv lint --engine docker
+rxiv format --engine docker
 ```
 
 ---
@@ -270,7 +266,7 @@ MANUSCRIPT_PATH=my-paper
 
 ```bash
 # Same command works identically on Windows, macOS, Linux
-make pdf RXIV_ENGINE=DOCKER
+rxiv pdf --engine docker
 ```
 
 #### Reproducible Research
@@ -298,7 +294,7 @@ container: henriqueslab/rxiv-maker-base:latest
 
 ```bash
 # No local LaTeX installation required
-make pdf RXIV_ENGINE=DOCKER
+rxiv pdf --engine docker
 ```
 
 ### Performance Benefits
@@ -420,10 +416,10 @@ docker run --rm henriqueslab/rxiv-maker-base:latest pdflatex --version
 #### Inspect Build Logs
 ```bash
 # Run with verbose output
-make pdf RXIV_ENGINE=DOCKER VERBOSE=true
+rxiv pdf --engine docker --verbose
 
 # Get detailed Docker logs
-make pdf RXIV_ENGINE=DOCKER 2>&1 | tee build.log
+rxiv pdf --engine docker 2>&1 | tee build.log
 ```
 
 #### Interactive Debugging
@@ -511,13 +507,9 @@ cd src/docker/images/base
 
 #### Platform-Specific Optimization
 ```bash
-# Force specific platform for consistency
-export DOCKER_PLATFORM=linux/amd64
-make pdf RXIV_ENGINE=DOCKER
-
-# Let Docker auto-detect optimal platform
-unset DOCKER_PLATFORM
-make pdf RXIV_ENGINE=DOCKER
+# Docker platform handled automatically by rxiv CLI
+# Use --engine docker for optimal platform detection
+rxiv pdf --engine docker
 ```
 
 ### Integration with Development Tools

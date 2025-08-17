@@ -123,8 +123,48 @@ def process_code_spans(text: MarkdownContent) -> LatexContent:
         # Mathematical expressions should be protected from seqsplit processing
         has_math_delimiters = "$" in code_content
         has_dollar_paren = "$(" in code_content or "$)" in code_content
+        # Also check for protected math placeholders (from earlier math protection step)
+        has_protected_math = "XXPROTECTEDMATHXX" in code_content
 
-        if has_dollar_paren or has_math_delimiters:
+        # Check if this code span contains LaTeX commands that need special protection
+        has_latex_commands = "\\" in code_content and any(
+            latex_cmd in code_content
+            for latex_cmd in [
+                "\\textbf",
+                "\\textit",
+                "\\emph",
+                "\\textsubscript",
+                "\\textsuperscript",
+                "\\section",
+                "\\subsection",
+                "\\subsubsection",
+                "\\cite",
+                "\\ref",
+                "\\begin",
+                "\\end",
+                "\\item",
+                "\\href",
+                "\\url",
+                "\\eqref",
+                "\\sidenote",
+            ]
+        )
+
+        if has_latex_commands:
+            # For code spans with LaTeX commands, escape them manually without using \detokenize
+            # to avoid table parsing issues
+            escaped_content = code_content
+            # Replace backslashes with a safe LaTeX representation
+            escaped_content = escaped_content.replace("\\", "\\textbackslash{}")
+            # Handle other special characters that might need escaping
+            escaped_content = escaped_content.replace("{", "\\{")
+            escaped_content = escaped_content.replace("}", "\\}")
+            escaped_content = escaped_content.replace("#", "\\#")
+            escaped_content = escaped_content.replace("&", "\\&")
+            escaped_content = escaped_content.replace("%", "\\%")
+            escaped_content = escaped_content.replace("$", "\\$")
+            return f"\\texttt{{{escaped_content}}}"
+        elif has_dollar_paren or has_math_delimiters or has_protected_math:
             # For code spans with mathematical content, use \detokenize for robust
             # protection. This prevents LaTeX from interpreting $ as math delimiters
             return f"PROTECTED_DETOKENIZE_START{{{code_content}}}PROTECTED_DETOKENIZE_END"
@@ -360,6 +400,14 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
         protected_latex_commands[placeholder] = command
         return placeholder
 
+    # CRITICAL: Protect content that's already been processed by table_processor
+    # The table processor uses \detokenize{} for complex cases - don't touch these
+    # Protect \texttt{\detokenize{...}} commands (from table processor)
+    text = re.sub(r"\\texttt\{\\detokenize\{[^}]*\}\}", protect_latex_command, text)
+
+    # Protect standalone \detokenize{...} commands
+    text = re.sub(r"\\detokenize\{[^}]*\}", protect_latex_command, text)
+
     # Protect \includegraphics{} commands
     text = re.sub(r"\\includegraphics\[[^\]]*\]\{[^}]*\}", protect_latex_command, text)
 
@@ -397,12 +445,27 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
         elif "\\detokenize{" in content:
             # This content already has detokenize, just return it wrapped in texttt
             return f"\\texttt{{{content}}}"
+        # Special handling for LaTeX command protected content - don't escape backslashes
+        elif "LATEXCMD_PROTECTED_START{" in content and "}LATEXCMD_PROTECTED_END" in content:
+            # Extract the protected content and return it as-is
+            start_marker = "LATEXCMD_PROTECTED_START{"
+            end_marker = "}LATEXCMD_PROTECTED_END"
+            start_idx = content.find(start_marker)
+            end_idx = content.find(end_marker)
+            if start_idx != -1 and end_idx != -1:
+                protected_content = content[start_idx + len(start_marker) : end_idx]
+                return f"\\texttt{{{protected_content}}}"
+            # Fallback if markers are malformed
+            return f"\\texttt{{{content}}}"
         else:
             # For other backslashes, use textbackslash
-            content = content.replace("\\", "\\textbackslash{}")
+            # Skip processing if text already contains any form of textbackslash (already escaped)
+            if "textbackslash" not in content:
+                content = content.replace("\\", "\\textbackslash{}")
 
-        # Escape # characters
-        content = content.replace("#", "\\#")
+        # Escape # characters only if not already escaped
+        if "\\#" not in content:
+            content = content.replace("#", "\\#")
         return f"\\texttt{{{content}}}"
 
     # Use a more sophisticated approach to handle nested braces
@@ -491,6 +554,26 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
     text = text.replace("←", "$\\leftarrow$")
     text = text.replace("↑", "$\\uparrow$")
     text = text.replace("↓", "$\\downarrow$")
+
+    # Clean up double escaping that may have occurred during table processing
+    text = _cleanup_double_escaping_textformatters(text)
+
+    return text
+
+
+def _cleanup_double_escaping_textformatters(text: str) -> str:
+    r"""Clean up double-escaped backslashes in texttt environments.
+
+    Fixes patterns like \\textbackslash{}textbackslash that break LaTeX parsing.
+    """
+    import re
+
+    # Fix the specific pattern of double-escaped backslashes
+    # Replace \\textbackslash{}textbackslash (with space) with just \\textbackslash{}
+    text = re.sub(r"\\textbackslash\{\}textbackslash\s+", r"\\textbackslash{}", text)
+
+    # Also try without requiring space after
+    text = re.sub(r"\\textbackslash\{\}textbackslash", r"\\textbackslash{}", text)
 
     return text
 

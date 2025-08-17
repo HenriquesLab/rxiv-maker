@@ -38,6 +38,11 @@ logger = get_logger()
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.option("--quiet", "-q", is_flag=True, help="Suppress non-essential output")
 @click.option("--debug", "-d", is_flag=True, help="Enable debug output")
+@click.option(
+    "--container-mode",
+    type=click.Choice(["reuse", "minimal", "isolated"]),
+    help="Container behavior mode (reuse=max reuse, minimal=low resources, isolated=fresh containers)",
+)
 @click.pass_context
 def build(
     ctx: click.Context,
@@ -49,6 +54,7 @@ def build(
     verbose: bool,
     quiet: bool,
     debug: bool,
+    container_mode: str | None,
 ) -> None:
     """Generate a publication-ready PDF from your Markdown manuscript.
 
@@ -88,6 +94,14 @@ def build(
     # Use local verbose flag if provided, otherwise fall back to global context and environment
     verbose = verbose or ctx.obj.get("verbose", False) or EnvironmentManager.is_verbose()
     engine = ctx.obj.get("engine") or EnvironmentManager.get_rxiv_engine()
+
+    # Set container mode if specified (for container engines)
+    if container_mode and engine in ["docker", "podman"]:
+        import os
+
+        os.environ["RXIV_CONTAINER_MODE"] = container_mode
+        if verbose:
+            click.echo(f"🐳 Container mode set to: {container_mode}")
 
     # Validate and resolve manuscript path using PathManager
     try:

@@ -6,16 +6,16 @@ Rxiv-Maker includes a comprehensive validation system that checks your manuscrip
 
 ```bash
 # Basic validation
-make validate
+rxiv validate
 
 # Custom manuscript path
-make validate MANUSCRIPT_PATH=MY_PAPER
+rxiv validate MY_PAPER
 
 # Detailed validation with suggestions
-python -m rxiv_maker.scripts.validate_manuscript --detailed MANUSCRIPT
+rxiv validate MANUSCRIPT --detailed
 
 # Advanced validation options
-rxiv validate MANUSCRIPT --verbose --output detailed
+rxiv validate MANUSCRIPT --verbose --detailed
 ```
 
 ## Validation Types
@@ -123,13 +123,13 @@ SUGGESTION: Check if you need to include a package or fix the command spelling
 ### Basic Validation (Makefile)
 ```bash
 # Quick validation check
-make validate
+rxiv validate
 
 # Validate specific manuscript
-make validate MANUSCRIPT_PATH=PROJECT_A
+rxiv validate PROJECT_A
 
 # Validate before PDF generation (recommended workflow)
-make validate && make pdf
+rxiv validate && rxiv pdf
 ```
 
 ### Script-based Validation
@@ -193,11 +193,11 @@ Validation is automatically integrated into the PDF generation process:
 
 ```bash
 # Validation runs automatically before PDF generation
-make pdf
+rxiv pdf
 
 # Manual control over validation
-make validate  # Check first
-make pdf       # Generate PDF if validation passes
+rxiv validate  # Check first
+rxiv pdf       # Generate PDF if validation passes
 ```
 
 ### GitHub Actions Integration
@@ -206,10 +206,10 @@ The validation system works seamlessly with GitHub Actions:
 ```yaml
 # Validation runs automatically in CI/CD
 - name: Validate manuscript
-  run: make validate
+  run: rxiv validate
 
 - name: Generate PDF
-  run: make pdf
+  run: rxiv pdf
 ```
 
 ## Common Validation Scenarios
@@ -217,7 +217,7 @@ The validation system works seamlessly with GitHub Actions:
 ### 1. New Manuscript Setup
 ```bash
 # Check if your new manuscript has proper structure
-make validate MANUSCRIPT_PATH=NEW_PROJECT
+rxiv validate NEW_PROJECT
 
 # Expected output for valid setup:
 # ✓ All required files found
@@ -283,10 +283,10 @@ The validation system respects the same content protection used in the conversio
 ### 1. Validate Early and Often
 ```bash
 # Run validation after significant changes
-make validate
+rxiv validate
 
 # Include validation in your development workflow
-alias build="make validate && make pdf"
+alias build="rxiv validate && rxiv pdf"
 ```
 
 ### 2. Use Detailed Mode for Debugging
@@ -310,8 +310,8 @@ SUGGESTION: Add the reference to 03_REFERENCES.bib or check spelling
 ### 5. Validate in CI/CD
 ```bash
 # In your GitHub Actions or other CI systems
-make validate  # Fails fast if there are errors
-make pdf       # Only runs if validation passes
+rxiv validate  # Fails fast if there are errors
+rxiv pdf       # Only runs if validation passes
 ```
 
 ## Troubleshooting
@@ -360,7 +360,7 @@ The validation system is extensible. You can create custom validators by:
 ```bash
 # Add to .git/hooks/pre-commit
 #!/bin/bash
-make validate || {
+rxiv validate || {
     echo "Validation failed! Please fix errors before committing."
     exit 1
 }
@@ -371,7 +371,7 @@ make validate || {
 {
     "label": "Validate Manuscript",
     "type": "shell",
-    "command": "make validate",
+    "command": "rxiv validate",
     "group": "build",
     "presentation": {
         "echo": true,

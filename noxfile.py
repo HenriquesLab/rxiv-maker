@@ -21,6 +21,7 @@ TEST_DEPS = [
     "pytest-cov>=4.0",
     "pytest-timeout>=2.4.0",
     "pytest-xdist>=3.8.0",
+    "pytest-asyncio>=0.21.0",
 ]
 
 LINT_DEPS = ["ruff>=0.8.0", "mypy>=1.0.0"]

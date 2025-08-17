@@ -161,7 +161,7 @@ setup:
 # Reinstall Python dependencies (removes .venv and creates new one) - cross-platform
 .PHONY: setup-reinstall
 setup-reinstall:
-	@$(PYTHON_CMD) -m rxiv_maker.cli setup --reinstall || PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.setup_environment --reinstall
+	@$(RXIV_CLI) setup --reinstall
 
 # Test platform detection
 .PHONY: test-platform
@@ -212,27 +212,13 @@ ifndef TAG
 	$(error TAG is required. Usage: make pdf-track-changes TAG=v1.0.0)
 endif
 	@echo "🔍 Generating PDF with change tracking against tag: $(TAG)"
-	@MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.cli track-changes "$(MANUSCRIPT_PATH)" $(TAG) --output-dir $(OUTPUT_DIR) --verbose || \
-	 PYTHONPATH="$(PWD)/src" MANUSCRIPT_PATH="$(MANUSCRIPT_PATH)" $(PYTHON_CMD) -m rxiv_maker.engine.build_manager \
-		--manuscript-path "$(MANUSCRIPT_PATH)" \
-		--output-dir $(OUTPUT_DIR) \
-		--track-changes $(TAG) \
-		--verbose $(if $(FORCE_FIGURES),--force-figures)
+	$(RXIV_CLI) track-changes "$(MANUSCRIPT_PATH)" $(TAG) --output-dir $(OUTPUT_DIR)
 
 # Prepare arXiv submission package
 .PHONY: arxiv
 arxiv: pdf
-	@echo "Preparing arXiv submission package..."
-	@$(PYTHON_CMD) -m rxiv_maker.cli arxiv "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR) || \
-	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.engine.prepare_arxiv --output-dir $(MANUSCRIPT_PATH)/$(OUTPUT_DIR) --arxiv-dir $(MANUSCRIPT_PATH)/$(OUTPUT_DIR)/arxiv_submission --zip-filename $(MANUSCRIPT_PATH)/$(OUTPUT_DIR)/for_arxiv.zip --manuscript-path "$(MANUSCRIPT_PATH)" --create-zip
-	@echo "✅ arXiv package ready: $(MANUSCRIPT_PATH)/$(OUTPUT_DIR)/for_arxiv.zip"
-	@echo "Copying arXiv package to manuscript directory with naming convention..."
-	@YEAR=$$($(PYTHON_CMD) -c "import yaml; config = yaml.safe_load(open('$(MANUSCRIPT_CONFIG)', 'r')); print(config.get('date', '').split('-')[0] if config.get('date') else '$(shell date +%Y)')"); \
-	FIRST_AUTHOR=$$($(PYTHON_CMD) -c "import yaml; config = yaml.safe_load(open('$(MANUSCRIPT_CONFIG)', 'r')); authors = config.get('authors', []); name = authors[0]['name'] if authors and len(authors) > 0 else 'Unknown'; print(name.split()[-1] if ' ' in name else name)"); \
-	ARXIV_FILENAME="$${YEAR}__$${FIRST_AUTHOR}_et_al__for_arxiv.zip"; \
-	cp $(MANUSCRIPT_PATH)/$(OUTPUT_DIR)/for_arxiv.zip $(MANUSCRIPT_PATH)/$${ARXIV_FILENAME}; \
-	echo "✅ arXiv package copied to: $(MANUSCRIPT_PATH)/$${ARXIV_FILENAME}"
-	@echo "📤 Upload the renamed file to arXiv for submission"
+	@echo "📦 Preparing arXiv submission package..."
+	$(RXIV_CLI) arxiv "$(MANUSCRIPT_PATH)" --output-dir $(OUTPUT_DIR)
 
 # ======================================================================
 # 🔍 VALIDATION COMMANDS
@@ -340,9 +326,7 @@ add-bibliography:
 		exit 1; \
 	fi; \
 	echo "📚 Adding bibliography entries from DOI(s):$$DOI_ARGS"; \
-	$(PYTHON_CMD) -m rxiv_maker.cli bibliography add "$(MANUSCRIPT_PATH)" $$DOI_ARGS $(if $(OVERWRITE),--overwrite) $(if $(VERBOSE),--verbose) || \
-	 PYTHONPATH="$(PWD)/src" $(PYTHON_CMD) -m rxiv_maker.commands.add_bibliography "$(MANUSCRIPT_PATH)" $$DOI_ARGS $(if $(OVERWRITE),--overwrite) $(if $(VERBOSE),--verbose); \
-	exit 0
+	$(RXIV_CLI) bibliography add "$(MANUSCRIPT_PATH)" $$DOI_ARGS $(if $(OVERWRITE),--overwrite)
 
 # Allow DOI patterns as pseudo-targets
 .PHONY: $(shell echo 10.*)

@@ -6,6 +6,7 @@ from .build import build as pdf
 from .check_installation import check_installation
 from .clean import clean
 from .completion import completion_cmd
+from .containers import containers_cmd
 from .figures import figures
 from .init import init
 from .install_deps import install_deps
@@ -21,6 +22,7 @@ __all__ = [
     "check_installation",
     "clean",
     "completion_cmd",
+    "containers_cmd",
     "figures",
     "init",
     "install_deps",

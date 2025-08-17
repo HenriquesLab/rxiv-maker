@@ -532,6 +532,21 @@ Use in GitHub Actions:
     rxiv pdf --skip-validation
 ```
 
+## Migration from Legacy Make Commands
+
+If you're transitioning from the legacy Make interface, here are the equivalent commands:
+
+| Legacy Make Command | New CLI Command | Description |
+|-------------------|----------------|-------------|
+| `make pdf` | `rxiv pdf` | Generate PDF |
+| `make pdf MANUSCRIPT_PATH=MY_PAPER` | `rxiv pdf MY_PAPER/` | Custom manuscript path |
+| `make validate` | `rxiv validate` | Validate manuscript |
+| `make clean` | `rxiv clean` | Clean outputs |
+| `make setup` | `rxiv setup` | Setup environment |
+| `make pdf FORCE_FIGURES=true` | `rxiv pdf --force-figures` | Force figure regeneration |
+| `make pdf RXIV_ENGINE=DOCKER` | `rxiv pdf --engine docker` | Use Docker engine |
+| `make pdf-track-changes TAG=v1.0.0` | `rxiv track-changes MANUSCRIPT/ v1.0.0` | Track changes |
+
 ## Getting Help
 
 - `rxiv --help`: General help

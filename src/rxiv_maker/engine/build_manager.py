@@ -6,9 +6,10 @@ from datetime import datetime
 from pathlib import Path
 
 from ..core.environment_manager import EnvironmentManager
+from ..core.global_container_manager import get_global_container_manager
 from ..core.logging_config import get_logger, set_log_directory
 from ..core.path_manager import PathManager
-from ..engines.factory import get_container_engine
+from ..core.session_optimizer import get_optimized_session_key
 from ..utils.figure_checksum import get_figure_checksum_manager
 from ..utils.operation_ids import create_operation
 from ..utils.performance import get_performance_tracker
@@ -70,9 +71,12 @@ class BuildManager:
         self.container_engine = None
         if self.engine in ["docker", "podman"]:
             try:
-                self.container_engine = get_container_engine(
+                # Use global container manager for shared engine instances
+                global_manager = get_global_container_manager()
+                self.container_engine = global_manager.get_container_engine(
                     engine_type=self.engine, workspace_dir=self.path_manager._working_dir
                 )
+                logger.debug(f"Using shared container engine: {self.container_engine.engine_name}")
             except RuntimeError as e:
                 # Container engine not available, will fall back to local execution
                 logger.warning(f"{self.engine.title()} engine not available: {e}")
@@ -249,7 +253,11 @@ class BuildManager:
             if self.verbose:
                 validation_cmd.append("--verbose")
 
-            result = self.container_engine.run_command(command=validation_cmd, session_key="validation")
+            from ..core.session_optimizer import get_optimized_session_key
+
+            result = self.container_engine.run_command(
+                command=validation_cmd, session_key=get_optimized_session_key("validation")
+            )
 
             if result.returncode == 0:
                 self.log("Container validation completed successfully")
@@ -896,7 +904,9 @@ class BuildManager:
 
             if self.container_engine is None:
                 raise RuntimeError("Container engine not initialized")
-            result = self.container_engine.run_command(command=pdf_validation_cmd, session_key="pdf_validation")
+            result = self.container_engine.run_command(
+                command=pdf_validation_cmd, session_key=get_optimized_session_key("pdf_validation")
+            )
 
             if result.returncode == 0:
                 self.log("PDF validation completed successfully")

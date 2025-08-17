@@ -99,7 +99,7 @@ source ~/.bashrc
 
 ## Environment Setup Problems
 
-### Issue: `make setup` fails with dependency errors
+### Issue: `rxiv setup` fails with dependency errors
 
 **Symptoms:**
 - LaTeX installation failures
@@ -111,31 +111,30 @@ source ~/.bashrc
 #### 1. Container Mode (Easiest)
 ```bash
 # Skip local setup, use containers
-export RXIV_ENGINE=DOCKER  # or PODMAN
-make pdf  # No local setup required
+rxiv config set general.default_engine docker  # or podman
+rxiv pdf  # No local setup required
 ```
 
 #### 2. Incremental Setup
 ```bash
 # Set up components individually
-make setup-python     # Install Python dependencies only
-make setup-latex      # Install LaTeX packages only
-make setup-r          # Install R packages only
+rxiv setup --mode python-only     # Install Python dependencies only
+rxiv setup --mode system-only     # Install system dependencies only
 ```
 
 #### 3. Platform-Specific Setup
 ```bash
 # macOS with Homebrew
 brew install --cask mactex
-make setup
+rxiv setup
 
 # Ubuntu/Debian
 sudo apt-get install texlive-full r-base
-make setup
+rxiv setup
 
 # Windows with Chocolatey
 choco install miktex r
-make setup
+rxiv setup
 ```
 
 ### Issue: Python environment conflicts
@@ -149,20 +148,14 @@ make setup
 
 #### 1. Clean Environment
 ```bash
-# Remove existing environment
-rm -rf .venv
-
-# Create fresh environment with UV
-uv venv
-source .venv/bin/activate
-uv pip install -e .
+# Reinstall with clean environment
+rxiv setup --reinstall
 ```
 
 #### 2. Use UV for dependency management
 ```bash
 # UV handles environment isolation automatically
 uv run rxiv pdf MANUSCRIPT
-uv run make pdf
 ```
 
 #### 3. Conda environment (alternative)
@@ -189,7 +182,7 @@ pip install rxiv-maker
 #### 1. Check LaTeX logs
 ```bash
 # Generate with verbose output
-make pdf VERBOSE=true
+rxiv pdf --verbose
 
 # Check build logs
 cat output/MANUSCRIPT.log
@@ -202,14 +195,14 @@ cat output/build_warnings.log
 sudo tlmgr install package-name
 
 # Or use container mode (includes all packages)
-make pdf RXIV_ENGINE=DOCKER
+rxiv pdf --engine docker
 ```
 
 #### 3. Style file issues
 ```bash
 # Force regeneration of style files
-make clean
-make pdf
+rxiv clean
+rxiv pdf
 
 # Check style file presence
 ls -la src/tex/style/
@@ -227,7 +220,7 @@ ls -la src/tex/style/
 #### 1. Force figure regeneration
 ```bash
 # Regenerate all figures
-make pdf FORCE_FIGURES=true
+rxiv pdf --force-figures
 
 # Generate figures only
 rxiv figures MANUSCRIPT --verbose
@@ -242,7 +235,7 @@ python -c "import matplotlib, numpy, pandas"
 Rscript -e "library(ggplot2)"
 
 # Use container mode for dependencies
-make pdf RXIV_ENGINE=DOCKER
+rxiv pdf --engine docker
 ```
 
 #### 3. Manual figure debugging
@@ -339,11 +332,11 @@ systemctl --user start podman.socket
 #### 3. Alternative solutions
 ```bash
 # Use specific engine
-make pdf RXIV_ENGINE=DOCKER
-make pdf RXIV_ENGINE=PODMAN
+rxiv pdf --engine docker
+rxiv pdf --engine podman
 
 # Fall back to local mode
-make pdf RXIV_ENGINE=LOCAL
+rxiv pdf --engine local
 ```
 
 ### Issue: Container permission problems
@@ -360,21 +353,20 @@ make pdf RXIV_ENGINE=LOCAL
 # Fix ownership after container run
 sudo chown -R $(whoami):$(whoami) output/
 
-# Use user namespace mapping
-DOCKER_EXTRA_ARGS="--user $(id -u):$(id -g)" make pdf RXIV_ENGINE=DOCKER
+# Container runs with proper user mapping automatically
+rxiv pdf --engine docker
 ```
 
 #### 2. Use Podman (rootless by default)
 ```bash
 # Podman handles permissions automatically
-make pdf RXIV_ENGINE=PODMAN
+rxiv pdf --engine podman
 ```
 
-#### 3. Configure container user mapping
+#### 3. Container user mapping is automatic
 ```bash
-# Add to environment
-export DOCKER_EXTRA_ARGS="--user $(id -u):$(id -g)"
-make pdf RXIV_ENGINE=DOCKER
+# Modern rxiv handles user mapping automatically
+rxiv pdf --engine docker
 ```
 
 ---
@@ -408,7 +400,7 @@ make pdf RXIV_ENGINE=DOCKER
 bibtex --min-crossrefs=1000 03_REFERENCES.bib
 
 # Use validation command
-make validate MANUSCRIPT_PATH=MANUSCRIPT
+rxiv validate MANUSCRIPT
 ```
 
 #### 3. Update bibliography
@@ -435,7 +427,7 @@ rxiv bibliography fix MANUSCRIPT
 curl -s "https://api.crossref.org/works/10.1038/nature12373"
 
 # Use offline mode if needed
-OFFLINE_MODE=true make pdf
+rxiv pdf --offline
 ```
 
 #### 2. Manual DOI addition
@@ -472,10 +464,10 @@ python -m rxiv_maker.scripts.validate_manuscript --detailed MANUSCRIPT
 #### 1. Use incremental builds
 ```bash
 # Only regenerate changed figures
-make pdf  # Automatic detection
+rxiv pdf  # Automatic detection
 
-# Force regeneration only when needed
-make pdf FORCE_FIGURES=false
+# Skip figure regeneration
+rxiv pdf --skip-figures
 ```
 
 #### 2. Optimize container usage
@@ -483,15 +475,15 @@ make pdf FORCE_FIGURES=false
 # Pre-pull images
 docker pull henriqueslab/rxiv-maker-base:latest
 
-# Use local cache
-export RXIV_ENGINE=LOCAL  # After initial setup
+# Use local mode after setup
+rxiv config set general.default_engine local
 ```
 
 #### 3. Parallel figure generation
 ```bash
 # Use multiple cores for R/Python scripts
 export OMP_NUM_THREADS=4
-make pdf
+rxiv pdf
 ```
 
 ### Issue: High memory usage
@@ -505,11 +497,9 @@ make pdf
 
 #### 1. Limit container resources
 ```bash
-# Limit Docker memory
-DOCKER_EXTRA_ARGS="--memory=2g" make pdf RXIV_ENGINE=DOCKER
-
-# Limit CPU usage
-DOCKER_EXTRA_ARGS="--cpus=2.0" make pdf RXIV_ENGINE=DOCKER
+# Container resource limits are handled automatically
+# For custom limits, use docker/podman directly or local mode
+rxiv pdf --engine local
 ```
 
 #### 2. Close unnecessary applications
@@ -555,7 +545,7 @@ source ~/.zshrc
 #### Issue: Path separator problems
 ```bash
 # Use forward slashes or escape backslashes
-MANUSCRIPT_PATH="C:/Users/username/Documents/paper" make pdf
+rxiv pdf "C:/Users/username/Documents/paper"
 
 # Or use WSL2
 wsl rxiv pdf MANUSCRIPT
@@ -587,7 +577,7 @@ pip install --user rxiv-maker
 setsebool -P container_manage_cgroup on
 
 # Use Podman for better SELinux integration
-make pdf RXIV_ENGINE=PODMAN
+rxiv pdf --engine podman
 ```
 
 ---
@@ -609,7 +599,7 @@ make pdf RXIV_ENGINE=PODMAN
 uv pip install -e ".[dev]"
 
 # Or use the development setup
-make setup-dev
+rxiv setup --dev
 ```
 
 #### 2. Run specific test categories
@@ -661,7 +651,7 @@ uv run pytest
 ### 1. Use Container Mode for Consistency
 ```bash
 # Set as default
-echo 'export RXIV_ENGINE=DOCKER' >> ~/.bashrc
+rxiv config set general.default_engine docker
 
 # Avoid local dependency issues
 ```
@@ -669,7 +659,7 @@ echo 'export RXIV_ENGINE=DOCKER' >> ~/.bashrc
 ### 2. Validate Before Building
 ```bash
 # Always validate first
-make validate && make pdf
+rxiv validate && rxiv pdf
 ```
 
 ### 3. Keep Dependencies Updated
@@ -692,11 +682,11 @@ git add MANUSCRIPT/ output/*.pdf
 ### 5. Regular Environment Maintenance
 ```bash
 # Clean up regularly
-make clean
+rxiv clean
 docker system prune -f
 
 # Recreate environment periodically
-rm -rf .venv && make setup
+rxiv setup --reinstall
 ```
 
 ---
@@ -713,7 +703,7 @@ If you encounter issues not covered in this guide:
 
 2. **Enable verbose output:**
    ```bash
-   make pdf VERBOSE=true 2>&1 | tee debug.log
+   rxiv pdf --verbose 2>&1 | tee debug.log
    ```
 
 3. **Check logs:**
@@ -729,7 +719,7 @@ If you encounter issues not covered in this guide:
 4. **Create a minimal reproduction:**
    ```bash
    # Use EXAMPLE_MANUSCRIPT for testing
-   make pdf MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT
+   rxiv pdf EXAMPLE_MANUSCRIPT
    ```
 
 5. **Report issues:**

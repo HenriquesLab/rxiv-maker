@@ -3,20 +3,20 @@
 ## Problem: PDF Generation Fails Due to Missing Figure Files
 
 ### Symptoms
-- `make pdf` fails with validation errors
+- `rxiv pdf` fails with validation errors
 - Error messages like: "Figure file not found: FIGURES/SFigure__arxiv_growth/SFigure__arxiv_growth.png"
 - The validation shows missing figure files (PNG, PDF, SVG) in MANUSCRIPT/FIGURES/ subdirectories
 
 ### Root Cause
-The repository tracks generated figure files alongside their generation scripts (Python, R, Mermaid). If these figure files are accidentally deleted (e.g., by `make clean`, manual deletion, or git operations), the build process will fail because the LaTeX compilation expects these files to exist.
+The repository tracks generated figure files alongside their generation scripts (Python, R, Mermaid). If these figure files are accidentally deleted (e.g., by `rxiv clean`, manual deletion, or git operations), the build process will fail because the LaTeX compilation expects these files to exist.
 
 ## ✅ Automatic Solution (Recommended)
 
-**As of the latest version, `make pdf` automatically detects and runs all figure generation scripts!**
+**As of the latest version, `rxiv pdf` automatically detects and runs all figure generation scripts!**
 
 Simply run:
 ```bash
-make pdf
+rxiv pdf
 ```
 
 The build system will:
@@ -44,7 +44,7 @@ Rscript SFigure__preprint_trends.R
 
 # Return to project root and test the build
 cd ../..
-make pdf
+rxiv pdf
 ```
 
 ### Advanced Figure Generation
@@ -52,11 +52,10 @@ For more control, you can use the dedicated figure generation command:
 
 ```bash
 # Generate all figures automatically (Mermaid + Python)
-source .venv/bin/activate
 rxiv figures --figures-dir MANUSCRIPT/FIGURES --verbose
 
 # Force regenerate all figures even if they exist
-make pdf FORCE_FIGURES=true
+rxiv pdf --force-figures
 ```
 
 ### How It Works
@@ -67,7 +66,7 @@ The enhanced build system automatically:
 - **Handles multiple formats**: Python scripts, R scripts, and Mermaid diagrams
 
 ### Prevention
-- The `make clean` command removes generated figures, but `make pdf` will automatically regenerate them
+- The `rxiv clean` command removes generated figures, but `rxiv pdf` will automatically regenerate them
 - When cloning the repository, missing figures will be auto-generated on first build
 - The build process is now robust against missing figure files
 

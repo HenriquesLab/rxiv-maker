@@ -687,7 +687,11 @@ if __name__ == "__main__":
     sys.exit(generate_mermaid_svg())
 '''
 
-        return self.run_command(command=["python3", "-c", python_script], session_key="mermaid_generation")
+        from ..core.session_optimizer import get_optimized_session_key
+
+        return self.run_command(
+            command=["python3", "-c", python_script], session_key=get_optimized_session_key("mermaid_generation")
+        )
 
     def run_python_script(
         self,
@@ -705,13 +709,17 @@ if __name__ == "__main__":
             except ValueError:
                 docker_working_dir = "/workspace/output"
 
+        from ..core.session_optimizer import get_optimized_session_key
+
+        optimized_session_key = get_optimized_session_key("python_execution")
+
         try:
             script_rel = script_file.relative_to(self.workspace_dir)
             return self.run_command(
                 command=["python", f"/workspace/{script_rel}"],
                 working_dir=docker_working_dir,
                 environment=environment,
-                session_key="python_execution",
+                session_key=optimized_session_key,
             )
         except ValueError:
             # Script is outside workspace, execute by reading content
@@ -720,7 +728,7 @@ if __name__ == "__main__":
                 command=["python", "-c", script_content],
                 working_dir=docker_working_dir,
                 environment=environment,
-                session_key="python_execution",
+                session_key=optimized_session_key,
             )
 
     def run_r_script(
@@ -739,13 +747,17 @@ if __name__ == "__main__":
             except ValueError:
                 docker_working_dir = "/workspace/output"
 
+        from ..core.session_optimizer import get_optimized_session_key
+
+        optimized_session_key = get_optimized_session_key("r_execution")
+
         try:
             script_rel = script_file.relative_to(self.workspace_dir)
             return self.run_command(
                 command=["Rscript", f"/workspace/{script_rel}"],
                 working_dir=docker_working_dir,
                 environment=environment,
-                session_key="r_execution",
+                session_key=optimized_session_key,
             )
         except ValueError:
             # Script is outside workspace, execute by reading content
@@ -762,7 +774,7 @@ if __name__ == "__main__":
                 ],
                 working_dir=docker_working_dir,
                 environment=environment,
-                session_key="r_execution",
+                session_key=optimized_session_key,
             )
 
     def run_latex_compilation(
@@ -790,8 +802,10 @@ if __name__ == "__main__":
             except ValueError:
                 docker_working_dir = "/workspace/output"
 
+        from ..core.session_optimizer import get_optimized_session_key
+
         results = []
-        session_key = "latex_compilation"
+        session_key = get_optimized_session_key("latex_compilation")
 
         for i in range(passes):
             result = self.run_command(

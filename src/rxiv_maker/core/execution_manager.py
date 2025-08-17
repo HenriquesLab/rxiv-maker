@@ -469,10 +469,12 @@ class ContainerExecutionManager(ExecutionManager):
         super().__init__(context, **kwargs)
         self.engine_type = engine_type
 
-        # Import container engine
-        from ..engines.factory import get_container_engine
+        # Import container engine and global manager
+        from .global_container_manager import get_global_container_manager
 
-        self.engine = get_container_engine(engine_type)
+        # Use global container manager for shared engine instances
+        global_manager = get_global_container_manager()
+        self.engine = global_manager.get_container_engine(engine_type=engine_type)
 
         logger.debug(f"ContainerExecutionManager initialized with {engine_type}")
 

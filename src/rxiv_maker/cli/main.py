@@ -49,6 +49,10 @@ click.rich_click.COMMAND_GROUPS = {
             "commands": ["config", "check-installation", "completion"],
         },
         {
+            "name": "Container Management",
+            "commands": ["containers"],
+        },
+        {
             "name": "Information",
             "commands": ["version"],
         },
@@ -144,15 +148,15 @@ class UpdateCheckGroup(click.Group):
 
             if engine in ["docker", "podman"]:
                 try:
-                    # Use the new unified cleanup system for all container engines
+                    # Use the global container manager for cleanup
                     import logging
 
-                    from ..engines.factory import ContainerEngineFactory
+                    from ..core.global_container_manager import cleanup_global_containers
 
                     if verbose:
                         console.print("🧹 Cleaning up container sessions...", style="dim")
 
-                    cleanup_count = ContainerEngineFactory.cleanup_all_engines()
+                    cleanup_count = cleanup_global_containers()
 
                     if verbose and cleanup_count > 0:
                         console.print(f"✅ Cleaned up {cleanup_count} container engine(s)", style="dim green")
@@ -289,6 +293,7 @@ main.add_command(commands.version)
 main.add_command(config_cmd, name="config")
 main.add_command(check_installation, name="check-installation")
 main.add_command(commands.completion_cmd, name="completion")
+main.add_command(commands.containers_cmd, name="containers")
 
 if __name__ == "__main__":
     main()

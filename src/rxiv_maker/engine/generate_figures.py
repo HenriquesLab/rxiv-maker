@@ -49,7 +49,8 @@ if __name__ == "__main__":
 try:
     from ..core.environment_manager import EnvironmentManager
     from ..core.path_manager import PathManager
-    from ..docker.manager import get_docker_manager
+
+    # Docker manager import removed - now using global container manager
     from ..utils.platform import platform_detector
 except ImportError:
     # Fallback for when running as script
@@ -58,7 +59,8 @@ except ImportError:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
     from rxiv_maker.core.environment_manager import EnvironmentManager  # type: ignore[no-redef]
     from rxiv_maker.core.path_manager import PathManager  # type: ignore[no-redef]
-    from rxiv_maker.docker.manager import get_docker_manager  # type: ignore[no-redef]
+
+    # Docker manager import removed - now using global container manager
     from rxiv_maker.utils.platform import platform_detector  # type: ignore[no-redef]
 
 
@@ -133,15 +135,22 @@ class FigureGenerator:
                 print(f"Warning: Content caching disabled due to import error: {e}")
                 self.enable_content_caching = False
 
-        # Initialize Docker manager if using docker engine
-        self.docker_manager = None
-        if self.engine == "docker":
+        # Initialize container engine if using container engine (docker or podman)
+        self.container_engine = None
+        if self.engine in ["docker", "podman"]:
             # Use PathManager's working directory if available
             if self.path_manager:
                 workspace_dir = self.path_manager._working_dir
             else:
                 workspace_dir = Path.cwd().resolve()
-            self.docker_manager = get_docker_manager(workspace_dir=workspace_dir)
+
+            # Use global container manager for shared engine instances
+            from ..core.global_container_manager import get_global_container_manager
+
+            global_manager = get_global_container_manager()
+            self.container_engine = global_manager.get_container_engine(
+                engine_type=self.engine, workspace_dir=workspace_dir
+            )
 
         if self.output_format not in self.supported_formats:
             raise ValueError(f"Unsupported format: {self.output_format}. Supported: {self.supported_formats}")
@@ -383,11 +392,11 @@ class FigureGenerator:
             # Read the mermaid diagram content
             mermaid_content = mmd_file.read_text(encoding="utf-8")
 
-            if self.engine == "docker":
-                # Use Docker for Mermaid processing
-                if self.docker_manager is None:
-                    raise RuntimeError("Docker manager not initialized for docker engine")
-                result = self.docker_manager.run_mermaid_generation(
+            if self.engine in ["docker", "podman"]:
+                # Use container engine for Mermaid processing
+                if self.container_engine is None:
+                    raise RuntimeError(f"{self.engine.title()} engine not initialized")
+                result = self.container_engine.run_mermaid_generation(
                     input_file=mmd_file.resolve(),
                     output_file=svg_output_file.resolve(),
                     background_color="transparent",
@@ -572,15 +581,15 @@ class FigureGenerator:
 
             print(f"  🐍 Executing {py_file.name}...")
 
-            # Execute the Python script - use Docker if engine="docker"
+            # Execute the Python script - use container engine if engine is docker/podman
 
-            if self.engine == "docker":
-                # Use Docker execution with centralized manager
-                if self.docker_manager is None:
-                    raise RuntimeError("Docker manager not initialized for docker engine")
+            if self.engine in ["docker", "podman"]:
+                # Use container engine execution with centralized manager
+                if self.container_engine is None:
+                    raise RuntimeError(f"{self.engine.title()} engine not initialized")
                 env = {"RXIV_FIGURE_OUTPUT_DIR": str(figure_dir.absolute())}
 
-                result = self.docker_manager.run_python_script(
+                result = self.container_engine.run_python_script(
                     script_file=py_file.resolve(),
                     working_dir=figure_dir.resolve(),
                     environment=env,
@@ -731,15 +740,15 @@ class FigureGenerator:
 
             print(f"  📊 Executing {r_file.name}...")
 
-            # Execute the R script - use Docker if engine="docker"
+            # Execute the R script - use container engine if engine is docker/podman
 
-            if self.engine == "docker":
-                # Use Docker execution with centralized manager
-                if self.docker_manager is None:
-                    raise RuntimeError("Docker manager not initialized for docker engine")
+            if self.engine in ["docker", "podman"]:
+                # Use container engine execution with centralized manager
+                if self.container_engine is None:
+                    raise RuntimeError(f"{self.engine.title()} engine not initialized")
                 env = {"RXIV_FIGURE_OUTPUT_DIR": str(figure_dir.absolute())}
 
-                result = self.docker_manager.run_r_script(
+                result = self.container_engine.run_r_script(
                     script_file=r_file.resolve(),
                     working_dir=figure_dir.resolve(),
                     environment=env,

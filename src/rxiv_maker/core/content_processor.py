@@ -5,6 +5,7 @@ markdown→LaTeX conversion pipeline with better error handling, state managemen
 and extensibility compared to the scattered logic in md2tex.py.
 """
 
+import re
 import time
 from dataclasses import dataclass, field
 from enum import Enum
@@ -110,6 +111,8 @@ class ContentProcessor(RecoveryEnhancedMixin):
             restore_protected_code,
         )
         from ..converters.figure_processor import (
+            convert_equation_references_to_latex,
+            convert_figure_references_to_latex,
             convert_figures_to_latex,
         )
         from ..converters.html_processor import convert_html_comments_to_latex, convert_html_tags_to_latex
@@ -119,10 +122,19 @@ class ContentProcessor(RecoveryEnhancedMixin):
             protect_math_expressions,
             restore_math_expressions,
         )
-        from ..converters.md2tex import _convert_headers
+        from ..converters.supplementary_note_processor import (
+            process_supplementary_note_references,
+            process_supplementary_notes,
+            restore_supplementary_note_placeholders,
+        )
+        from ..converters.table_processor import convert_table_references_to_latex
         from ..converters.text_formatters import (
             convert_subscript_superscript_to_latex,
             escape_special_characters,
+            process_code_spans,
+            protect_bold_outside_texttt,
+            protect_italic_outside_texttt,
+            restore_protected_seqsplit,
         )
         from ..converters.url_processor import convert_links_to_latex
 
@@ -173,10 +185,33 @@ class ContentProcessor(RecoveryEnhancedMixin):
         )
 
         # Stage 3: Conversion - Main content conversion
+        # Early conversion of page break markers
+        self.register_processor(
+            "newpage_markers",
+            self._process_newpage_markers,
+            ProcessorConfig(name="newpage_markers", priority=ProcessorPriority.HIGH, stage=ProcessingStage.CONVERSION),
+        )
+
+        self.register_processor(
+            "float_barrier_markers",
+            self._process_float_barrier_markers,
+            ProcessorConfig(
+                name="float_barrier_markers",
+                priority=ProcessorPriority.HIGH,
+                stage=ProcessingStage.CONVERSION,
+                dependencies=["newpage_markers"],
+            ),
+        )
+
         self.register_processor(
             "html_comments",
             convert_html_comments_to_latex,
-            ProcessorConfig(name="html_comments", priority=ProcessorPriority.NORMAL, stage=ProcessingStage.CONVERSION),
+            ProcessorConfig(
+                name="html_comments",
+                priority=ProcessorPriority.NORMAL,
+                stage=ProcessingStage.CONVERSION,
+                dependencies=["float_barrier_markers"],
+            ),
         )
 
         self.register_processor(
@@ -218,14 +253,62 @@ class ContentProcessor(RecoveryEnhancedMixin):
             ),
         )
 
+        # Supplementary note headers must be processed early (before general headers)
+        self.register_processor(
+            "supplementary_notes",
+            lambda content, **kwargs: process_supplementary_notes(content)
+            if kwargs.get("is_supplementary", False)
+            else content,
+            ProcessorConfig(
+                name="supplementary_notes",
+                priority=ProcessorPriority.NORMAL,
+                stage=ProcessingStage.CONVERSION,
+                dependencies=["figures"],
+            ),
+        )
+
+        # Headers processor runs after supplementary notes
         self.register_processor(
             "headers",
-            lambda content, **kwargs: _convert_headers(content, kwargs.get("is_supplementary", False)),
+            lambda content, **kwargs: self._convert_headers_enhanced(content, kwargs.get("is_supplementary", False)),
             ProcessorConfig(
                 name="headers",
                 priority=ProcessorPriority.NORMAL,
                 stage=ProcessingStage.CONVERSION,
-                dependencies=["figures"],
+                dependencies=["supplementary_notes"],
+            ),
+        )
+
+        self.register_processor(
+            "figure_references",
+            convert_figure_references_to_latex,
+            ProcessorConfig(
+                name="figure_references",
+                priority=ProcessorPriority.NORMAL,
+                stage=ProcessingStage.CONVERSION,
+                dependencies=["headers"],
+            ),
+        )
+
+        self.register_processor(
+            "equation_references",
+            convert_equation_references_to_latex,
+            ProcessorConfig(
+                name="equation_references",
+                priority=ProcessorPriority.NORMAL,
+                stage=ProcessingStage.CONVERSION,
+                dependencies=["figure_references"],
+            ),
+        )
+
+        self.register_processor(
+            "table_references",
+            convert_table_references_to_latex,
+            ProcessorConfig(
+                name="table_references",
+                priority=ProcessorPriority.NORMAL,
+                stage=ProcessingStage.CONVERSION,
+                dependencies=["equation_references"],
             ),
         )
 
@@ -236,14 +319,78 @@ class ContentProcessor(RecoveryEnhancedMixin):
                 name="citations",
                 priority=ProcessorPriority.NORMAL,
                 stage=ProcessingStage.CONVERSION,
-                dependencies=["headers"],
+                dependencies=["supplementary_note_references"],
+            ),
+        )
+
+        # Text formatting processors (LOW priority)
+        self.register_processor(
+            "code_spans",
+            process_code_spans,
+            ProcessorConfig(
+                name="code_spans",
+                priority=ProcessorPriority.LOW,
+                stage=ProcessingStage.CONVERSION,
+                dependencies=["citations"],
+            ),
+        )
+
+        self.register_processor(
+            "bold_formatting",
+            protect_bold_outside_texttt,
+            ProcessorConfig(
+                name="bold_formatting",
+                priority=ProcessorPriority.LOW,
+                stage=ProcessingStage.CONVERSION,
+                dependencies=["code_spans"],
+            ),
+        )
+
+        self.register_processor(
+            "italic_formatting",
+            protect_italic_outside_texttt,
+            ProcessorConfig(
+                name="italic_formatting",
+                priority=ProcessorPriority.LOW,
+                stage=ProcessingStage.CONVERSION,
+                dependencies=["bold_formatting"],
+            ),
+        )
+
+        # Special handling for italic text in list items (must come after italic_formatting)
+        self.register_processor(
+            "italic_in_lists",
+            lambda content, **kwargs: re.sub(r"(\\item\s+)\*([^*]+?)\*", r"\1\\textit{\2}", content),
+            ProcessorConfig(
+                name="italic_in_lists",
+                priority=ProcessorPriority.LOW,
+                stage=ProcessingStage.CONVERSION,
+                dependencies=["italic_formatting"],
             ),
         )
 
         self.register_processor(
             "urls",
             convert_links_to_latex,
-            ProcessorConfig(name="urls", priority=ProcessorPriority.LOW, stage=ProcessingStage.CONVERSION),
+            ProcessorConfig(
+                name="urls",
+                priority=ProcessorPriority.LOW,
+                stage=ProcessingStage.CONVERSION,
+                dependencies=["italic_in_lists"],
+            ),
+        )
+
+        # Supplementary note references (moved up in processing order)
+
+        self.register_processor(
+            "supplementary_note_references",
+            process_supplementary_note_references,
+            ProcessorConfig(
+                name="supplementary_note_references",
+                priority=ProcessorPriority.NORMAL,
+                stage=ProcessingStage.CONVERSION,
+                dependencies=["table_references"],
+            ),
         )
 
         # Stage 4: Restoration - Restore protected content
@@ -257,6 +404,29 @@ class ContentProcessor(RecoveryEnhancedMixin):
             "restore_code",
             self._create_restoration_wrapper("code", restore_protected_code),
             ProcessorConfig(name="restore_code", priority=ProcessorPriority.HIGH, stage=ProcessingStage.RESTORATION),
+        )
+
+        self.register_processor(
+            "restore_supplementary_placeholders",
+            lambda content, **kwargs: restore_supplementary_note_placeholders(content)
+            if kwargs.get("is_supplementary", False)
+            else content,
+            ProcessorConfig(
+                name="restore_supplementary_placeholders",
+                priority=ProcessorPriority.NORMAL,
+                stage=ProcessingStage.RESTORATION,
+            ),
+        )
+
+        self.register_processor(
+            "restore_tables",
+            self._restore_protected_tables,
+            ProcessorConfig(
+                name="restore_tables",
+                priority=ProcessorPriority.HIGH,
+                stage=ProcessingStage.RESTORATION,
+                dependencies=["restore_code"],
+            ),
         )
 
         # Stage 5: Finalization - Final text formatting
@@ -273,6 +443,28 @@ class ContentProcessor(RecoveryEnhancedMixin):
             escape_special_characters,
             ProcessorConfig(
                 name="escape_special", priority=ProcessorPriority.CLEANUP, stage=ProcessingStage.FINALIZATION
+            ),
+        )
+
+        self.register_processor(
+            "restore_seqsplit",
+            restore_protected_seqsplit,
+            ProcessorConfig(
+                name="restore_seqsplit",
+                priority=ProcessorPriority.CLEANUP,
+                stage=ProcessingStage.FINALIZATION,
+                dependencies=["escape_special"],
+            ),
+        )
+
+        self.register_processor(
+            "restore_underscores",
+            lambda content, **kwargs: content.replace("XUNDERSCOREX", "\\_"),
+            ProcessorConfig(
+                name="restore_underscores",
+                priority=ProcessorPriority.CLEANUP,
+                stage=ProcessingStage.FINALIZATION,
+                dependencies=["restore_seqsplit"],
             ),
         )
 
@@ -330,13 +522,111 @@ class ContentProcessor(RecoveryEnhancedMixin):
 
         return _protect_markdown_tables(content)
 
+    def _process_newpage_markers(self, content: MarkdownContent) -> LatexContent:
+        """Convert <newpage> and <clearpage> markers to LaTeX commands."""
+        # Replace <clearpage> with \\clearpage
+        content = re.sub(r"^\s*<clearpage>\s*$", r"\\clearpage", content, flags=re.MULTILINE)
+        content = re.sub(r"<clearpage>", r"\\clearpage", content)
+
+        # Replace <newpage> with \\newpage
+        content = re.sub(r"^\s*<newpage>\s*$", r"\\newpage", content, flags=re.MULTILINE)
+        content = re.sub(r"<newpage>", r"\\newpage", content)
+
+        return content
+
+    def _process_float_barrier_markers(self, content: MarkdownContent) -> LatexContent:
+        r"""Convert <float-barrier> markers to LaTeX \\FloatBarrier commands."""
+        # Replace <float-barrier> with \\FloatBarrier
+        content = re.sub(r"^\s*<float-barrier>\s*$", r"\\FloatBarrier", content, flags=re.MULTILINE)
+        content = re.sub(r"<float-barrier>", r"\\FloatBarrier", content)
+
+        return content
+
+    def _convert_headers_enhanced(self, content: LatexContent, is_supplementary: bool = False) -> LatexContent:
+        """Enhanced header conversion that properly handles supplementary content."""
+        # Use the legacy header conversion logic but ensure ALL ### headers get converted
+        # even in supplementary content, since supplementary note processing should have
+        # already handled the ones that needed special treatment
+        if is_supplementary:
+            # For supplementary content, use \section* for the first header
+            content = re.sub(r"^# (.+)$", r"\\section*{\1}", content, flags=re.MULTILINE, count=1)
+            # Then replace any remaining # headers with regular \section
+            content = re.sub(r"^# (.+)$", r"\\section{\1}", content, flags=re.MULTILINE)
+        else:
+            content = re.sub(r"^# (.+)$", r"\\section{\1}", content, flags=re.MULTILINE)
+
+        content = re.sub(r"^## (.+)$", r"\\subsection{\1}", content, flags=re.MULTILINE)
+
+        # Convert ALL remaining ### headers to \subsubsection{}, even in supplementary content
+        # This runs after supplementary note processing, so any ### headers that remain
+        # are standalone headers that should be converted normally
+        content = re.sub(r"^### (.+)$", r"\\subsubsection{\1}", content, flags=re.MULTILINE)
+
+        content = re.sub(r"^#### (.+)$", r"\\paragraph{\1}", content, flags=re.MULTILINE)
+        return content
+
     def _process_tables_enhanced(self, content: MarkdownContent, **kwargs) -> LatexContent:
         """Enhanced table processing with protection integration."""
         from ..converters.table_processor import convert_tables_to_latex
 
-        # Use existing table processing logic
         is_supplementary = kwargs.get("is_supplementary", False)
-        return convert_tables_to_latex(content, is_supplementary)
+
+        # Get protected content from processing state
+        protected_markdown_tables = self.protected_content.get("markdown_tables", {})
+        protected_backtick_content = self.protected_content.get("code", {})  # From code protection
+
+        # Restore protected markdown tables before table processing
+        for placeholder, original in protected_markdown_tables.items():
+            content = content.replace(placeholder, original)
+
+        # Restore backticks only in table rows to avoid affecting verbatim blocks
+        table_lines = content.split("\n")
+        for i, line in enumerate(table_lines):
+            if "|" in line and line.strip().startswith("|") and line.strip().endswith("|"):
+                # Restore backticks in table rows only
+                for placeholder, original in protected_backtick_content.items():
+                    line = line.replace(placeholder, original)
+                table_lines[i] = line
+
+        temp_content = "\n".join(table_lines)
+
+        # Process tables with restored content
+        table_processed_content = convert_tables_to_latex(
+            temp_content,
+            protected_backtick_content,
+            is_supplementary,
+        )
+
+        # Protect LaTeX table blocks from further markdown processing
+        protected_tables = self.protected_content.setdefault("tables", {})
+
+        def protect_latex_table(match):
+            table_content = match.group(0)
+            placeholder = f"XXPROTECTEDTABLEXX{len(protected_tables)}XXPROTECTEDTABLEXX"
+            protected_tables[placeholder] = table_content
+            return placeholder
+
+        # Protect all LaTeX table environments
+        for env in ["table", "sidewaystable", "stable"]:
+            pattern = rf"\\begin\{{{env}\*?\}}.*?\\end\{{{env}\*?\}}"
+            table_processed_content = re.sub(pattern, protect_latex_table, table_processed_content, flags=re.DOTALL)
+
+        # Re-protect unconverted backtick content
+        for original, placeholder in [(v, k) for k, v in protected_backtick_content.items()]:
+            if original in table_processed_content:
+                table_processed_content = table_processed_content.replace(original, placeholder)
+
+        return table_processed_content
+
+    def _restore_protected_tables(self, content: LatexContent, **kwargs) -> LatexContent:
+        """Restore protected table content."""
+        protected_tables = self.protected_content.get("tables", {})
+
+        # Restore protected tables at the very end (after all other conversions)
+        for placeholder, table_content in protected_tables.items():
+            content = content.replace(placeholder, table_content)
+
+        return content
 
     def _process_citations_enhanced(self, content: MarkdownContent, **kwargs) -> LatexContent:
         """Enhanced citation processing with table protection integration."""

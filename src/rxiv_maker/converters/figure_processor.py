@@ -162,16 +162,20 @@ def create_latex_figure_environment(
         # Resolve against manuscript path when available to avoid false negatives
         manuscript_root = os.getenv("MANUSCRIPT_PATH")
         if manuscript_root:
-            ready_figure_fullpath = Path(manuscript_root) / "FIGURES" / f"{figure_name}{figure_ext}"
+            # Use the original path to check for ready files (preserves spaces and special chars)
+            original_figure_name = os.path.basename(path.replace("FIGURES/", ""))
+            ready_figure_fullpath = Path(manuscript_root) / "FIGURES" / original_figure_name
         else:
-            ready_figure_fullpath = Path("FIGURES") / f"{figure_name}{figure_ext}"
+            original_figure_name = os.path.basename(path.replace("FIGURES/", ""))
+            ready_figure_fullpath = Path("FIGURES") / original_figure_name
 
         if ready_figure_fullpath.exists():
             # Ready figure exists, use it directly without subdirectory conversion
-            # latex_path already contains the correct ready file path
+            # latex_path already contains the correct ready file path (with Figures/ prefix)
             pass
         else:
             # Convert to subdirectory format: Figures/Figure__name/Figure__name.ext
+            # Note: Keep original figure name with spaces for subdirectory
             latex_path = f"Figures/{figure_name}/{figure_name}{figure_ext}"
 
     # Convert SVG to PNG for LaTeX compatibility
@@ -194,12 +198,14 @@ def create_latex_figure_environment(
     position: FigurePosition = attributes.get("tex_position", "ht")
 
     # Check if this should be a 2-column spanning figure
+    # IMPORTANT: Do NOT use figure* for position="p" (dedicated page) regardless of width
     is_twocolumn = (
-        attributes.get("span") == "2col"
-        or attributes.get("twocolumn") == "true"
-        or attributes.get("twocolumn") is True
-        or (width == "\\textwidth" and position != "p")  # Auto-detect, but not for dedicated page figures
-    )
+        attributes.get("span") == "2col" or attributes.get("twocolumn") == "true" or attributes.get("twocolumn") is True
+    ) and position != "p"  # Never use figure* for dedicated page figures
+
+    # Auto-detect 2-column for full-width figures, but NOT for dedicated page
+    if not is_twocolumn and width == "\\textwidth" and position != "p":
+        is_twocolumn = True
 
     # Only adjust positioning for two-column spanning figures that don't have explicit positioning
     if is_twocolumn and position == "ht":

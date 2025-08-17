@@ -34,7 +34,7 @@ This guide covers everything from getting started to advanced workflows, practic
 - LaTeX distribution (TeX Live, MacTeX, or MiKTeX) - or use Docker mode
 - Make (typically pre-installed on macOS/Linux, see [platform guide](../platforms/LOCAL_DEVELOPMENT.md) for Windows)
 
-**Quick Start with Modern CLI:**
+**Quick Start:**
 ```bash
 # Install from PyPI
 pip install rxiv-maker
@@ -55,13 +55,8 @@ cd rxiv-maker
 # Install in development mode
 pip install -e .
 
-# Or use traditional setup
-make setup
-
 # Generate your first PDF
-rxiv pdf  # Modern CLI
-# OR
-make pdf  # Legacy command
+rxiv pdf
 ```
 
 </details>
@@ -89,13 +84,13 @@ make pdf  # Legacy command
 git clone https://github.com/henriqueslab/rxiv-maker.git
 cd rxiv-maker
 
-# Modern CLI with Docker
+# Use Docker engine
 rxiv pdf --engine docker           # Generate PDF in container
 rxiv validate --engine docker      # Validate in container
 
-# Or legacy commands
-make pdf RXIV_ENGINE=DOCKER        # Generate PDF in container
-make validate RXIV_ENGINE=DOCKER   # Validate in container
+# Set Docker as default engine
+rxiv config set general.default_engine docker
+rxiv pdf                           # Now uses Docker automatically
 ```
 
 **Benefits**: Cross-platform consistency, no dependency conflicts, matches CI environment (AMD64 only)
@@ -121,16 +116,13 @@ Rxiv-Maker includes a comprehensive validation system that checks your manuscrip
 ### Quick Validation
 ```bash
 # Basic validation check
-make validate
+rxiv validate
 
 # Validate specific manuscript
-make validate MANUSCRIPT_PATH=MY_PAPER
+rxiv validate MY_PAPER/
 
 # Recommended workflow: validate then build
 rxiv validate && rxiv pdf
-
-# Or with legacy commands
-make validate && make pdf
 ```
 
 ### Detailed Validation
@@ -205,37 +197,25 @@ For more detailed validation information, see [Manuscript Validation Guide](vali
   # Modern CLI
   rxiv pdf MY_ARTICLE/
   
-  # Legacy command
-  MANUSCRIPT_PATH=MY_ARTICLE make pdf
+  rxiv pdf MY_ARTICLE/
   ```
 - **Docker Engine Mode (Only Docker Required):**
-  Run any command in a containerized environment without installing LaTeX, R, or Python locally (Docker must be installed):
+  Run any command in a containerized environment without installing LaTeX, R, or Python locally:
   ```bash
-  # Modern CLI with Docker
+  # Use Docker engine
   rxiv pdf --engine docker
   rxiv validate --engine docker
   
-  # Legacy commands with RXIV_ENGINE=DOCKER
-  make pdf RXIV_ENGINE=DOCKER
-  make validate RXIV_ENGINE=DOCKER
-  
-  # Use custom Docker image
-  DOCKER_IMAGE=my/custom:tag RXIV_ENGINE=DOCKER make pdf
-  
-  # Make Docker mode default for session
-  export RXIV_ENGINE=DOCKER
-  make pdf  # Now runs in Docker automatically
+  # Make Docker mode default
+  rxiv config set general.default_engine docker
+  rxiv pdf  # Now uses Docker automatically
   ```
   Benefits: Cross-platform consistency, no dependency conflicts, reproducible builds, faster CI/CD.
 - **Advanced Figure Generation:**
   - Place Python or Mermaid files in `MANUSCRIPT/FIGURES/`
   - Force regeneration:
     ```bash
-    # Modern CLI
     rxiv pdf --force-figures
-    
-    # Legacy command
-    make pdf FORCE_FIGURES=true
     ```
 - **Custom LaTeX Templates:**
   - Add `.sty`, `.cls`, or `.tex` files to `src/tex/style/`
@@ -248,9 +228,9 @@ For more detailed validation information, see [Manuscript Validation Guide](vali
 - **Environment Variables:**
   - Use a `.env` file for persistent settings
 - **Debugging and Verbose Output:**
-  - Use `VERBOSE=true` for detailed logs:
+  - Use `--verbose` for detailed logs:
     ```bash
-    make pdf VERBOSE=true
+    rxiv pdf --verbose
     ```
 - **Pre-commit Hooks and Linting:**
   - Install hooks: `pre-commit install`
@@ -290,8 +270,8 @@ For complete guidance on figure positioning, sizing, panel references, and troub
 # Modern CLI
 rxiv pdf --force-figures
 
-# Legacy command
-make pdf FORCE_FIGURES=true
+# Legacy command (deprecated)
+rxiv pdf --force-figures
 ```
 
 ---
@@ -301,39 +281,28 @@ make pdf FORCE_FIGURES=true
 ### Local Development Examples
 - **Basic PDF Generation:**
   ```bash
-  make validate  # Check for issues first
-  make pdf       # Generate PDF
+  rxiv validate  # Check for issues first
+  rxiv pdf       # Generate PDF
   ```
 - **Custom Manuscript Directory:**
   ```bash
-  MANUSCRIPT_PATH=MY_PAPER make pdf
+  rxiv pdf MY_PAPER/
   ```
 
 ### Docker Engine Mode Examples
 - **Basic PDF Generation (No Dependencies):**
   ```bash
-  # Modern CLI
   rxiv validate --engine docker  # Check for issues first
   rxiv pdf --engine docker       # Generate PDF in container
-  
-  # Legacy commands
-  make validate RXIV_ENGINE=DOCKER  # Check for issues first
-  make pdf RXIV_ENGINE=DOCKER       # Generate PDF in container
   ```
 - **Custom Manuscript with Docker:**
   ```bash
-  # Modern CLI
   rxiv pdf MY_PAPER/ --engine docker
-  
-  # Legacy command
-  MANUSCRIPT_PATH=MY_PAPER RXIV_ENGINE=DOCKER make pdf
   ```
 - **Set Docker as Default:**
   ```bash
-  export RXIV_ENGINE=DOCKER
+  rxiv config set general.default_engine docker
   rxiv validate && rxiv pdf  # Both run in containers
-  # OR
-  make validate && make pdf  # Both run in containers
   ```
 - **Adding Figures:**
   - Place `.py` or `.mmd` files in `MANUSCRIPT/FIGURES/`
@@ -375,13 +344,13 @@ make pdf FORCE_FIGURES=true
   - Check: Is `pdflatex` in your PATH?
 - **Python Import Errors:**
   - Error: `ModuleNotFoundError` or similar
-  - Solution: Run `rxiv setup` or `make setup` to install dependencies
+  - Solution: Run `rxiv setup` to install dependencies
   - Check: Is your virtual environment activated?
 - **Figure Generation Fails:**
   - Error: Figures not generated or missing in PDF
   - Solution:
     - Check Python scripts in `FIGURES/` for errors
-    - Use `rxiv pdf --force-figures` or `make pdf FORCE_FIGURES=true`
+    - Use `rxiv pdf --force-figures`
     - Check for missing data files
 - **Figure Positioning Issues:**
   - Error: Figures appear on wrong pages, poor spacing, or layout problems
