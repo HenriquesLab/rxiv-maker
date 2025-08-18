@@ -1,0 +1,60 @@
+name: Simple Docker Build
+
+on:
+  push:
+    branches: [main, dev]
+    paths:
+      - 'src/docker/**'
+      - '.github/workflows/docker-simple.yml'
+
+  pull_request:
+    branches: [main, dev]
+    paths:
+      - 'src/docker/**'
+      - '.github/workflows/docker-simple.yml'
+
+  workflow_dispatch:
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: henriqueslab/rxiv-maker-base
+
+jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      should-build: ${{ steps.decision.outputs.should-build }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build decision
+        id: decision
+        run: |
+          SHOULD_BUILD=true
+          echo "should-build=$SHOULD_BUILD" >> $GITHUB_OUTPUT
+
+  build-images:
+    name: Build Images
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.should-build == 'true'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [linux/amd64]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        run: |
+          echo "Would build Docker image for ${{ matrix.platform }}"
+          echo "Image: ${{ env.IMAGE_NAME }}"
