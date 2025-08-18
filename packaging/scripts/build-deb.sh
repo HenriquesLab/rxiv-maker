@@ -110,7 +110,7 @@ validate_environment() {
     log "Validating build environment..."
 
     # Check for required tools
-    local required_tools=("dpkg-buildpackage" "debhelper" "python3" "pip")
+    local required_tools=("dpkg-buildpackage" "dh" "python3" "pip")
     for tool in "${required_tools[@]}"; do
         if ! command -v "$tool" >/dev/null 2>&1; then
             error "Required tool not found: $tool"
@@ -119,9 +119,9 @@ validate_environment() {
         fi
     done
 
-    # Check for optional tools
-    if ! command -v "dh" >/dev/null 2>&1; then
-        warn "debhelper 'dh' command not found, some features may not work"
+    # Check for additional optional tools
+    if ! command -v "lintian" >/dev/null 2>&1; then
+        warn "lintian not found, package validation will be limited"
     fi
 
     # Validate GPG setup if signing is requested
