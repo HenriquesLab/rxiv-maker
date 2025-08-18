@@ -133,7 +133,7 @@ class PythonExecutor:
         try:
             tree = ast.parse(code)
         except SyntaxError as e:
-            raise PythonExecutionError(f"Syntax error in Python code: {e}")
+            raise PythonExecutionError(f"Syntax error in Python code: {e}") from e
 
         for node in ast.walk(tree):
             # Block dangerous AST node types
@@ -211,11 +211,6 @@ class PythonExecutor:
                 "tuple": tuple,
                 "type": type,
                 "zip": zip,
-                # Mathematical functions
-                "abs": abs,
-                "divmod": divmod,
-                "pow": pow,
-                "round": round,
             }
         }
 
@@ -362,43 +357,37 @@ print(json.dumps(result))
 
             if success:
                 if output.strip():
+                    # Break long output lines to prevent overfull hbox
+                    import textwrap
+
+                    output_lines = output.split("\n")
+                    wrapped_lines = []
+                    for line in output_lines:
+                        if len(line) > 40:  # Wrap lines longer than 40 characters to prevent overfull hbox
+                            wrapped_lines.extend(textwrap.wrap(line, width=40))
+                        else:
+                            wrapped_lines.append(line)
+                    wrapped_output = "\n".join(wrapped_lines)
+
                     # Format as LaTeX verbatim block (since we're in the LaTeX conversion pipeline)
-                    # Escape any LaTeX special characters in the output
-                    escaped_output = (
-                        output.replace("\\", "\\textbackslash{}")
-                        .replace("{", "\\{")
-                        .replace("}", "\\}")
-                        .replace("_", "\\_")
-                        .replace("^", "\\textasciicircum{}")
-                        .replace("~", "\\textasciitilde{}")
-                    )
-                    return f"\\begin{{verbatim}}\n{output}\n\\end{{verbatim}}"
+                    # Note: Don't escape characters inside verbatim - they should be displayed literally
+                    return f"\\begin{{verbatim}}\n{wrapped_output}\n\\end{{verbatim}}"
                 else:
                     # No output, return empty string
                     return ""
             else:
-                # Format error as warning
-                escaped_output = (
-                    output.replace("\\", "\\textbackslash{}")
-                    .replace("{", "\\{")
-                    .replace("}", "\\}")
-                    .replace("_", "\\_")
-                    .replace("^", "\\textasciicircum{}")
-                    .replace("~", "\\textasciitilde{}")
-                )
+                # Format error as warning - don't escape in verbatim environment
                 return f"\\begin{{verbatim}}\nPython execution error: {output}\n\\end{{verbatim}}"
 
         except (SecurityError, PythonExecutionError) as e:
-            error_msg = (
-                str(e)
-                .replace("\\", "\\textbackslash{}")
-                .replace("{", "\\{")
-                .replace("}", "\\}")
-                .replace("_", "\\_")
-                .replace("^", "\\textasciicircum{}")
-                .replace("~", "\\textasciitilde{}")
-            )
-            return f"\\begin{{verbatim}}\nPython execution blocked: {str(e)}\n\\end{{verbatim}}"
+            import textwrap
+
+            # Break long error messages into multiple lines to prevent overfull hbox
+            error_msg = str(e)
+            # Create shorter lines with explicit newlines for verbatim environment
+            wrapped_lines = textwrap.wrap(error_msg, width=40)  # Use even shorter width to prevent overfull hbox
+            wrapped_error = "\n".join(wrapped_lines)
+            return f"\\begin{{verbatim}}\nPython execution blocked:\n{wrapped_error}\n\\end{{verbatim}}"
 
     def execute_inline(self, code: str) -> str:
         """Execute Python code inline and return result.
@@ -422,10 +411,14 @@ print(json.dumps(result))
             if success:
                 return output.strip() or ""
             else:
-                return f"[Error: {output}]"
+                # Escape underscores in error messages for LaTeX compatibility
+                escaped_output = output.replace("_", "\\_")
+                return f"[Error: {escaped_output}]"
 
         except (SecurityError, PythonExecutionError) as e:
-            return f"[Blocked: {str(e)}]"
+            # Escape underscores in error messages for LaTeX compatibility
+            error_msg = str(e).replace("_", "\\_")
+            return f"[Blocked: {error_msg}]"
 
     def reset_context(self) -> None:
         """Reset the execution context."""

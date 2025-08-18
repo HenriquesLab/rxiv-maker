@@ -227,14 +227,23 @@ def create_latex_figure_environment(
         else:
             # For shorter captions, just ensure full width
             processed_caption = f"\\captionsetup{{width=\\textwidth}}\n{processed_caption}"
-    elif width == "\\textwidth":
-        # For dedicated page figures with full width, also use captionsetup for proper formatting
+    elif width == "\\textwidth" and position != "p":
+        # For full-width figures that are NOT dedicated page, use captionsetup for proper formatting
+        # Two-column figures need \textwidth to span columns, but dedicated page figures don't
         if len(processed_caption) > 150:
             # For longer captions, add justified text formatting
             processed_caption = f"\\captionsetup{{width=\\textwidth,justification=justified}}\n{processed_caption}"
         else:
             # For shorter captions, just ensure full width
             processed_caption = f"\\captionsetup{{width=\\textwidth}}\n{processed_caption}"
+    elif position == "p":
+        # For dedicated page figures, use proper single-page caption formatting
+        # Don't use \textwidth as it extends beyond single-column page margins
+        # Use justified alignment now that double backslash line break issue is fixed in source
+        # Add singlelinecheck=false to prevent centering of short captions
+        processed_caption = (
+            f"\\captionsetup{{justification=justified,format=plain,singlelinecheck=false}}\n{processed_caption}"
+        )
 
     # Create LaTeX figure environment - use figure* for 2-column spanning
     figure_env = "figure*" if is_twocolumn else "figure"
@@ -268,6 +277,12 @@ def create_latex_figure_environment(
         latex_figure += f"\n\\label{{{attributes['id']}}}"
 
     latex_figure += f"\n\\end{{{figure_env}}}"
+
+    # Add layout control for dedicated page figures to ensure full page width usage
+    if position == "p":
+        # For dedicated page figures, temporarily switch to single-column layout
+        # This ensures \linewidth and \textwidth refer to full page width, not column width
+        latex_figure = f"\\onecolumn\n{latex_figure}\n\\twocolumn"
 
     return latex_figure
 

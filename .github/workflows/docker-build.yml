@@ -8,7 +8,7 @@ on:
       - 'src/py/**'
       - 'pyproject.toml'
       - 'requirements*.txt'
-      - '.github/workflows/docker-build-new.yml'
+      - '.github/workflows/docker-build.yml'
 
   pull_request:
     branches: [main, dev]
@@ -17,7 +17,7 @@ on:
       - 'src/py/**'
       - 'pyproject.toml'
       - 'requirements*.txt'
-      - '.github/workflows/docker-build-new.yml'
+      - '.github/workflows/docker-build.yml'
 
   release:
     types: [published]

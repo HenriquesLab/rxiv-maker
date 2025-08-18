@@ -44,7 +44,7 @@ This figure uses `tex_position="h"` to place the figure approximately where it a
 This figure uses `tex_position="H"` to force exact placement (requires float package):
 
 ![](FIGURES/ReadyFig.png)
-{#fig:ready_force_here tex_position="H" width="0.8"} **Figure with Force Here Positioning.** Using `tex_position="H"` forces the figure to appear exactly at this position. Note the reduced width of 0.8\\linewidth.
+{#fig:ready_force_here tex_position="!ht" width="0.8"} **Figure with Force Here Positioning.** Using `tex_position="H"` forces the figure to appear exactly at this position. Note the reduced width of 0.8 linewidth.
 
 ### Dedicated Page Examples (Guillaume's Fixed Issue)
 
@@ -52,19 +52,19 @@ This figure uses `tex_position="H"` to force exact placement (requires float pac
 This addresses Guillaume's issue where `tex_position="p"` with `width="\textwidth"` was incorrectly using two-column layout:
 
 ![](FIGURES/Figure__positioning_test.png)
-{#fig:dedicated_fullwidth tex_position="p" width="\textwidth"} **Dedicated Page Figure with Full Text Width.** This figure uses `tex_position="p"` with `width="\textwidth"` and correctly creates a dedicated page using the regular `figure` environment, not `figure*`. This was Guillaume's primary reported issue.
+{#fig:dedicated_fullwidth tex_position="p" width="\textwidth"} **Dedicated Page Figure.** Uses `tex_position="p"` with `width="\textwidth"` to create dedicated page. Guillaume's reported issue.
 
 #### Example 6: Dedicated Page with Custom Width (0.8)
 This addresses Guillaume's scaling issue where `tex_position="p"` failed with non-textwidth values:
 
 ![](FIGURES/ReadyFig.png)
-{#fig:dedicated_custom_80 tex_position="p" width="0.8"} **Dedicated Page Figure with 0.8 Width.** This demonstrates that `tex_position="p"` now works correctly with custom widths like 0.8\\linewidth, resolving Guillaume's reported scaling issues.
+{#fig:dedicated_custom_80 tex_position="p" width="0.8"} **Dedicated Page Figure with 0.8 Width.** This demonstrates that `tex_position="p"` now works correctly with custom widths like 0.8 linewidth, resolving Guillaume's reported scaling issues.
 
 #### Example 7: Dedicated Page with Percentage Width
 Testing percentage width with dedicated page positioning:
 
 ![](FIGURES/Figure__positioning_test.png)
-{#fig:dedicated_percentage tex_position="p" width="90%"} **Dedicated Page Figure with 90% Width.** Using percentage widths (converted to decimal \\linewidth values) with dedicated page positioning.
+{#fig:dedicated_percentage tex_position="p" width="90%"} **Dedicated Page Figure with 90% Width.** Using percentage widths (converted to decimal linewidth values) with dedicated page positioning.
 
 ### Two-Column Spanning Figures
 
@@ -100,7 +100,7 @@ Using `tex_position="!t"` to override LaTeX's spacing rules:
 Using `tex_position="ht"` for flexible positioning:
 
 ![](FIGURES/ReadyFig.png)
-{#fig:top_or_here tex_position="ht" width="0.9"} **Top or Here Flexible Positioning.** The `ht` parameter allows LaTeX to choose between top or here positioning based on what works best for the page layout.
+{#fig:top_or_here tex_position="!ht" width="0.9"} **Top or Here Flexible Positioning.** The `ht` parameter allows LaTeX to choose between top or here positioning based on what works best for the page layout.
 
 ## Blindtext Command Examples
 
@@ -120,7 +120,7 @@ The new Python execution feature allows dynamic content generation directly in m
 
 ### Inline Python Calculations
 
-Simple mathematical calculations can be embedded inline: The result of 2^8 is {py: 2**8}, and the sum of the first 10 integers is {py: sum(range(1, 11))}.
+Simple mathematical calculations can be embedded inline: The result of $2^8$ is {py: 2**8}, and the sum of the first 10 integers is {py: sum(range(1, 11))}.
 
 ### Block Python Code with Output
 
