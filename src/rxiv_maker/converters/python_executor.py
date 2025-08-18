@@ -263,23 +263,61 @@ class PythonExecutor:
         Returns:
             Dictionary with execution results
         """
-        # Create a simpler temporary script
+        # Create a script that properly handles context persistence
+        context_json = json.dumps({k: v for k, v in context.items() 
+                                 if k != "__builtins__" and isinstance(v, (int, float, str, bool, list, dict))})
+        
         script_content = f"""
 import sys
 import io
 import json
 
+# Load initial context
+initial_context = {context_json}
+
 # Capture output
 output_buffer = io.StringIO()
 error_msg = None
+final_context = {{}}
 
 try:
     # Redirect stdout to capture print statements
     old_stdout = sys.stdout
     sys.stdout = output_buffer
 
-    # Execute user code
-{chr(10).join("    " + line for line in code.split(chr(10)))}
+    # Create execution namespace with initial context
+    exec_globals = initial_context.copy()
+    exec_globals.update({{
+        '__builtins__': __builtins__,
+        'print': print,
+        'range': range,
+        'len': len,
+        'str': str,
+        'int': int,
+        'float': float,
+        'bool': bool,
+        'list': list,
+        'dict': dict,
+        'tuple': tuple,
+        'set': set,
+        'abs': abs,
+        'max': max,
+        'min': min,
+        'sum': sum,
+        'round': round,
+        'pow': pow
+    }})
+    
+    # Execute user code in the context
+    exec('''\\
+{chr(10).join(line for line in code.split(chr(10)))}
+''', exec_globals)
+
+    # Capture final context (only simple types that can be JSON serialized)
+    for key, value in exec_globals.items():
+        if not key.startswith('_') and key not in ['print', 'range', 'len', 'str', 'int', 'float', 'bool', 'list', 'dict', 'tuple', 'set', 'abs', 'max', 'min', 'sum', 'round', 'pow']:
+            if isinstance(value, (int, float, str, bool, list, dict)):
+                final_context[key] = value
 
     # Restore stdout
     sys.stdout = old_stdout
@@ -294,7 +332,8 @@ except Exception as e:
 result = {{
     'success': success,
     'output': output_buffer.getvalue(),
-    'error': error_msg
+    'error': error_msg,
+    'context': final_context
 }}
 
 print(json.dumps(result))
