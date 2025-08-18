@@ -208,7 +208,7 @@ jobs:
           platforms: ${{ matrix.platform }}
 
       - name: Build platform-specific image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: src/docker/images/base/Dockerfile
@@ -354,7 +354,7 @@ jobs:
           password: ${{ secrets.DOCKER_PUSH }}
 
       - name: Build and push multi-platform image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: src/docker/images/base/Dockerfile
