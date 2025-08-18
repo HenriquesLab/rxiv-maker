@@ -1,6 +1,17 @@
 # Build directories (contains all generated files)
 build/
 output/
+dist/
+
+# Package distribution artifacts
+apt-repo/
+*.deb
+*.buildinfo
+*.changes
+
+# Build and audit logs
+build.log
+pip-audit-report.json
 
 # Docker build logs
 src/docker/build-*.log
@@ -50,6 +61,10 @@ __pycache__/
 
 # Python files in base directory only (not subdirectories)
 /*.py
+
+# Debug and temporary development files
+debug_*.py
+todo*.md
 
 # C extensions
 *.so
