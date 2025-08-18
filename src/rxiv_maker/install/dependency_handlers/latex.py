@@ -113,4 +113,5 @@ class LaTeXHandler:
             "amssymb",
             "siunitx",
             "ifsym",
+            "blindtext",
         ]

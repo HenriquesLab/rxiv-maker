@@ -541,12 +541,21 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
     # Also match numbered files like 00_CONFIG, 01_MAIN, etc.
     text = re.sub(r"\b\d+_[A-Z_]+\b", escape_filenames, text)
 
+    # Escape percent signs in text (but not in comments that start with %)
+    # Use a regex to avoid escaping percent signs at the start of lines (which are comments)
+    text = re.sub(r"(?<!\\)(?<!^)%", r"\\%", text, flags=re.MULTILINE)
+
     # Final step: replace all placeholders with properly escaped underscores
     text = text.replace("XUNDERSCOREX", "\\_")
 
     # Restore protected LaTeX commands after escaping
     for placeholder, original_command in protected_latex_commands.items():
         text = text.replace(placeholder, original_command)
+
+    # Handle special characters that can cause LaTeX issues
+    # Escape caret character outside of math mode (but allow math expressions like $2^8$)
+    # Only escape isolated carets that aren't already in math mode
+    text = re.sub(r"(?<!\$)(?<!\\\$)\^(?!\^)(?![^$]*\$)", r"\\textasciicircum{}", text)
 
     # Handle Unicode arrows that can cause LaTeX math mode issues
     # These need to be converted to proper LaTeX math commands

@@ -313,6 +313,7 @@ GEMINI.md
 !docs/**/*.md
 !EXAMPLE_MANUSCRIPT/**/*.md
 !MANUSCRIPT/**/*.md
+!examples/**/*.md
 !test_init/**/*.md
 !src/**/*.md
 !tests/**/*.md

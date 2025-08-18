@@ -172,7 +172,8 @@ def create_latex_figure_environment(
         if ready_figure_fullpath.exists():
             # Ready figure exists, use it directly without subdirectory conversion
             # latex_path already contains the correct ready file path (with Figures/ prefix)
-            pass
+            # Ensure we preserve the original filename exactly as it appears in FIGURES/
+            latex_path = f"Figures/{original_figure_name}"
         else:
             # Convert to subdirectory format: Figures/Figure__name/Figure__name.ext
             # Note: Keep original figure name with spaces for subdirectory
@@ -226,9 +227,14 @@ def create_latex_figure_environment(
         else:
             # For shorter captions, just ensure full width
             processed_caption = f"\\captionsetup{{width=\\textwidth}}\n{processed_caption}"
-    elif width == "\\textwidth" and len(processed_caption) > 200:
-        # For full-width figures with long captions, use raggedright formatting
-        processed_caption = f"\\raggedright {processed_caption}"
+    elif width == "\\textwidth":
+        # For dedicated page figures with full width, also use captionsetup for proper formatting
+        if len(processed_caption) > 150:
+            # For longer captions, add justified text formatting
+            processed_caption = f"\\captionsetup{{width=\\textwidth,justification=justified}}\n{processed_caption}"
+        else:
+            # For shorter captions, just ensure full width
+            processed_caption = f"\\captionsetup{{width=\\textwidth}}\n{processed_caption}"
 
     # Create LaTeX figure environment - use figure* for 2-column spanning
     figure_env = "figure*" if is_twocolumn else "figure"
