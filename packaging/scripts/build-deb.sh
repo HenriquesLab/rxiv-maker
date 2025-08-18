@@ -13,6 +13,7 @@ log() { echo -e "${BLUE}[INFO]${NC} $*"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $*"; }
 error() { echo -e "${RED}[ERROR]${NC} $*"; }
 success() { echo -e "${GREEN}[SUCCESS]${NC} $*"; }
+verbose() { [[ "$VERBOSE" == "true" ]] && echo -e "${BLUE}[VERBOSE]${NC} $*"; }
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,6 +24,7 @@ DEB_DIR="$BUILD_DIR/deb"
 # Parse command line arguments
 CLEAN=false
 SIGN=false
+VERBOSE=false
 GPG_KEY=""
 OUTPUT_DIR="$PROJECT_ROOT/dist"
 
@@ -37,6 +39,7 @@ OPTIONS:
     -s, --sign         Sign the package with GPG
     -k, --key KEY      GPG key ID to use for signing
     -o, --output DIR   Output directory for built packages (default: dist/)
+    -v, --verbose      Enable verbose output
     -h, --help         Show this help message
 
 EXAMPLES:
@@ -71,6 +74,10 @@ while [[ $# -gt 0 ]]; do
             OUTPUT_DIR="$2"
             shift 2
             ;;
+        -v|--verbose)
+            VERBOSE=true
+            shift
+            ;;
         -h|--help)
             show_help
             exit 0
@@ -86,6 +93,17 @@ done
 # Use environment variables as fallbacks
 GPG_KEY="${GPG_KEY:-${RXIV_DEB_SIGN_KEY:-}}"
 OUTPUT_DIR="${OUTPUT_DIR:-${RXIV_DEB_OUTPUT:-$PROJECT_ROOT/dist}}"
+
+# Show configuration if verbose
+if [[ "$VERBOSE" == "true" ]]; then
+    verbose "Configuration:"
+    verbose "  Project Root: $PROJECT_ROOT"
+    verbose "  Build Dir: $BUILD_DIR"
+    verbose "  Output Dir: $OUTPUT_DIR"
+    verbose "  Clean Build: $CLEAN"
+    verbose "  Sign Package: $SIGN"
+    [[ -n "$GPG_KEY" ]] && verbose "  GPG Key: $GPG_KEY"
+fi
 
 # Validate environment
 validate_environment() {

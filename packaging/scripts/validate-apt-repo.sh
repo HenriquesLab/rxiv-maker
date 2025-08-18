@@ -36,6 +36,7 @@ CHECK_SIGNATURES="true"
 CHECK_ACCESSIBILITY="true"
 TIMEOUT="30"
 USER_AGENT="rxiv-maker-repo-validator/1.0"
+REPO_STRUCTURE=""
 
 show_help() {
     cat << EOF
@@ -216,34 +217,58 @@ check_accessibility() {
         return 1
     fi
 
-    # Test Release file
-    local release_url="${REPO_URL}/dists/stable/Release"
-    log "Testing Release file: $release_url"
-    start_time=$(date +%s.%N)
+    # Test Release file - try both standard and flat structures
+    local release_url_standard="${REPO_URL}/dists/stable/Release"
+    local release_url_flat="${REPO_URL}/Release"
+    local release_found=false
+    local packages_url
 
-    if http_request "$release_url" >/dev/null 2>&1; then
+    log "Testing Release file (standard structure): $release_url_standard"
+    start_time=$(date +%s.%N)
+    if http_request "$release_url_standard" >/dev/null 2>&1; then
         end_time=$(date +%s.%N)
         duration=$(echo "$end_time - $start_time" | bc -l)
-        success "Release file accessible (${duration}s)"
+        success "Release file accessible in standard structure (${duration}s)"
         results+=("release_file:success:$duration")
+        REPO_STRUCTURE="standard"
+        packages_url="${REPO_URL}/dists/stable/main/binary-all/Packages"
+        release_found=true
     else
-        error "Release file not accessible"
+        log "Testing Release file (flat structure): $release_url_flat"
+        start_time=$(date +%s.%N)
+        if http_request "$release_url_flat" >/dev/null 2>&1; then
+            end_time=$(date +%s.%N)
+            duration=$(echo "$end_time - $start_time" | bc -l)
+            success "Release file accessible in flat structure (${duration}s)"
+            results+=("release_file:success:$duration")
+            REPO_STRUCTURE="flat"
+            packages_url="${REPO_URL}/Packages"
+            release_found=true
+        fi
+    fi
+
+    if [[ "$release_found" == "false" ]]; then
+        error "Release file not accessible in either structure"
         results+=("release_file:failed:0")
     fi
 
-    # Test Packages file
-    local packages_url="${REPO_URL}/dists/stable/main/binary-all/Packages"
-    log "Testing Packages file: $packages_url"
-    start_time=$(date +%s.%N)
+    # Test Packages file using detected structure
+    if [[ "$release_found" == "true" ]]; then
+        log "Testing Packages file: $packages_url"
+        start_time=$(date +%s.%N)
 
-    if http_request "$packages_url" >/dev/null 2>&1; then
-        end_time=$(date +%s.%N)
-        duration=$(echo "$end_time - $start_time" | bc -l)
-        success "Packages file accessible (${duration}s)"
-        results+=("packages_file:success:$duration")
+        if http_request "$packages_url" >/dev/null 2>&1; then
+            end_time=$(date +%s.%N)
+            duration=$(echo "$end_time - $start_time" | bc -l)
+            success "Packages file accessible (${duration}s)"
+            results+=("packages_file:success:$duration")
+        else
+            error "Packages file not accessible"
+            results+=("packages_file:failed:0")
+        fi
     else
-        error "Packages file not accessible"
-        results+=("packages_file:failed:0")
+        error "Skipping Packages file test due to Release file failure"
+        results+=("packages_file:skipped:0")
     fi
 
     # Test GPG key
@@ -273,12 +298,19 @@ validate_metadata() {
     local release_file="$OUTPUT_DIR/Release"
     local packages_file="$OUTPUT_DIR/Packages"
 
-    # Download Release file
+    # Download Release file using detected structure from accessibility check
     log "Downloading Release file..."
-    if ! http_request "${REPO_URL}/dists/stable/Release" "$release_file"; then
-        error "Failed to download Release file"
+    if [[ "$REPO_STRUCTURE" == "standard" ]]; then
+        release_url="${REPO_URL}/dists/stable/Release"
+    else
+        release_url="${REPO_URL}/Release"
+    fi
+
+    if ! http_request "$release_url" "$release_file"; then
+        error "Failed to download Release file from $release_url"
         return 1
     fi
+    success "Downloaded Release file from $REPO_STRUCTURE structure"
 
     # Validate Release file structure
     log "Validating Release file structure..."
@@ -297,10 +329,16 @@ validate_metadata() {
         success "Release file structure valid"
     fi
 
-    # Download Packages file
+    # Download Packages file based on detected structure
     log "Downloading Packages file..."
-    if ! http_request "${REPO_URL}/dists/stable/main/binary-all/Packages" "$packages_file"; then
-        error "Failed to download Packages file"
+    if [[ "$REPO_STRUCTURE" == "standard" ]]; then
+        packages_url="${REPO_URL}/dists/stable/main/binary-all/Packages"
+    else
+        packages_url="${REPO_URL}/Packages"
+    fi
+
+    if ! http_request "$packages_url" "$packages_file"; then
+        error "Failed to download Packages file from $packages_url"
         return 1
     fi
 
@@ -370,10 +408,16 @@ verify_signatures() {
         return 1
     fi
 
-    # Download Release signature
+    # Download Release signature using detected structure
     log "Downloading Release signature..."
-    if ! http_request "${REPO_URL}/dists/stable/Release.gpg" "$release_gpg_file"; then
-        error "Failed to download Release signature"
+    if [[ "$REPO_STRUCTURE" == "standard" ]]; then
+        release_gpg_url="${REPO_URL}/dists/stable/Release.gpg"
+    else
+        release_gpg_url="${REPO_URL}/Release.gpg"
+    fi
+
+    if ! http_request "$release_gpg_url" "$release_gpg_file"; then
+        error "Failed to download Release signature from $release_gpg_url"
         return 1
     fi
 
