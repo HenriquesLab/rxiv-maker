@@ -40,7 +40,7 @@ print(f"Sum: {x + y}")
 print("Done")
 """
         result = self.executor.execute_block(code)
-        expected = "```\nSum: 30\nDone\n```"
+        expected = "\\begin{verbatim}\nSum: 30\nDone\n\\end{verbatim}"
         assert result == expected
 
     def test_inline_expression(self):
