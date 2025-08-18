@@ -197,12 +197,12 @@ class TestSystemLibsHandler:
             assert result == expected
 
     @patch("rxiv_maker.install.dependency_handlers.system_libs.HAS_PACKAGING", True)
-    @patch("rxiv_maker.install.dependency_handlers.system_libs.version")
-    def test_check_python_compatibility_with_packaging(self, mock_version, handler):
+    @patch("rxiv_maker.install.dependency_handlers.system_libs.parse_version")
+    def test_check_python_compatibility_with_packaging(self, mock_parse_version, handler):
         """Test check_python_compatibility using packaging library."""
         # Mock packaging version comparison
-        mock_version.parse.return_value = MagicMock()
-        mock_version.parse.return_value.__ge__ = MagicMock(return_value=True)
+        mock_parse_version.return_value = MagicMock()
+        mock_parse_version.return_value.__ge__ = MagicMock(return_value=True)
 
         with patch("sys.version_info") as mock_sys_version:
             mock_sys_version.major = 3
@@ -212,15 +212,15 @@ class TestSystemLibsHandler:
             result = handler.check_python_compatibility()
 
             assert result is True
-            mock_version.parse.assert_any_call("3.11.5")
-            mock_version.parse.assert_any_call("3.11.0")
+            mock_parse_version.assert_any_call("3.11.5")
+            mock_parse_version.assert_any_call("3.11.0")
 
     @patch("rxiv_maker.install.dependency_handlers.system_libs.HAS_PACKAGING", True)
-    @patch("rxiv_maker.install.dependency_handlers.system_libs.version")
-    def test_check_python_compatibility_packaging_exception_fallback(self, mock_version, handler):
+    @patch("rxiv_maker.install.dependency_handlers.system_libs.parse_version")
+    def test_check_python_compatibility_packaging_exception_fallback(self, mock_parse_version, handler):
         """Test fallback when packaging library raises exception."""
         # Mock packaging exception
-        mock_version.parse.side_effect = Exception("Version parsing error")
+        mock_parse_version.side_effect = Exception("Version parsing error")
 
         with patch("sys.version_info") as mock_sys_version:
             mock_sys_version.major = 3

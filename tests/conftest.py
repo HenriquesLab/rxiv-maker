@@ -1,12 +1,115 @@
 """Pytest configuration and fixtures for Rxiv-Maker tests."""
 
+import os
 import shutil
 import subprocess
 import tempfile
+import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, Optional
 
 import pytest
+
+# Import cleanup utilities if available
+try:
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).parent.parent / "nox_utils"))
+    from nox_utils import DiskSpaceMonitor, cleanup_manager
+
+    CLEANUP_AVAILABLE = True
+except ImportError:
+    CLEANUP_AVAILABLE = False
+
+# Global container registry for reuse detection
+_CONTAINER_REGISTRY: Dict[str, Dict[str, Any]] = {}
+
+
+def get_reusable_container(engine_name: str, image: str) -> Optional[str]:
+    """Check for existing reusable container."""
+    if not CLEANUP_AVAILABLE:
+        return None
+
+    try:
+        # Look for running containers with the same image
+        for engine in cleanup_manager.engines:
+            if engine.engine_type == engine_name:
+                containers = engine.get_containers(all_containers=False)  # Only running
+
+                for container in containers:
+                    # Check if container is suitable for reuse
+                    container_image = container.get("Image", "")
+                    container_id = container.get("ID", "")
+
+                    if image in container_image and container_id:
+                        # Check if container is healthy
+                        success, stdout, stderr = engine.run_command(["exec", container_id, "echo", "test"], timeout=5)
+                        if success:
+                            print(f"🔄 Reusing existing {engine_name} container: {container_id[:12]}")
+                            return container_id
+
+    except Exception as e:
+        print(f"⚠️  Container reuse check failed: {e}")
+
+    return None
+
+
+def register_container(container_id: str, engine_name: str, image: str, scope: str):
+    """Register container for cleanup tracking."""
+    _CONTAINER_REGISTRY[container_id] = {
+        "engine": engine_name,
+        "image": image,
+        "scope": scope,
+        "created_at": time.time(),
+        "workspace": str(Path.cwd()),
+    }
+
+
+def cleanup_container(container_id: str, engine_name: str, force: bool = False):
+    """Clean up a container with enhanced error handling."""
+    if not container_id:
+        return
+
+    try:
+        print(f"🧹 Cleaning up {engine_name} container: {container_id[:12]}")
+
+        # Try graceful stop first
+        subprocess.run([engine_name, "stop", container_id], capture_output=True, text=True, timeout=30)
+
+        # Force remove
+        subprocess.run([engine_name, "rm", "-f", container_id], capture_output=True, text=True, timeout=10)
+
+        # Remove from registry
+        if container_id in _CONTAINER_REGISTRY:
+            del _CONTAINER_REGISTRY[container_id]
+
+        print(f"✅ Container {container_id[:12]} cleaned up successfully")
+
+    except subprocess.TimeoutExpired:
+        print(f"⚠️  Timeout cleaning container {container_id[:12]} - forcing removal")
+        subprocess.run([engine_name, "kill", container_id], check=False)
+        subprocess.run([engine_name, "rm", "-f", container_id], check=False)
+    except Exception as e:
+        print(f"⚠️  Error cleaning container {container_id[:12]}: {e}")
+
+
+def pre_container_setup():
+    """Pre-container setup with disk space check and cleanup."""
+    if not CLEANUP_AVAILABLE:
+        return
+
+    try:
+        # Check disk space
+        if DiskSpaceMonitor.check_disk_space_critical(threshold_pct=85.0):
+            print("🚨 Low disk space detected - performing cleanup before container setup")
+            cleanup_manager.pre_test_cleanup(aggressive=True)
+
+        # Report disk usage
+        print(DiskSpaceMonitor.report_disk_usage(prefix="🧹"))
+
+    except Exception as e:
+        print(f"⚠️  Pre-container setup warning: {e}")
+
 
 # --- Helper Class for Engine Abstraction ---
 
@@ -101,8 +204,7 @@ def pytest_addoption(parser):
 @pytest.fixture(scope="session")
 def execution_engine(request):
     """
-    A session-scoped fixture that sets up and tears down the
-    specified execution engine (e.g., a Docker container).
+    Enhanced session-scoped fixture with container reuse and improved cleanup.
     """
     engine_name = request.config.getoption("--engine")
 
@@ -112,59 +214,90 @@ def execution_engine(request):
 
     # --- Containerized Engines (Docker, Podman, etc.) ---
     container_id = None
+    reused_container = False
+
     try:
         if engine_name in ["docker", "podman"]:
+            # Pre-setup cleanup and disk space check
+            pre_container_setup()
+
             # Use the existing rxiv-maker base image from Docker Hub
             docker_image = "henriqueslab/rxiv-maker-base:latest"
 
-            print(f"\n🐳 Pulling {engine_name} image: {docker_image}")
-            subprocess.run([engine_name, "pull", docker_image], check=True)
+            # Try to reuse existing container first
+            container_id = get_reusable_container(engine_name, docker_image)
+            if container_id:
+                reused_container = True
+                # Verify rxiv-maker is still installed
+                try:
+                    result = subprocess.run(
+                        [engine_name, "exec", container_id, "rxiv", "--version"],
+                        capture_output=True,
+                        text=True,
+                        timeout=10,
+                    )
+                    if result.returncode != 0:
+                        print("🔄 Reinstalling rxiv-maker in reused container...")
+                        subprocess.run(
+                            [engine_name, "exec", container_id, "pip", "install", "-e", "/workspace"], check=True
+                        )
+                except Exception:
+                    # Container not suitable, create new one
+                    container_id = None
+                    reused_container = False
 
-            # Run the container in detached mode with workspace mounted
-            result = subprocess.run(
-                [
-                    engine_name,
-                    "run",
-                    "-d",
-                    "--rm",
-                    "-v",
-                    f"{Path.cwd()}:/workspace",
-                    "-w",
-                    "/workspace",
-                    docker_image,
-                    "sleep",
-                    "infinity",
-                ],
-                check=True,
-                text=True,
-                capture_output=True,
-            )
-            container_id = result.stdout.strip()
-            print(f"\n🚀 Started {engine_name} container: {container_id[:12]}")
+            # Create new container if no reusable one found
+            if not container_id:
+                print(f"\n🐳 Pulling {engine_name} image: {docker_image}")
+                subprocess.run([engine_name, "pull", docker_image], check=True)
 
-            # Install rxiv-maker in the container
-            print("\n📦 Installing rxiv-maker in container...")
-            subprocess.run(
-                [
-                    engine_name,
-                    "exec",
-                    container_id,
-                    "pip",
-                    "install",
-                    "-e",
-                    "/workspace",
-                ],
-                check=True,
-            )
+                # Run the container in detached mode with workspace mounted
+                result = subprocess.run(
+                    [
+                        engine_name,
+                        "run",
+                        "-d",
+                        "--rm",
+                        "-v",
+                        f"{Path.cwd()}:/workspace",
+                        "-w",
+                        "/workspace",
+                        docker_image,
+                        "sleep",
+                        "infinity",
+                    ],
+                    check=True,
+                    text=True,
+                    capture_output=True,
+                )
+                container_id = result.stdout.strip()
+                print(f"\n🚀 Started {engine_name} container: {container_id[:12]}")
+
+                # Install rxiv-maker in the container
+                print("\n📦 Installing rxiv-maker in container...")
+                subprocess.run(
+                    [
+                        engine_name,
+                        "exec",
+                        container_id,
+                        "pip",
+                        "install",
+                        "-e",
+                        "/workspace",
+                    ],
+                    check=True,
+                )
+
+                # Register container for tracking
+                register_container(container_id, engine_name, docker_image, "session")
 
             yield ExecutionEngine(engine_name, container_id)
         else:
             pytest.fail(f"Unsupported engine: {engine_name}")
 
     finally:
-        if container_id:
-            print(f"\n🛑 Stopping {engine_name} container: {container_id[:12]}")
-            subprocess.run([engine_name, "stop", container_id], check=False, capture_output=True)
+        if container_id and not reused_container:
+            cleanup_container(container_id, engine_name)
 
 
 # --- Optimized Temporary Directory Fixtures ---
@@ -353,7 +486,6 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
 
 def copy_tree_optimized(src: Path, dst: Path, use_hardlinks: bool = True):
     """Enhanced optimized tree copying with better hardlink strategy."""
-    import os
 
     dst.mkdir(parents=True, exist_ok=True)
 
@@ -622,7 +754,7 @@ Missing proper structure.
 
 @pytest.fixture(scope="class")
 def class_execution_engine(request):
-    """Class-scoped execution engine for tests that can share container setup."""
+    """Enhanced class-scoped execution engine with container reuse and optimized cleanup."""
     engine_name = request.config.getoption("--engine")
 
     if engine_name == "local":
@@ -631,50 +763,84 @@ def class_execution_engine(request):
 
     # --- Containerized Engines (Docker, Podman, etc.) ---
     container_id = None
+    reused_container = False
+
     try:
         if engine_name in ["docker", "podman"]:
+            # Pre-setup cleanup and disk space check
+            pre_container_setup()
+
             # Use the existing rxiv-maker base image from Docker Hub
             docker_image = "henriqueslab/rxiv-maker-base:latest"
 
-            print(f"\n🐳 Pulling {engine_name} image: {docker_image}")
-            subprocess.run([engine_name, "pull", docker_image], check=True)
+            # Try to reuse existing container first
+            container_id = get_reusable_container(engine_name, docker_image)
+            if container_id:
+                reused_container = True
+                print(f"✅ Reusing container: {container_id[:12]}")
+                # Verify rxiv-maker is still installed
+                try:
+                    result = subprocess.run(
+                        [engine_name, "exec", container_id, "rxiv", "--version"],
+                        capture_output=True,
+                        text=True,
+                        timeout=10,
+                    )
+                    if result.returncode != 0:
+                        print("🔄 Reinstalling rxiv-maker in reused container...")
+                        subprocess.run(
+                            [engine_name, "exec", container_id, "pip", "install", "-e", "/workspace"], check=True
+                        )
+                        print("✅ rxiv-maker reinstalled successfully")
+                except Exception:
+                    # Container not suitable, create new one
+                    container_id = None
+                    reused_container = False
 
-            # Run the container in detached mode with workspace mounted
-            result = subprocess.run(
-                [
-                    engine_name,
-                    "run",
-                    "-d",
-                    "-v",
-                    f"{Path.cwd()}:/workspace",
-                    "--workdir",
-                    "/workspace",
-                    docker_image,
-                    "sleep",
-                    "3600",  # Keep container alive for 1 hour
-                ],
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-            container_id = result.stdout.strip()
-            print(f"✅ Container started: {container_id[:12]}")
+            # Create new container if no reusable one found
+            if not container_id:
+                print(f"\n🐳 Pulling {engine_name} image: {docker_image}")
+                subprocess.run([engine_name, "pull", docker_image], check=True)
 
-            # Install rxiv-maker in the container
-            print("📦 Installing rxiv-maker in container...")
-            subprocess.run(
-                [
-                    engine_name,
-                    "exec",
-                    container_id,
-                    "pip",
-                    "install",
-                    "-e",
-                    "/workspace",
-                ],
-                check=True,
-            )
-            print("✅ rxiv-maker installed successfully")
+                # Run the container in detached mode with workspace mounted
+                result = subprocess.run(
+                    [
+                        engine_name,
+                        "run",
+                        "-d",
+                        "-v",
+                        f"{Path.cwd()}:/workspace",
+                        "--workdir",
+                        "/workspace",
+                        docker_image,
+                        "sleep",
+                        "3600",  # Keep container alive for 1 hour
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                container_id = result.stdout.strip()
+                print(f"✅ Container started: {container_id[:12]}")
+
+                # Install rxiv-maker in the container
+                print("📦 Installing rxiv-maker in container...")
+                subprocess.run(
+                    [
+                        engine_name,
+                        "exec",
+                        container_id,
+                        "pip",
+                        "install",
+                        "-e",
+                        "/workspace",
+                    ],
+                    check=True,
+                )
+                print("✅ rxiv-maker installed successfully")
+
+                # Register container for tracking
+                register_container(container_id, engine_name, docker_image, "class")
 
             yield ExecutionEngine(engine_name, container_id)
 
@@ -682,25 +848,42 @@ def class_execution_engine(request):
             raise ValueError(f"Unsupported engine: {engine_name}")
 
     finally:
-        # Clean up container
-        if container_id:
-            print(f"\n🧹 Cleaning up container: {container_id[:12]}")
-            subprocess.run([engine_name, "rm", "-f", container_id], check=False)
+        # Clean up container only if we created it (not reused)
+        if container_id and not reused_container:
+            cleanup_container(container_id, engine_name)
 
 
 @pytest.fixture(autouse=True)
 def test_isolation():
-    """Ensure test isolation by cleaning up state."""
+    """Enhanced test isolation with container and disk space awareness."""
     # Pre-test setup
+    if CLEANUP_AVAILABLE:
+        try:
+            # Check for critical disk space before test
+            if DiskSpaceMonitor.check_disk_space_critical(threshold_pct=90.0):
+                print("🚨 Critical disk space - emergency cleanup before test")
+                cleanup_manager.emergency_cleanup()
+        except Exception as e:
+            print(f"⚠️  Pre-test disk check warning: {e}")
+
     yield
+
     # Post-test cleanup
     import gc
-    import os
 
     # Clear any lingering environment variables
     test_env_vars = [var for var in os.environ if var.startswith("RXIV_TEST_")]
     for var in test_env_vars:
         os.environ.pop(var, None)
+
+    # Container-aware cleanup
+    if CLEANUP_AVAILABLE:
+        try:
+            # Light cleanup if disk space getting low
+            if DiskSpaceMonitor.check_disk_space_critical(threshold_pct=85.0):
+                cleanup_manager.post_test_cleanup(aggressive=False)
+        except Exception:
+            pass  # Don't fail tests due to cleanup issues
 
     # Force garbage collection
     gc.collect()

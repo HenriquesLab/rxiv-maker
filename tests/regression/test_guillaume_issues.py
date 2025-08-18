@@ -994,6 +994,77 @@ This is the methods content.
 
         print("✅ All Guillaume's fixes are working together correctly")
 
+    def test_dedicated_page_figures_with_scaling(self):
+        """Test Guillaume's specific scaling issue with dedicated page figures.
+
+        Guillaume reported: tex_position="p" works with width=textwidth, but when using
+        other widths like 0.8 or 80%, the figure reverts to 2-column mode.
+        """
+        from rxiv_maker.converters.figure_processor import create_latex_figure_environment
+
+        # Test cases for Guillaume's scaling scenarios
+        test_cases = [
+            # Guillaume's working case
+            {
+                "width": "\\textwidth",
+                "tex_position": "p",
+                "expected_env": "figure",
+                "expected_pos": "[p]",
+                "description": "textwidth with position p should use regular figure",
+            },
+            # Guillaume's problematic cases that should now work
+            {
+                "width": "0.8",
+                "tex_position": "p",
+                "expected_env": "figure",
+                "expected_pos": "[p]",
+                "description": "0.8 width with position p should use regular figure for dedicated page",
+            },
+            {
+                "width": "80%",
+                "tex_position": "p",
+                "expected_env": "figure",
+                "expected_pos": "[p]",
+                "description": "80% width with position p should use regular figure for dedicated page",
+            },
+            {
+                "width": "0.9\\textwidth",
+                "tex_position": "p",
+                "expected_env": "figure",
+                "expected_pos": "[p]",
+                "description": "0.9textwidth with position p should use regular figure for dedicated page",
+            },
+            # Verify that 2-column still works when no explicit positioning
+            {
+                "width": "\\textwidth",
+                "expected_env": "figure*",
+                "expected_pos": "[tp]",
+                "description": "textwidth without explicit positioning should auto-detect 2-column",
+            },
+        ]
+
+        for case in test_cases:
+            attributes = {k: v for k, v in case.items() if k not in ["expected_env", "expected_pos", "description"]}
+
+            result = create_latex_figure_environment(
+                path="FIGURES/test_scaling.svg", caption="Test figure for scaling", attributes=attributes
+            )
+
+            expected_start = f"\\begin{{{case['expected_env']}}}{case['expected_pos']}"
+            assert expected_start in result, (
+                f"Failed for {case['description']}: "
+                f"expected '{expected_start}' in result. "
+                f"Attributes: {attributes}. "
+                f"Got: {result[:200]}..."
+            )
+
+            # Verify it's not using the wrong environment
+            wrong_env = "figure*" if case["expected_env"] == "figure" else "figure"
+            wrong_start = f"\\begin{{{wrong_env}}}"
+            assert wrong_start not in result, (
+                f"Failed for {case['description']}: should NOT use {wrong_env} environment. Attributes: {attributes}"
+            )
+
     def test_end_to_end_tex_generation_with_guillaume_fixes(self):
         """End-to-end test that generates actual .tex file to verify Guillaume's fixes work in practice."""
         import os
