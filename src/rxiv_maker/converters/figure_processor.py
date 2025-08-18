@@ -202,8 +202,9 @@ def create_latex_figure_environment(
         attributes.get("span") == "2col" or attributes.get("twocolumn") == "true" or attributes.get("twocolumn") is True
     )
 
-    # Auto-detect 2-column for full-width figures
-    if not is_twocolumn and width == "\\textwidth":
+    # Auto-detect 2-column for full-width figures, but respect explicit positioning preferences
+    # If user specifies tex_position="p" (dedicated page), don't force 2-column layout
+    if not is_twocolumn and width == "\\textwidth" and position != "p":
         is_twocolumn = True
 
     # Only adjust positioning for two-column spanning figures that don't have explicit positioning
