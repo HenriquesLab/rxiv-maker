@@ -285,9 +285,19 @@ post_build() {
 
     # Copy packages to output directory
     log "Copying packages to output directory: $OUTPUT_DIR"
+
+    # Ensure output directory exists and is a directory
+    if [[ -e "$OUTPUT_DIR" && ! -d "$OUTPUT_DIR" ]]; then
+        error "Output path exists but is not a directory: $OUTPUT_DIR"
+        exit 1
+    fi
+
+    mkdir -p "$OUTPUT_DIR"
+
     for deb_file in "${deb_files[@]}"; do
         local filename=$(basename "$deb_file")
-        cp "$deb_file" "$OUTPUT_DIR/"
+        verbose "Copying $deb_file to $OUTPUT_DIR/$filename"
+        cp "$deb_file" "$OUTPUT_DIR/$filename"
         success "Package: $OUTPUT_DIR/$filename"
     done
 
