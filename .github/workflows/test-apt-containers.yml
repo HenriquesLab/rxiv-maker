@@ -271,7 +271,7 @@ jobs:
           podman info
 
       - name: Download test package (if available)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         if: needs.build-test-package.result == 'success'
         with:
           name: test-package
@@ -341,7 +341,7 @@ jobs:
           podman info
 
       - name: Download test package (if available)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         if: needs.build-test-package.result == 'success'
         with:
           name: test-package
@@ -417,7 +417,7 @@ jobs:
           pip install pytest pytest-cov pytest-timeout
 
       - name: Download test package (if available)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         if: needs.build-test-package.result == 'success'
         with:
           name: test-package
@@ -497,7 +497,7 @@ jobs:
         if: needs.validate-environment.result == 'success'
 
       - name: Download all test artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         if: needs.validate-environment.result == 'success'
         with:
           path: all-test-results/
