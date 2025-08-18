@@ -1,0 +1,23 @@
+name: Docker Build Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths:
+      - '.github/workflows/docker-test.yml'
+
+jobs:
+  test-docker:
+    name: Test Docker Workflow
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test basic functionality
+        run: |
+          echo "Docker test workflow working"
+          echo "Event: ${{ github.event_name }}"
+          echo "Branch: ${{ github.ref }}"
