@@ -38,6 +38,11 @@ TIMEOUT="30"
 USER_AGENT="rxiv-maker-repo-validator/1.0"
 REPO_STRUCTURE=""
 
+# Global variables for validated URLs (set during accessibility check)
+VALIDATED_RELEASE_URL=""
+VALIDATED_PACKAGES_URL=""
+VALIDATED_RELEASE_GPG_URL=""
+
 show_help() {
     cat << EOF
 Usage: $0 [OPTIONS]
@@ -212,38 +217,115 @@ check_accessibility() {
         success "Repository root accessible (${duration}s)"
         results+=("repository_root:success:$duration")
     else
-        error "Repository root not accessible"
-        results+=("repository_root:failed:0")
-        return 1
+        warn "Repository root not accessible (expected for GitHub raw URLs)"
+        results+=("repository_root:warning:0")
+        # Don't return early - GitHub raw URLs don't serve directories
     fi
 
     # Test Release file - try both standard and flat structures
+    # For mixed repositories, we need to check which structure has the complete set
     local release_url_standard="${REPO_URL}/dists/stable/Release"
     local release_url_flat="${REPO_URL}/Release"
+    # Try multiple architecture directories for packages
+    local packages_url_standard_all="${REPO_URL}/dists/stable/main/binary-all/Packages"
+    local packages_url_standard_amd64="${REPO_URL}/dists/stable/main/binary-amd64/Packages"
+    local packages_url_standard_arm64="${REPO_URL}/dists/stable/main/binary-arm64/Packages"
+    local packages_url_flat="${REPO_URL}/Packages"
     local release_found=false
     local packages_url
+    local release_url
 
-    log "Testing Release file (standard structure): $release_url_standard"
+    # Test for complete standard structure (both Release and Packages)
+    log "Testing complete standard structure..."
     start_time=$(date +%s.%N)
+    local packages_url_standard=""
+
+    # Try different architecture directories
     if http_request "$release_url_standard" >/dev/null 2>&1; then
-        end_time=$(date +%s.%N)
-        duration=$(echo "$end_time - $start_time" | bc -l)
-        success "Release file accessible in standard structure (${duration}s)"
-        results+=("release_file:success:$duration")
-        REPO_STRUCTURE="standard"
-        packages_url="${REPO_URL}/dists/stable/main/binary-all/Packages"
-        release_found=true
-    else
-        log "Testing Release file (flat structure): $release_url_flat"
-        start_time=$(date +%s.%N)
-        if http_request "$release_url_flat" >/dev/null 2>&1; then
+        # Release exists, now find the right Packages file
+        if http_request "$packages_url_standard_all" >/dev/null 2>&1; then
+            packages_url_standard="$packages_url_standard_all"
+        elif http_request "$packages_url_standard_amd64" >/dev/null 2>&1; then
+            packages_url_standard="$packages_url_standard_amd64"
+        elif http_request "$packages_url_standard_arm64" >/dev/null 2>&1; then
+            packages_url_standard="$packages_url_standard_arm64"
+        fi
+
+        if [[ -n "$packages_url_standard" ]]; then
             end_time=$(date +%s.%N)
             duration=$(echo "$end_time - $start_time" | bc -l)
-            success "Release file accessible in flat structure (${duration}s)"
+            success "Complete standard structure found (${duration}s)"
+            results+=("release_file:success:$duration")
+            REPO_STRUCTURE="standard"
+            packages_url="$packages_url_standard"
+            release_url="$release_url_standard"
+            release_found=true
+        fi
+    fi
+
+    if [[ "$release_found" == "false" ]]; then
+        # Test for complete flat structure (both Release and Packages)
+        log "Testing complete flat structure..."
+        start_time=$(date +%s.%N)
+        if http_request "$release_url_flat" >/dev/null 2>&1 && http_request "$packages_url_flat" >/dev/null 2>&1; then
+            end_time=$(date +%s.%N)
+            duration=$(echo "$end_time - $start_time" | bc -l)
+            success "Complete flat structure found (${duration}s)"
             results+=("release_file:success:$duration")
             REPO_STRUCTURE="flat"
-            packages_url="${REPO_URL}/Packages"
+            packages_url="$packages_url_flat"
+            release_url="$release_url_flat"
             release_found=true
+        else
+            # If neither complete structure works, try mixed approaches
+            log "Testing mixed structures..."
+            if http_request "$release_url_standard" >/dev/null 2>&1; then
+                warn "Found Release in standard structure but checking for Packages elsewhere..."
+                if http_request "$packages_url_flat" >/dev/null 2>&1; then
+                    success "Mixed structure: Release in standard, Packages in flat"
+                    results+=("release_file:success:mixed")
+                    REPO_STRUCTURE="mixed-standard-release"
+                    packages_url="$packages_url_flat"
+                    release_url="$release_url_standard"
+                    release_found=true
+                fi
+            # Also try mixed with standard architectures
+            elif http_request "$packages_url_standard_amd64" >/dev/null 2>&1; then
+                warn "Found Packages in standard/amd64 structure but checking for Release elsewhere..."
+                if http_request "$release_url_flat" >/dev/null 2>&1; then
+                    success "Mixed structure: Release in flat, Packages in standard/amd64"
+                    results+=("release_file:success:mixed")
+                    REPO_STRUCTURE="mixed-flat-release"
+                    packages_url="$packages_url_standard_amd64"
+                    release_url="$release_url_flat"
+                    release_found=true
+                fi
+            elif http_request "$release_url_flat" >/dev/null 2>&1; then
+                warn "Found Release in flat structure but checking for Packages elsewhere..."
+                # Try different standard architecture directories
+                if http_request "$packages_url_standard_all" >/dev/null 2>&1; then
+                    success "Mixed structure: Release in flat, Packages in standard/all"
+                    results+=("release_file:success:mixed")
+                    REPO_STRUCTURE="mixed-flat-release"
+                    packages_url="$packages_url_standard_all"
+                    release_url="$release_url_flat"
+                    release_found=true
+                elif http_request "$packages_url_standard_amd64" >/dev/null 2>&1; then
+                    success "Mixed structure: Release in flat, Packages in standard/amd64"
+                    results+=("release_file:success:mixed")
+                    REPO_STRUCTURE="mixed-flat-release"
+                    packages_url="$packages_url_standard_amd64"
+                    release_url="$release_url_flat"
+                    release_found=true
+                elif http_request "$packages_url_standard_arm64" >/dev/null 2>&1; then
+                    success "Mixed structure: Release in flat, Packages in standard/arm64"
+                    results+=("release_file:success:mixed")
+                    REPO_STRUCTURE="mixed-flat-release"
+                    packages_url="$packages_url_standard_arm64"
+                    release_url="$release_url_flat"
+                    release_found=true
+                fi
+            fi
         fi
     fi
 
@@ -285,6 +367,24 @@ check_accessibility() {
         results+=("gpg_key:failed:0")
     fi
 
+    # Save validated URLs globally for use in other functions
+    if [[ "$release_found" == "true" ]]; then
+        VALIDATED_RELEASE_URL="$release_url"
+        VALIDATED_PACKAGES_URL="$packages_url"
+
+        # Set GPG signature URL based on release URL structure
+        if [[ "$release_url" == *"/dists/stable/Release" ]]; then
+            VALIDATED_RELEASE_GPG_URL="${REPO_URL}/dists/stable/Release.gpg"
+        else
+            VALIDATED_RELEASE_GPG_URL="${REPO_URL}/Release.gpg"
+        fi
+
+        debug "Validated URLs set:"
+        debug "  Release: $VALIDATED_RELEASE_URL"
+        debug "  Packages: $VALIDATED_PACKAGES_URL"
+        debug "  Release GPG: $VALIDATED_RELEASE_GPG_URL"
+    fi
+
     # Save accessibility results
     printf '%s\n' "${results[@]}" > "$OUTPUT_DIR/accessibility-results.txt"
 
@@ -298,19 +398,18 @@ validate_metadata() {
     local release_file="$OUTPUT_DIR/Release"
     local packages_file="$OUTPUT_DIR/Packages"
 
-    # Download Release file using detected structure from accessibility check
+    # Download Release file using validated URL from accessibility check
     log "Downloading Release file..."
-    if [[ "$REPO_STRUCTURE" == "standard" ]]; then
-        release_url="${REPO_URL}/dists/stable/Release"
-    else
-        release_url="${REPO_URL}/Release"
-    fi
-
-    if ! http_request "$release_url" "$release_file"; then
-        error "Failed to download Release file from $release_url"
+    if [[ -z "$VALIDATED_RELEASE_URL" ]]; then
+        error "No validated Release URL available. Run accessibility check first."
         return 1
     fi
-    success "Downloaded Release file from $REPO_STRUCTURE structure"
+
+    if ! http_request "$VALIDATED_RELEASE_URL" "$release_file"; then
+        error "Failed to download Release file from $VALIDATED_RELEASE_URL"
+        return 1
+    fi
+    success "Downloaded Release file from validated URL ($REPO_STRUCTURE structure)"
 
     # Validate Release file structure
     log "Validating Release file structure..."
@@ -329,18 +428,18 @@ validate_metadata() {
         success "Release file structure valid"
     fi
 
-    # Download Packages file based on detected structure
+    # Download Packages file using validated URL from accessibility check
     log "Downloading Packages file..."
-    if [[ "$REPO_STRUCTURE" == "standard" ]]; then
-        packages_url="${REPO_URL}/dists/stable/main/binary-all/Packages"
-    else
-        packages_url="${REPO_URL}/Packages"
-    fi
-
-    if ! http_request "$packages_url" "$packages_file"; then
-        error "Failed to download Packages file from $packages_url"
+    if [[ -z "$VALIDATED_PACKAGES_URL" ]]; then
+        error "No validated Packages URL available. Run accessibility check first."
         return 1
     fi
+
+    if ! http_request "$VALIDATED_PACKAGES_URL" "$packages_file"; then
+        error "Failed to download Packages file from $VALIDATED_PACKAGES_URL"
+        return 1
+    fi
+    success "Downloaded Packages file from validated URL ($REPO_STRUCTURE structure)"
 
     # Validate Packages file structure
     log "Validating Packages file structure..."
@@ -408,18 +507,18 @@ verify_signatures() {
         return 1
     fi
 
-    # Download Release signature using detected structure
+    # Download Release signature using validated URL from accessibility check
     log "Downloading Release signature..."
-    if [[ "$REPO_STRUCTURE" == "standard" ]]; then
-        release_gpg_url="${REPO_URL}/dists/stable/Release.gpg"
-    else
-        release_gpg_url="${REPO_URL}/Release.gpg"
-    fi
-
-    if ! http_request "$release_gpg_url" "$release_gpg_file"; then
-        error "Failed to download Release signature from $release_gpg_url"
+    if [[ -z "$VALIDATED_RELEASE_GPG_URL" ]]; then
+        error "No validated Release GPG URL available. Run accessibility check first."
         return 1
     fi
+
+    if ! http_request "$VALIDATED_RELEASE_GPG_URL" "$release_gpg_file"; then
+        error "Failed to download Release signature from $VALIDATED_RELEASE_GPG_URL"
+        return 1
+    fi
+    success "Downloaded Release signature from validated URL ($REPO_STRUCTURE structure)"
 
     # Create temporary GPG home directory
     local gpg_home="$OUTPUT_DIR/gnupg"
@@ -471,11 +570,16 @@ validate_packages() {
         return 1
     fi
 
-    # Extract package download URL and checksums
+    # Extract package information more reliably
     local package_filename package_size package_sha256 package_url
-    package_filename=$(grep "^Filename:" "$packages_file" | grep rxiv-maker | cut -d' ' -f2)
-    package_size=$(grep "^Size:" "$packages_file" | grep -A10 -B10 rxiv-maker | grep "^Size:" | cut -d' ' -f2)
-    package_sha256=$(grep "^SHA256:" "$packages_file" | grep -A10 -B10 rxiv-maker | grep "^SHA256:" | cut -d' ' -f2)
+
+    # Extract package information from the rxiv-maker block
+    local package_info_temp="$OUTPUT_DIR/rxiv-maker-temp-info.txt"
+    sed -n '/^Package: rxiv-maker$/,/^$/p' "$packages_file" > "$package_info_temp"
+
+    package_filename=$(grep "^Filename:" "$package_info_temp" | cut -d' ' -f2)
+    package_size=$(grep "^Size:" "$package_info_temp" | cut -d' ' -f2)
+    package_sha256=$(grep "^SHA256:" "$package_info_temp" | cut -d' ' -f2)
 
     if [[ -z "$package_filename" ]]; then
         error "Package filename not found"
@@ -588,7 +692,7 @@ validate_security() {
 
             local key_algorithm key_size
             key_algorithm=$(echo "$key_info" | grep "^pub:" | cut -d: -f4)
-            key_size=$(echo "$key_info" | grep "^pub:" | cut -d3 -f1)
+            key_size=$(echo "$key_info" | grep "^pub:" | cut -d: -f3)
 
             if [[ "$key_size" -ge 2048 ]]; then
                 success "GPG key size adequate: $key_size bits"
