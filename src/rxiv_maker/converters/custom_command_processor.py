@@ -1,4 +1,4 @@
-"""Custom markdown command processor for rxiv-maker.
+r"""Custom markdown command processor for rxiv-maker.
 
 This module handles custom markdown commands that get converted to LaTeX.
 It provides an extensible framework for adding new commands while maintaining
@@ -58,7 +58,7 @@ def process_custom_commands(text: MarkdownContent) -> LatexContent:
 
 
 def _process_blindtext_commands(text: MarkdownContent) -> LatexContent:
-    """Process blindtext commands.
+    r"""Process blindtext commands.
 
     Converts:
     - {{blindtext}} → \\blindtext
@@ -148,12 +148,17 @@ def _process_python_commands(text: MarkdownContent) -> LatexContent:
                     # Found matching braces
                     code = text[start : j - 2]  # Exclude the }}
 
-                    # Create a mock match object
-                    class MockMatch:
-                        def group(self, n):
-                            return code.strip()
+                    # Create a mock match object with captured code
+                    captured_code = code.strip()
 
-                    replacement = process_block_python(MockMatch())
+                    def create_mock_match(captured_code_param):
+                        class MockMatch:
+                            def group(self, n):
+                                return captured_code_param
+
+                        return MockMatch()
+
+                    replacement = process_block_python(create_mock_match(captured_code))
                     result.append(replacement)
                     i = j
                 else:

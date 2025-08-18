@@ -553,9 +553,45 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
         text = text.replace(placeholder, original_command)
 
     # Handle special characters that can cause LaTeX issues
-    # Escape caret character outside of math mode (but allow math expressions like $2^8$)
-    # Only escape isolated carets that aren't already in math mode
-    text = re.sub(r"(?<!\$)(?<!\\\$)\^(?!\^)(?![^$]*\$)", r"\\textasciicircum{}", text)
+    # Escape caret character outside of math mode and texttt blocks
+    def escape_carets_outside_protected_contexts(text):
+        """Escape carets but not inside LaTeX commands or math mode."""
+        # Combine all protection patterns into a single regex
+        combined_pattern = (
+            r"(\\texttt\{[^}]*\})|"  # \texttt{...}
+            r"(\\text\{[^}]*\})|"  # \text{...}
+            r"(\$[^$]*\$)|"  # Inline math $...$
+            r"(\$\$.*?\$\$)|"  # Display math $$...$$
+            r"(\\begin\{equation\}.*?\\end\{equation\})"  # equation environments
+        )
+
+        # Split by the combined pattern - protected parts will be in groups
+        parts = re.split(combined_pattern, text, flags=re.DOTALL)
+        result = []
+
+        for part in parts:
+            if part is None or part == "":
+                continue
+
+            # Check if this part matches any of our protection patterns
+            is_protected = (
+                part.startswith("\\texttt{")
+                or part.startswith("\\text{")
+                or (part.startswith("$") and not part.startswith("$$"))
+                or part.startswith("$$")
+                or part.startswith("\\begin{equation}")
+            )
+
+            if not is_protected:
+                # Only escape carets in unprotected parts
+                # Only escape isolated carets that aren't already in math mode
+                part = re.sub(r"(?<!\$)(?<!\\\$)\^(?!\^)(?![^$]*\$)", r"\\textasciicircum{}", part)
+
+            result.append(part)
+
+        return "".join(result)
+
+    text = escape_carets_outside_protected_contexts(text)
 
     # Handle Unicode arrows that can cause LaTeX math mode issues
     # These need to be converted to proper LaTeX math commands
