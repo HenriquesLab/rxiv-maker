@@ -264,8 +264,13 @@ class PythonExecutor:
             Dictionary with execution results
         """
         # Create a script that properly handles context persistence
-        context_json = json.dumps({k: v for k, v in context.items()
-                                 if k != "__builtins__" and isinstance(v, (int, float, str, bool, list, dict))})
+        context_json = json.dumps(
+            {
+                k: v
+                for k, v in context.items()
+                if k != "__builtins__" and isinstance(v, (int, float, str, bool, list, dict))
+            }
+        )
 
         script_content = f"""
 import sys
