@@ -114,6 +114,14 @@ jobs:
             type=semver,pattern={{version}}
             type=sha,prefix=sha-
 
+      - name: Prepare platform name for file paths
+        id: platform
+        run: |
+          # Convert platform name to safe filename (replace / with -)
+          SAFE_PLATFORM=$(echo "${{ matrix.platform }}" | sed 's/\//-/g')
+          echo "safe_name=$SAFE_PLATFORM" >> $GITHUB_OUTPUT
+          echo "Platform: ${{ matrix.platform }} -> Safe name: $SAFE_PLATFORM"
+
       - name: Build platform-specific image
         uses: docker/build-push-action@v6
         with:
@@ -125,13 +133,13 @@ jobs:
           push: false
           cache-from: type=gha,scope=build-${{ matrix.platform }}
           cache-to: type=gha,scope=build-${{ matrix.platform }},mode=max
-          outputs: type=docker,dest=/tmp/image-${{ matrix.platform }}.tar
+          outputs: type=docker,dest=/tmp/image-${{ steps.platform.outputs.safe_name }}.tar
 
       - name: Upload image artifact
         uses: actions/upload-artifact@v4
         with:
-          name: docker-image-${{ strategy.job-index }}
-          path: /tmp/image-${{ matrix.platform }}.tar
+          name: docker-image-${{ steps.platform.outputs.safe_name }}
+          path: /tmp/image-${{ steps.platform.outputs.safe_name }}.tar
           retention-days: 1
 
   # Test built images
