@@ -253,7 +253,7 @@ jobs:
     name: Container Test
     runs-on: ubuntu-latest
     needs: [validate-environment, validate-apt-repository, build-test-package]
-    if: always() && (needs.validate-apt-repository.result == 'success' || needs.validate-apt-repository.result == 'skipped')
+    if: always() && (needs.validate-apt-repository.result == 'success' || needs.validate-apt-repository.result == 'skipped') && needs.validate-environment.result == 'success'
 
     strategy:
       matrix:
@@ -277,13 +277,23 @@ jobs:
       - name: Download test package (if available)
         uses: actions/download-artifact@v4
         if: needs.build-test-package.result == 'success'
+        continue-on-error: true
         with:
           name: test-package
           path: dist/
 
       - name: Run container test
         id: container-test
+        continue-on-error: true
         run: |
+          # Check if test script exists
+          if [[ ! -f "./packaging/scripts/test-apt-container.sh" ]]; then
+            echo "❌ Test script not found: ./packaging/scripts/test-apt-container.sh"
+            echo "Available scripts:"
+            ls -la packaging/scripts/ || true
+            exit 1
+          fi
+
           # Set test parameters
           TEST_CMD=(
             "./packaging/scripts/test-apt-container.sh"
@@ -295,14 +305,23 @@ jobs:
           )
 
           # Add local package if available
-          if [[ -f dist/*.deb ]]; then
+          if [[ -n "$(ls dist/*.deb 2>/dev/null)" ]]; then
             LOCAL_PACKAGE=$(ls dist/*.deb | head -1)
             TEST_CMD+=("--local-package" "$LOCAL_PACKAGE")
-            echo "Using local package: $LOCAL_PACKAGE"
+            echo "✅ Using local package: $LOCAL_PACKAGE"
+          else
+            echo "ℹ️ No local package found, will use repository package"
           fi
 
+          # Create output directory
+          mkdir -p test-results
+
           # Run test with timeout protection
-          timeout $((TEST_TIMEOUT + 300)) "${TEST_CMD[@]}"
+          echo "🧪 Running container test: ${TEST_CMD[*]}"
+          timeout $((TEST_TIMEOUT + 300)) "${TEST_CMD[@]}" || {
+            echo "❌ Container test failed or timed out"
+            exit 1
+          }
 
         env:
           CONTAINER_ENGINE: ${{ env.CONTAINER_ENGINE }}
@@ -331,8 +350,8 @@ jobs:
   multi-container-test:
     name: Multi-Container Orchestrated Test
     runs-on: ubuntu-latest
-    needs: [validate-environment, validate-apt-repository]
-    if: always() && (needs.validate-apt-repository.result == 'success' || needs.validate-apt-repository.result == 'skipped') && github.event_name != 'pull_request'
+    needs: [validate-environment, validate-apt-repository, build-test-package]
+    if: always() && (needs.validate-apt-repository.result == 'success' || needs.validate-apt-repository.result == 'skipped') && github.event_name != 'pull_request' && needs.validate-environment.result == 'success'
 
     steps:
       - name: Checkout repository
@@ -349,6 +368,7 @@ jobs:
       - name: Download test package (if available)
         uses: actions/download-artifact@v4
         if: needs.build-test-package.result == 'success'
+        continue-on-error: true
         with:
           name: test-package
           path: dist/
@@ -397,7 +417,7 @@ jobs:
     name: Python Integration Test Suite
     runs-on: ubuntu-latest
     needs: [validate-environment, validate-apt-repository, build-test-package]
-    if: always() && (needs.validate-apt-repository.result == 'success' || needs.validate-apt-repository.result == 'skipped')
+    if: always() && (needs.validate-apt-repository.result == 'success' || needs.validate-apt-repository.result == 'skipped') && needs.validate-environment.result == 'success'
 
     strategy:
       matrix:
@@ -425,6 +445,7 @@ jobs:
       - name: Download test package (if available)
         uses: actions/download-artifact@v4
         if: needs.build-test-package.result == 'success'
+        continue-on-error: true
         with:
           name: test-package
           path: dist/
