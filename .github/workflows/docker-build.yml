@@ -193,7 +193,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: ${{ github.event.inputs.platforms && fromJson(format('["{0}"]', github.event.inputs.platforms)) || fromJson('["linux/amd64", "linux/arm64"]') }}
+        platform:
+          - linux/amd64
+          - linux/arm64
 
     steps:
       - name: Checkout code
@@ -223,7 +225,7 @@ jobs:
       - name: Upload image artifact
         uses: actions/upload-artifact@v4
         with:
-          name: docker-image-${{ matrix.platform }}
+          name: docker-image-${{ replace(matrix.platform, '/', '-') }}
           path: /tmp/image-${{ matrix.platform }}.tar
           retention-days: 1
 
@@ -261,13 +263,14 @@ jobs:
         with:
           pattern: docker-image-*
           merge-multiple: true
+          path: artifacts
 
       - name: Load and test images
         env:
           CONTAINER_ENGINE: ${{ matrix.engine }}
         run: |
           echo "Loading built images..."
-          for image_file in docker-image-*.tar; do
+          find artifacts -name "*.tar" -type f | while read image_file; do
             if [ -f "$image_file" ]; then
               echo "Loading $image_file with $CONTAINER_ENGINE..."
               if [ "$CONTAINER_ENGINE" == "podman" ]; then
