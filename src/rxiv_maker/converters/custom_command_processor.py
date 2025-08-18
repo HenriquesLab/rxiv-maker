@@ -58,11 +58,7 @@ def process_custom_commands(text: MarkdownContent) -> LatexContent:
 
 
 def _process_blindtext_commands(text: MarkdownContent) -> LatexContent:
-    r"""Process blindtext commands.
-
-    Converts:
-    - {{blindtext}} → \\blindtext
-    - {{Blindtext}} → \\Blindtext
+    r"""Process blindtext commands converting {{blindtext}} → \\blindtext and {{Blindtext}} → \\Blindtext.
 
     Args:
         text: Markdown content with blindtext commands
@@ -151,14 +147,14 @@ def _process_python_commands(text: MarkdownContent) -> LatexContent:
                     # Create a mock match object with captured code
                     captured_code = code.strip()
 
-                    def create_mock_match(captured_code_param):
-                        class MockMatch:
-                            def group(self, n):
-                                return captured_code_param
+                    class MockMatch:
+                        def __init__(self, captured_code_param):
+                            self.captured_code = captured_code_param
 
-                        return MockMatch()
+                        def group(self, n):
+                            return self.captured_code
 
-                    replacement = process_block_python(create_mock_match(captured_code))
+                    replacement = process_block_python(MockMatch(captured_code))
                     result.append(replacement)
                     i = j
                 else:
