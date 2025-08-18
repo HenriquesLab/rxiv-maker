@@ -201,7 +201,14 @@ prepare_build() {
 
     # Copy source files
     log "Copying source files..."
-    cp -r "$PROJECT_ROOT" "$src_dir"
+    mkdir -p "$src_dir"
+    # Use rsync to avoid the recursive copy issue
+    if command -v rsync >/dev/null 2>&1; then
+        rsync -a --exclude='build/' "$PROJECT_ROOT/" "$src_dir/"
+    else
+        # Fallback: copy with tar to preserve all files including hidden ones
+        (cd "$PROJECT_ROOT" && tar --exclude='./build' -cf - .) | (cd "$src_dir" && tar -xf -)
+    fi
 
     # Copy debian packaging files to source root
     log "Setting up debian packaging..."
