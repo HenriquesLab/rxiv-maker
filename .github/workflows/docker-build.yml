@@ -208,7 +208,7 @@ jobs:
           platforms: ${{ matrix.platform }}
 
       - name: Build platform-specific image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: src/docker/images/base/Dockerfile
@@ -221,7 +221,7 @@ jobs:
           outputs: type=docker,dest=/tmp/image-${{ matrix.platform }}.tar
 
       - name: Upload image artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: docker-image-${{ matrix.platform }}
           path: /tmp/image-${{ matrix.platform }}.tar
@@ -257,7 +257,7 @@ jobs:
           fi
 
       - name: Download image artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v4
         with:
           pattern: docker-image-*
           merge-multiple: true
@@ -354,7 +354,7 @@ jobs:
           password: ${{ secrets.DOCKER_PUSH }}
 
       - name: Build and push multi-platform image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: src/docker/images/base/Dockerfile

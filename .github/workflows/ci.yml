@@ -101,7 +101,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --frozen
+          uv sync --frozen --extra dev
 
       - name: Run linting (Ubuntu only)
         if: matrix.os == 'ubuntu-latest'
@@ -157,7 +157,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --frozen
+          uv sync --frozen --extra dev
 
       - name: Run integration tests
         run: |
@@ -189,7 +189,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --frozen
+          uv sync --frozen --extra dev
 
       - name: Run build validation
         run: |
@@ -221,7 +221,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --frozen
+          uv sync --frozen --extra dev
 
       - name: Run full test suite with coverage
         run: |
@@ -275,7 +275,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --frozen
+          uv sync --frozen --extra dev
 
       - name: Run container engine tests
         env:
@@ -318,7 +318,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --frozen
+          uv sync --frozen --extra dev
 
       - name: Run system tests
         run: |
@@ -351,7 +351,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --frozen
+          uv sync --frozen --extra dev
 
       - name: Run security checks
         run: |
@@ -384,7 +384,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --frozen
+          uv sync --frozen --extra dev
 
       - name: Generate and validate documentation
         run: |
