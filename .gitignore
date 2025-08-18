@@ -375,3 +375,7 @@ backup/
 */output/.log
 output/
 build/
+
+# APT repository validation results (temporary files)
+validation-results/
+packaging/validation-results/
