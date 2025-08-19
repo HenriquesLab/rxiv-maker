@@ -60,7 +60,7 @@ class APTIntegrationValidator:
         try:
             with open(workflow_file, "r") as f:
                 workflow_content = f.read()
-                workflow_data = yaml.safe_load(f)
+            workflow_data = yaml.safe_load(workflow_content)
         except Exception as e:
             self.log_error(f"Failed to read workflow file: {e}")
             return False
