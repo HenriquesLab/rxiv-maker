@@ -203,9 +203,12 @@ def create_latex_figure_environment(
         attributes.get("span") == "2col" or attributes.get("twocolumn") == "true" or attributes.get("twocolumn") is True
     )
 
-    # Auto-detect 2-column for full-width figures, but respect explicit positioning preferences
-    # If user specifies tex_position="p" (dedicated page), don't force 2-column layout
-    if not is_twocolumn and width == "\\textwidth" and position != "p":
+    # Auto-detect 2-column for full-width figures to prevent overlay in two-column layouts
+    if not is_twocolumn and width == "\\textwidth":
+        is_twocolumn = True
+
+    # For ALL dedicated page figures, use figure* to allow full page width usage
+    if not is_twocolumn and position == "p":
         is_twocolumn = True
 
     # Only adjust positioning for two-column spanning figures that don't have explicit positioning
@@ -278,11 +281,11 @@ def create_latex_figure_environment(
 
     latex_figure += f"\n\\end{{{figure_env}}}"
 
-    # Add layout control for dedicated page figures to ensure full page width usage
+    # Handle dedicated page figures with special layout requirements
     if position == "p":
-        # For dedicated page figures, temporarily switch to single-column layout
-        # This ensures \linewidth and \textwidth refer to full page width, not column width
-        latex_figure = f"\\onecolumn\n{latex_figure}\n\\twocolumn"
+        # For ALL dedicated page figures (regardless of width):
+        # - \clearpage commands ensure the figure appears alone on a dedicated page
+        latex_figure = f"\\clearpage\n{latex_figure}\n\\clearpage"
 
     return latex_figure
 

@@ -892,12 +892,12 @@ This is the methods content.
             attributes={"width": "\\textwidth", "tex_position": "p", "id": "fig:workflow"},
         )
 
-        # Should use regular figure environment for dedicated page, NOT figure*
-        assert "\\begin{figure}[p]" in latex_result, (
-            "Dedicated page figures should use regular figure environment, not figure*"
+        # Should use figure* environment for dedicated page to allow full page width access
+        assert "\\begin{figure*}[p]" in latex_result, (
+            "Dedicated page figures should use figure*[p] to allow full page width in two-column layouts"
         )
-        assert "\\begin{figure*}" not in latex_result, (
-            "Should NOT use figure* when user explicitly wants dedicated page"
+        assert "\\begin{figure}[p]" not in latex_result, (
+            "Should use figure*[p], not figure[p], to prevent single-column width constraint"
         )
 
         # Test comparison: textwidth without explicit position should use figure*
@@ -1004,35 +1004,35 @@ This is the methods content.
 
         # Test cases for Guillaume's scaling scenarios
         test_cases = [
-            # Guillaume's working case
+            # Guillaume's working case - ALL dedicated page figures use figure*[p] for full page width access
             {
                 "width": "\\textwidth",
                 "tex_position": "p",
-                "expected_env": "figure",
+                "expected_env": "figure*",
                 "expected_pos": "[p]",
-                "description": "textwidth with position p should use regular figure",
+                "description": "textwidth with position p should use figure*[p] for full page width access",
             },
             # Guillaume's problematic cases that should now work
             {
                 "width": "0.8",
                 "tex_position": "p",
-                "expected_env": "figure",
+                "expected_env": "figure*",
                 "expected_pos": "[p]",
-                "description": "0.8 width with position p should use regular figure for dedicated page",
+                "description": "0.8 width with position p should use figure*[p] for full page width access",
             },
             {
                 "width": "80%",
                 "tex_position": "p",
-                "expected_env": "figure",
+                "expected_env": "figure*",
                 "expected_pos": "[p]",
-                "description": "80% width with position p should use regular figure for dedicated page",
+                "description": "80% width with position p should use figure*[p] for full page width access",
             },
             {
                 "width": "0.9\\textwidth",
                 "tex_position": "p",
-                "expected_env": "figure",
+                "expected_env": "figure*",
                 "expected_pos": "[p]",
-                "description": "0.9textwidth with position p should use regular figure for dedicated page",
+                "description": "0.9textwidth with position p should use figure*[p] for full page width access",
             },
             # Verify that 2-column still works when no explicit positioning
             {
@@ -1186,15 +1186,15 @@ acknowledge_rxiv_maker: false
                 import re
 
                 fullpage_pattern = (
-                    r"\\begin{figure}\[p\].*?width=\\textwidth.*?This figure should be on a dedicated page"
+                    r"\\begin{figure\*}\[p\].*?width=\\textwidth.*?This figure should be on a dedicated page"
                 )
                 assert re.search(fullpage_pattern, tex_content, re.DOTALL), (
-                    "Generated .tex should use regular figure[p] for dedicated page textwidth figures"
+                    "Generated .tex should use figure*[p] for dedicated page textwidth figures to allow full page width"
                 )
-                # Should NOT use figure* for this case
-                fullpage_bad_pattern = r"\\begin{figure\*}\[p\].*?This figure should be on a dedicated page"
-                assert not re.search(fullpage_bad_pattern, tex_content, re.DOTALL), (
-                    "Generated .tex should NOT use figure* for dedicated page figures"
+                # Should also have clearpage commands for true dedicated page behavior
+                clearpage_pattern = r"\\clearpage.*?\\begin{figure\*}\[p\].*?This figure should be on a dedicated page.*?\\end{figure\*}.*?\\clearpage"
+                assert re.search(clearpage_pattern, tex_content, re.DOTALL), (
+                    "Generated .tex should use clearpage commands around dedicated page figures"
                 )
 
                 print(f"✅ End-to-end test passed! Generated .tex file: {tex_file}")
@@ -1285,14 +1285,14 @@ class TestGuillaumeEdgeCases:
         from rxiv_maker.converters.figure_processor import create_latex_figure_environment
 
         test_cases = [
-            # Guillaume's specific case
-            {"width": "\\textwidth", "tex_position": "p", "expected_env": "figure", "expected_pos": "[p]"},
+            # Guillaume's specific case - ALL dedicated page figures use figure*[p] for full page width access
+            {"width": "\\textwidth", "tex_position": "p", "expected_env": "figure*", "expected_pos": "[p]"},
             # Two-column spanning variations
             {"width": "\\textwidth", "expected_env": "figure*", "expected_pos": "[tp]"},
             {"width": "\\textwidth", "tex_position": "t", "expected_env": "figure*", "expected_pos": "[t]"},
             {"width": "\\textwidth", "tex_position": "b", "expected_env": "figure*", "expected_pos": "[b]"},
-            # Regular figures
-            {"width": "0.8", "tex_position": "p", "expected_env": "figure", "expected_pos": "[p]"},
+            # Regular figures - ALL dedicated page figures use figure*[p] for full page width access
+            {"width": "0.8", "tex_position": "p", "expected_env": "figure*", "expected_pos": "[p]"},
             {"width": "\\linewidth", "expected_env": "figure", "expected_pos": "[ht]"},
         ]
 

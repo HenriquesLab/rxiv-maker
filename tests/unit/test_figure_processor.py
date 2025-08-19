@@ -417,19 +417,19 @@ class TestGuillaumeFigureIssues:
     def test_full_page_figure_positioning_fix(self):
         """Test that full-page figures with textwidth use correct environment (Guillaume Issue #4)."""
 
-        # Guillaume's case: textwidth with position p should use figure[p], not figure*[p]
+        # Guillaume's case: textwidth with position p should use figure*[p] for full page width access
         latex_result = create_latex_figure_environment(
             path="FIGURES/Figure__workflow.svg",
             caption="Test figure caption",
             attributes={"width": "\\textwidth", "tex_position": "p", "id": "fig:workflow"},
         )
 
-        # Should use regular figure environment for dedicated page, NOT figure*
-        assert "\\begin{figure}[p]" in latex_result, (
-            "Dedicated page figures should use regular figure environment, not figure*"
+        # Should use figure* environment for dedicated page to allow full page width access
+        assert "\\begin{figure*}[p]" in latex_result, (
+            "Full-width dedicated page figures should use figure*[p] to prevent text overlay"
         )
-        assert "\\begin{figure*}" not in latex_result, (
-            "Should NOT use figure* when user explicitly wants dedicated page"
+        assert "\\begin{figure}[p]" not in latex_result, (
+            "Should use figure*[p], not figure[p], for full-width figures to avoid overlay"
         )
 
     def test_full_page_vs_two_column_positioning(self):
@@ -457,16 +457,16 @@ class TestGuillaumeFigureIssues:
         # Should use figure* with user's positioning
         assert "\\begin{figure*}[t]" in latex_result_2col_t, "Should respect user's tex_position when using figure*"
 
-        # Test Case 3: textwidth with position p should use figure[p]
+        # Test Case 3: ALL dedicated page figures should use figure*[p] for full page width access
         latex_result_fullpage = create_latex_figure_environment(
             path="FIGURES/test.svg",
             caption="Dedicated page figure",
             attributes={"width": "\\textwidth", "tex_position": "p", "id": "fig:test"},
         )
 
-        # Should use regular figure for dedicated page
-        assert "\\begin{figure}[p]" in latex_result_fullpage, (
-            "Dedicated page figures should use figure[p], not figure*[p]"
+        # Should use figure* for all dedicated page figures to allow full page width in two-column layouts
+        assert "\\begin{figure*}[p]" in latex_result_fullpage, (
+            "All dedicated page figures should use figure*[p] to allow full page width in two-column layouts"
         )
 
     def test_guillaume_integration_all_fixes_together(self):
@@ -509,8 +509,11 @@ class TestGuillaumeFigureIssues:
                     caption="Full page caption",
                     attributes={"width": "\\textwidth", "tex_position": "p", "id": "fig:fullpage"},
                 )
-                assert "\\begin{figure}[p]" in fullpage_latex, "Full-page textwidth should use figure[p]"
-                assert "\\begin{figure*}" not in fullpage_latex, "Full-page should NOT use figure*"
+                assert "\\begin{figure*}[p]" in fullpage_latex, (
+                    "Full-page textwidth should use figure*[p] to prevent overlay"
+                )
+                assert "\\clearpage" in fullpage_latex, "Full-page textwidth should use clearpage for dedicated page"
+                assert "\\begin{figure}[p]" not in fullpage_latex, "Full-page should use figure*[p], not figure[p]"
 
             finally:
                 os.chdir(original_cwd)
