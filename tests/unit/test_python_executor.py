@@ -226,7 +226,7 @@ After block.
 """
         result = process_custom_commands(text)
         assert "Result: 50" in result
-        assert "```" in result  # Should be wrapped in code block
+        assert "\\begin{verbatim}" in result  # Should be wrapped in LaTeX verbatim block
 
     def test_mixed_commands(self):
         """Test mixing Python with other commands like blindtext."""
@@ -246,8 +246,8 @@ print(f"Random number: {random.randint(1, 100)}")
         result = process_custom_commands(text)
         assert "\\blindtext" in result  # Blindtext processed
         assert "256" in result  # Math calculation
-        # Random should be blocked by security
-        assert "blocked" in result.lower() or "not allowed" in result.lower()
+        # Random is allowed in SAFE_MODULES, so output should be present
+        assert "Random number:" in result
 
     def test_code_protection(self):
         """Test that Python commands in code blocks are protected."""
@@ -299,7 +299,7 @@ for i in range(6):
 """
         result = process_custom_commands(text)
         assert "fib(5) = 5" in result
-        assert "```" in result
+        assert "\\begin{verbatim}" in result  # Should be wrapped in LaTeX verbatim block
 
     def test_nested_braces_handling(self):
         """Test handling of nested braces in Python code."""
