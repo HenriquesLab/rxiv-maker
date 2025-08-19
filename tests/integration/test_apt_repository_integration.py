@@ -207,8 +207,9 @@ class TestAPTRepositoryValidation(unittest.TestCase):
             with open(file_path, "r") as f:
                 content = f.read()
 
-            # Extract branch references from apt-rxiv-maker URLs
-            branch_matches = re.findall(r"HenriquesLab/apt-rxiv-maker/([^/\s]+)", content)
+            # Extract branch references from raw.githubusercontent.com apt-rxiv-maker URLs only
+            # Only raw URLs need branch specification, not regular GitHub URLs
+            branch_matches = re.findall(r"raw\.githubusercontent\.com/HenriquesLab/apt-rxiv-maker/([^/\s]+)", content)
             branches.update(branch_matches)
 
         # All references should use the same branch (apt-repo)
