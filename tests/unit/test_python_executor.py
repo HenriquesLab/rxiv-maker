@@ -7,7 +7,6 @@ including security restrictions, error handling, and output formatting.
 import pytest
 
 from rxiv_maker.converters.python_executor import (
-    PythonExecutionError,
     PythonExecutor,
     SecurityError,
     get_python_executor,
@@ -176,9 +175,9 @@ class TestSecurityRestrictions:
 
     def test_safe_math_import(self):
         """Test that safe imports like math are allowed."""
-        with pytest.raises((SecurityError, PythonExecutionError)):
-            # Note: math import should be blocked by our whitelist approach
-            self.executor.execute_block("import math")
+        # Math import should be allowed as it's in the SAFE_MODULES whitelist
+        result = self.executor.execute_block("import math; print(math.pi)")
+        assert "3.14" in result
 
     def test_security_validation(self):
         """Test the security validation directly."""
