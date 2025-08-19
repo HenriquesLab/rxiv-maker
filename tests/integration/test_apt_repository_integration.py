@@ -209,7 +209,10 @@ class TestAPTRepositoryValidation(unittest.TestCase):
 
             # Extract branch references from raw.githubusercontent.com apt-rxiv-maker URLs only
             # Only raw URLs need branch specification, not regular GitHub URLs
-            branch_matches = re.findall(r"raw\.githubusercontent\.com/HenriquesLab/apt-rxiv-maker/([^/\s]+)", content)
+            # Match valid branch names (alphanumeric, hyphens, underscores, dots)
+            branch_matches = re.findall(
+                r"raw\.githubusercontent\.com/HenriquesLab/apt-rxiv-maker/([a-zA-Z0-9._-]+)", content
+            )
             branches.update(branch_matches)
 
         # All references should use the same branch (apt-repo)
