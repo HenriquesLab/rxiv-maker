@@ -1192,7 +1192,7 @@ acknowledge_rxiv_maker: false
                     "Generated .tex should use figure*[p] for dedicated page textwidth figures to allow full page width"
                 )
                 # Should also have clearpage commands for true dedicated page behavior
-                clearpage_pattern = r"\\clearpage.*?\\begin{figure\*}\[p\].*?This figure should be on a dedicated page.*?\\end{figure\*}.*?\\clearpage"
+                clearpage_pattern = r"\\clearpage\s*\\begin{figure\*}\[p\].*?\\end{figure\*}\s*\\clearpage"
                 assert re.search(clearpage_pattern, tex_content, re.DOTALL), (
                     "Generated .tex should use clearpage commands around dedicated page figures"
                 )
