@@ -220,9 +220,16 @@ def create_latex_figure_environment(
     processed_caption = re.sub(r"\*\*([^*]+)\*\*", r"\\textbf{\1}", caption)
     processed_caption = re.sub(r"\*([^*]+)\*", r"\\textit{\1}", processed_caption)
 
-    # For 2-column spanning figures (figure*), ensure caption spans full width
-    if is_twocolumn:
-        # Use \captionsetup to make caption span full width in 2-column layout
+    # Process caption formatting - handle dedicated page figures FIRST to prevent text cutting
+    if position == "p":
+        # For dedicated page figures, use proper single-page caption formatting
+        # Don't use \textwidth as it extends beyond page margins and causes text cutting
+        # Use justified alignment with proper margin-aware formatting
+        processed_caption = (
+            f"\\captionsetup{{justification=justified,format=plain,singlelinecheck=false}}\n{processed_caption}"
+        )
+    elif is_twocolumn:
+        # For 2-column spanning figures (figure*), ensure caption spans full width
         # This ensures both figure and caption use the full text width
         if len(processed_caption) > 150:
             # For longer captions, add justified text formatting
@@ -230,7 +237,7 @@ def create_latex_figure_environment(
         else:
             # For shorter captions, just ensure full width
             processed_caption = f"\\captionsetup{{width=\\textwidth}}\n{processed_caption}"
-    elif width == "\\textwidth" and position != "p":
+    elif width == "\\textwidth":
         # For full-width figures that are NOT dedicated page, use captionsetup for proper formatting
         # Two-column figures need \textwidth to span columns, but dedicated page figures don't
         if len(processed_caption) > 150:
@@ -239,14 +246,6 @@ def create_latex_figure_environment(
         else:
             # For shorter captions, just ensure full width
             processed_caption = f"\\captionsetup{{width=\\textwidth}}\n{processed_caption}"
-    elif position == "p":
-        # For dedicated page figures, use proper single-page caption formatting
-        # Don't use \textwidth as it extends beyond single-column page margins
-        # Use justified alignment now that double backslash line break issue is fixed in source
-        # Add singlelinecheck=false to prevent centering of short captions
-        processed_caption = (
-            f"\\captionsetup{{justification=justified,format=plain,singlelinecheck=false}}\n{processed_caption}"
-        )
 
     # Create LaTeX figure environment - use figure* for 2-column spanning
     figure_env = "figure*" if is_twocolumn else "figure"
