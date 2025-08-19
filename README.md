@@ -49,8 +49,8 @@ rxiv check-installation
 ```bash
 sudo apt update
 sudo apt install ca-certificates
-curl -fsSL https://raw.githubusercontent.com/HenriquesLab/rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg
-echo 'deb [signed-by=/usr/share/keyrings/rxiv-maker.gpg] https://raw.githubusercontent.com/HenriquesLab/rxiv-maker/apt-repo/ ./' | sudo tee /etc/apt/sources.list.d/rxiv-maker.list
+curl -fsSL https://raw.githubusercontent.com/paxcalpt/apt-rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg
+echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/rxiv-maker.gpg] https://raw.githubusercontent.com/paxcalpt/apt-rxiv-maker/apt-repo stable main' | sudo tee /etc/apt/sources.list.d/rxiv-maker.list
 sudo apt update
 sudo apt install rxiv-maker
 ```
@@ -87,8 +87,8 @@ sudo apt update && sudo apt upgrade -y
 
 # Option A: Use APT repository
 sudo apt install ca-certificates
-curl -fsSL https://raw.githubusercontent.com/HenriquesLab/rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg
-echo 'deb [signed-by=/usr/share/keyrings/rxiv-maker.gpg] https://raw.githubusercontent.com/HenriquesLab/rxiv-maker/apt-repo/ ./' | sudo tee /etc/apt/sources.list.d/rxiv-maker.list
+curl -fsSL https://raw.githubusercontent.com/paxcalpt/apt-rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg
+echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/rxiv-maker.gpg] https://raw.githubusercontent.com/paxcalpt/apt-rxiv-maker/apt-repo stable main' | sudo tee /etc/apt/sources.list.d/rxiv-maker.list
 sudo apt update
 sudo apt install rxiv-maker
 

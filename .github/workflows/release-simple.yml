@@ -411,18 +411,28 @@ jobs:
 
   # APT Repository Update
   apt-repository:
-    name: Update APT Repository
-    uses: ./.github/workflows/publish-apt.yml
+    name: Trigger APT Repository Update
+    runs-on: ubuntu-latest
     needs: [build, pypi]
     if: needs.pypi.result == 'success' && !inputs.dry-run
-    permissions:
-      contents: write  # Required for pushing to apt-repo branch
-    with:
-      version: ${{ needs.build.outputs.version }}
-      dry-run: false
-    secrets:
-      GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-      GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+    timeout-minutes: 5
+
+    steps:
+      - name: Trigger APT repository workflow
+        env:
+          GH_TOKEN: ${{ secrets.DISPATCH_PAT }}
+        run: |
+          VERSION="${{ needs.build.outputs.version }}"
+          echo "🚀 Triggering APT repository update for version ${VERSION}..."
+
+          # Trigger workflow in the apt-rxiv-maker repository
+          gh workflow run publish-apt.yml \
+            --repo paxcalpt/apt-rxiv-maker \
+            --field version="${VERSION}" \
+            --field dry-run="false"
+
+          echo "✅ APT repository workflow triggered successfully"
+          echo "🔗 Monitor progress at: https://github.com/paxcalpt/apt-rxiv-maker/actions"
 
   # Summary
   summary:
@@ -495,13 +505,14 @@ jobs:
           fi
 
           if [ "${{ needs.apt-repository.result }}" == "success" ]; then
-            echo "✅ **APT Repository**: Updated" >> $GITHUB_STEP_SUMMARY
-            echo "   - [View Repository](https://henriqueslab.github.io/rxiv-maker/)" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **APT Repository**: Workflow triggered" >> $GITHUB_STEP_SUMMARY
+            echo "   - [View Repository](https://github.com/paxcalpt/apt-rxiv-maker)" >> $GITHUB_STEP_SUMMARY
+            echo "   - [Monitor Workflow](https://github.com/paxcalpt/apt-rxiv-maker/actions)" >> $GITHUB_STEP_SUMMARY
             echo "   - Install: \`sudo apt update && sudo apt install rxiv-maker\`" >> $GITHUB_STEP_SUMMARY
           elif [ "${{ needs.apt-repository.result }}" == "skipped" ]; then
             echo "⏭️ **APT Repository**: Skipped (dry-run or PyPI failed)" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **APT Repository**: Failed to update" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **APT Repository**: Failed to trigger workflow" >> $GITHUB_STEP_SUMMARY
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -537,12 +548,14 @@ jobs:
             echo "### APT Repository (Ubuntu/Debian)" >> $GITHUB_STEP_SUMMARY
             echo '```bash' >> $GITHUB_STEP_SUMMARY
             echo "# Add GPG key and repository (one-time setup)" >> $GITHUB_STEP_SUMMARY
-            echo "curl -fsSL https://raw.githubusercontent.com/henriqueslab/rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg" >> $GITHUB_STEP_SUMMARY
-            echo 'echo "deb [signed-by=/usr/share/keyrings/rxiv-maker.gpg] https://henriqueslab.github.io/rxiv-maker/ stable main" | sudo tee /etc/apt/sources.list.d/rxiv-maker.list' >> $GITHUB_STEP_SUMMARY
+            echo "curl -fsSL https://raw.githubusercontent.com/paxcalpt/apt-rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg" >> $GITHUB_STEP_SUMMARY
+            echo 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/rxiv-maker.gpg] https://raw.githubusercontent.com/paxcalpt/apt-rxiv-maker/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/rxiv-maker.list' >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "# Install rxiv-maker with all dependencies" >> $GITHUB_STEP_SUMMARY
             echo "sudo apt update && sudo apt install rxiv-maker" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "📋 **Note**: APT repository is managed in [apt-rxiv-maker](https://github.com/paxcalpt/apt-rxiv-maker)" >> $GITHUB_STEP_SUMMARY
           fi
 
           if [ "${{ needs.homebrew-update.result }}" == "success" ]; then
@@ -576,5 +589,5 @@ jobs:
           fi
 
           if [ "${{ needs.apt-repository.result }}" == "success" ]; then
-            echo "- [APT Repository](https://henriqueslab.github.io/rxiv-maker/)" >> $GITHUB_STEP_SUMMARY
+            echo "- [APT Repository](https://github.com/paxcalpt/apt-rxiv-maker)" >> $GITHUB_STEP_SUMMARY
           fi
