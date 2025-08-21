@@ -1016,16 +1016,17 @@ This is the methods content.
         )
 
         # Should have width=\linewidth in captionsetup for full-width caption
-        assert "\\captionsetup{width=\\linewidth" in result, (
-            "Dedicated page figures should have width=\\linewidth in captionsetup for full-width captions"
+        assert "\\captionsetup{width=\\textwidth" in result, (
+            "Dedicated page figures should use width=\\textwidth to match two-column figure formatting"
         )
-        assert "justification=justified" in result, "Should have justified text"
+        # Note: justification=justified only added for longer captions (>150 chars)
 
         # Should use figure*[p] for proper dedicated page control
         assert "\\begin{figure*}[p]" in result, "Should use figure*[p] for dedicated page placement"
 
-        # Should use clearpage to force page break for dedicated page positioning
+        # Should use clearpage + newpage to force true dedicated page exclusivity
         assert "\\clearpage" in result, "Should use clearpage for dedicated page behavior"
+        assert "\\newpage" in result, "Should use newpage to prevent page sharing"
 
     def test_dedicated_page_figures_with_scaling(self):
         """Test Guillaume's specific scaling issue with dedicated page figures.

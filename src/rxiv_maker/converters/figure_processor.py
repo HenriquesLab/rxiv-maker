@@ -229,12 +229,16 @@ def create_latex_figure_environment(
     processed_caption = re.sub(r"\*\*([^*]+)\*\*", r"\\textbf{\1}", caption)
     processed_caption = re.sub(r"\*([^*]+)\*", r"\\textit{\1}", processed_caption)
 
-    # Process caption formatting - handle dedicated page figures FIRST to prevent text cutting
+    # Process caption formatting - dedicated page figures use same formatting as two-column
     if original_position == "p":
-        # For dedicated page figures, use proper single-page caption formatting
-        # Use \linewidth to span the full available width within the figure environment
-        # This ensures the caption matches the figure width on dedicated pages
-        processed_caption = f"\\captionsetup{{width=\\linewidth,justification=justified,format=plain,singlelinecheck=false}}\n{processed_caption}"
+        # Dedicated page figures use figure*[p] so should format like other figure* environments
+        # Use same logic as two-column spanning figures
+        if len(processed_caption) > 150:
+            # For longer captions, add justified text formatting
+            processed_caption = f"\\captionsetup{{width=\\textwidth,justification=justified}}\n{processed_caption}"
+        else:
+            # For shorter captions, just ensure full width
+            processed_caption = f"\\captionsetup{{width=\\textwidth}}\n{processed_caption}"
     elif is_twocolumn:
         # For 2-column spanning figures (figure*), ensure caption spans full width
         # This ensures both figure and caption use the full text width
@@ -289,9 +293,10 @@ def create_latex_figure_environment(
 
     # For dedicated page figures, ensure proper page placement
     if original_position == "p":
-        # Use clearpage to force page break before dedicated page figures
-        # This is required for LaTeX to properly place [p] positioned figures
-        latex_figure = f"\\clearpage\n{latex_figure}"
+        # Use clearpage + newpage to force true dedicated page exclusivity
+        # clearpage: force page break before figure
+        # newpage: force page break after figure to prevent sharing
+        latex_figure = f"\\clearpage\n{latex_figure}\n\\newpage"
 
     return latex_figure
 
