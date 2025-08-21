@@ -34,11 +34,15 @@ This figure uses `tex_position="b"` to place the figure at the bottom of the pag
 ![](FIGURES/Figure__positioning_test.png)
 {#fig:generated_bottom tex_position="b"} **Generated Figure with Bottom Positioning.** This demonstrates a generated figure that uses the subdirectory structure (Figure__positioning_test/Figure__positioning_test.png). The figure is positioned at the bottom using `tex_position="b"`.
 
+{{Blindtext}}
+
 #### Example 3: Here Position
 This figure uses `tex_position="h"` to place the figure approximately where it appears in the text:
 
 ![](FIGURES/ReadyFig.png)
 {#fig:ready_here tex_position="h"} **Figure with Here Positioning.** Using `tex_position="h"` attempts to place the figure at the current position in the text, though LaTeX may adjust based on space constraints.
+
+{{Blindtext}}
 
 #### Example 4: Force Here Position
 This figure uses `tex_position="H"` to force exact placement (requires float package):
@@ -46,39 +50,61 @@ This figure uses `tex_position="H"` to force exact placement (requires float pac
 ![](FIGURES/ReadyFig.png)
 {#fig:ready_force_here tex_position="!ht" width="0.8"} **Figure with Force Here Positioning.** Using `tex_position="H"` forces the figure to appear exactly at this position. Note the reduced width of 0.8 linewidth.
 
+{{Blindtext}}
+
 ### Dedicated Page Examples (Guillaume's Fixed Issue)
 
 #### Example 5: Dedicated Page with Full Width
 This addresses Guillaume's issue where `tex_position="p"` with `width="\textwidth"` was incorrectly using two-column layout:
 
+{{Blindtext}}
+
 ![](FIGURES/Figure__positioning_test.png)
 {#fig:dedicated_fullwidth tex_position="p" width="\textwidth"} **Dedicated Page Figure.** Uses `tex_position="p"` with `width="\textwidth"` to create dedicated page. Guillaume's reported issue.
+
+{{Blindtext}}
 
 #### Example 6: Dedicated Page with Custom Width (0.8)
 This addresses Guillaume's scaling issue where `tex_position="p"` failed with non-textwidth values:
 
+{{Blindtext}}
+
 ![](FIGURES/ReadyFig.png)
 {#fig:dedicated_custom_80 tex_position="p" width="0.8"} **Dedicated Page Figure with 0.8 Width.** This demonstrates that `tex_position="p"` now works correctly with custom widths like 0.8 linewidth, resolving Guillaume's reported scaling issues.
+
+{{Blindtext}}
 
 #### Example 7: Dedicated Page with Percentage Width
 Testing percentage width with dedicated page positioning:
 
+{{Blindtext}}
+
 ![](FIGURES/Figure__positioning_test.png)
 {#fig:dedicated_percentage tex_position="p" width="90%"} **Dedicated Page Figure with 90% Width.** Using percentage widths (converted to decimal linewidth values) with dedicated page positioning.
+
+{{Blindtext}}
 
 ### Two-Column Spanning Figures
 
 #### Example 8: Auto-Detected Two-Column Spanning
 This figure automatically uses two-column spanning due to `width="\textwidth"` without explicit positioning:
 
+{{Blindtext}}
+
 ![](FIGURES/Figure__positioning_test.png)
 {#fig:twocol_auto width="\textwidth"} **Auto-Detected Two-Column Spanning Figure.** When `width="\textwidth"` is specified without `tex_position="p"`, the figure automatically spans both columns using the `figure*` environment with enhanced caption formatting.
+
+{{Blindtext}}
 
 #### Example 9: Explicit Two-Column Spanning with Top Position
 This figure explicitly spans two columns with top positioning preference:
 
+{{Blindtext}}
+
 ![](FIGURES/Figure__positioning_test.png)
 {#fig:twocol_explicit tex_position="t" width="\textwidth"} **Explicit Two-Column Figure with Top Position.** Using `tex_position="t"` with `width="\textwidth"` creates a two-column spanning figure positioned at the top of the page.
+
+{{Blindtext}}
 
 ### Panel Reference Examples (Guillaume's Fixed Issue)
 
@@ -93,14 +119,22 @@ For supplementary figures, the same fix would apply to panel references when sup
 #### Example 10: Force Top with Override
 Using `tex_position="!t"` to override LaTeX's spacing rules:
 
+{{Blindtext}}
+
 ![](FIGURES/ReadyFig.png)
 {#fig:force_top tex_position="!t" width="0.7"} **Force Top Position Override.** The `!t` parameter overrides LaTeX's float placement preferences and forces top placement even when spacing might be suboptimal.
+
+{{Blindtext}}
 
 #### Example 11: Top or Here Preference
 Using `tex_position="ht"` for flexible positioning:
 
+{{Blindtext}}
+
 ![](FIGURES/ReadyFig.png)
 {#fig:top_or_here tex_position="!ht" width="0.9"} **Top or Here Flexible Positioning.** The `ht` parameter allows LaTeX to choose between top or here positioning based on what works best for the page layout.
+
+{{Blindtext}}
 
 ## Blindtext Command Examples
 

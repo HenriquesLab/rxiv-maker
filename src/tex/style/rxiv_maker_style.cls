@@ -62,6 +62,8 @@
 \RequirePackage{textcomp}
 \RequirePackage[version=4]{mhchem}
 \RequirePackage{placeins}
+\RequirePackage{afterpage}
+\RequirePackage{needspace}
 \RequirePackage{tabularx}
 \RequirePackage{longtable}
 \RequirePackage[scaled]{helvet}
@@ -100,6 +102,15 @@
 \crefname{figure}{Fig.}{figures}
 \crefname{section}{Sup. Note}{notes}
 \crefname{sfigure}{SFig.}{sfigures}
+
+%% Float parameters to eliminate white space and improve text flow
+\renewcommand{\floatpagefraction}{0.8}   % Fill 80% of dedicated float pages (default: 0.2) - eliminates white space
+\renewcommand{\topfraction}{0.9}         % Allow 90% of page top for floats (default: 0.7) - more permissive
+\renewcommand{\bottomfraction}{0.9}      % Allow 90% of page bottom for floats (default: 0.3) - more permissive
+\renewcommand{\textfraction}{0.05}       % Require only 5% text per page (default: 0.2) - very permissive
+\setcounter{totalnumber}{50}             % Allow many floats per page (default: 3)
+\setcounter{topnumber}{50}               % Allow many floats at top (default: 2)
+\setcounter{bottomnumber}{50}            % Allow many floats at bottom (default: 1)
 
 %% Custom command for supplementary notes that properly increments counter and displays number
 \newcommand{\suppnotesection}[1]{%

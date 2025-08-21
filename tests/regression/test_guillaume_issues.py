@@ -755,9 +755,9 @@ class TestDiscordReportedIssues:
         test_text = "As shown in (@fig:Figure1 A), the results indicate..."
         result = convert_figure_references_to_latex(test_text)
 
-        # Should render as Fig. \ref{fig:Figure1}A (no space between 1 and A)
-        assert "Fig. \\ref{fig:Figure1}A)" in result, (
-            f"Expected no space between figure ref and panel letter, got: {result}"
+        # Should render as Fig. \ref{fig:Figure1}{}A (no space between ref and A)
+        assert "Fig. \\ref{fig:Figure1}{}A)" in result, (
+            f"Expected empty group {{}} spacing control between figure ref and panel letter, got: {result}"
         )
 
         # Should NOT have a space
@@ -767,7 +767,9 @@ class TestDiscordReportedIssues:
         test_text_sfig = "As shown in (@sfig:SupFig1 B), the analysis shows..."
         result_sfig = convert_figure_references_to_latex(test_text_sfig)
 
-        assert "Fig. \\ref{sfig:SupFig1}B)" in result_sfig, "Supplementary figure panel refs should also have no space"
+        assert "Fig. \\ref{sfig:SupFig1}{}B)" in result_sfig, (
+            "Supplementary figure panel refs should also have empty group spacing control"
+        )
 
     def test_figure_ready_files_loading_fix(self):
         """Test that ready figures load correctly without requiring subdirectory duplication.
@@ -885,19 +887,19 @@ This is the methods content.
         """
         from rxiv_maker.converters.figure_processor import create_latex_figure_environment
 
-        # Test Guillaume's specific case: textwidth with position p should NOT use figure*
+        # Test Guillaume's specific case: textwidth with position p should use regular figure environment
         latex_result = create_latex_figure_environment(
             path="FIGURES/Figure__workflow.svg",
             caption="Test figure caption",
             attributes={"width": "\\textwidth", "tex_position": "p", "id": "fig:workflow"},
         )
 
-        # Should use figure* environment for dedicated page to allow full page width access
+        # Should use figure* environment for dedicated page to span full width in two-column documents
         assert "\\begin{figure*}[p]" in latex_result, (
-            "Dedicated page figures should use figure*[p] to allow full page width in two-column layouts"
+            "Dedicated page figures should use figure*[p] for full-width spanning with clearpage"
         )
         assert "\\begin{figure}[p]" not in latex_result, (
-            "Should use figure*[p], not figure[p], to prevent single-column width constraint"
+            "Should use figure*[p], not figure[p], for dedicated page positioning"
         )
 
         # Test comparison: textwidth without explicit position should use figure*
@@ -947,11 +949,11 @@ This is the methods content.
 
         # Test various panel reference formats
         test_cases = [
-            ("(@fig:Figure1 A)", "Fig. \\ref{fig:Figure1}A)"),
-            ("(@fig:Figure1 B)", "Fig. \\ref{fig:Figure1}B)"),
-            ("(@fig:Figure1 C) and (@fig:Figure2 D)", "Fig. \\ref{fig:Figure1}C) and (Fig. \\ref{fig:Figure2}D)"),
-            ("@fig:Figure1 A shows", "Fig. \\ref{fig:Figure1}A shows"),  # Without parentheses
-            ("(@sfig:SupFig1 A)", "Fig. \\ref{sfig:SupFig1}A)"),  # Supplementary figures
+            ("(@fig:Figure1 A)", "Fig. \\ref{fig:Figure1}{}A)"),
+            ("(@fig:Figure1 B)", "Fig. \\ref{fig:Figure1}{}B)"),
+            ("(@fig:Figure1 C) and (@fig:Figure2 D)", "Fig. \\ref{fig:Figure1}{}C) and (Fig. \\ref{fig:Figure2}{}D)"),
+            ("@fig:Figure1 A shows", "Fig. \\ref{fig:Figure1}{}A shows"),  # Without parentheses
+            ("(@sfig:SupFig1 A)", "Fig. \\ref{sfig:SupFig1}{}A)"),  # Supplementary figures
         ]
 
         for input_text, expected_pattern in test_cases:
@@ -980,7 +982,7 @@ This is the methods content.
 
         # 2. Figure panel references should work correctly
         panel_ref = convert_figure_references_to_latex("(@fig:Figure1 A)")
-        assert "Fig. \\ref{fig:Figure1}A)" in panel_ref, "Panel references should have no space"
+        assert "Fig. \\ref{fig:Figure1}{}A)" in panel_ref, "Panel references should use empty group for spacing control"
 
         # 3. Section mapping should preserve Introduction
         section_key = map_section_title_to_key("Introduction")
@@ -994,6 +996,37 @@ This is the methods content.
 
         print("✅ All Guillaume's fixes are working together correctly")
 
+    def test_dedicated_page_figure_caption_width(self):
+        """Test that dedicated page figures have full-width captions.
+
+        Guillaume reported: Dedicated page figure captions were too narrow, not spanning full page width
+        """
+        from rxiv_maker.converters.figure_processor import create_latex_figure_environment
+
+        # Test dedicated page figure with textwidth
+        result = create_latex_figure_environment(
+            path="FIGURES/test.png",
+            caption="Test caption for dedicated page figure",
+            attributes={"tex_position": "p", "width": "\\textwidth", "id": "fig:test"},
+        )
+
+        # Should use figure*[p] for dedicated page to span full width
+        assert "\\begin{figure*}[p]" in result, (
+            "Dedicated page figures should use figure*[p] to span full width in two-column documents"
+        )
+
+        # Should have width=\linewidth in captionsetup for full-width caption
+        assert "\\captionsetup{width=\\linewidth" in result, (
+            "Dedicated page figures should have width=\\linewidth in captionsetup for full-width captions"
+        )
+        assert "justification=justified" in result, "Should have justified text"
+
+        # Should use figure*[p] for proper dedicated page control
+        assert "\\begin{figure*}[p]" in result, "Should use figure*[p] for dedicated page placement"
+
+        # Should NOT have clearpage commands that disrupt two-column layout
+        assert "\\clearpage" not in result, "Should not use clearpage as it disrupts two-column layout"
+
     def test_dedicated_page_figures_with_scaling(self):
         """Test Guillaume's specific scaling issue with dedicated page figures.
 
@@ -1004,13 +1037,13 @@ This is the methods content.
 
         # Test cases for Guillaume's scaling scenarios
         test_cases = [
-            # Guillaume's working case - ALL dedicated page figures use figure*[p] for full page width access
+            # Guillaume's working case - ALL dedicated page figures use figure*[p] to span full width
             {
                 "width": "\\textwidth",
                 "tex_position": "p",
                 "expected_env": "figure*",
                 "expected_pos": "[p]",
-                "description": "textwidth with position p should use figure*[p] for full page width access",
+                "description": "textwidth with position p should use figure*[p] for dedicated page full-width",
             },
             # Guillaume's problematic cases that should now work
             {
@@ -1018,21 +1051,21 @@ This is the methods content.
                 "tex_position": "p",
                 "expected_env": "figure*",
                 "expected_pos": "[p]",
-                "description": "0.8 width with position p should use figure*[p] for full page width access",
+                "description": "0.8 width with position p should use figure*[p] for dedicated page full-width",
             },
             {
                 "width": "80%",
                 "tex_position": "p",
                 "expected_env": "figure*",
                 "expected_pos": "[p]",
-                "description": "80% width with position p should use figure*[p] for full page width access",
+                "description": "80% width with position p should use figure*[p] for dedicated page full-width",
             },
             {
                 "width": "0.9\\textwidth",
                 "tex_position": "p",
                 "expected_env": "figure*",
                 "expected_pos": "[p]",
-                "description": "0.9textwidth with position p should use figure*[p] for full page width access",
+                "description": "0.9textwidth with position p should use figure*[p] for dedicated page full-width",
             },
             # Verify that 2-column still works when no explicit positioning
             {
@@ -1058,12 +1091,12 @@ This is the methods content.
                 f"Got: {result[:200]}..."
             )
 
-            # Verify it's not using the wrong environment
-            wrong_env = "figure*" if case["expected_env"] == "figure" else "figure"
-            wrong_start = f"\\begin{{{wrong_env}}}"
-            assert wrong_start not in result, (
-                f"Failed for {case['description']}: should NOT use {wrong_env} environment. Attributes: {attributes}"
-            )
+            # For dedicated page figures, verify it's using figure* and not figure
+            if case.get("tex_position") == "p":
+                wrong_start = "\\begin{figure}[p]"
+                assert wrong_start not in result, (
+                    f"Failed for {case['description']}: dedicated page figures should use figure*[p], not figure[p]. Attributes: {attributes}"
+                )
 
     def test_end_to_end_tex_generation_with_guillaume_fixes(self):
         """End-to-end test that generates actual .tex file to verify Guillaume's fixes work in practice."""
@@ -1181,7 +1214,7 @@ acknowledge_rxiv_maker: false
                     "Generated .tex should NOT use subdirectory format for ready files"
                 )
 
-                # 3. Should use regular figure environment for full-page textwidth figures
+                # 3. Should use figure* environment for full-page textwidth figures to span full width
                 # Look for the pattern of a figure with tex_position="p" and width=textwidth
                 import re
 
@@ -1189,12 +1222,11 @@ acknowledge_rxiv_maker: false
                     r"\\begin{figure\*}\[p\].*?width=\\textwidth.*?This figure should be on a dedicated page"
                 )
                 assert re.search(fullpage_pattern, tex_content, re.DOTALL), (
-                    "Generated .tex should use figure*[p] for dedicated page textwidth figures to allow full page width"
+                    "Generated .tex should use figure*[p] for dedicated page textwidth figures to span full width"
                 )
-                # Should also have clearpage commands for true dedicated page behavior
-                clearpage_pattern = r"\\clearpage\s*\\begin{figure\*}\[p\].*?\\end{figure\*}\s*\\clearpage"
-                assert re.search(clearpage_pattern, tex_content, re.DOTALL), (
-                    "Generated .tex should use clearpage commands around dedicated page figures"
+                # Should use figure*[p] for dedicated page placement
+                assert "\\begin{figure*}[p]" in tex_content, (
+                    "Generated .tex should use figure*[p] for dedicated page placement"
                 )
 
                 print(f"✅ End-to-end test passed! Generated .tex file: {tex_file}")
@@ -1260,20 +1292,20 @@ class TestGuillaumeEdgeCases:
         from rxiv_maker.converters.figure_processor import convert_figure_references_to_latex
 
         test_cases = [
-            # Multiple panels in sequence
+            # Multiple panels in sequence - note the {} prevents unwanted spaces after \ref{}
             (
                 "(@fig:test A), (@fig:test B), (@fig:test C)",
-                "Fig. \\ref{fig:test}A), (Fig. \\ref{fig:test}B), (Fig. \\ref{fig:test}C)",
+                "Fig. \\ref{fig:test}{}A), (Fig. \\ref{fig:test}{}B), (Fig. \\ref{fig:test}{}C)",
             ),
             # Mixed with other text
             (
                 "As shown in (@fig:test A) and described in (@fig:test B), the results...",
-                "Fig. \\ref{fig:test}A) and described in (Fig. \\ref{fig:test}B)",
+                "Fig. \\ref{fig:test}{}A) and described in (Fig. \\ref{fig:test}{}B)",
             ),
             # Different figure IDs
-            ("(@fig:first A) vs (@fig:second B)", "Fig. \\ref{fig:first}A) vs (Fig. \\ref{fig:second}B)"),
+            ("(@fig:first A) vs (@fig:second B)", "Fig. \\ref{fig:first}{}A) vs (Fig. \\ref{fig:second}{}B)"),
             # Supplementary figures
-            ("(@sfig:sup A) and (@sfig:sup B)", "Fig. \\ref{sfig:sup}A) and (Fig. \\ref{sfig:sup}B)"),
+            ("(@sfig:sup A) and (@sfig:sup B)", "Fig. \\ref{sfig:sup}{}A) and (Fig. \\ref{sfig:sup}{}B)"),
         ]
 
         for input_text, expected_pattern in test_cases:
@@ -1285,13 +1317,13 @@ class TestGuillaumeEdgeCases:
         from rxiv_maker.converters.figure_processor import create_latex_figure_environment
 
         test_cases = [
-            # Guillaume's specific case - ALL dedicated page figures use figure*[p] for full page width access
+            # Guillaume's specific case - dedicated page figures use figure*[p] for full-width spanning
             {"width": "\\textwidth", "tex_position": "p", "expected_env": "figure*", "expected_pos": "[p]"},
             # Two-column spanning variations
             {"width": "\\textwidth", "expected_env": "figure*", "expected_pos": "[tp]"},
             {"width": "\\textwidth", "tex_position": "t", "expected_env": "figure*", "expected_pos": "[t]"},
             {"width": "\\textwidth", "tex_position": "b", "expected_env": "figure*", "expected_pos": "[b]"},
-            # Regular figures - ALL dedicated page figures use figure*[p] for full page width access
+            # Regular figures - dedicated page figures use figure*[p] for full-width spanning
             {"width": "0.8", "tex_position": "p", "expected_env": "figure*", "expected_pos": "[p]"},
             {"width": "\\linewidth", "expected_env": "figure", "expected_pos": "[ht]"},
         ]

@@ -72,13 +72,15 @@ def convert_figure_references_to_latex(text: MarkdownContent) -> LatexContent:
         Text with figure references converted to LaTeX format with "Figure" prefix
     """
     # Convert @fig:id followed by space and panel letter to Figure \ref{fig:id}PanelLetter (no space)
-    text = re.sub(r"@fig:([a-zA-Z0-9_-]+)\s+([A-Z])", r"Fig. \\ref{fig:\1}\2", text)
+    # Use empty group {} to prevent LaTeX from inserting unwanted spaces after \ref{}
+    text = re.sub(r"@fig:([a-zA-Z0-9_-]+)\s+([A-Z])", r"Fig. \\ref{fig:\1}{}\2", text)
 
     # Convert @fig:id to Figure \ref{fig:id} (remaining basic references)
     text = re.sub(r"@fig:([a-zA-Z0-9_-]+)", r"Fig. \\ref{fig:\1}", text)
 
     # Convert @sfig:id followed by space and panel letter to Figure \ref{sfig:id}PanelLetter (no space)
-    text = re.sub(r"@sfig:([a-zA-Z0-9_-]+)\s+([A-Z])", r"Fig. \\ref{sfig:\1}\2", text)
+    # Use empty group {} to prevent LaTeX from inserting unwanted spaces after \ref{}
+    text = re.sub(r"@sfig:([a-zA-Z0-9_-]+)\s+([A-Z])", r"Fig. \\ref{sfig:\1}{}\2", text)
 
     # Convert @sfig:id to Figure \ref{sfig:id} (supplementary figures)
     text = re.sub(r"@sfig:([a-zA-Z0-9_-]+)", r"Fig. \\ref{sfig:\1}", text)
@@ -203,12 +205,17 @@ def create_latex_figure_environment(
         attributes.get("span") == "2col" or attributes.get("twocolumn") == "true" or attributes.get("twocolumn") is True
     )
 
-    # Auto-detect 2-column for full-width figures to prevent overlay in two-column layouts
-    if not is_twocolumn and width == "\\textwidth":
+    # Store original position before modifications
+    original_position = position
+
+    # Auto-detect 2-column for full-width figures (but not for originally dedicated pages)
+    if not is_twocolumn and width == "\\textwidth" and original_position != "p":
         is_twocolumn = True
 
-    # For ALL dedicated page figures, use figure* to allow full page width usage
-    if not is_twocolumn and position == "p":
+    # Handle dedicated page positioning - use [p!] for true dedicated pages
+    if original_position == "p":
+        # Force dedicated pages but try to improve text flow
+        position = "p!"
         is_twocolumn = True
 
     # Only adjust positioning for two-column spanning figures that don't have explicit positioning
@@ -223,11 +230,9 @@ def create_latex_figure_environment(
     # Process caption formatting - handle dedicated page figures FIRST to prevent text cutting
     if position == "p":
         # For dedicated page figures, use proper single-page caption formatting
-        # Don't use \textwidth as it extends beyond page margins and causes text cutting
-        # Use justified alignment with proper margin-aware formatting
-        processed_caption = (
-            f"\\captionsetup{{justification=justified,format=plain,singlelinecheck=false}}\n{processed_caption}"
-        )
+        # Use \linewidth to span the full available width within the figure environment
+        # This ensures the caption matches the figure width on dedicated pages
+        processed_caption = f"\\captionsetup{{width=\\linewidth,justification=justified,format=plain,singlelinecheck=false}}\n{processed_caption}"
     elif is_twocolumn:
         # For 2-column spanning figures (figure*), ensure caption spans full width
         # This ensures both figure and caption use the full text width
@@ -280,11 +285,9 @@ def create_latex_figure_environment(
 
     latex_figure += f"\n\\end{{{figure_env}}}"
 
-    # Handle dedicated page figures with special layout requirements
-    if position == "p":
-        # For ALL dedicated page figures (regardless of width):
-        # - \clearpage commands ensure the figure appears alone on a dedicated page
-        latex_figure = f"\\clearpage\n{latex_figure}\n\\clearpage"
+    # For dedicated page figures, fill current page first, then create dedicated page
+    if original_position == "p":
+        latex_figure = f"\\vfill\\clearpage\n{latex_figure}\n\\clearpage"
 
     return latex_figure
 
