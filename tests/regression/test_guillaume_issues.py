@@ -895,8 +895,8 @@ This is the methods content.
         )
 
         # Should use figure* environment for dedicated page to span full width in two-column documents
-        assert "\\begin{figure*}[p]" in latex_result, (
-            "Dedicated page figures should use figure*[p] for full-width spanning with clearpage"
+        assert "\\begin{figure*}[p!]" in latex_result, (
+            "Dedicated page figures should use figure*[p!] for full-width spanning with clearpage"
         )
         assert "\\begin{figure}[p]" not in latex_result, (
             "Should use figure*[p], not figure[p], for dedicated page positioning"
@@ -1010,9 +1010,9 @@ This is the methods content.
             attributes={"tex_position": "p", "width": "\\textwidth", "id": "fig:test"},
         )
 
-        # Should use figure*[p] for dedicated page to span full width
-        assert "\\begin{figure*}[p]" in result, (
-            "Dedicated page figures should use figure*[p] to span full width in two-column documents"
+        # Should use figure*[p!] for dedicated page to span full width
+        assert "\\begin{figure*}[p!]" in result, (
+            "Dedicated page figures should use figure*[p!] to span full width in two-column documents"
         )
 
         # Should have width=\linewidth in captionsetup for full-width caption
@@ -1021,11 +1021,11 @@ This is the methods content.
         )
         assert "justification=justified" in result, "Should have justified text"
 
-        # Should use figure*[p] for proper dedicated page control
-        assert "\\begin{figure*}[p]" in result, "Should use figure*[p] for dedicated page placement"
+        # Should use figure*[p!] for proper dedicated page control
+        assert "\\begin{figure*}[p!]" in result, "Should use figure*[p!] for dedicated page placement"
 
-        # Should NOT have clearpage commands that disrupt two-column layout
-        assert "\\clearpage" not in result, "Should not use clearpage as it disrupts two-column layout"
+        # Should have clearpage commands for proper dedicated page behavior
+        assert "\\vfill\\clearpage" in result, "Should use vfill+clearpage for dedicated page behavior"
 
     def test_dedicated_page_figures_with_scaling(self):
         """Test Guillaume's specific scaling issue with dedicated page figures.
@@ -1037,35 +1037,35 @@ This is the methods content.
 
         # Test cases for Guillaume's scaling scenarios
         test_cases = [
-            # Guillaume's working case - ALL dedicated page figures use figure*[p] to span full width
+            # Guillaume's working case - ALL dedicated page figures use figure*[p!] to span full width
             {
                 "width": "\\textwidth",
                 "tex_position": "p",
                 "expected_env": "figure*",
-                "expected_pos": "[p]",
-                "description": "textwidth with position p should use figure*[p] for dedicated page full-width",
+                "expected_pos": "[p!]",
+                "description": "textwidth with position p should use figure*[p!] for dedicated page full-width",
             },
             # Guillaume's problematic cases that should now work
             {
                 "width": "0.8",
                 "tex_position": "p",
                 "expected_env": "figure*",
-                "expected_pos": "[p]",
-                "description": "0.8 width with position p should use figure*[p] for dedicated page full-width",
+                "expected_pos": "[p!]",
+                "description": "0.8 width with position p should use figure*[p!] for dedicated page full-width",
             },
             {
                 "width": "80%",
                 "tex_position": "p",
                 "expected_env": "figure*",
-                "expected_pos": "[p]",
-                "description": "80% width with position p should use figure*[p] for dedicated page full-width",
+                "expected_pos": "[p!]",
+                "description": "80% width with position p should use figure*[p!] for dedicated page full-width",
             },
             {
                 "width": "0.9\\textwidth",
                 "tex_position": "p",
                 "expected_env": "figure*",
-                "expected_pos": "[p]",
-                "description": "0.9textwidth with position p should use figure*[p] for dedicated page full-width",
+                "expected_pos": "[p!]",
+                "description": "0.9textwidth with position p should use figure*[p!] for dedicated page full-width",
             },
             # Verify that 2-column still works when no explicit positioning
             {
@@ -1219,14 +1219,14 @@ acknowledge_rxiv_maker: false
                 import re
 
                 fullpage_pattern = (
-                    r"\\begin{figure\*}\[p\].*?width=\\textwidth.*?This figure should be on a dedicated page"
+                    r"\\begin{figure\*}\[p!\].*?width=\\textwidth.*?This figure should be on a dedicated page"
                 )
                 assert re.search(fullpage_pattern, tex_content, re.DOTALL), (
-                    "Generated .tex should use figure*[p] for dedicated page textwidth figures to span full width"
+                    "Generated .tex should use figure*[p!] for dedicated page textwidth figures to span full width"
                 )
-                # Should use figure*[p] for dedicated page placement
-                assert "\\begin{figure*}[p]" in tex_content, (
-                    "Generated .tex should use figure*[p] for dedicated page placement"
+                # Should use figure*[p!] for dedicated page placement
+                assert "\\begin{figure*}[p!]" in tex_content, (
+                    "Generated .tex should use figure*[p!] for dedicated page placement"
                 )
 
                 print(f"✅ End-to-end test passed! Generated .tex file: {tex_file}")
@@ -1317,14 +1317,14 @@ class TestGuillaumeEdgeCases:
         from rxiv_maker.converters.figure_processor import create_latex_figure_environment
 
         test_cases = [
-            # Guillaume's specific case - dedicated page figures use figure*[p] for full-width spanning
-            {"width": "\\textwidth", "tex_position": "p", "expected_env": "figure*", "expected_pos": "[p]"},
+            # Guillaume's specific case - dedicated page figures use figure*[p!] for full-width spanning
+            {"width": "\\textwidth", "tex_position": "p", "expected_env": "figure*", "expected_pos": "[p!]"},
             # Two-column spanning variations
             {"width": "\\textwidth", "expected_env": "figure*", "expected_pos": "[tp]"},
             {"width": "\\textwidth", "tex_position": "t", "expected_env": "figure*", "expected_pos": "[t]"},
             {"width": "\\textwidth", "tex_position": "b", "expected_env": "figure*", "expected_pos": "[b]"},
-            # Regular figures - dedicated page figures use figure*[p] for full-width spanning
-            {"width": "0.8", "tex_position": "p", "expected_env": "figure*", "expected_pos": "[p]"},
+            # Regular figures - dedicated page figures use figure*[p!] for full-width spanning
+            {"width": "0.8", "tex_position": "p", "expected_env": "figure*", "expected_pos": "[p!]"},
             {"width": "\\linewidth", "expected_env": "figure", "expected_pos": "[ht]"},
         ]
 

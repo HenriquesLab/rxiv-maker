@@ -260,9 +260,9 @@ class TestGuillaumeFigureIssues:
         text = "As shown in (@fig:Figure1 A), the results indicate..."
         result = convert_figure_references_to_latex(text)
 
-        # Should render as Fig. \ref{fig:Figure1}A (no space between 1 and A)
-        assert "Fig. \\ref{fig:Figure1}A)" in result, (
-            f"Expected no space between figure ref and panel letter, got: {result}"
+        # Should render as Fig. \ref{fig:Figure1}{}A (with empty group to prevent LaTeX spacing issues)
+        assert "Fig. \\ref{fig:Figure1}{}A)" in result, (
+            f"Expected empty group {{}} spacing control between figure ref and panel letter, got: {result}"
         )
 
         # Should NOT have a space

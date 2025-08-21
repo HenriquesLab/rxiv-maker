@@ -228,7 +228,7 @@ def create_latex_figure_environment(
     processed_caption = re.sub(r"\*([^*]+)\*", r"\\textit{\1}", processed_caption)
 
     # Process caption formatting - handle dedicated page figures FIRST to prevent text cutting
-    if position == "p":
+    if original_position == "p":
         # For dedicated page figures, use proper single-page caption formatting
         # Use \linewidth to span the full available width within the figure environment
         # This ensures the caption matches the figure width on dedicated pages
