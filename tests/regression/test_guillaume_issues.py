@@ -1024,8 +1024,8 @@ This is the methods content.
         # Should use figure*[p] for proper dedicated page control
         assert "\\begin{figure*}[p]" in result, "Should use figure*[p] for dedicated page placement"
 
-        # Should use FloatBarrier for safer page control
-        assert "\\FloatBarrier" in result, "Should use FloatBarrier for dedicated page behavior"
+        # Should use clearpage to force page break for dedicated page positioning
+        assert "\\clearpage" in result, "Should use clearpage for dedicated page behavior"
 
     def test_dedicated_page_figures_with_scaling(self):
         """Test Guillaume's specific scaling issue with dedicated page figures.
