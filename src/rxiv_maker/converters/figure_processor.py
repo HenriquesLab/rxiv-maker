@@ -212,10 +212,10 @@ def create_latex_figure_environment(
     if not is_twocolumn and width == "\\textwidth" and original_position != "p":
         is_twocolumn = True
 
-    # Handle dedicated page positioning - use [p!] for true dedicated pages
+    # Handle dedicated page positioning - use [p] for dedicated pages
     if original_position == "p":
-        # Force dedicated pages but try to improve text flow
-        position = "p!"
+        # Keep position as 'p' for safer dedicated page placement
+        position = "p"
         is_twocolumn = True
 
     # Only adjust positioning for two-column spanning figures that don't have explicit positioning
@@ -285,9 +285,10 @@ def create_latex_figure_environment(
 
     latex_figure += f"\n\\end{{{figure_env}}}"
 
-    # For dedicated page figures, fill current page first, then create dedicated page
+    # For dedicated page figures, ensure proper page placement without double clearpage
     if original_position == "p":
-        latex_figure = f"\\vfill\\clearpage\n{latex_figure}\n\\clearpage"
+        # Use FloatBarrier for safer page control, avoiding potential blank page issues
+        latex_figure = f"\\FloatBarrier\n{latex_figure}"
 
     return latex_figure
 
