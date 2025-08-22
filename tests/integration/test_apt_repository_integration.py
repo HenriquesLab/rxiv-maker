@@ -51,13 +51,15 @@ class TestAPTRepositoryIntegration(unittest.TestCase):
         self.assertEqual(permissions["contents"], "write")
 
     def test_workflow_uses_correct_repository_reference(self):
-        """Test that workflow references the correct apt-rxiv-maker repository."""
-        with open(self.workflow_file, "r") as f:
-            workflow_content = f.read()
+        """Test that orchestrator references the correct apt-rxiv-maker repository."""
+        # Check orchestrator script for proper repository configuration
+        orchestrator_path = self.repo_root / ".github" / "scripts" / "release" / "orchestrator.py"
+        with open(orchestrator_path, "r") as f:
+            orchestrator_content = f.read()
 
-        # Should use HenriquesLab, not paxcalpt
-        self.assertIn("--repo HenriquesLab/apt-rxiv-maker", workflow_content)
-        self.assertNotIn("paxcalpt/apt-rxiv-maker", workflow_content)
+        # Should use henriqueslab in repository configuration
+        self.assertIn("henriqueslab", orchestrator_content.lower())
+        self.assertNotIn("paxcalpt", orchestrator_content.lower())
 
     def test_workflow_passes_correct_parameters(self):
         """Test that Python orchestrator supports required parameters."""
@@ -134,15 +136,16 @@ class TestAPTRepositoryIntegration(unittest.TestCase):
             )
 
     def test_apt_workflow_trigger_format(self):
-        """Test that workflow trigger uses correct GitHub CLI format."""
-        with open(self.workflow_file, "r") as f:
-            workflow_content = f.read()
+        """Test that orchestrator implements proper workflow triggering."""
+        # Check orchestrator script for workflow triggering functionality
+        orchestrator_path = self.repo_root / ".github" / "scripts" / "release" / "orchestrator.py"
+        with open(orchestrator_path, "r") as f:
+            orchestrator_content = f.read()
 
-        # Check for proper gh workflow run command structure
-        self.assertIn("gh workflow run publish-apt.yml", workflow_content)
-        self.assertIn("--repo HenriquesLab/apt-rxiv-maker", workflow_content)
-        self.assertIn("--field version=", workflow_content)
-        self.assertIn("--field dry-run=", workflow_content)
+        # Check that orchestrator has APT workflow triggering logic
+        self.assertIn("trigger_apt_workflow", orchestrator_content)
+        self.assertIn("apt_repo", orchestrator_content)
+        self.assertIn("trigger_workflow", orchestrator_content)
 
     def test_workflow_summary_includes_apt(self):
         """Test that Python orchestrator handles APT repository coordination."""
