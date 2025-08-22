@@ -43,34 +43,34 @@ jobs:
         id: validate
         run: |
           echo "🔍 Running pre-flight validation checks..."
-          
+
           # Check if required secrets are available (without exposing them)
           MISSING_SECRETS=""
-          
+
           if [ -z "${{ secrets.DISPATCH_PAT }}" ]; then
             MISSING_SECRETS="${MISSING_SECRETS}, DISPATCH_PAT"
           fi
-          
+
           if [ -z "${{ secrets.DOCKER_USERNAME }}" ]; then
             MISSING_SECRETS="${MISSING_SECRETS}, DOCKER_USERNAME"
           fi
-          
+
           if [ -z "${{ secrets.DOCKER_PUSH }}" ]; then
             MISSING_SECRETS="${MISSING_SECRETS}, DOCKER_PUSH"
           fi
-          
+
           if [ -n "$MISSING_SECRETS" ]; then
             echo "❌ Missing required secrets:${MISSING_SECRETS#, }"
             echo "should_continue=false" >> $GITHUB_OUTPUT
             echo "summary=Missing required secrets" >> $GITHUB_OUTPUT
             exit 1
           fi
-          
+
           # Validate version consistency if this is a tag push
           if [ "${{ github.event_name }}" == "push" ] && [[ "${{ github.ref }}" == refs/tags/* ]]; then
             TAG_VERSION="${GITHUB_REF_NAME#v}"
             CODE_VERSION=$(python -c "exec(open('src/rxiv_maker/__version__.py').read()); print(__version__)")
-            
+
             if [ "$TAG_VERSION" != "$CODE_VERSION" ]; then
               echo "❌ Version mismatch: tag=$TAG_VERSION, code=$CODE_VERSION"
               echo "should_continue=false" >> $GITHUB_OUTPUT
@@ -78,30 +78,30 @@ jobs:
               exit 1
             fi
           fi
-          
+
           # Test external service connectivity
           echo "🌐 Testing external service connectivity..."
-          
+
           # Test PyPI connectivity
           if ! curl -f -s https://pypi.org/project/rxiv-maker/ > /dev/null; then
             echo "⚠️ PyPI connectivity test failed (non-blocking)"
           fi
-          
+
           # Test Docker Hub connectivity
           if ! curl -f -s https://hub.docker.com/v2/repositories/henriqueslab/rxiv-maker-base/ > /dev/null; then
             echo "⚠️ Docker Hub connectivity test failed (non-blocking)"
           fi
-          
+
           # Run ecosystem health check
           echo "🌐 Running ecosystem health check..."
           chmod +x .github/scripts/check-ecosystem-health.sh
-          
+
           HEALTH_OUTPUT=$(.github/scripts/check-ecosystem-health.sh 2>&1 || true)
           HEALTH_EXIT_CODE=$?
-          
+
           echo "Health check output:"
           echo "$HEALTH_OUTPUT"
-          
+
           case $HEALTH_EXIT_CODE in
             0)
               echo "✅ Ecosystem health: HEALTHY"
@@ -126,7 +126,7 @@ jobs:
               echo "⚠️ Proceeding with release (health check inconclusive)"
               ;;
           esac
-          
+
           echo "✅ Pre-flight validation completed"
           echo "should_continue=true" >> $GITHUB_OUTPUT
           echo "summary=All checks passed" >> $GITHUB_OUTPUT
@@ -228,7 +228,7 @@ jobs:
         run: |
           echo "✅ Build artifacts created successfully"
           echo "created=true" >> $GITHUB_OUTPUT
-          
+
           # Store artifact information for potential rollback
           echo "ARTIFACTS_CREATED=true" >> $GITHUB_ENV
           echo "BUILD_VERSION=${{ steps.version.outputs.version }}" >> $GITHUB_ENV
@@ -240,9 +240,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [pre-flight, build]
     if: |
-      needs.pre-flight.result == 'success' && 
-      needs.pre-flight.outputs.should_continue == 'true' && 
-      needs.build.result == 'success' && 
+      needs.pre-flight.result == 'success' &&
+      needs.pre-flight.outputs.should_continue == 'true' &&
+      needs.build.result == 'success' &&
       needs.build.outputs.build_artifacts == 'true'
     timeout-minutes: 2
     outputs:
@@ -254,22 +254,22 @@ jobs:
         id: validate
         run: |
           echo "🔍 Validating critical path for release progression..."
-          
+
           # Check all critical dependency results
           PRE_FLIGHT_OK="${{ needs.pre-flight.result == 'success' && needs.pre-flight.outputs.should_continue == 'true' }}"
           BUILD_OK="${{ needs.build.result == 'success' && needs.build.outputs.build_artifacts == 'true' }}"
-          
+
           echo "Pre-flight validation: $PRE_FLIGHT_OK"
           echo "Build artifacts ready: $BUILD_OK"
-          
+
           # Validate trigger conditions for downstream jobs
           IS_PRODUCTION_RELEASE="${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.dry-run == 'false') }}"
           echo "Production release mode: $IS_PRODUCTION_RELEASE"
-          
+
           if [ "$PRE_FLIGHT_OK" == "true" ] && [ "$BUILD_OK" == "true" ]; then
             echo "✅ Critical path validation successful"
             echo "valid=true" >> $GITHUB_OUTPUT
-            
+
             if [ "$IS_PRODUCTION_RELEASE" == "true" ]; then
               echo "can_proceed=true" >> $GITHUB_OUTPUT
               echo "✅ Can proceed to production release"
@@ -290,7 +290,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [critical-path-validation]
     if: |
-      needs.critical-path-validation.result == 'success' && 
+      needs.critical-path-validation.result == 'success' &&
       needs.critical-path-validation.outputs.critical_path_valid == 'true'
     timeout-minutes: 10
     permissions:
@@ -366,11 +366,11 @@ jobs:
         run: |
           TAG="${{ needs.build.outputs.tag }}"
           RELEASE_CREATED=false
-          
+
           # Retry logic for release creation/update
           for attempt in {1..3}; do
             echo "🎯 Attempt $attempt to create/update release..."
-            
+
             # Check if release already exists
             if gh release view "$TAG" >/dev/null 2>&1; then
               echo "📝 Updating existing release $TAG..."
@@ -394,18 +394,18 @@ jobs:
                 echo "❌ Failed to create release (attempt $attempt)"
               fi
             fi
-            
+
             if [ $attempt -lt 3 ]; then
               echo "⏳ Waiting 10 seconds before retry..."
               sleep 10
             fi
           done
-          
+
           if [ "$RELEASE_CREATED" != "true" ]; then
             echo "❌ Failed to create/update release after 3 attempts"
             exit 1
           fi
-          
+
           # Set outputs for downstream jobs
           echo "created=true" >> $GITHUB_OUTPUT
           RELEASE_URL="https://github.com/${{ github.repository }}/releases/tag/${TAG}"
@@ -418,7 +418,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [critical-path-validation, pypi]
     if: |
-      needs.critical-path-validation.result == 'success' && 
+      needs.critical-path-validation.result == 'success' &&
       needs.critical-path-validation.outputs.can_proceed_to_release == 'true' &&
       needs.pypi.result == 'success' &&
       needs.pypi.outputs.publish_success == 'true'
@@ -481,7 +481,7 @@ jobs:
         run: |
           echo "✅ Docker images built and pushed successfully"
           echo "success=true" >> $GITHUB_OUTPUT
-          
+
           # Store Docker build info for monitoring
           echo "DOCKER_BUILD_SUCCESS=true" >> $GITHUB_ENV
           echo "IMAGE_DIGEST=${{ steps.build.outputs.digest }}" >> $GITHUB_ENV
@@ -520,7 +520,7 @@ jobs:
     needs: [critical-path-validation, github-release]
     # Only publish when critical path validates production release and GitHub release succeeds
     if: |
-      needs.critical-path-validation.result == 'success' && 
+      needs.critical-path-validation.result == 'success' &&
       needs.critical-path-validation.outputs.can_proceed_to_release == 'true' &&
       needs.github-release.result == 'success'
     timeout-minutes: 10
@@ -579,40 +579,40 @@ jobs:
           PACKAGE_NAME="rxiv-maker"
           PACKAGE_URL="https://pypi.org/project/${PACKAGE_NAME}/${VERSION}/"
           DOWNLOAD_URL="https://pypi.org/pypi/${PACKAGE_NAME}/${VERSION}/json"
-          
+
           echo "📦 Waiting for PyPI package propagation for ${PACKAGE_NAME} v${VERSION}..."
           echo "🔍 Checking: ${PACKAGE_URL}"
-          
+
           # Exponential backoff strategy: 30s, 60s, 120s, 120s (max 5.5 minutes)
           WAIT_TIMES=(30 60 120 120)
           ATTEMPT=1
           SUCCESS=false
-          
+
           for wait_time in "${WAIT_TIMES[@]}"; do
             echo "⏳ Attempt ${ATTEMPT}: Waiting ${wait_time} seconds before checking..."
             sleep $wait_time
-            
+
             echo "🔍 Checking PyPI API availability..."
-            
+
             # Check PyPI JSON API for package metadata
             if curl -f -s "${DOWNLOAD_URL}" > /dev/null; then
               echo "✅ PyPI JSON API responds for version ${VERSION}"
-              
+
               # Verify we can get package metadata
               PACKAGE_INFO=$(curl -s "${DOWNLOAD_URL}" | jq -r '.info.version // empty' 2>/dev/null || echo "")
-              
+
               if [ "$PACKAGE_INFO" = "$VERSION" ]; then
                 echo "✅ Package metadata verified for version ${VERSION}"
-                
+
                 # Check if at least one distribution file is available
                 WHEEL_AVAILABLE=$(curl -s "${DOWNLOAD_URL}" | jq -r '.urls[] | select(.filename | endswith(".whl")) | .filename' | head -1 || echo "")
                 TARBALL_AVAILABLE=$(curl -s "${DOWNLOAD_URL}" | jq -r '.urls[] | select(.filename | endswith(".tar.gz")) | .filename' | head -1 || echo "")
-                
+
                 if [ -n "$WHEEL_AVAILABLE" ] || [ -n "$TARBALL_AVAILABLE" ]; then
                   echo "✅ Distribution files available:"
                   [ -n "$WHEEL_AVAILABLE" ] && echo "  - Wheel: ${WHEEL_AVAILABLE}"
                   [ -n "$TARBALL_AVAILABLE" ] && echo "  - Source: ${TARBALL_AVAILABLE}"
-                  
+
                   # Final verification: try to download the package index
                   echo "🧪 Final verification: checking pip install availability..."
                   if pip index versions "${PACKAGE_NAME}" 2>/dev/null | grep -q "$VERSION"; then
@@ -632,20 +632,20 @@ jobs:
             else
               echo "⚠️ PyPI API not yet responding for version ${VERSION} (attempt ${ATTEMPT})"
             fi
-            
+
             ATTEMPT=$((ATTEMPT + 1))
-            
+
             if [ $ATTEMPT -gt ${#WAIT_TIMES[@]} ]; then
               echo "⏰ Maximum wait time reached"
               break
             fi
           done
-          
+
           if [ "$SUCCESS" = "true" ]; then
             echo "✅ PyPI package fully propagated and available for downstream workflows"
             echo "available=true" >> $GITHUB_OUTPUT
             echo "package_url=${PACKAGE_URL}" >> $GITHUB_OUTPUT
-            
+
             echo "### ✅ PyPI Package Ready" >> $GITHUB_STEP_SUMMARY
             echo "- **Package**: [${PACKAGE_NAME} v${VERSION}](${PACKAGE_URL})" >> $GITHUB_STEP_SUMMARY
             echo "- **Status**: Fully propagated and pip-installable" >> $GITHUB_STEP_SUMMARY
@@ -654,13 +654,13 @@ jobs:
             echo "❌ PyPI package not fully available after maximum wait time"
             echo "available=false" >> $GITHUB_OUTPUT
             echo "package_url=${PACKAGE_URL}" >> $GITHUB_OUTPUT
-            
+
             echo "### ⚠️ PyPI Package Propagation Warning" >> $GITHUB_STEP_SUMMARY
             echo "- **Package**: ${PACKAGE_NAME} v${VERSION}" >> $GITHUB_STEP_SUMMARY
             echo "- **Status**: Published but not fully propagated" >> $GITHUB_STEP_SUMMARY
             echo "- **Action**: Downstream workflows will use GitHub release artifacts as fallback" >> $GITHUB_STEP_SUMMARY
             echo "- **Note**: Package will be available soon, retry workflows if needed" >> $GITHUB_STEP_SUMMARY
-            
+
             # Don't fail the job - let downstream workflows handle fallback
             echo "ℹ️ Continuing with partial availability - downstream workflows can use GitHub release fallback"
           fi
@@ -671,9 +671,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [critical-path-validation, github-release, pypi, wait-for-pypi-propagation]
     if: |
-      needs.critical-path-validation.result == 'success' && 
+      needs.critical-path-validation.result == 'success' &&
       needs.critical-path-validation.outputs.can_proceed_to_release == 'true' &&
-      needs.github-release.result == 'success' && 
+      needs.github-release.result == 'success' &&
       needs.pypi.result == 'success' &&
       needs.pypi.outputs.publish_success == 'true' &&
       needs.wait-for-pypi-propagation.result == 'success'
@@ -691,31 +691,31 @@ jobs:
           VERSION="${{ needs.build.outputs.version }}"
           TAG="${{ needs.build.outputs.tag }}"
           SUCCESS=false
-          
+
           echo "🍺 Triggering Homebrew formula update for version ${VERSION}..."
-          
+
           # Comprehensive GitHub release validation before triggering workflow
           echo "🔍 Validating GitHub release readiness for Homebrew update..."
-          
+
           # Verify GitHub release API returns proper response
           RELEASE_VALIDATION_PASSED=false
           for validation_attempt in {1..3}; do
             echo "📋 Release validation attempt ${validation_attempt}..."
-            
+
             # Check GitHub release API
             if gh release view "$TAG" --json name,tagName,tarballUrl,createdAt >/dev/null 2>&1; then
               echo "✅ GitHub release API responds correctly"
-              
+
               # Get tarball URL for verification
               TARBALL_URL=$(gh release view "$TAG" --json tarballUrl --jq '.tarballUrl' 2>/dev/null || echo "")
-              
+
               if [ -n "$TARBALL_URL" ]; then
                 echo "✅ Tarball URL available: ${TARBALL_URL}"
-                
+
                 # Test tarball downloadability (head request only)
                 if curl -I -f -s "$TARBALL_URL" >/dev/null 2>&1; then
                   echo "✅ Tarball is downloadable"
-                  
+
                   # Verify PyPI package is ready (double-check from propagation job)
                   PYPI_STATUS="${{ needs.wait-for-pypi-propagation.outputs.pypi_available }}"
                   if [ "$PYPI_STATUS" = "true" ]; then
@@ -737,30 +737,30 @@ jobs:
             else
               echo "⚠️ GitHub release API not responding properly (attempt ${validation_attempt})"
             fi
-            
+
             if [ $validation_attempt -lt 3 ]; then
               echo "⏳ Waiting 20 seconds before retry..."
               sleep 20
             fi
           done
-          
+
           if [ "$RELEASE_VALIDATION_PASSED" != "true" ]; then
             echo "❌ Release validation failed after 3 attempts"
             echo "🚨 GitHub release not ready for Homebrew update"
             echo "success=false" >> $GITHUB_OUTPUT
             exit 1
           fi
-          
+
           echo "✅ GitHub release fully validated and ready for Homebrew update"
-          
+
           # Retry logic for workflow trigger
           for attempt in {1..3}; do
             echo "🎯 Attempt $attempt to trigger homebrew workflow..."
-            
+
             if gh workflow run homebrew-auto-update.yml \
               --repo "${{ github.repository }}" \
               --field tag_name="${TAG}"; then
-              
+
               echo "✅ Successfully triggered homebrew update workflow (attempt $attempt)"
               SUCCESS=true
               break
@@ -772,10 +772,10 @@ jobs:
               fi
             fi
           done
-          
+
           if [ "$SUCCESS" == "true" ]; then
             echo "success=true" >> $GITHUB_OUTPUT
-            
+
             # Get the workflow run URL for monitoring
             WORKFLOW_URL="${{ github.server_url }}/${{ github.repository }}/actions/workflows/homebrew-auto-update.yml"
             echo "workflow_url=${WORKFLOW_URL}" >> $GITHUB_OUTPUT
@@ -783,7 +783,7 @@ jobs:
           else
             echo "❌ Failed to trigger homebrew update workflow after 3 attempts"
             echo "success=false" >> $GITHUB_OUTPUT
-            
+
             # Don't fail the entire release for homebrew issues
             echo "⚠️ Continuing release process despite homebrew workflow trigger failure"
             echo "The homebrew formula can be updated manually or via the next release"
@@ -792,7 +792,7 @@ jobs:
       - name: 📊 Add workflow status to summary
         run: |
           echo "### 🍺 Homebrew Update Status" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${{ steps.trigger.outputs.success }}" == "true" ]; then
             echo "✅ **Homebrew workflow triggered successfully**" >> $GITHUB_STEP_SUMMARY
             echo "- **Monitor**: [View Workflow Run](${{ steps.trigger.outputs.workflow_url }})" >> $GITHUB_STEP_SUMMARY
@@ -809,9 +809,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [critical-path-validation, github-release, pypi, wait-for-pypi-propagation]
     if: |
-      needs.critical-path-validation.result == 'success' && 
+      needs.critical-path-validation.result == 'success' &&
       needs.critical-path-validation.outputs.can_proceed_to_release == 'true' &&
-      needs.github-release.result == 'success' && 
+      needs.github-release.result == 'success' &&
       needs.pypi.result == 'success' &&
       needs.pypi.outputs.publish_success == 'true' &&
       needs.wait-for-pypi-propagation.result == 'success'
@@ -828,22 +828,22 @@ jobs:
         run: |
           VERSION="${{ needs.build.outputs.version }}"
           SUCCESS=false
-          
+
           echo "📦 Triggering APT repository update for version ${VERSION}..."
 
           # Comprehensive release validation for APT repository workflow
           echo "🔍 Validating release readiness for APT repository update..."
-          
+
           # APT builds require both PyPI and GitHub release to be fully ready
           RELEASE_VALIDATION_PASSED=false
           for validation_attempt in {1..3}; do
             echo "📋 Release validation attempt ${validation_attempt}..."
-            
+
             # Verify PyPI package is available (primary source for APT builds)
             PYPI_STATUS="${{ needs.wait-for-pypi-propagation.outputs.pypi_available }}"
             if [ "$PYPI_STATUS" = "true" ]; then
               echo "✅ PyPI package confirmed available for APT build"
-              
+
               # Also verify GitHub release as backup source
               if gh release view "${{ needs.build.outputs.tag }}" --json name,tagName >/dev/null 2>&1; then
                 echo "✅ GitHub release confirmed available as backup"
@@ -854,7 +854,7 @@ jobs:
               fi
             else
               echo "⚠️ PyPI package not available, checking GitHub release fallback..."
-              
+
               # If PyPI failed, ensure GitHub release is solid for fallback
               TAG="${{ needs.build.outputs.tag }}"
               if gh release view "$TAG" --json name,tagName,tarballUrl >/dev/null 2>&1; then
@@ -870,32 +870,32 @@ jobs:
                 echo "⚠️ GitHub release not ready (attempt ${validation_attempt})"
               fi
             fi
-            
+
             if [ $validation_attempt -lt 3 ]; then
               echo "⏳ Waiting 20 seconds before retry..."
               sleep 20
             fi
           done
-          
+
           if [ "$RELEASE_VALIDATION_PASSED" != "true" ]; then
             echo "❌ Release validation failed after 3 attempts"
             echo "🚨 Neither PyPI nor GitHub release ready for APT repository build"
             echo "success=false" >> $GITHUB_OUTPUT
             exit 1
           fi
-          
+
           echo "✅ Release sources validated and ready for APT repository build"
 
           # Retry logic for workflow trigger
           for attempt in {1..3}; do
             echo "🎯 Attempt $attempt to trigger APT workflow..."
-            
+
             # Trigger workflow in the apt-rxiv-maker repository
             if gh workflow run publish-apt.yml \
               --repo HenriquesLab/apt-rxiv-maker \
               --field version="${VERSION}" \
               --field dry-run="false"; then
-              
+
               echo "✅ Successfully triggered APT repository workflow (attempt $attempt)"
               SUCCESS=true
               break
@@ -907,10 +907,10 @@ jobs:
               fi
             fi
           done
-          
+
           if [ "$SUCCESS" == "true" ]; then
             echo "success=true" >> $GITHUB_OUTPUT
-            
+
             # Get the workflow run URL for monitoring
             WORKFLOW_URL="https://github.com/HenriquesLab/apt-rxiv-maker/actions/workflows/publish-apt.yml"
             echo "workflow_url=${WORKFLOW_URL}" >> $GITHUB_OUTPUT
@@ -918,7 +918,7 @@ jobs:
           else
             echo "❌ Failed to trigger APT repository workflow after 3 attempts"
             echo "success=false" >> $GITHUB_OUTPUT
-            
+
             # Don't fail the entire release for APT repository issues
             echo "⚠️ Continuing release process despite APT workflow trigger failure"
             echo "The APT package can be updated manually or via the next release"
@@ -927,7 +927,7 @@ jobs:
       - name: 📊 Add workflow status to summary
         run: |
           echo "### 📦 APT Repository Update Status" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${{ steps.trigger.outputs.success }}" == "true" ]; then
             echo "✅ **APT workflow triggered successfully**" >> $GITHUB_STEP_SUMMARY
             echo "- **Repository**: [apt-rxiv-maker](https://github.com/HenriquesLab/apt-rxiv-maker)" >> $GITHUB_STEP_SUMMARY
@@ -965,18 +965,18 @@ jobs:
           echo "Docker: ${{ needs.docker.result }}"
           echo "Homebrew: ${{ needs.homebrew-update.result }}"
           echo "APT: ${{ needs.apt-repository.result }}"
-          
+
           # Determine what needs to be rolled back
           if [ "${{ needs.pypi.result }}" == "failure" ]; then
             echo "ROLLBACK_PYPI=false" >> $GITHUB_ENV  # Can't rollback PyPI easily
           fi
-          
+
           if [ "${{ needs.github-release.result }}" == "success" ] && [ "${{ needs.pypi.result }}" == "failure" ]; then
             echo "ROLLBACK_GITHUB_RELEASE=true" >> $GITHUB_ENV
           else
             echo "ROLLBACK_GITHUB_RELEASE=false" >> $GITHUB_ENV
           fi
-          
+
           if [ "${{ needs.docker.result }}" == "failure" ]; then
             echo "ROLLBACK_DOCKER=false" >> $GITHUB_ENV  # Docker tags can't be easily removed
           fi
@@ -988,12 +988,12 @@ jobs:
         run: |
           TAG="${{ needs.build.outputs.tag }}"
           echo "📋 Marking release $TAG as prerelease due to downstream failures..."
-          
+
           # Check if release exists and mark as prerelease
           if gh release view "$TAG" >/dev/null 2>&1; then
             if gh release edit "$TAG" --prerelease; then
               echo "✅ Release marked as prerelease"
-              
+
               # Add warning to release notes
               echo "⚠️ **AUTOMATED ROLLBACK**: This release was marked as prerelease due to critical failures in the release pipeline. Do not use in production." | gh release edit "$TAG" --notes-file -
             else
@@ -1009,22 +1009,22 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Critical failures detected in release pipeline. Automated rollback actions taken:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${{ env.ROLLBACK_GITHUB_RELEASE }}" == "true" ]; then
             echo "- ✅ GitHub release marked as prerelease" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Manual Actions Required" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${{ needs.pypi.result }}" == "failure" ]; then
             echo "- 🔧 Review PyPI publication failure and retry if needed" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           if [ "${{ needs.docker.result }}" == "failure" ]; then
             echo "- 🐳 Review Docker build failure - tags may need manual cleanup" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Recovery Steps" >> $GITHUB_STEP_SUMMARY
           echo "1. Fix the underlying issues" >> $GITHUB_STEP_SUMMARY

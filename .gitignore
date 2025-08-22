@@ -304,6 +304,7 @@ EXAMPLE_MANUSCRIPT/2025__Saraiva_et_al__for_arxiv.zip
 GEMINI.md
 # Markdown files - ignore by default except important ones
 *.md
+.github/*.md
 
 # Important markdown files to keep tracked
 !README.md

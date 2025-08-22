@@ -57,21 +57,21 @@ jobs:
             echo "❌ Unable to determine release tag"
             exit 1
           fi
-          
+
           # Extract version and validate format
           VERSION="${TAG_NAME#v}"
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "❌ Invalid version format: $VERSION (expected: x.y.z)"
             exit 1
           fi
-          
+
           # Set outputs
           TARBALL_URL="https://github.com/${{ github.repository }}/archive/refs/tags/${TAG_NAME}.tar.gz"
-          
+
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
           echo "tarball_url=$TARBALL_URL" >> $GITHUB_OUTPUT
-          
+
           echo "✅ Release info validated:"
           echo "  Version: $VERSION"
           echo "  Tag: $TAG_NAME"
@@ -81,7 +81,7 @@ jobs:
         run: |
           echo "🔍 Validating version synchronization..."
           RELEASE_VERSION="${{ steps.release.outputs.version }}"
-          
+
           # Get version from codebase
           CODEBASE_VERSION=$(python -c "
           import sys
@@ -94,10 +94,10 @@ jobs:
               print(f'Error importing version: {e}', file=sys.stderr)
               sys.exit(1)
           ")
-          
+
           echo "📦 Release version: $RELEASE_VERSION"
           echo "📝 Codebase version: $CODEBASE_VERSION"
-          
+
           if [ "$RELEASE_VERSION" != "$CODEBASE_VERSION" ] && [ "${{ github.event.inputs.force_update }}" != "true" ]; then
             echo "❌ Version mismatch detected!"
             echo "   Release tag version: $RELEASE_VERSION"
@@ -109,7 +109,7 @@ jobs:
             echo "   3. Create a new release with the correct version"
             exit 1
           fi
-          
+
           echo "✅ Version synchronization validated"
 
       - name: 🌐 Test tarball accessibility
@@ -149,7 +149,7 @@ jobs:
           echo "⬇️ Downloading release tarball..."
           VERSION="${{ needs.validate-release.outputs.version }}"
           TARBALL_URL="${{ needs.validate-release.outputs.tarball_url }}"
-          
+
           # Download tarball with retry logic
           for attempt in {1..3}; do
             if curl -L -f -o "rxiv-maker-${VERSION}.tar.gz" "$TARBALL_URL"; then
@@ -166,15 +166,15 @@ jobs:
               fi
             fi
           done
-          
+
           # Calculate SHA256 hash
           SHA256=$(sha256sum "rxiv-maker-${VERSION}.tar.gz" | cut -d' ' -f1)
           echo "SHA256=${SHA256}" >> $GITHUB_ENV
-          
+
           echo "✅ Tarball verified:"
           echo "  Size: $(ls -lh rxiv-maker-${VERSION}.tar.gz | awk '{print $5}')"
           echo "  SHA256: $SHA256"
-          
+
           # Verify tarball integrity
           if tar -tzf "rxiv-maker-${VERSION}.tar.gz" > /dev/null 2>&1; then
             echo "✅ Tarball integrity verified"
@@ -194,7 +194,7 @@ jobs:
         run: |
           echo "🧹 Cleaning up old auto-update branches..."
           VERSION="${{ needs.validate-release.outputs.version }}"
-          
+
           # List and delete old branches for this version
           git branch -r | grep "origin/auto-update-v${VERSION}" | head -5 | while read -r branch; do
             branch_name=$(echo "$branch" | sed 's|origin/||' | xargs)
@@ -205,36 +205,40 @@ jobs:
           done
 
       - name: 📝 Create and update formula branch
+        id: update
         run: |
           VERSION="${{ needs.validate-release.outputs.version }}"
           TARBALL_URL="${{ needs.validate-release.outputs.tarball_url }}"
           TIMESTAMP=$(date +%Y%m%d-%H%M%S)
           BRANCH_NAME="auto-update-v${VERSION}-${TIMESTAMP}"
-          
+
           echo "🌿 Creating branch: $BRANCH_NAME"
           git checkout -b "$BRANCH_NAME"
-          
+
           # Update the formula file
           echo "📝 Updating formula with new version and SHA256..."
           sed -i "s|url \".*\"|url \"${TARBALL_URL}\"|g" "${{ env.FORMULA_FILE }}"
           sed -i "s|sha256 \".*\"|sha256 \"${SHA256}\"|g" "${{ env.FORMULA_FILE }}"
-          
+
           # Verify changes
           if ! git diff --quiet "${{ env.FORMULA_FILE }}"; then
             echo "📋 Formula changes:"
             git diff "${{ env.FORMULA_FILE }}"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
           else
-            echo "⚠️ No changes detected in formula"
-            exit 0
+            echo "✅ Formula is already up to date with v${VERSION}"
+            echo "⏭️ No update needed - formula already contains correct version and SHA256"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
           fi
-          
+
           # Save branch name for next steps
           echo "BRANCH_NAME=${BRANCH_NAME}" >> $GITHUB_ENV
 
       - name: ✅ Validate updated formula
+        if: steps.update.outputs.has_changes == 'true'
         run: |
           echo "🔍 Validating updated formula..."
-          
+
           # Check Ruby syntax
           if ruby -c "${{ env.FORMULA_FILE }}"; then
             echo "✅ Ruby syntax valid"
@@ -242,17 +246,18 @@ jobs:
             echo "❌ Ruby syntax validation failed"
             exit 1
           fi
-          
+
           echo "✅ Formula validation completed"
 
       - name: 📤 Commit and push changes
+        if: steps.update.outputs.has_changes == 'true'
         run: |
           VERSION="${{ needs.validate-release.outputs.version }}"
-          
+
           # Configure git
           git config user.name "rxiv-maker-bot"
           git config user.email "noreply@henriqueslab.org"
-          
+
           # Commit changes
           git add "${{ env.FORMULA_FILE }}"
           git commit -m "chore: update rxiv-maker to v${VERSION}
@@ -265,7 +270,7 @@ jobs:
 
           🤖 Generated by streamlined GitHub Actions workflow
           📋 Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          
+
           # Push with retry logic
           for attempt in {1..3}; do
             if git push origin "$BRANCH_NAME"; then
@@ -285,11 +290,12 @@ jobs:
           done
 
       - name: 📋 Create Pull Request
+        if: steps.update.outputs.has_changes == 'true'
         env:
           GH_TOKEN: ${{ secrets.HOMEBREW_UPDATE_TOKEN }}
         run: |
           VERSION="${{ needs.validate-release.outputs.version }}"
-          
+
           # Check if PR already exists for this branch
           if gh pr view "$BRANCH_NAME" > /dev/null 2>&1; then
             echo "📝 Pull request already exists for branch: $BRANCH_NAME"
@@ -298,7 +304,7 @@ jobs:
             echo "PR_URL=${PR_URL}" >> $GITHUB_ENV
           else
             echo "📋 Creating new pull request..."
-            
+
             # Create pull request
             gh pr create \
               --title "🚀 Auto-update rxiv-maker to v${VERSION}" \
@@ -327,12 +333,27 @@ jobs:
           *This PR was automatically generated by the rxiv-maker release workflow.*" \
               --head "$BRANCH_NAME" \
               --base main
-            
+
             PR_URL=$(gh pr view "$BRANCH_NAME" --json url --jq '.url')
             echo "✅ Pull request created successfully"
             echo "🔗 PR URL: $PR_URL"
             echo "PR_URL=${PR_URL}" >> $GITHUB_ENV
           fi
+
+      - name: ✅ No update needed
+        if: steps.update.outputs.has_changes == 'false'
+        run: |
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          echo "🎉 Homebrew formula is already up to date!"
+          echo "✅ Formula already contains the correct version (v${VERSION}) and SHA256 hash"
+          echo "⏭️ No pull request needed"
+
+          echo "## ✅ No Update Required" >> $GITHUB_STEP_SUMMARY
+          echo "The Homebrew formula is already up to date with version **v${VERSION}**." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Current Formula Version**: v${VERSION}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release Version**: v${VERSION}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ✅ In sync" >> $GITHUB_STEP_SUMMARY
 
   # Summary and monitoring
   workflow-summary:
@@ -346,7 +367,7 @@ jobs:
         run: |
           echo "# 🍺 Homebrew Formula Update Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # Validation results
           if [ "${{ needs.validate-release.result }}" == "success" ]; then
             echo "✅ **Release Validation**: Passed" >> $GITHUB_STEP_SUMMARY
@@ -356,9 +377,9 @@ jobs:
           else
             echo "❌ **Release Validation**: Failed" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # Formula update results
           if [ "${{ needs.update-homebrew-formula.result }}" == "success" ]; then
             echo "✅ **Formula Update**: Successful" >> $GITHUB_STEP_SUMMARY

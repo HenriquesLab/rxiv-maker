@@ -4,7 +4,7 @@ on:
   schedule:
     # Run every 2 hours during business hours UTC
     - cron: '0 8-18/2 * * 1-5'
-  
+
   workflow_dispatch:
     inputs:
       check_type:
@@ -18,7 +18,7 @@ on:
           - 'repositories'
           - 'releases'
           - 'security'
-      
+
       alert_threshold:
         description: 'Alert threshold for failed workflows (hours)'
         required: false
@@ -55,20 +55,20 @@ jobs:
           GH_TOKEN: ${{ secrets.DISPATCH_PAT || secrets.GITHUB_TOKEN }}
         run: |
           echo "🔍 Checking main repository workflow health..."
-          
+
           # Get recent workflow runs
           FAILED_RUNS=$(gh run list --repo "$MAIN_REPO" \
             --status failure \
             --created "$(date -d '24 hours ago' -I)" \
             --limit 20 \
             --json workflowName,status,createdAt,conclusion)
-          
+
           FAILED_COUNT=$(echo "$FAILED_RUNS" | jq length)
           CRITICAL_FAILURES=$(echo "$FAILED_RUNS" | jq '[.[] | select(.workflowName | test("release|homebrew|docker"))] | length')
-          
+
           echo "Recent failed runs: $FAILED_COUNT"
           echo "Critical workflow failures: $CRITICAL_FAILURES"
-          
+
           # Assess health status
           if [ "$CRITICAL_FAILURES" -gt 0 ]; then
             HEALTH_STATUS="critical"
@@ -79,11 +79,11 @@ jobs:
           else
             HEALTH_STATUS="healthy"
           fi
-          
+
           echo "status=$HEALTH_STATUS" >> $GITHUB_OUTPUT
           echo "failed_count=$FAILED_COUNT" >> $GITHUB_OUTPUT
           echo "critical_failures=$CRITICAL_FAILURES" >> $GITHUB_OUTPUT
-          
+
           echo "✅ Main repository status: $HEALTH_STATUS"
 
       - name: 🍺 Check Homebrew repository workflows
@@ -92,7 +92,7 @@ jobs:
           GH_TOKEN: ${{ secrets.DISPATCH_PAT || secrets.GITHUB_TOKEN }}
         run: |
           echo "🔍 Checking Homebrew repository workflow health..."
-          
+
           # Check if we can access the repository
           if ! gh repo view "$HOMEBREW_REPO" >/dev/null 2>&1; then
             echo "❌ Cannot access Homebrew repository"
@@ -100,25 +100,25 @@ jobs:
             echo "error=Repository not accessible" >> $GITHUB_OUTPUT
             exit 0
           fi
-          
+
           # Get recent workflow runs
           FAILED_RUNS=$(gh run list --repo "$HOMEBREW_REPO" \
             --status failure \
             --created "$(date -d '24 hours ago' -I)" \
             --limit 10 \
             --json workflowName,status,createdAt,conclusion 2>/dev/null || echo "[]")
-          
+
           FAILED_COUNT=$(echo "$FAILED_RUNS" | jq length)
-          
+
           echo "Recent failed runs: $FAILED_COUNT"
-          
+
           # Check for recent successful releases
           RECENT_RELEASES=$(gh run list --repo "$HOMEBREW_REPO" \
             --workflow "validate-homebrew-installation.yml" \
             --status success \
             --created "$(date -d '7 days ago' -I)" \
             --limit 5 2>/dev/null | wc -l || echo 0)
-          
+
           # Assess health status
           if [ "$FAILED_COUNT" -gt 2 ]; then
             HEALTH_STATUS="degraded"
@@ -129,11 +129,11 @@ jobs:
           else
             HEALTH_STATUS="stale"
           fi
-          
+
           echo "status=$HEALTH_STATUS" >> $GITHUB_OUTPUT
           echo "failed_count=$FAILED_COUNT" >> $GITHUB_OUTPUT
           echo "recent_releases=$RECENT_RELEASES" >> $GITHUB_OUTPUT
-          
+
           echo "✅ Homebrew repository status: $HEALTH_STATUS"
 
       - name: 📦 Check APT repository workflows
@@ -142,7 +142,7 @@ jobs:
           GH_TOKEN: ${{ secrets.DISPATCH_PAT || secrets.GITHUB_TOKEN }}
         run: |
           echo "🔍 Checking APT repository workflow health..."
-          
+
           # Check if we can access the repository
           if ! gh repo view "$APT_REPO" >/dev/null 2>&1; then
             echo "❌ Cannot access APT repository"
@@ -150,25 +150,25 @@ jobs:
             echo "error=Repository not accessible" >> $GITHUB_OUTPUT
             exit 0
           fi
-          
+
           # Get recent workflow runs
           FAILED_RUNS=$(gh run list --repo "$APT_REPO" \
             --status failure \
             --created "$(date -d '24 hours ago' -I)" \
             --limit 10 \
             --json workflowName,status,createdAt,conclusion 2>/dev/null || echo "[]")
-          
+
           FAILED_COUNT=$(echo "$FAILED_RUNS" | jq length)
-          
+
           echo "Recent failed runs: $FAILED_COUNT"
-          
+
           # Check for recent successful builds
           RECENT_BUILDS=$(gh run list --repo "$APT_REPO" \
             --workflow "test-apt-containers.yml" \
             --status success \
             --created "$(date -d '7 days ago' -I)" \
             --limit 5 2>/dev/null | wc -l || echo 0)
-          
+
           # Assess health status
           if [ "$FAILED_COUNT" -gt 2 ]; then
             HEALTH_STATUS="degraded"
@@ -179,31 +179,31 @@ jobs:
           else
             HEALTH_STATUS="stale"
           fi
-          
+
           echo "status=$HEALTH_STATUS" >> $GITHUB_OUTPUT
           echo "failed_count=$FAILED_COUNT" >> $GITHUB_OUTPUT
           echo "recent_builds=$RECENT_BUILDS" >> $GITHUB_OUTPUT
-          
+
           echo "✅ APT repository status: $HEALTH_STATUS"
 
       - name: 🎯 Overall health assessment
         id: assessment
         run: |
           echo "📊 Performing overall health assessment..."
-          
+
           MAIN_STATUS="${{ steps.main.outputs.status }}"
           HOMEBREW_STATUS="${{ steps.homebrew.outputs.status }}"
           APT_STATUS="${{ steps.apt.outputs.status }}"
-          
+
           echo "Main: $MAIN_STATUS"
-          echo "Homebrew: $HOMEBREW_STATUS" 
+          echo "Homebrew: $HOMEBREW_STATUS"
           echo "APT: $APT_STATUS"
-          
+
           # Determine overall health
           CRITICAL_COUNT=0
           DEGRADED_COUNT=0
           WARNING_COUNT=0
-          
+
           for status in "$MAIN_STATUS" "$HOMEBREW_STATUS" "$APT_STATUS"; do
             case "$status" in
               "critical"|"inaccessible")
@@ -217,7 +217,7 @@ jobs:
                 ;;
             esac
           done
-          
+
           if [ "$CRITICAL_COUNT" -gt 0 ]; then
             OVERALL_HEALTH="critical"
             ALERTS_REQUIRED="true"
@@ -231,10 +231,10 @@ jobs:
             OVERALL_HEALTH="healthy"
             ALERTS_REQUIRED="false"
           fi
-          
+
           echo "health=$OVERALL_HEALTH" >> $GITHUB_OUTPUT
           echo "alerts_required=$ALERTS_REQUIRED" >> $GITHUB_OUTPUT
-          
+
           echo "🎯 Overall ecosystem health: $OVERALL_HEALTH"
           echo "🚨 Alerts required: $ALERTS_REQUIRED"
 
@@ -259,11 +259,11 @@ jobs:
           GH_TOKEN: ${{ secrets.DISPATCH_PAT || secrets.GITHUB_TOKEN }}
         run: |
           echo "🔍 Checking repository synchronization..."
-          
+
           # Get current version from main repository
           MAIN_VERSION=$(python -c "exec(open('src/rxiv_maker/__version__.py').read()); print(__version__)")
           echo "Main repository version: $MAIN_VERSION"
-          
+
           # Check Homebrew formula version
           HOMEBREW_VERSION="unknown"
           if HOMEBREW_FORMULA=$(gh api repos/$HOMEBREW_REPO/contents/Formula/rxiv-maker.rb 2>/dev/null); then
@@ -272,7 +272,7 @@ jobs:
           else
             echo "⚠️ Cannot access Homebrew formula"
           fi
-          
+
           # Check APT package version (from recent releases)
           APT_VERSION="unknown"
           if APT_RELEASES=$(gh release list --repo "$APT_REPO" --limit 5 2>/dev/null); then
@@ -281,44 +281,44 @@ jobs:
           else
             echo "⚠️ Cannot access APT repository releases"
           fi
-          
+
           # Assess version alignment
           ALIGNED_COUNT=0
           TOTAL_COUNT=3
-          
+
           if [ "$HOMEBREW_VERSION" == "$MAIN_VERSION" ]; then
             ALIGNED_COUNT=$((ALIGNED_COUNT + 1))
             echo "✅ Homebrew version aligned"
           else
             echo "⚠️ Homebrew version misaligned: $HOMEBREW_VERSION vs $MAIN_VERSION"
           fi
-          
+
           if [ "$APT_VERSION" == "$MAIN_VERSION" ]; then
             ALIGNED_COUNT=$((ALIGNED_COUNT + 1))
             echo "✅ APT version aligned"
           else
             echo "⚠️ APT version misaligned: $APT_VERSION vs $MAIN_VERSION"
           fi
-          
+
           # Determine sync status
           ALIGNMENT_RATIO=$((ALIGNED_COUNT * 100 / TOTAL_COUNT))
-          
+
           if [ "$ALIGNMENT_RATIO" -ge 100 ]; then
             SYNC_STATUS="fully_aligned"
           elif [ "$ALIGNMENT_RATIO" -ge 66 ]; then
-            SYNC_STATUS="mostly_aligned"  
+            SYNC_STATUS="mostly_aligned"
           elif [ "$ALIGNMENT_RATIO" -ge 33 ]; then
             SYNC_STATUS="partially_aligned"
           else
             SYNC_STATUS="misaligned"
           fi
-          
+
           echo "status=$SYNC_STATUS" >> $GITHUB_OUTPUT
           echo "version_alignment=$ALIGNMENT_RATIO" >> $GITHUB_OUTPUT
           echo "main_version=$MAIN_VERSION" >> $GITHUB_OUTPUT
           echo "homebrew_version=$HOMEBREW_VERSION" >> $GITHUB_OUTPUT
           echo "apt_version=$APT_VERSION" >> $GITHUB_OUTPUT
-          
+
           echo "🔄 Repository synchronization: $SYNC_STATUS ($ALIGNMENT_RATIO% aligned)"
 
   # Security audit check
@@ -341,13 +341,13 @@ jobs:
         id: audit
         run: |
           echo "🔍 Running security audit on GitHub Actions workflows..."
-          
+
           # Make script executable and run it
           chmod +x .github/scripts/validate-secrets-security.sh
-          
+
           # Run security validation with GitHub Actions output format
           OUTPUT_FORMAT=github-actions .github/scripts/validate-secrets-security.sh >> $GITHUB_OUTPUT || true
-          
+
           # Also generate summary format for logging
           echo "Security audit results:"
           OUTPUT_FORMAT=summary .github/scripts/validate-secrets-security.sh || true
@@ -356,12 +356,12 @@ jobs:
         run: |
           echo "### 🔒 Security Audit Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           SCORE="${{ steps.audit.outputs.security_score }}"
           LEVEL="${{ steps.audit.outputs.security_level }}"
           ISSUES="${{ steps.audit.outputs.issues_count }}"
           WARNINGS="${{ steps.audit.outputs.warnings_count }}"
-          
+
           case "$LEVEL" in
             "excellent")
               LEVEL_ICON="🟢"
@@ -388,7 +388,7 @@ jobs:
               LEVEL_COLOR="gray"
               ;;
           esac
-          
+
           echo "**Security Score:** $SCORE/100" >> $GITHUB_STEP_SUMMARY
           echo "**Security Level:** $LEVEL_ICON $LEVEL" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -397,7 +397,7 @@ jobs:
           echo "| Critical Issues | $ISSUES |" >> $GITHUB_STEP_SUMMARY
           echo "| Warnings | $WARNINGS |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "$ISSUES" -gt 0 ]; then
             echo "🚨 **Critical security issues detected!** Review workflow configurations." >> $GITHUB_STEP_SUMMARY
           elif [ "$WARNINGS" -gt 0 ]; then
@@ -405,7 +405,7 @@ jobs:
           else
             echo "✅ No security issues detected. Security posture is good." >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "📋 **Full Security Audit:** [View Report](.github/SECURITY-AUDIT.md)" >> $GITHUB_STEP_SUMMARY
 
@@ -425,7 +425,7 @@ jobs:
           echo "**Generated:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
           echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # Overall health status
           OVERALL_HEALTH="${{ needs.workflow-health-check.outputs.overall_health }}"
           case "$OVERALL_HEALTH" in
@@ -445,15 +445,15 @@ jobs:
               echo "## ⚪ Overall Status: UNKNOWN" >> $GITHUB_STEP_SUMMARY
               ;;
           esac
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # Repository health breakdown
           echo "## 🏗️ Repository Health" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Repository | Status | Details |" >> $GITHUB_STEP_SUMMARY
           echo "|------------|--------|---------|" >> $GITHUB_STEP_SUMMARY
-          
+
           # Main repository
           MAIN_STATUS="${{ needs.workflow-health-check.outputs.main_status }}"
           case "$MAIN_STATUS" in
@@ -464,7 +464,7 @@ jobs:
             *) MAIN_ICON="⚪" ;;
           esac
           echo "| [rxiv-maker](${{ github.server_url }}/${{ env.MAIN_REPO }}) | $MAIN_ICON $MAIN_STATUS | Failed workflows in 24h: ${{ needs.workflow-health-check.outputs.main_status == 'healthy' && '0' || 'Multiple' }} |" >> $GITHUB_STEP_SUMMARY
-          
+
           # Homebrew repository
           HOMEBREW_STATUS="${{ needs.workflow-health-check.outputs.homebrew_status }}"
           case "$HOMEBREW_STATUS" in
@@ -476,7 +476,7 @@ jobs:
             *) HOMEBREW_ICON="⚪" ;;
           esac
           echo "| [homebrew-rxiv-maker](https://github.com/${{ env.HOMEBREW_REPO }}) | $HOMEBREW_ICON $HOMEBREW_STATUS | Formula validation status |" >> $GITHUB_STEP_SUMMARY
-          
+
           # APT repository
           APT_STATUS="${{ needs.workflow-health-check.outputs.apt_status }}"
           case "$APT_STATUS" in
@@ -488,16 +488,16 @@ jobs:
             *) APT_ICON="⚪" ;;
           esac
           echo "| [apt-rxiv-maker](https://github.com/${{ env.APT_REPO }}) | $APT_ICON $APT_STATUS | Package build status |" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # Security audit results
           if [ "${{ needs.security-audit.result }}" == "success" ]; then
             SECURITY_SCORE="${{ needs.security-audit.outputs.security_score }}"
             SECURITY_LEVEL="${{ needs.security-audit.outputs.security_level }}"
             SECURITY_ISSUES="${{ needs.security-audit.outputs.issues_count }}"
             SECURITY_WARNINGS="${{ needs.security-audit.outputs.warnings_count }}"
-            
+
             echo "## 🔒 Security Audit" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Security Score:** $SECURITY_SCORE/100" >> $GITHUB_STEP_SUMMARY
@@ -508,7 +508,7 @@ jobs:
             echo "| Critical Issues | $SECURITY_ISSUES |" >> $GITHUB_STEP_SUMMARY
             echo "| Warnings | $SECURITY_WARNINGS |" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            
+
             if [ "$SECURITY_ISSUES" -gt 0 ]; then
               echo "🚨 **Action Required:** Critical security issues detected" >> $GITHUB_STEP_SUMMARY
             elif [ "$SECURITY_WARNINGS" -gt 0 ]; then
@@ -516,50 +516,50 @@ jobs:
             else
               echo "✅ **Status:** Security posture is good" >> $GITHUB_STEP_SUMMARY
             fi
-            
+
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # Repository synchronization
           if [ "${{ needs.repository-sync-check.result }}" == "success" ]; then
             SYNC_STATUS="${{ needs.repository-sync-check.outputs.sync_status }}"
             VERSION_ALIGNMENT="${{ needs.repository-sync-check.outputs.version_alignment }}"
-            
+
             echo "## 🔄 Repository Synchronization" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Synchronization Status:** $SYNC_STATUS" >> $GITHUB_STEP_SUMMARY
             echo "**Version Alignment:** $VERSION_ALIGNMENT%" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            
+
             if [ "$VERSION_ALIGNMENT" -lt 100 ]; then
               echo "### ⚠️ Version Misalignments Detected" >> $GITHUB_STEP_SUMMARY
               echo "Some package repositories may not be synchronized with the latest release." >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
             fi
           fi
-          
+
           # Alerts and recommendations
           if [ "${{ needs.workflow-health-check.outputs.alerts_required }}" == "true" ]; then
             echo "## 🚨 Immediate Action Required" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "Critical issues detected that require immediate attention:" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            
+
             if [ "$MAIN_STATUS" == "critical" ]; then
               echo "- 🔥 **Main repository workflows are failing** - Check [workflow runs](${{ github.server_url }}/${{ env.MAIN_REPO }}/actions)" >> $GITHUB_STEP_SUMMARY
             fi
-            
+
             if [ "$HOMEBREW_STATUS" == "critical" ] || [ "$HOMEBREW_STATUS" == "inaccessible" ]; then
               echo "- 🍺 **Homebrew repository issues detected** - Verify [homebrew-rxiv-maker](https://github.com/${{ env.HOMEBREW_REPO }})" >> $GITHUB_STEP_SUMMARY
             fi
-            
+
             if [ "$APT_STATUS" == "critical" ] || [ "$APT_STATUS" == "inaccessible" ]; then
               echo "- 📦 **APT repository issues detected** - Verify [apt-rxiv-maker](https://github.com/${{ env.APT_REPO }})" >> $GITHUB_STEP_SUMMARY
             fi
-            
+
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # Next scheduled check
           echo "## 📅 Monitoring Schedule" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -576,34 +576,34 @@ jobs:
           GH_TOKEN: ${{ secrets.DISPATCH_PAT || secrets.GITHUB_TOKEN }}
         run: |
           echo "🚨 Creating alert issue for critical failures..."
-          
+
           ISSUE_TITLE="🚨 Cross-Repository Health Alert - $(date -u '+%Y-%m-%d %H:%M UTC')"
           ISSUE_BODY="## 🚨 Automated Health Alert
-          
+
           Critical issues have been detected in the rxiv-maker ecosystem that require immediate attention.
-          
+
           ### 🔍 Issue Summary
-          
+
           - **Overall Health:** ${{ needs.workflow-health-check.outputs.overall_health }}
           - **Main Repository:** ${{ needs.workflow-health-check.outputs.main_status }}
           - **Homebrew Repository:** ${{ needs.workflow-health-check.outputs.homebrew_status }}
           - **APT Repository:** ${{ needs.workflow-health-check.outputs.apt_status }}
-          
+
           ### 🎯 Recommended Actions
-          
+
           1. Review failed workflow runs in the affected repositories
           2. Check repository access and permissions
           3. Verify cross-repository coordination is working
           4. Run manual health check: [\`workflow dispatch\`](${{ github.server_url }}/${{ env.MAIN_REPO }}/actions/workflows/cross-repository-health-monitor.yml)
-          
+
           ### 📊 Full Report
-          
+
           View the complete health report in the [workflow run](${{ github.server_url }}/${{ env.MAIN_REPO }}/actions/runs/${{ github.run_id }}).
-          
+
           ---
           *This issue was automatically created by the Cross-Repository Health Monitor*
           *Created at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')*"
-          
+
           # Check if a recent alert issue already exists
           EXISTING_ISSUES=$(gh issue list --repo "${{ env.MAIN_REPO }}" \
             --label "health-alert" \
@@ -611,7 +611,7 @@ jobs:
             --created "$(date -d '6 hours ago' -I)" \
             --limit 1 \
             --json number 2>/dev/null || echo "[]")
-          
+
           if [ "$(echo "$EXISTING_ISSUES" | jq length)" -eq 0 ]; then
             echo "Creating new alert issue..."
             gh issue create \

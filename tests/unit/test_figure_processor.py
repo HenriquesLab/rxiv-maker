@@ -273,8 +273,8 @@ class TestGuillaumeFigureIssues:
         text = "See (@fig:test A) and (@fig:test B) for details."
         result = convert_figure_references_to_latex(text)
 
-        assert "Fig. \\ref{fig:test}A)" in result
-        assert "Fig. \\ref{fig:test}B)" in result
+        assert "Fig. \\ref{fig:test}{}A)" in result
+        assert "Fig. \\ref{fig:test}{}B)" in result
         assert "Fig. \\ref{fig:test} A)" not in result
         assert "Fig. \\ref{fig:test} B)" not in result
 
@@ -283,7 +283,7 @@ class TestGuillaumeFigureIssues:
         text = "As shown in (@sfig:SupFig1 B), the analysis shows..."
         result = convert_figure_references_to_latex(text)
 
-        assert "Fig. \\ref{sfig:SupFig1}B)" in result
+        assert "Fig. \\ref{sfig:SupFig1}{}B)" in result
         assert "Fig. \\ref{sfig:SupFig1} B)" not in result
 
     def test_ready_file_detection_with_manuscript_path(self):
@@ -494,7 +494,7 @@ class TestGuillaumeFigureIssues:
 
                 # Test 1: Panel references should work correctly
                 panel_ref = convert_figure_references_to_latex("(@fig:Figure1 A)")
-                assert "Fig. \\ref{fig:Figure1}A)" in panel_ref, "Panel references should have no space"
+                assert "Fig. \\ref{fig:Figure1}{}A)" in panel_ref, "Panel references should have no space"
 
                 # Test 2: Ready file should be detected and use direct path
                 figure_latex = create_latex_figure_environment(

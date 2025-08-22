@@ -7,7 +7,7 @@ package_name: "rxiv-maker"
 pypi_timeout: 300  # 5 minutes max wait for PyPI propagation
 pypi_check_interval: 30  # Check every 30 seconds
 
-# GitHub configuration  
+# GitHub configuration
 github_timeout: 120  # 2 minutes max wait for GitHub API
 
 # Cross-repository configuration

@@ -50,25 +50,25 @@ log_recommendation() {
 
 validate_secret_usage() {
     log_info "🔍 Validating secret usage patterns..."
-    
+
     # Find all secret references
     SECRET_REFS=$(find "$WORKFLOW_DIR" -name "*.yml" -exec grep -H "secrets\." {} \; 2>/dev/null || true)
-    
+
     if [ -z "$SECRET_REFS" ]; then
         log_warning "No secrets found in workflows - this may indicate missing authentication"
         return
     fi
-    
+
     # Analyze secret patterns
     local pat_count=$(echo "$SECRET_REFS" | grep -c "DISPATCH_PAT\|PAT\|TOKEN" || echo 0)
     local docker_count=$(echo "$SECRET_REFS" | grep -c "DOCKER_" || echo 0)
     local github_token_count=$(echo "$SECRET_REFS" | grep -c "GITHUB_TOKEN" || echo 0)
-    
+
     log_info "Secret usage summary:"
     log_info "  Personal Access Tokens: $pat_count"
     log_info "  Docker credentials: $docker_count"
     log_info "  GitHub tokens: $github_token_count"
-    
+
     # Validate secret best practices
     if [ "$pat_count" -gt 0 ]; then
         if echo "$SECRET_REFS" | grep -q "secrets\..*PAT.*||"; then
@@ -76,12 +76,12 @@ validate_secret_usage() {
         else
             log_warning "Personal Access Tokens used without fallback mechanisms"
         fi
-        
+
         if [ "$pat_count" -gt 3 ]; then
             log_issue "Excessive PAT usage detected ($pat_count instances) - consider GitHub Apps"
         fi
     fi
-    
+
     # Check for hardcoded secrets (security anti-pattern)
     local hardcoded_secrets=$(find "$WORKFLOW_DIR" -name "*.yml" -exec grep -H -E "(password:|token:|secret:).*(ghp_|gho_|ghu_|ghs_|ghr_)" {} \; 2>/dev/null || true)
     if [ -n "$hardcoded_secrets" ]; then
@@ -94,7 +94,7 @@ validate_secret_usage() {
 
 validate_permissions() {
     log_info "🔐 Validating workflow permissions..."
-    
+
     # Check for overly permissive workflows
     local broad_perms=$(find "$WORKFLOW_DIR" -name "*.yml" -exec grep -l "permissions:.*write-all\|permissions:.*admin" {} \; 2>/dev/null || true)
     if [ -n "$broad_perms" ]; then
@@ -103,15 +103,15 @@ validate_permissions() {
             log_issue "  $(basename "$file")"
         done
     fi
-    
+
     # Check for minimal permission patterns
     local minimal_perms=$(find "$WORKFLOW_DIR" -name "*.yml" -exec grep -l "contents: read" {} \; 2>/dev/null | wc -l)
     local total_workflows=$(find "$WORKFLOW_DIR" -name "*.yml" | wc -l)
-    
+
     if [ "$minimal_perms" -gt 0 ]; then
         log_recommendation "Good: $minimal_perms/$total_workflows workflows use minimal permissions"
     fi
-    
+
     # Check for job-level permission elevation
     local job_elevation=$(find "$WORKFLOW_DIR" -name "*.yml" -exec grep -A 5 -B 5 "permissions:" {} \; | grep -c "contents: write\|packages: write\|id-token: write" || echo 0)
     if [ "$job_elevation" -gt 0 ]; then
@@ -121,13 +121,13 @@ validate_permissions() {
 
 validate_oidc_usage() {
     log_info "🎫 Validating OIDC authentication usage..."
-    
+
     # Check for OIDC usage (modern best practice)
     local oidc_usage=$(find "$WORKFLOW_DIR" -name "*.yml" -exec grep -l "id-token: write" {} \; 2>/dev/null | wc -l)
     if [ "$oidc_usage" -gt 0 ]; then
         log_recommendation "Good: OIDC authentication detected in $oidc_usage workflow(s)"
     fi
-    
+
     # Check for PyPI OIDC specifically
     local pypi_oidc=$(find "$WORKFLOW_DIR" -name "*.yml" -exec grep -A 10 -B 10 "pypa/gh-action-pypi-publish" {} \; | grep -c "id-token: write" || echo 0)
     if [ "$pypi_oidc" -gt 0 ]; then
@@ -142,7 +142,7 @@ validate_oidc_usage() {
 
 validate_environment_usage() {
     log_info "🌍 Validating environment protection usage..."
-    
+
     # Check for environment-protected deployments
     local env_usage=$(find "$WORKFLOW_DIR" -name "*.yml" -exec grep -c "environment:" {} \; | paste -sd+ | bc || echo 0)
     if [ "$env_usage" -gt 0 ]; then
@@ -158,7 +158,7 @@ validate_environment_usage() {
 
 validate_secret_scanning() {
     log_info "🔎 Checking for secret scanning bypass patterns..."
-    
+
     # Check for patterns that might bypass secret scanning
     local bypass_patterns=$(find "$WORKFLOW_DIR" -name "*.yml" -exec grep -H -E "(echo.*\\\$\{|base64.*decode|printf.*%s)" {} \; 2>/dev/null || true)
     if [ -n "$bypass_patterns" ]; then
@@ -171,7 +171,7 @@ validate_secret_scanning() {
 
 check_external_dependencies() {
     log_info "🔗 Validating external action dependencies..."
-    
+
     # Check for unpinned actions (security risk)
     local unpinned_actions=$(find "$WORKFLOW_DIR" -name "*.yml" -exec grep -H "uses:.*@main\|uses:.*@master\|uses:.*@latest" {} \; 2>/dev/null || true)
     if [ -n "$unpinned_actions" ]; then
@@ -180,15 +180,15 @@ check_external_dependencies() {
             log_warning "  $line"
         done
     fi
-    
+
     # Count pinned vs unpinned
     local total_actions=$(find "$WORKFLOW_DIR" -name "*.yml" -exec grep -c "uses:" {} \; | paste -sd+ | bc || echo 0)
     local pinned_actions=$(find "$WORKFLOW_DIR" -name "*.yml" -exec grep -c "uses:.*@v[0-9]\|uses:.*@[a-f0-9]\{40\}" {} \; | paste -sd+ | bc || echo 0)
-    
+
     if [ "$total_actions" -gt 0 ]; then
         local pinned_percent=$(( pinned_actions * 100 / total_actions ))
         log_info "Action pinning: $pinned_actions/$total_actions ($pinned_percent%)"
-        
+
         if [ "$pinned_percent" -ge 80 ]; then
             log_recommendation "Good: Most external actions are pinned"
         elif [ "$pinned_percent" -ge 60 ]; then
@@ -203,30 +203,30 @@ calculate_security_score() {
     local issues_count=${#SECURITY_ISSUES[@]}
     local warnings_count=${#SECURITY_WARNINGS[@]}
     local recommendations_count=${#SECURITY_RECOMMENDATIONS[@]}
-    
+
     # Base score
     local score=100
-    
+
     # Deduct points for issues and warnings
     score=$(( score - (issues_count * 20) ))
     score=$(( score - (warnings_count * 5) ))
-    
+
     # Add points for good practices (recommendations indicate good findings)
     score=$(( score + (recommendations_count * 2) ))
-    
+
     # Ensure score is in valid range
     if [ "$score" -lt 0 ]; then
         score=0
     elif [ "$score" -gt 100 ]; then
         score=100
     fi
-    
+
     echo "$score"
 }
 
 determine_security_level() {
     local score="$1"
-    
+
     if [ "$score" -ge 90 ]; then
         echo "excellent"
     elif [ "$score" -ge 80 ]; then
@@ -243,7 +243,7 @@ determine_security_level() {
 generate_json_output() {
     local score="$1"
     local level="$2"
-    
+
     cat << EOF
 {
   "timestamp": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')",
@@ -270,7 +270,7 @@ EOF
 generate_github_actions_output() {
     local score="$1"
     local level="$2"
-    
+
     echo "security_score=$score"
     echo "security_level=$level"
     echo "issues_count=${#SECURITY_ISSUES[@]}"
@@ -280,7 +280,7 @@ generate_github_actions_output() {
 
 main() {
     log_info "🔒 Starting GitHub Actions security validation..."
-    
+
     # Check required tools
     for tool in grep find jq bc; do
         if ! command -v "$tool" >/dev/null 2>&1; then
@@ -288,13 +288,13 @@ main() {
             exit 1
         fi
     done
-    
+
     # Validate workflow directory exists
     if [ ! -d "$WORKFLOW_DIR" ]; then
         log_issue "Workflow directory '$WORKFLOW_DIR' does not exist"
         exit 1
     fi
-    
+
     # Run security validations
     validate_secret_usage
     validate_permissions
@@ -302,13 +302,13 @@ main() {
     validate_environment_usage
     validate_secret_scanning
     check_external_dependencies
-    
+
     # Calculate final score and level
     local score
     score=$(calculate_security_score)
     local level
     level=$(determine_security_level "$score")
-    
+
     # Generate output
     case "$OUTPUT_FORMAT" in
         "json")
@@ -327,7 +327,7 @@ main() {
             echo "  Good Practices: ${#SECURITY_RECOMMENDATIONS[@]}"
             ;;
     esac
-    
+
     # Set exit code based on security level
     case "$level" in
         "excellent"|"good")

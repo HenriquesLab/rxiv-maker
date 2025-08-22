@@ -57,9 +57,9 @@ log_success() {
 check_repository_access() {
     local repo="$1"
     local name="$2"
-    
+
     log_info "Checking access to $name repository..."
-    
+
     if timeout "$TIMEOUT_SECONDS" gh repo view "$repo" >/dev/null 2>&1; then
         log_success "$name repository is accessible"
         return 0
@@ -72,9 +72,9 @@ check_repository_access() {
 check_workflow_health() {
     local repo="$1"
     local name="$2"
-    
+
     log_info "Checking recent workflow health for $name..."
-    
+
     # Check for recent failures (last 24 hours)
     local failed_runs
     failed_runs=$(gh run list --repo "$repo" \
@@ -82,10 +82,10 @@ check_workflow_health() {
         --created "$(date -d '24 hours ago' -I 2>/dev/null || date -v-1d '+%Y-%m-%d')" \
         --limit 10 \
         --json workflowName,status,createdAt 2>/dev/null || echo "[]")
-    
+
     local failed_count
     failed_count=$(echo "$failed_runs" | jq length 2>/dev/null || echo 0)
-    
+
     if [ "$failed_count" -eq 0 ]; then
         log_success "$name has no recent workflow failures"
     elif [ "$failed_count" -le 2 ]; then
@@ -93,13 +93,13 @@ check_workflow_health() {
     else
         log_error "$name has $failed_count recent workflow failures (concerning)"
     fi
-    
+
     echo "$failed_count"
 }
 
 check_release_alignment() {
     log_info "Checking release version alignment..."
-    
+
     # Get main repository version
     local main_version
     if [ -f "src/rxiv_maker/__version__.py" ]; then
@@ -107,9 +107,9 @@ check_release_alignment() {
     else
         main_version="unknown"
     fi
-    
+
     log_info "Main repository version: $main_version"
-    
+
     # Check Homebrew formula version (if accessible)
     local homebrew_version="unknown"
     if gh api "repos/$HOMEBREW_REPO/contents/Formula/rxiv-maker.rb" >/dev/null 2>&1; then
@@ -119,9 +119,9 @@ check_release_alignment() {
             | grep -o 'version "[^"]*"' \
             | cut -d'"' -f2 2>/dev/null || echo "unknown")
     fi
-    
+
     log_info "Homebrew formula version: $homebrew_version"
-    
+
     # Check version alignment
     if [ "$main_version" != "unknown" ] && [ "$homebrew_version" != "unknown" ]; then
         if [ "$main_version" == "$homebrew_version" ]; then
@@ -134,7 +134,7 @@ check_release_alignment() {
     else
         log_warning "Cannot determine main repository version"
     fi
-    
+
     # Return version info
     echo "$main_version:$homebrew_version"
 }
@@ -144,10 +144,10 @@ generate_json_output() {
     local homebrew_failures="$2"
     local apt_failures="$3"
     local version_info="$4"
-    
+
     local main_version="${version_info%%:*}"
     local homebrew_version="${version_info##*:}"
-    
+
     cat << EOF
 {
   "timestamp": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')",
@@ -161,7 +161,7 @@ generate_json_output() {
       "status": "$([ "$main_failures" -eq 0 ] && echo "healthy" || [ "$main_failures" -le 2 ] && echo "warning" || echo "critical")"
     },
     "homebrew": {
-      "name": "$HOMEBREW_REPO", 
+      "name": "$HOMEBREW_REPO",
       "accessible": true,
       "recent_failures": $homebrew_failures,
       "version": "$homebrew_version",
@@ -190,7 +190,7 @@ generate_github_actions_output() {
     local homebrew_failures="$2"
     local apt_failures="$3"
     local version_info="$4"
-    
+
     echo "overall_health=$OVERALL_HEALTH"
     echo "main_failures=$main_failures"
     echo "homebrew_failures=$homebrew_failures"
@@ -203,7 +203,7 @@ generate_github_actions_output() {
 
 main() {
     log_info "🔍 Starting rxiv-maker ecosystem health check..."
-    
+
     # Check required tools
     for tool in gh jq; do
         if ! command -v "$tool" >/dev/null 2>&1; then
@@ -211,43 +211,43 @@ main() {
             exit 1
         fi
     done
-    
+
     # Check repository access
     local main_accessible=1
     local homebrew_accessible=1
     local apt_accessible=1
-    
+
     check_repository_access "$MAIN_REPO" "main" || main_accessible=0
     check_repository_access "$HOMEBREW_REPO" "homebrew" || homebrew_accessible=0
     check_repository_access "$APT_REPO" "apt" || apt_accessible=0
-    
+
     # Check workflow health for accessible repositories
     local main_failures=999
     local homebrew_failures=999
     local apt_failures=999
-    
+
     if [ $main_accessible -eq 1 ]; then
         main_failures=$(check_workflow_health "$MAIN_REPO" "main repository")
     fi
-    
+
     if [ $homebrew_accessible -eq 1 ]; then
         homebrew_failures=$(check_workflow_health "$HOMEBREW_REPO" "homebrew repository")
     else
         homebrew_failures=0  # Don't count as failures if inaccessible
     fi
-    
+
     if [ $apt_accessible -eq 1 ]; then
         apt_failures=$(check_workflow_health "$APT_REPO" "apt repository")
     else
         apt_failures=0  # Don't count as failures if inaccessible
     fi
-    
+
     # Check release alignment
     local version_info="unknown:unknown"
     if [ $main_accessible -eq 1 ] && [ $homebrew_accessible -eq 1 ]; then
         version_info=$(check_release_alignment)
     fi
-    
+
     # Generate output based on format
     case "$OUTPUT_FORMAT" in
         "json")
@@ -267,7 +267,7 @@ main() {
             echo "  Warnings: ${#HEALTH_WARNINGS[@]}"
             ;;
     esac
-    
+
     # Set exit code based on health
     case "$OVERALL_HEALTH" in
         "healthy")

@@ -136,14 +136,14 @@ jobs:
           outputs: type=docker,dest=/tmp/image-${{ steps.platform.outputs.safe_name }}.tar
         continue-on-error: false
         timeout-minutes: 45  # Explicit timeout per build
-        
+
       - name: Verify build output
         run: |
           IMAGE_FILE="/tmp/image-${{ steps.platform.outputs.safe_name }}.tar"
           if [ -f "$IMAGE_FILE" ]; then
             echo "✅ Build artifact created: $IMAGE_FILE"
             echo "📦 Size: $(du -h $IMAGE_FILE | cut -f1)"
-            
+
             # Basic integrity check
             if tar -tf "$IMAGE_FILE" >/dev/null 2>&1; then
               echo "✅ Image tar file integrity verified"
@@ -183,7 +183,7 @@ jobs:
         run: |
           echo "Loading built images..."
           LOADED_IMAGES=0
-          
+
           # Load images with error checking
           find artifacts -name "*.tar" -type f | while read image_file; do
             if [ -f "$image_file" ]; then
@@ -199,15 +199,15 @@ jobs:
           done
 
           echo "🧪 Testing image functionality..."
-          
+
           # Test with retry logic
           for attempt in {1..3}; do
             echo "🎯 Test attempt $attempt..."
-            
+
             if docker run --rm --timeout=60s ${{ env.IMAGE_NAME }}:latest python3 -c "
             import sys
             print(f'Python version: {sys.version}')
-            
+
             # Test critical dependencies
             try:
                 import json, os, subprocess
@@ -215,7 +215,7 @@ jobs:
             except ImportError as e:
                 print(f'❌ Missing core modules: {e}')
                 sys.exit(1)
-                
+
             print('✅ Docker image test successful!')
             "; then
               echo "✅ Image test passed on attempt $attempt"
@@ -289,15 +289,15 @@ jobs:
       - name: Verify pushed images
         run: |
           echo "🔍 Verifying pushed images..."
-          
+
           # Extract main tag for verification
           MAIN_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
           echo "Verifying primary tag: $MAIN_TAG"
-          
+
           # Retry logic for image verification
           for attempt in {1..3}; do
             echo "🎯 Verification attempt $attempt..."
-            
+
             if docker pull "$MAIN_TAG" && docker run --rm --timeout=30s "$MAIN_TAG" python3 --version; then
               echo "✅ Image verification successful on attempt $attempt"
               break
