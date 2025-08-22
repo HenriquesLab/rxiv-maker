@@ -237,7 +237,7 @@ jobs:
     if: |
       github.event.inputs.test_suite == 'system' ||
       github.event.inputs.test_suite == 'full' ||
-      (github.event_name == 'pull_request' && contains(github.event.pull_request.changed_files, 'src/docker/')) ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.changed_files, 'src/rxiv_maker/engines/')) ||
       (github.event_name == 'push' && github.ref == 'refs/heads/main')
     timeout-minutes: 30
 
