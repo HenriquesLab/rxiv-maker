@@ -44,7 +44,7 @@ class TestAPTRepositoryIntegration(unittest.TestCase):
         env_vars = release_job["steps"][-1]["env"]
         self.assertIn("GITHUB_TOKEN", env_vars)
         self.assertIn("DISPATCH_PAT", env_vars)
-        
+
         # Check permissions for cross-repository workflow triggers
         permissions = workflow_data["permissions"]
         self.assertIn("contents", permissions)
@@ -149,7 +149,7 @@ class TestAPTRepositoryIntegration(unittest.TestCase):
         # Check that orchestrator script handles APT coordination
         orchestrator_path = self.repo_root / ".github" / "scripts" / "release" / "orchestrator.py"
         self.assertTrue(orchestrator_path.exists(), "Orchestrator script not found")
-        
+
         with open(orchestrator_path, "r") as f:
             orchestrator_content = f.read()
 
@@ -171,7 +171,7 @@ class TestAPTRepositoryIntegration(unittest.TestCase):
             workflow_content = f.read()
 
         # Find the orchestrator command
-        orchestrator_pattern = r'python .github/scripts/release/orchestrator.py'
+        orchestrator_pattern = r"python .github/scripts/release/orchestrator.py"
         match = re.search(orchestrator_pattern, workflow_content)
 
         self.assertIsNotNone(match, "Could not find orchestrator command in workflow file")
