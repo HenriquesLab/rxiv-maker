@@ -62,7 +62,7 @@ class ReleaseOrchestrator:
             PackageManagerConfig(
                 name="homebrew",
                 repo="henriqueslab/homebrew-rxiv-maker",
-                workflow_file="update-formula.yml",
+                workflow_file="homebrew-python.yml",
                 dispatch_event="update-formula",
                 timeout_minutes=15,
             ),
