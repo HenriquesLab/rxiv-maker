@@ -2,6 +2,18 @@
 
 import nox
 
+# Import cleanup utilities for space optimization
+try:
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).parent / "nox_utils"))
+    from nox_utils import check_and_cleanup_if_needed, cleanup_manager
+
+    CLEANUP_AVAILABLE = True
+except ImportError:
+    CLEANUP_AVAILABLE = False
+
 # Configure nox to use uv as the default backend for faster environment creation
 nox.options.default_venv_backend = "uv"
 
@@ -516,21 +528,31 @@ print('🎉 All style file detection tests passed!')
 @nox.session(python="3.11", reuse_venv=True)
 @nox.parametrize("engine", ENGINES)
 def pdf(session, engine):
-    """Test PDF generation with different rxiv engines."""
+    """Test PDF generation with different rxiv engines with enhanced cleanup."""
     check_engine_availability(session, engine)
+
+    # Pre-test cleanup for container engines
+    if engine in ["docker", "podman"]:
+        add_cleanup_hooks(session, f"pdf_{engine}")
+
     install_project_deps(session)
 
-    # Set environment variables for engine
-    env = {"RXIV_ENGINE": engine.upper(), "MANUSCRIPT_PATH": "EXAMPLE_MANUSCRIPT"}
+    try:
+        # Set environment variables for engine
+        env = {"RXIV_ENGINE": engine.upper(), "MANUSCRIPT_PATH": "EXAMPLE_MANUSCRIPT"}
 
-    # Test rxiv CLI PDF generation with engine environment variable
-    session.run("rxiv", "pdf", "EXAMPLE_MANUSCRIPT", env=env)
+        # Test rxiv CLI PDF generation with engine environment variable
+        session.run("rxiv", "pdf", "EXAMPLE_MANUSCRIPT", env=env)
 
-    # Test make command PDF generation
-    session.run("make", "pdf", env=env, external=True)
+        # Test make command PDF generation
+        session.run("make", "pdf", env=env, external=True)
 
-    # Validate outputs exist
-    session.run("ls", "-la", "output/", external=True)
+        # Validate outputs exist
+        session.run("ls", "-la", "output/", external=True)
+    finally:
+        # Post-test cleanup for container engines
+        if engine in ["docker", "podman"]:
+            add_post_cleanup_hooks(session, f"pdf_{engine}")
 
 
 @nox.session(python=PYTHON_VERSIONS, reuse_venv=False)
@@ -551,37 +573,53 @@ def test_cross(session):
 
 @nox.session(python="3.11", reuse_venv=True)
 def test_docker(session):
-    """Docker engine testing (manual trigger only)."""
+    """Docker engine testing (manual trigger only) with enhanced cleanup."""
     check_engine_availability(session, "docker")
+
+    # Pre-test cleanup
+    add_cleanup_hooks(session, "test_docker")
+
     install_project_deps(session)
 
-    # Run Docker-specific tests
-    session.run(
-        "pytest",
-        "tests/unit/test_docker_engine_mode.py",
-        "-m",
-        "docker",
-        "--tb=short",
-        *session.posargs,
-    )
+    try:
+        # Run Docker-specific tests
+        session.run(
+            "pytest",
+            "tests/unit/test_docker_engine_mode.py",
+            "-m",
+            "docker",
+            "--tb=short",
+            *session.posargs,
+        )
+    finally:
+        # Post-test cleanup
+        add_post_cleanup_hooks(session, "test_docker")
 
 
 @nox.session(python="3.11", reuse_venv=True)
 def test_podman(session):
-    """Podman engine testing (manual trigger only)."""
+    """Podman engine testing (manual trigger only) with enhanced cleanup."""
     check_engine_availability(session, "podman")
+
+    # Pre-test cleanup
+    add_cleanup_hooks(session, "test_podman")
+
     install_project_deps(session)
 
-    # Run with podman engine using existing integration tests
-    session.run(
-        "pytest",
-        "tests/integration/",
-        "--engine=podman",
-        "-m",
-        "not slow",
-        "--tb=short",
-        *session.posargs,
-    )
+    try:
+        # Run with podman engine using existing integration tests
+        session.run(
+            "pytest",
+            "tests/integration/",
+            "--engine=podman",
+            "-m",
+            "not slow",
+            "--tb=short",
+            *session.posargs,
+        )
+    finally:
+        # Post-test cleanup
+        add_post_cleanup_hooks(session, "test_podman")
 
 
 @nox.session(python="3.11", reuse_venv=True)
@@ -634,13 +672,214 @@ def docs(session):
 # Utility Sessions
 @nox.session(python=False)
 def clean(session):
-    """Clean up nox environments to free disk space."""
+    """Clean up nox environments and containers to free disk space."""
     session.run("rm", "-rf", ".nox/", external=True)
     session.log("Nox environments removed.")
+
+    # Also perform container cleanup if available
+    if CLEANUP_AVAILABLE:
+        cleanup_with_reporting(session, lambda: cleanup_manager.post_test_cleanup(aggressive=False), "clean")
 
 
 @nox.session(python=False)
 def clean_all(session):
-    """Clean all nox environments - equivalent to 'nox -s clean -- --all'."""
+    """Clean all nox environments and perform aggressive container cleanup."""
     session.run("rm", "-rf", ".nox/", external=True)
     session.log("All nox environments cleaned.")
+
+    # Perform aggressive container cleanup if available
+    if CLEANUP_AVAILABLE:
+        cleanup_with_reporting(session, lambda: cleanup_manager.post_test_cleanup(aggressive=True), "clean_all")
+
+
+# ======================================================================
+# 🧹 ENHANCED CLEANUP SESSIONS (Space Optimization)
+# ======================================================================
+
+
+def cleanup_with_reporting(session, cleanup_func, session_name: str):
+    """Helper to run cleanup with proper reporting."""
+    if not CLEANUP_AVAILABLE:
+        session.log("⚠️  Cleanup utilities not available - skipping advanced cleanup")
+        return
+
+    try:
+        results = cleanup_func()
+        cleanup_manager.report_cleanup_results(results, session_name)
+    except Exception as e:
+        session.log(f"⚠️  Cleanup failed: {e}")
+
+
+@nox.session(python=False)
+def cleanup_containers(session):
+    """Clean up Docker/Podman containers, images, and volumes to save space."""
+    session.log("🧹 Starting comprehensive container cleanup...")
+
+    if not CLEANUP_AVAILABLE:
+        session.log("⚠️  Advanced cleanup not available - install cleanup utilities")
+        session.log("💡 This session cleans containers, images, volumes, and networks")
+        return
+
+    cleanup_with_reporting(session, lambda: cleanup_manager.post_test_cleanup(aggressive=True), "cleanup_containers")
+
+
+@nox.session(python=False)
+def cleanup_emergency(session):
+    """Emergency cleanup when disk space is critically low."""
+    session.log("🚨 Starting emergency cleanup - will remove containers, images, volumes, and nox envs...")
+
+    if not CLEANUP_AVAILABLE:
+        session.log("⚠️  Advanced cleanup not available")
+        # Fallback to basic cleanup
+        session.run("rm", "-rf", ".nox/", external=True)
+        return
+
+    cleanup_with_reporting(session, lambda: cleanup_manager.emergency_cleanup(), "emergency")
+
+
+@nox.session(python=False)
+def cleanup_pre_test(session):
+    """Pre-test cleanup to ensure clean environment."""
+    session.log("🧹 Pre-test cleanup - preparing clean environment...")
+
+    if not CLEANUP_AVAILABLE:
+        session.log("⚠️  Advanced cleanup not available - basic cleanup only")
+        return
+
+    # Check disk space first
+    if check_and_cleanup_if_needed(threshold_pct=85.0):
+        session.log("🚨 Emergency cleanup was triggered due to low disk space")
+
+    cleanup_with_reporting(session, lambda: cleanup_manager.pre_test_cleanup(aggressive=False), "pre_test")
+
+
+@nox.session(python=False)
+def cleanup_full(session):
+    """Full cleanup: containers, images, volumes, networks, and nox environments."""
+    session.log("🧹 Starting full system cleanup...")
+
+    # Always clean nox environments
+    session.run("rm", "-rf", ".nox/", external=True)
+    session.log("✅ Removed .nox/ directory")
+
+    if not CLEANUP_AVAILABLE:
+        session.log("⚠️  Advanced container cleanup not available")
+        return
+
+    # Container cleanup
+    cleanup_with_reporting(session, lambda: cleanup_manager.post_test_cleanup(aggressive=True), "full_cleanup")
+
+
+def add_cleanup_hooks(session, session_name: str):
+    """Add cleanup hooks to a session."""
+    if not CLEANUP_AVAILABLE:
+        return
+
+    # Pre-test cleanup (light)
+    try:
+        results = cleanup_manager.pre_test_cleanup(aggressive=False)
+        if results.get("containers_stopped", 0) > 0 or results.get("engines_cleaned", 0) > 0:
+            session.log(f"🧹 Pre-test cleanup: stopped {results.get('containers_stopped', 0)} containers")
+    except Exception as e:
+        session.log(f"⚠️  Pre-test cleanup warning: {e}")
+
+
+def add_post_cleanup_hooks(session, session_name: str):
+    """Add post-test cleanup hooks to a session."""
+    if not CLEANUP_AVAILABLE:
+        return
+
+    # Post-test cleanup
+    try:
+        # Check if disk space is getting low
+        if check_and_cleanup_if_needed(threshold_pct=80.0):
+            session.log("🚨 Emergency cleanup triggered after tests")
+        else:
+            # Normal post-test cleanup
+            results = cleanup_manager.post_test_cleanup(aggressive=True)
+            session.log(f"🧹 Post-test cleanup: cleaned {results.get('engines_cleaned', 0)} engines")
+    except Exception as e:
+        session.log(f"⚠️  Post-test cleanup warning: {e}")
+
+
+@nox.session(python=False)
+def disk_usage(session):
+    """Report current disk usage and container resource consumption."""
+    session.log("💾 Disk Usage Report")
+    session.log("=" * 50)
+
+    if not CLEANUP_AVAILABLE:
+        session.log("⚠️  Advanced monitoring not available")
+        return
+
+    try:
+        from nox_utils import DiskSpaceMonitor
+
+        # Disk usage
+        report = DiskSpaceMonitor.report_disk_usage()
+        session.log(report)
+
+        # Check if critical
+        if DiskSpaceMonitor.check_disk_space_critical():
+            session.log("🚨 CRITICAL: Disk space usage is above 90%!")
+            session.log("💡 Run 'nox -s cleanup_emergency' to free space")
+        elif DiskSpaceMonitor.check_disk_space_critical(threshold_pct=80.0):
+            session.log("⚠️  WARNING: Disk space usage is above 80%")
+            session.log("💡 Run 'nox -s cleanup_containers' to free space")
+
+        # Container information
+        for engine in cleanup_manager.engines:
+            containers = engine.get_containers()
+            images = engine.get_images()
+            session.log(f"🐳 {engine.engine_type.capitalize()}: {len(containers)} containers, {len(images)} images")
+
+    except Exception as e:
+        session.log(f"⚠️  Failed to generate disk usage report: {e}")
+
+
+@nox.session(python=False)
+def space_report(session):
+    """Comprehensive space usage report and cleanup recommendations."""
+    session.log("📊 Comprehensive Space Usage Report")
+    session.log("=" * 60)
+
+    if not CLEANUP_AVAILABLE:
+        session.log("⚠️  Advanced reporting not available")
+        # Basic fallback
+        session.run("df", "-h", ".", external=True)
+        return
+
+    try:
+        from nox_utils import DiskSpaceMonitor
+
+        # Disk usage
+        total, used, free = DiskSpaceMonitor.get_disk_usage()
+        session.log(DiskSpaceMonitor.report_disk_usage())
+
+        # Nox environment usage
+        nox_dir = Path(".nox")
+        if nox_dir.exists():
+            nox_size = sum(f.stat().st_size for f in nox_dir.rglob("*") if f.is_file())
+            session.log(f"📁 .nox directory: {DiskSpaceMonitor.format_bytes(nox_size)}")
+
+        # Container resources
+        total_containers = 0
+        total_images = 0
+        for engine in cleanup_manager.engines:
+            containers = engine.get_containers(all_containers=True)
+            images = engine.get_images()
+            total_containers += len(containers)
+            total_images += len(images)
+            session.log(f"🐳 {engine.engine_type.capitalize()}: {len(containers)} containers, {len(images)} images")
+
+        # Recommendations
+        session.log("\n💡 Cleanup Recommendations:")
+        if total_containers > 0:
+            session.log(f"  - Run 'nox -s cleanup_containers' to clean {total_containers} containers")
+        if nox_dir.exists():
+            session.log("  - Run 'nox -s clean_all' to remove nox environments")
+        if DiskSpaceMonitor.check_disk_space_critical(threshold_pct=85.0):
+            session.log("  - Run 'nox -s cleanup_emergency' for aggressive cleanup")
+
+    except Exception as e:
+        session.log(f"⚠️  Failed to generate comprehensive report: {e}")

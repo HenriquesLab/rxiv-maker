@@ -87,6 +87,7 @@ class LaTeXErrorParser(BaseValidator):
             "type": "overfull_hbox",
             "message": "Text extends beyond page margins",
             "suggestion": ("This is often caused by long URLs or code that should be broken"),
+            "level": "warning",  # Downgrade from error to warning since PDF still generates
         },
     }
 
@@ -162,7 +163,13 @@ class LaTeXErrorParser(BaseValidator):
 
         # Convert to validation errors
         for latex_error in latex_errors:
-            level = ValidationLevel.ERROR if latex_error.error_type != "warning" else ValidationLevel.WARNING
+            # Check if the error pattern has a custom level defined
+            custom_level = self._get_error_level(latex_error)
+            level = (
+                custom_level
+                if custom_level
+                else (ValidationLevel.ERROR if latex_error.error_type != "warning" else ValidationLevel.WARNING)
+            )
 
             errors.append(
                 self._create_error(
@@ -269,6 +276,19 @@ class LaTeXErrorParser(BaseValidator):
             context.append(f"{marker}{lines[i]}")
 
         return "\n".join(context) if context else None
+
+    def _get_error_level(self, latex_error: LaTeXError) -> ValidationLevel | None:
+        """Get custom validation level for the error if specified."""
+        for _pattern, error_info in self.ERROR_PATTERNS.items():
+            if error_info["type"] == latex_error.error_type:
+                level_str = error_info.get("level")
+                if level_str == "warning":
+                    return ValidationLevel.WARNING
+                elif level_str == "error":
+                    return ValidationLevel.ERROR
+                elif level_str == "info":
+                    return ValidationLevel.INFO
+        return None
 
     def _get_error_suggestion(self, latex_error: LaTeXError) -> str | None:
         """Get user-friendly suggestion for fixing the error."""

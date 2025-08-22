@@ -295,15 +295,20 @@ class SyntaxValidator(BaseValidator):
         """Validate for unbalanced formatting markers."""
         errors = []
 
+        # Protect all code blocks and Python expressions from formatting validation
+        protected_content = self._protect_code_blocks(content)
+
         # Check for unbalanced bold formatting (**)
-        lines = content.split("\n")
+        lines = protected_content.split("\n")
         for line_idx, line in enumerate(lines):
             line_num = line_idx + 1
 
-            # Count double asterisks that aren't in code blocks
-            # Remove code spans first to avoid false positives
-            clean_line = re.sub(r"`[^`]*`", "", line)
-            clean_line = re.sub(r"``[^`]*``", "", clean_line)
+            # Skip lines that are entirely protected code
+            if "XXPROTECTEDCODEXX" in line and line.strip().startswith("XXPROTECTEDCODEXX"):
+                continue
+
+            # Remove any remaining protected code segments from the line
+            clean_line = re.sub(r"XXPROTECTEDCODEXX\d+XXPROTECTEDCODEXX", "", line)
 
             # Count unescaped double asterisks
             double_star_count = len(re.findall(r"(?<!\\)\*\*", clean_line))
@@ -735,6 +740,21 @@ class SyntaxValidator(BaseValidator):
             lambda m: f"XXPROTECTEDCODEXX{len(m.group(0))}XXPROTECTEDCODEXX",
             protected,
             flags=re.MULTILINE,
+        )
+
+        # Protect Python code blocks {{py: ...}}
+        protected = re.sub(
+            r"\{\{py:.*?\}\}",
+            lambda m: f"XXPROTECTEDCODEXX{len(m.group(0))}XXPROTECTEDCODEXX",
+            protected,
+            flags=re.DOTALL,
+        )
+
+        # Protect inline Python expressions {py: ...}
+        protected = re.sub(
+            r"\{py:[^}]+\}",
+            lambda m: f"XXPROTECTEDCODEXX{len(m.group(0))}XXPROTECTEDCODEXX",
+            protected,
         )
 
         return protected

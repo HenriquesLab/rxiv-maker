@@ -441,14 +441,18 @@ rxiv validate MANUSCRIPT
 ### Custom Docker Images
 
 #### Building Custom Images
+
+Docker image building is now handled in the separate [docker-rxiv-maker](https://github.com/paxcalpt/docker-rxiv-maker) repository:
+
 ```bash
-# Navigate to Docker directory
-cd src/docker/images/base
+# Clone the Docker infrastructure repository
+git clone https://github.com/paxcalpt/docker-rxiv-maker.git
+cd docker-rxiv-maker/images/base
 
 # Build custom image
 ./build.sh --repo myuser/rxiv-custom --tag latest
 
-# Use custom image
+# Use custom image in main rxiv-maker
 DOCKER_IMAGE=myuser/rxiv-custom:latest RXIV_ENGINE=DOCKER make pdf
 ```
 
@@ -495,7 +499,9 @@ docker run --rm \
 
 #### Building for Multiple Architectures
 ```bash
-cd src/docker/images/base
+# Clone Docker infrastructure repository
+git clone https://github.com/paxcalpt/docker-rxiv-maker.git
+cd docker-rxiv-maker/images/base
 
 # Build for both amd64 and arm64
 ./build.sh --platform linux/amd64,linux/arm64

@@ -12,6 +12,7 @@ from .code_processor import (
     protect_code_content,
     restore_protected_code,
 )
+from .custom_command_processor import process_custom_commands
 from .figure_processor import (
     convert_equation_references_to_latex,
     convert_figure_references_to_latex,
@@ -127,6 +128,9 @@ def convert_markdown_to_latex(content: MarkdownContent, is_supplementary: bool =
     # Process <newpage> and <float-barrier> markers early in the pipeline
     content = _process_newpage_markers(content)
     content = _process_float_barrier_markers(content)
+
+    # Process custom commands (blindtext, future Python/R commands)
+    content = process_custom_commands(content)
 
     # Convert lists BEFORE other processing to avoid conflicts
     content = convert_lists_to_latex(content)

@@ -59,7 +59,7 @@ class ResourceInfo:
     status: ResourceStatus = ResourceStatus.CREATED
     created_at: float = field(default_factory=time.time)
     metadata: Dict[str, Any] = field(default_factory=dict)
-    cleanup_function: Optional[Callable[[], None]] = None
+    cleanup_function: Optional[Callable[[Any], bool]] = None
     cleanup_priority: int = 0  # Higher priority cleaned first
 
 
@@ -165,6 +165,9 @@ class ProcessCleaner(ResourceCleaner):
         except Exception as e:
             logger.warning(f"Failed to clean up process {resource}: {e}")
             return False
+
+        # If resource is not a recognized process type, consider it already cleaned
+        return True
 
     def can_handle(self, resource_type: ResourceType) -> bool:
         """Check if can handle processes."""
@@ -289,7 +292,7 @@ class ResourceManager(RecoveryEnhancedMixin):
         resource_id: str,
         resource: Any,
         resource_type: ResourceType,
-        cleanup_function: Optional[Callable[[], None]] = None,
+        cleanup_function: Optional[Callable[[Any], bool]] = None,
         cleanup_priority: int = 0,
         **metadata,
     ) -> str:
@@ -343,10 +346,10 @@ class ResourceManager(RecoveryEnhancedMixin):
         Returns:
             Path to temporary file
         """
-        fd, temp_path = tempfile.mkstemp(suffix=suffix, prefix=prefix, dir=str(directory) if directory else None)
+        fd, temp_path_str = tempfile.mkstemp(suffix=suffix, prefix=prefix, dir=str(directory) if directory else None)
         os.close(fd)  # Close the file descriptor
 
-        temp_path = Path(temp_path)
+        temp_path = Path(temp_path_str)
         resource_id = f"temp_file_{temp_path.name}"
 
         self.register_resource(

@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **🎯 Python Code Execution in Markdown**: Added secure Python code execution capabilities for dynamic content generation
+  - **Inline Execution**: `{py: expression}` for inline calculations and expressions
+  - **Block Execution**: `{{py: code}}` for multi-line code blocks with output formatting
+  - **Variable Persistence**: Execution context persists across commands within a document
+  - **Security Features**: Comprehensive sandboxing with subprocess isolation, import whitelisting, and timeout protection
+  - **Error Handling**: Graceful error handling with informative error messages
+  - **Output Formatting**: Code block output wrapped in markdown code blocks, inline results inserted directly
+
+- **🎯 Blindtext Command Support**: Added LaTeX blindtext package integration for placeholder text generation
+  - **Short Placeholder**: `{{blindtext}}` converts to `\blindtext` for short text
+  - **Paragraph Placeholder**: `{{Blindtext}}` converts to `\Blindtext` for longer paragraphs
+  - **LaTeX Integration**: Automatically includes blindtext package in LaTeX dependencies
+
+- **🎯 Extensible Custom Command Framework**: Created modular command processing architecture
+  - **Registry System**: Plugin-style command processor registration
+  - **Code Protection**: Prevents command processing inside code blocks and inline code
+  - **Future Ready**: Framework prepared for R execution and other custom commands
+
+### Enhanced
+- **📚 Comprehensive Example Manuscript**: Updated figure positioning examples with Python execution demonstrations
+  - **Statistical Analysis**: Examples showing data processing and statistical calculations
+  - **Variable Persistence**: Demonstrated workflow with variables shared across code blocks  
+  - **Security Examples**: Shows security restrictions in action
+  - **Documentation**: Complete reference for all new features
+
 ## [v1.5.17] - 2025-08-17
 
 ### Fixed

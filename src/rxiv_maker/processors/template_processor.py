@@ -390,18 +390,46 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
     # Replace content placeholders with extracted sections
     template_content = template_content.replace("<PY-RPL:ABSTRACT>", content_sections.get("abstract", ""))
 
-    # Handle main/introduction section with proper header
+    # Handle main/introduction section with proper header and include all custom sections
+    main_section_parts = []
+
     if content_sections.get("introduction"):
         # If there's an introduction section, use it with "Introduction" header
         main_section_content = content_sections["introduction"]
-        main_section = f"\\section*{{Introduction}}\n{main_section_content}"
+        main_section_parts.append(f"\\section*{{Introduction}}\n{main_section_content}")
     elif content_sections.get("main"):
         # If there's a main section (but no introduction), use it with "Main" header
         main_section_content = content_sections["main"]
-        main_section = f"\\section*{{Main}}\n{main_section_content}"
-    else:
-        # No main content found
-        main_section = ""
+        main_section_parts.append(f"\\section*{{Main}}\n{main_section_content}")
+
+    # Include all custom sections (sections that don't map to standard academic paper sections)
+    standard_sections = {
+        "abstract",
+        "introduction",
+        "main",
+        "methods",
+        "results",
+        "discussion",
+        "conclusion",
+        "data_availability",
+        "code_availability",
+        "manuscript_preparation",
+        "author_contributions",
+        "acknowledgements",
+        "funding",
+    }
+
+    custom_sections = []
+    for section_key, section_content in content_sections.items():
+        if section_key not in standard_sections and section_content.strip():
+            custom_sections.append(section_content)
+
+    # Add all custom sections to the main section
+    if custom_sections:
+        main_section_parts.extend(custom_sections)
+
+    # Combine all parts into the final main section
+    main_section = "\n\n".join(main_section_parts) if main_section_parts else ""
 
     template_content = template_content.replace("<PY-RPL:MAIN-SECTION>", main_section)
     template_content = template_content.replace("<PY-RPL:METHODS>", content_sections.get("methods", ""))

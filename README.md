@@ -12,15 +12,110 @@ Rxiv-Maker transforms scientific writing by converting Markdown manuscripts into
 
 ## 🚀 Getting Started
 
-### Quick Install
+### 🎯 Quick Install
 ```bash
 pip install rxiv-maker
+rxiv check-installation --fix  # Auto-install dependencies
 rxiv init my-paper
 cd my-paper
 rxiv pdf
 ```
 
-### Alternative Methods
+### 📦 Dependencies by Platform
+
+<details>
+<summary><strong>🍎 macOS - Homebrew (Recommended)</strong></summary>
+
+**Install dependencies with Homebrew:**
+```bash
+# Install Homebrew if needed
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install system dependencies
+brew install python@3.11 node@20 texlive
+brew tap henriqueslab/rxiv-maker
+brew install rxiv-maker  # Complete installation with all dependencies
+
+# Verify installation
+rxiv check-installation
+```
+
+</details>
+
+<details>
+<summary><strong>🐧 Linux - Choose Your Method</strong></summary>
+
+**Option A: APT Repository (Ubuntu/Debian - Recommended)**
+```bash
+sudo apt update
+sudo apt install ca-certificates
+curl -fsSL https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg
+echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/rxiv-maker.gpg] https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo stable main' | sudo tee /etc/apt/sources.list.d/rxiv-maker.list
+sudo apt update
+sudo apt install rxiv-maker
+```
+
+**Option B: Homebrew on Linux (All Distributions)**
+```bash
+# Install Homebrew on Linux
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install rxiv-maker with all dependencies
+brew tap henriqueslab/rxiv-maker  
+brew install rxiv-maker
+
+# Verify installation
+rxiv check-installation
+```
+
+</details>
+
+<details>
+<summary><strong>🪟 Windows - WSL2 (Recommended)</strong></summary>
+
+**Setup WSL2 with Ubuntu:**
+```powershell
+# Windows PowerShell as Administrator
+wsl --install -d Ubuntu-22.04
+# Restart computer when prompted
+```
+
+**Inside WSL2 Ubuntu terminal:**
+```bash
+# Update system
+sudo apt update && sudo apt upgrade -y
+
+# Option A: Use APT repository
+sudo apt install ca-certificates
+curl -fsSL https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg
+echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/rxiv-maker.gpg] https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo stable main' | sudo tee /etc/apt/sources.list.d/rxiv-maker.list
+sudo apt update
+sudo apt install rxiv-maker
+
+# Option B: Use pip with dependencies
+sudo apt install -y python3.11 python3-pip texlive-latex-recommended
+pip install rxiv-maker
+
+# Verify installation
+rxiv check-installation
+```
+
+</details>
+
+### ✅ Verification
+```bash
+# Check installation status
+rxiv check-installation
+
+# Create test project
+rxiv init test-paper
+cd test-paper
+
+# Generate your first PDF
+rxiv pdf
+```
+
+### 🌐 Alternative Methods
 
 **🐳 Docker** (No local dependencies)
 ```bash

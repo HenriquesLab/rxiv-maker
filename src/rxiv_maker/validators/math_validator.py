@@ -685,6 +685,21 @@ class MathValidator(BaseValidator):
             protected,
         )
 
+        # Protect Python code blocks {{py: ...}}
+        protected = re.sub(
+            r"\{\{py:.*?\}\}",
+            lambda m: f"XXPROTECTEDCODEXX{len(m.group(0))}XXPROTECTEDCODEXX",
+            protected,
+            flags=re.DOTALL,
+        )
+
+        # Protect inline Python expressions {py: ...}
+        protected = re.sub(
+            r"\{py:[^}]+\}",
+            lambda m: f"XXPROTECTEDCODEXX{len(m.group(0))}XXPROTECTEDCODEXX",
+            protected,
+        )
+
         return protected
 
     def _generate_math_statistics(self) -> dict[str, Any]:

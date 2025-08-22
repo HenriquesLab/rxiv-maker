@@ -1,6 +1,17 @@
 # Build directories (contains all generated files)
 build/
 output/
+dist/
+
+# Package distribution artifacts
+apt-repo/
+*.deb
+*.buildinfo
+*.changes
+
+# Build and audit logs
+build.log
+pip-audit-report.json
 
 # Docker build logs
 src/docker/build-*.log
@@ -50,6 +61,10 @@ __pycache__/
 
 # Python files in base directory only (not subdirectories)
 /*.py
+
+# Debug and temporary development files
+debug_*.py
+todo*.md
 
 # C extensions
 *.so
@@ -289,6 +304,7 @@ EXAMPLE_MANUSCRIPT/2025__Saraiva_et_al__for_arxiv.zip
 GEMINI.md
 # Markdown files - ignore by default except important ones
 *.md
+.github/*.md
 
 # Important markdown files to keep tracked
 !README.md
@@ -298,6 +314,7 @@ GEMINI.md
 !docs/**/*.md
 !EXAMPLE_MANUSCRIPT/**/*.md
 !MANUSCRIPT/**/*.md
+!examples/**/*.md
 !test_init/**/*.md
 !src/**/*.md
 !tests/**/*.md
@@ -360,3 +377,7 @@ backup/
 */output/.log
 output/
 build/
+
+# APT repository validation results (temporary files)
+validation-results/
+packaging/validation-results/

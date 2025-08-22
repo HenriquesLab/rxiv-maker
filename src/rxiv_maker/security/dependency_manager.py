@@ -475,9 +475,9 @@ class DependencyManager:
     def _version_is_newer(self, version1: str, version2: str) -> bool:
         """Check if version1 is newer than version2."""
         try:
-            from packaging import version
+            from packaging.version import parse as parse_version
 
-            return version.parse(version1) > version.parse(version2)
+            return parse_version(version1) > parse_version(version2)
         except ImportError:
             # Fallback to simple string comparison
             return version1 != version2
@@ -489,10 +489,10 @@ class DependencyManager:
     def _classify_update_type(self, current_version: str, latest_version: str) -> str:
         """Classify update type (major, minor, patch)."""
         try:
-            from packaging import version
+            from packaging.version import parse as parse_version
 
-            current = version.parse(current_version)
-            latest = version.parse(latest_version)
+            current = parse_version(current_version)
+            latest = parse_version(latest_version)
 
             if current.major != latest.major:
                 return "major"

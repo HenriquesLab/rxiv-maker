@@ -541,12 +541,57 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
     # Also match numbered files like 00_CONFIG, 01_MAIN, etc.
     text = re.sub(r"\b\d+_[A-Z_]+\b", escape_filenames, text)
 
+    # Escape percent signs in text (but not in comments that start with %)
+    # Use a regex to avoid escaping percent signs at the start of lines (which are comments)
+    text = re.sub(r"(?<!\\)(?<!^)%", r"\\%", text, flags=re.MULTILINE)
+
     # Final step: replace all placeholders with properly escaped underscores
     text = text.replace("XUNDERSCOREX", "\\_")
 
     # Restore protected LaTeX commands after escaping
     for placeholder, original_command in protected_latex_commands.items():
         text = text.replace(placeholder, original_command)
+
+    # Handle special characters that can cause LaTeX issues
+    # Escape caret character outside of math mode and texttt blocks
+    def escape_carets_outside_protected_contexts(text):
+        """Escape carets but not inside LaTeX commands or math mode."""
+        # Combine all protection patterns into a single regex
+        combined_pattern = (
+            r"(\\texttt\{[^}]*\})|"  # \texttt{...}
+            r"(\\text\{[^}]*\})|"  # \text{...}
+            r"(\$[^$]*\$)|"  # Inline math $...$
+            r"(\$\$.*?\$\$)|"  # Display math $$...$$
+            r"(\\begin\{equation\}.*?\\end\{equation\})"  # equation environments
+        )
+
+        # Split by the combined pattern - protected parts will be in groups
+        parts = re.split(combined_pattern, text, flags=re.DOTALL)
+        result = []
+
+        for part in parts:
+            if part is None or part == "":
+                continue
+
+            # Check if this part matches any of our protection patterns
+            is_protected = (
+                part.startswith("\\texttt{")
+                or part.startswith("\\text{")
+                or (part.startswith("$") and not part.startswith("$$"))
+                or part.startswith("$$")
+                or part.startswith("\\begin{equation}")
+            )
+
+            if not is_protected:
+                # Only escape carets in unprotected parts
+                # Only escape isolated carets that aren't already in math mode
+                part = re.sub(r"(?<!\$)(?<!\\\$)\^(?!\^)(?![^$]*\$)", r"\\textasciicircum{}", part)
+
+            result.append(part)
+
+        return "".join(result)
+
+    text = escape_carets_outside_protected_contexts(text)
 
     # Handle Unicode arrows that can cause LaTeX math mode issues
     # These need to be converted to proper LaTeX math commands

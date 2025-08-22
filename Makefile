@@ -370,8 +370,8 @@ clean-cache:
 # 🐳 DOCKER ENGINE MODE
 # ======================================================================
 
-# Note: Docker image management commands are in src/docker/images/base/Makefile for maintainers.
-# End users can use RXIV_ENGINE=DOCKER with any command for containerized execution.
+# Note: Docker image management is now handled in the separate docker-rxiv-maker repository.
+# End users can use RXIV_ENGINE=DOCKER with any command for containerized execution using pre-built images.
 
 # ======================================================================
 # 📖 HELP AND DOCUMENTATION

@@ -16,6 +16,67 @@ This guide covers the most frequently encountered issues when using Rxiv-Maker, 
 
 ## Installation Issues
 
+### Issue: APT Repository Installation Fails (Ubuntu/Debian)
+
+**Symptoms:**
+- `apt install rxiv-maker` fails with "package not found"
+- GPG key verification errors
+- Repository not accessible
+- Package dependency conflicts
+
+**Solutions:**
+
+#### 1. Verify Repository Setup
+```bash
+# Check if repository is added correctly
+ls /etc/apt/sources.list.d/ | grep rxiv-maker
+cat /etc/apt/sources.list.d/rxiv-maker.list
+
+# Expected content:
+# deb [arch=amd64 signed-by=/usr/share/keyrings/rxiv-maker.gpg] https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo stable main
+```
+
+#### 2. Re-add Repository with Fresh Keys
+```bash
+# Remove existing repository
+sudo rm -f /etc/apt/sources.list.d/rxiv-maker.list
+sudo rm -f /usr/share/keyrings/rxiv-maker.gpg
+
+# Re-add repository
+sudo apt update
+sudo apt install ca-certificates
+curl -fsSL https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg
+echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/rxiv-maker.gpg] https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo stable main' | sudo tee /etc/apt/sources.list.d/rxiv-maker.list
+
+# Update package list
+sudo apt update
+
+# Install rxiv-maker
+sudo apt install rxiv-maker
+```
+
+#### 3. Check Network Connectivity
+```bash
+# Test repository accessibility
+curl -I https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo/pubkey.gpg
+
+# If behind corporate firewall, configure proxy:
+sudo apt -o Acquire::http::proxy="http://proxy.company.com:port" update
+```
+
+#### 4. Alternative: Use Pip Installation
+If APT repository continues to fail:
+```bash
+# Install dependencies manually
+sudo apt install -y python3.11 python3-pip texlive-latex-recommended
+
+# Install rxiv-maker via pip
+pip install rxiv-maker
+
+# Verify installation
+rxiv check-installation
+```
+
 ### Issue: `pip install rxiv-maker` fails
 
 **Symptoms:**
