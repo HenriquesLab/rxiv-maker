@@ -34,7 +34,9 @@ from utils import create_http_session, run_command
 class HomebrewFormulaUpdater:
     """Homebrew formula updater."""
 
-    def __init__(self, tag: Optional[str] = None, force: bool = False, debug: bool = False):
+    def __init__(
+        self, tag: Optional[str] = None, force: bool = False, debug: bool = False, direct_commit: bool = False
+    ):
         """
         Initialize Homebrew formula updater.
 
@@ -42,9 +44,11 @@ class HomebrewFormulaUpdater:
             tag: Specific tag to update (overrides event-based detection)
             force: Force update even if versions don't match
             debug: Enable debug logging
+            direct_commit: Commit directly to main instead of creating PR
         """
         self.tag = tag
         self.force = force
+        self.direct_commit = direct_commit
 
         # Setup logging
         log_level = "DEBUG" if debug else "INFO"
@@ -64,6 +68,7 @@ class HomebrewFormulaUpdater:
         log_section(self.logger, "Homebrew Formula Updater Initialized")
         self.logger.info(f"Tag: {self.tag or 'auto-detect'}")
         self.logger.info(f"Force: {self.force}")
+        self.logger.info(f"Direct commit: {self.direct_commit}")
         self.logger.info(f"Tap repository: {self.homebrew_tap_repo}")
 
     def run_update_pipeline(self) -> bool:
@@ -98,9 +103,12 @@ class HomebrewFormulaUpdater:
             if not self.update_formula(release_info, tarball_sha):
                 return False
 
-            # Step 6: Create pull request
-            if not self.create_pull_request(release_info):
-                return False
+            # Step 6: Create pull request or direct commit
+            if self.direct_commit:
+                self.logger.info("Direct commit mode - formula already pushed to main")
+            else:
+                if not self.create_pull_request(release_info):
+                    return False
 
             log_section(self.logger, "Homebrew Update Pipeline Completed Successfully")
             return True
@@ -274,21 +282,23 @@ class HomebrewFormulaUpdater:
 
                 run_command(["git", "commit", "-m", commit_message], cwd=tap_path, logger=self.logger)
 
-                # Push to a new branch
-                branch_name = f"update-rxiv-maker-{release_info['version']}"
-
-                run_command(["git", "checkout", "-b", branch_name], cwd=tap_path, logger=self.logger)
-
                 # Push with authentication
                 remote_url = f"https://x-access-token:{self.github_token}@github.com/{self.homebrew_tap_repo}.git"
-
                 run_command(["git", "remote", "set-url", "origin", remote_url], cwd=tap_path, logger=self.logger)
 
-                run_command(["git", "push", "origin", branch_name], cwd=tap_path, logger=self.logger)
+                if self.direct_commit:
+                    # Direct commit to main
+                    run_command(["git", "push", "origin", "main"], cwd=tap_path, logger=self.logger)
+                    self.logger.info("Changes pushed directly to main branch")
+                else:
+                    # Push to a new branch
+                    branch_name = f"update-rxiv-maker-{release_info['version']}"
+                    run_command(["git", "checkout", "-b", branch_name], cwd=tap_path, logger=self.logger)
+                    run_command(["git", "push", "origin", branch_name], cwd=tap_path, logger=self.logger)
 
-                # Store branch info for PR creation
-                self.branch_name = branch_name
-                self.commit_message = commit_message
+                    # Store branch info for PR creation
+                    self.branch_name = branch_name
+                    self.commit_message = commit_message
 
             log_step(self.logger, "Formula updated and pushed", "SUCCESS")
             return True
@@ -369,6 +379,7 @@ def main():
     parser.add_argument("--tag", help="Specific tag to update (e.g., v1.2.3)")
     parser.add_argument("--force", action="store_true", help="Force update even if validation fails")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
+    parser.add_argument("--direct-commit", action="store_true", help="Commit directly to main instead of creating PR")
 
     args = parser.parse_args()
 
@@ -377,7 +388,7 @@ def main():
         os.environ["GITHUB_REF_NAME"] = args.tag
 
     # Create and run updater
-    updater = HomebrewFormulaUpdater(tag=args.tag, force=args.force, debug=args.debug)
+    updater = HomebrewFormulaUpdater(tag=args.tag, force=args.force, debug=args.debug, direct_commit=args.direct_commit)
 
     success = updater.run_update_pipeline()
 

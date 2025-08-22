@@ -73,31 +73,42 @@ rxiv check-installation
 <details>
 <summary><strong>🪟 Windows - WSL2 (Recommended)</strong></summary>
 
-**Setup WSL2 with Ubuntu:**
+**Why WSL2?** WSL2 provides a full Linux environment on Windows, ensuring 100% compatibility with rxiv-maker's LaTeX and Python dependencies without the complexity of native Windows installations.
+
+**Step 1: Install WSL2 with Ubuntu**
 ```powershell
-# Windows PowerShell as Administrator
+# Run Windows PowerShell as Administrator
 wsl --install -d Ubuntu-22.04
 # Restart computer when prompted
 ```
 
-**Inside WSL2 Ubuntu terminal:**
+**Step 2: Setup rxiv-maker in WSL2 Ubuntu**
 ```bash
-# Update system
+# Update system packages
 sudo apt update && sudo apt upgrade -y
 
-# Option A: Use APT repository
-sudo apt install ca-certificates
+# Option A: APT Repository (Recommended - includes all dependencies)
+sudo apt install ca-certificates curl gpg
 curl -fsSL https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg
 echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/rxiv-maker.gpg] https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo stable main' | sudo tee /etc/apt/sources.list.d/rxiv-maker.list
 sudo apt update
 sudo apt install rxiv-maker
 
-# Option B: Use pip with dependencies
-sudo apt install -y python3.11 python3-pip texlive-latex-recommended
+# Option B: Python pip (manual dependency management)
+sudo apt install -y python3.11 python3-pip texlive-latex-recommended texlive-fonts-recommended
 pip install rxiv-maker
 
 # Verify installation
 rxiv check-installation
+```
+
+**Step 3: Access files between Windows and WSL2**
+```bash
+# Access Windows files from WSL2
+cd /mnt/c/Users/YourUsername/Documents
+
+# Access WSL2 files from Windows Explorer
+# Navigate to: \\wsl$\Ubuntu-22.04\home\yourusername
 ```
 
 </details>

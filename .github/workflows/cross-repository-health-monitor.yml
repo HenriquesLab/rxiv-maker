@@ -33,6 +33,7 @@ env:
   MAIN_REPO: ${{ github.repository }}
   HOMEBREW_REPO: HenriquesLab/homebrew-rxiv-maker
   APT_REPO: HenriquesLab/apt-rxiv-maker
+  DOCKER_REPO: HenriquesLab/docker-rxiv-maker
   ALERT_THRESHOLD_HOURS: ${{ github.event.inputs.alert_threshold || '24' }}
 
 jobs:
@@ -45,6 +46,7 @@ jobs:
       main_status: ${{ steps.main.outputs.status }}
       homebrew_status: ${{ steps.homebrew.outputs.status }}
       apt_status: ${{ steps.apt.outputs.status }}
+      docker_status: ${{ steps.docker.outputs.status }}
       overall_health: ${{ steps.assessment.outputs.health }}
       alerts_required: ${{ steps.assessment.outputs.alerts_required }}
 
@@ -186,6 +188,55 @@ jobs:
 
           echo "✅ APT repository status: $HEALTH_STATUS"
 
+      - name: 🐳 Check Docker repository workflows
+        id: docker
+        env:
+          GH_TOKEN: ${{ secrets.DISPATCH_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🔍 Checking Docker repository workflow health..."
+
+          # Check if we can access the repository
+          if ! gh repo view "$DOCKER_REPO" >/dev/null 2>&1; then
+            echo "❌ Cannot access Docker repository"
+            echo "status=inaccessible" >> $GITHUB_OUTPUT
+            echo "error=Repository not accessible" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Get recent workflow runs
+          FAILED_RUNS=$(gh run list --repo "$DOCKER_REPO" \
+            --status failure \
+            --created "$(date -d '24 hours ago' -I)" \
+            --limit 10 \
+            --json workflowName,status,createdAt,conclusion 2>/dev/null || echo "[]")
+
+          FAILED_COUNT=$(echo "$FAILED_RUNS" | jq length)
+
+          echo "Recent failed runs: $FAILED_COUNT"
+
+          # Check for recent successful builds
+          RECENT_BUILDS=$(gh run list --repo "$DOCKER_REPO" \
+            --status success \
+            --created "$(date -d '7 days ago' -I)" \
+            --limit 5 2>/dev/null | wc -l || echo 0)
+
+          # Assess health status
+          if [ "$FAILED_COUNT" -gt 2 ]; then
+            HEALTH_STATUS="degraded"
+          elif [ "$FAILED_COUNT" -gt 0 ]; then
+            HEALTH_STATUS="warning"
+          elif [ "$RECENT_BUILDS" -gt 0 ]; then
+            HEALTH_STATUS="healthy"
+          else
+            HEALTH_STATUS="stale"
+          fi
+
+          echo "status=$HEALTH_STATUS" >> $GITHUB_OUTPUT
+          echo "failed_count=$FAILED_COUNT" >> $GITHUB_OUTPUT
+          echo "recent_builds=$RECENT_BUILDS" >> $GITHUB_OUTPUT
+
+          echo "✅ Docker repository status: $HEALTH_STATUS"
+
       - name: 🎯 Overall health assessment
         id: assessment
         run: |
@@ -194,17 +245,19 @@ jobs:
           MAIN_STATUS="${{ steps.main.outputs.status }}"
           HOMEBREW_STATUS="${{ steps.homebrew.outputs.status }}"
           APT_STATUS="${{ steps.apt.outputs.status }}"
+          DOCKER_STATUS="${{ steps.docker.outputs.status }}"
 
           echo "Main: $MAIN_STATUS"
           echo "Homebrew: $HOMEBREW_STATUS"
           echo "APT: $APT_STATUS"
+          echo "Docker: $DOCKER_STATUS"
 
           # Determine overall health
           CRITICAL_COUNT=0
           DEGRADED_COUNT=0
           WARNING_COUNT=0
 
-          for status in "$MAIN_STATUS" "$HOMEBREW_STATUS" "$APT_STATUS"; do
+          for status in "$MAIN_STATUS" "$HOMEBREW_STATUS" "$APT_STATUS" "$DOCKER_STATUS"; do
             case "$status" in
               "critical"|"inaccessible")
                 CRITICAL_COUNT=$((CRITICAL_COUNT + 1))
