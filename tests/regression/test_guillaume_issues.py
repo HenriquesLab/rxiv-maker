@@ -1024,9 +1024,9 @@ This is the methods content.
         # Should use figure*[p] for proper dedicated page control
         assert "\\begin{figure*}[p]" in result, "Should use figure*[p] for dedicated page placement"
 
-        # Should use clearpage + newpage to force true dedicated page exclusivity
-        assert "\\clearpage" in result, "Should use clearpage for dedicated page behavior"
-        assert "\\newpage" in result, "Should use newpage to prevent page sharing"
+        # Should use counter manipulation to force true dedicated page exclusivity
+        assert "\\clearpage" in result, "Should use clearpage for dedicated page behavior"  
+        assert "\\setcounter{dbltopnumber}{1}" in result, "Should limit floats per page for exclusivity"
 
     def test_dedicated_page_figures_with_scaling(self):
         """Test Guillaume's specific scaling issue with dedicated page figures.

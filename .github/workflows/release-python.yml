@@ -1,0 +1,62 @@
+name: 🚀 Release (Python-Driven)
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Dry run mode (skip actual publishing)'
+        type: boolean
+        default: true
+      version:
+        description: 'Version to release (e.g., v1.4.23)'
+        required: false
+        type: string
+      force:
+        description: 'Force release even if validation fails'
+        type: boolean
+        default: false
+      debug:
+        description: 'Enable debug logging'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    name: 🚀 Execute Release Pipeline
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pyyaml
+      
+      - name: Run Release Orchestrator
+        run: |
+          python .github/scripts/release/orchestrator.py \
+            ${{ inputs.dry-run == true && '--dry-run' || '' }} \
+            ${{ inputs.force == true && '--force' || '' }} \
+            ${{ inputs.debug == true && '--debug' || '' }} \
+            ${{ inputs.version && format('--version {0}', inputs.version) || '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+          DISPATCH_PAT: ${{ secrets.DISPATCH_PAT }}

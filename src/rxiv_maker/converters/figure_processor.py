@@ -293,10 +293,10 @@ def create_latex_figure_environment(
 
     # For dedicated page figures, ensure proper page placement
     if original_position == "p":
-        # Use clearpage + newpage to force true dedicated page exclusivity
-        # clearpage: force page break before figure
-        # newpage: force page break after figure to prevent sharing
-        latex_figure = f"\\clearpage\n{latex_figure}\n\\newpage"
+        # Use counter manipulation to force true dedicated page exclusivity
+        # dbltopnumber=1: allow only 1 two-column float per page
+        # clearpage: force page breaks before and after
+        latex_figure = f"\\clearpage\n\\setcounter{{dbltopnumber}}{{1}}\n{latex_figure}\n\\setcounter{{dbltopnumber}}{{2}}\n\\clearpage"
 
     return latex_figure
 

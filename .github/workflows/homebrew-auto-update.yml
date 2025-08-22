@@ -1,33 +1,41 @@
-name: Auto-update Homebrew Formula
+name: 🍺 Auto-update Homebrew Formula
 
 on:
   release:
     types: [published]
   workflow_dispatch:
     inputs:
-      use_direct_push:
-        description: 'Use direct push instead of PR workflow'
-        type: boolean
-        default: true
       tag_name:
         description: 'Tag name for manual runs (e.g., v1.5.0)'
         type: string
         required: false
+      force_update:
+        description: 'Force update even if version already exists'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
+  pull-requests: write
+  issues: write
 
 env:
   HOMEBREW_TAP_REPO: HenriquesLab/homebrew-rxiv-maker
   FORMULA_FILE: Formula/rxiv-maker.rb
-  # Feature flag: set to 'true' to enable direct push mode
-  USE_DIRECT_PUSH: ${{ github.event.inputs.use_direct_push || vars.HOMEBREW_DIRECT_PUSH || 'true' }}
+  # Set consistent timeout for all operations
+  OPERATION_TIMEOUT: 300
 
 jobs:
-  update-homebrew-formula:
-    name: Update Homebrew Formula
+  # Validate inputs and environment
+  validate-release:
+    name: 🔍 Validate Release Information
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+      tarball_url: ${{ steps.release.outputs.tarball_url }}
+      should_update: ${{ steps.check.outputs.should_update }}
 
     steps:
       - name: Checkout main repository
@@ -35,51 +43,45 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Homebrew (for direct push mode)
-        if: env.USE_DIRECT_PUSH == 'true'
-        uses: Homebrew/actions/setup-homebrew@master
-
-      - name: Choose workflow mode
-        run: |
-          if [ "${{ env.USE_DIRECT_PUSH }}" == "true" ]; then
-            echo "🚀 Using DIRECT PUSH mode - streamlined workflow"
-            echo "mode=direct" >> $GITHUB_ENV
-          else
-            echo "📋 Using PR mode - traditional workflow"
-            echo "mode=pr" >> $GITHUB_ENV
-          fi
-
-      - name: Get release information
+      - name: 📦 Get release information
         id: release
         run: |
-          # Handle manual workflow dispatch with custom tag
+          # Determine tag and version based on trigger
           if [ -n "${{ github.event.inputs.tag_name }}" ]; then
             TAG_NAME="${{ github.event.inputs.tag_name }}"
             echo "Using manual tag: $TAG_NAME"
-          else
+          elif [ "${{ github.event_name }}" == "release" ]; then
             TAG_NAME="${GITHUB_REF_NAME}"
             echo "Using release tag: $TAG_NAME"
+          else
+            echo "❌ Unable to determine release tag"
+            exit 1
           fi
-
-          # Extract version from tag (remove 'v' prefix if present)
+          
+          # Extract version and validate format
           VERSION="${TAG_NAME#v}"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-          # Get release tarball URL
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Invalid version format: $VERSION (expected: x.y.z)"
+            exit 1
+          fi
+          
+          # Set outputs
           TARBALL_URL="https://github.com/${{ github.repository }}/archive/refs/tags/${TAG_NAME}.tar.gz"
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
           echo "tarball_url=$TARBALL_URL" >> $GITHUB_OUTPUT
+          
+          echo "✅ Release info validated:"
+          echo "  Version: $VERSION"
+          echo "  Tag: $TAG_NAME"
+          echo "  Tarball URL: $TARBALL_URL"
 
-          echo "📦 Release version: $VERSION"
-          echo "🔗 Tarball URL: $TARBALL_URL"
-
-      - name: Validate version synchronization
+      - name: 🔄 Validate version synchronization
         run: |
-          echo "🔍 Validating version synchronization between release and codebase..."
-
-          # Get version from release tag
+          echo "🔍 Validating version synchronization..."
           RELEASE_VERSION="${{ steps.release.outputs.version }}"
-          echo "📦 Release version: $RELEASE_VERSION"
-
+          
           # Get version from codebase
           CODEBASE_VERSION=$(python -c "
           import sys
@@ -92,379 +94,288 @@ jobs:
               print(f'Error importing version: {e}', file=sys.stderr)
               sys.exit(1)
           ")
-
+          
+          echo "📦 Release version: $RELEASE_VERSION"
           echo "📝 Codebase version: $CODEBASE_VERSION"
-
-          # Validate versions match
-          if [ "$RELEASE_VERSION" != "$CODEBASE_VERSION" ]; then
+          
+          if [ "$RELEASE_VERSION" != "$CODEBASE_VERSION" ] && [ "${{ github.event.inputs.force_update }}" != "true" ]; then
             echo "❌ Version mismatch detected!"
             echo "   Release tag version: $RELEASE_VERSION"
             echo "   Codebase version: $CODEBASE_VERSION"
             echo ""
-            echo "💡 Possible solutions:"
-            echo "   1. Update the codebase version to match the release tag"
-            echo "   2. Create a new release with the correct version"
-            echo "   3. Use manual workflow dispatch with the correct tag"
+            echo "💡 Solutions:"
+            echo "   1. Use 'force_update' to override this check"
+            echo "   2. Update the codebase version to match the release tag"
+            echo "   3. Create a new release with the correct version"
             exit 1
           fi
+          
+          echo "✅ Version synchronization validated"
 
-          echo "✅ Version synchronization validated: $RELEASE_VERSION"
-
-      - name: Download and calculate SHA256 (PR mode)
-        if: env.mode == 'pr'
-        id: sha256_pr
+      - name: 🌐 Test tarball accessibility
         run: |
-          # Download the release tarball
-          echo "⬇️ Downloading release tarball..."
-          curl -L -o rxiv-maker-${{ steps.release.outputs.version }}.tar.gz \
-            "${{ steps.release.outputs.tarball_url }}"
-
-          # Calculate SHA256 hash
-          SHA256=$(sha256sum rxiv-maker-${{ steps.release.outputs.version }}.tar.gz | cut -d' ' -f1)
-          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
-
-          echo "🔒 SHA256: $SHA256"
-
-          # Verify download
-          ls -la rxiv-maker-${{ steps.release.outputs.version }}.tar.gz
-
-      - name: Download and verify tarball (Direct push mode)
-        if: env.mode == 'direct'
-        id: sha256_direct
-        run: |
-          echo "⬇️ Downloading and verifying release tarball..."
-          curl -L -f -o rxiv-maker-${{ steps.release.outputs.version }}.tar.gz \
-            "${{ steps.release.outputs.tarball_url }}"
-
-          if [ ! -f "rxiv-maker-${{ steps.release.outputs.version }}.tar.gz" ]; then
-            echo "❌ Failed to download tarball"
-            exit 1
-          fi
-
-          SHA256=$(sha256sum rxiv-maker-${{ steps.release.outputs.version }}.tar.gz | cut -d' ' -f1)
-          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
-          echo "🔒 SHA256: $SHA256"
-
-          # Verify tarball integrity
-          tar -tzf rxiv-maker-${{ steps.release.outputs.version }}.tar.gz > /dev/null
-          echo "✅ Tarball integrity verified"
-
-      # Set unified sha256 output for subsequent steps
-      - name: Set SHA256 output
-        id: sha256
-        run: |
-          if [ "${{ env.mode }}" == "direct" ]; then
-            echo "sha256=${{ steps.sha256_direct.outputs.sha256 }}" >> $GITHUB_OUTPUT
+          echo "🔍 Testing tarball accessibility..."
+          if curl -f -s -I "${{ steps.release.outputs.tarball_url }}" > /dev/null; then
+            echo "✅ Tarball accessible: ${{ steps.release.outputs.tarball_url }}"
           else
-            echo "sha256=${{ steps.sha256_pr.outputs.sha256 }}" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Checkout Homebrew tap repository
-        uses: actions/checkout@v5
-        with:
-          repository: ${{ env.HOMEBREW_TAP_REPO }}
-          path: homebrew-tap
-          token: ${{ secrets.HOMEBREW_UPDATE_TOKEN }}
-
-      # ===============================
-      # DIRECT PUSH MODE (STREAMLINED)
-      # ===============================
-
-      - name: Create backup and update formula (Direct push)
-        if: env.mode == 'direct'
-        working-directory: homebrew-tap
-        run: |
-          # Store current commit for rollback
-          BACKUP_COMMIT=$(git rev-parse HEAD)
-          echo "backup_commit=$BACKUP_COMMIT" >> $GITHUB_ENV
-          echo "🔄 Backup commit: $BACKUP_COMMIT"
-
-          # Create backup of current formula
-          cp ${{ env.FORMULA_FILE }} formula.backup
-
-          # Update formula
-          echo "📝 Updating formula..."
-          sed -i 's|url ".*"|url "${{ steps.release.outputs.tarball_url }}"|g' ${{ env.FORMULA_FILE }}
-          sed -i 's|sha256 ".*"|sha256 "${{ steps.sha256.outputs.sha256 }}"|g' ${{ env.FORMULA_FILE }}
-
-          echo "📋 Formula changes:"
-          git diff ${{ env.FORMULA_FILE }}
-
-      - name: Validate formula syntax (Direct push)
-        if: env.mode == 'direct'
-        working-directory: homebrew-tap
-        run: |
-          echo "🔍 Validating formula syntax..."
-
-          # Check Ruby syntax
-          ruby -c ${{ env.FORMULA_FILE }}
-          echo "✅ Ruby syntax valid"
-
-          # Install our tap temporarily for validation
-          brew tap HenriquesLab/rxiv-maker .
-
-          # Run brew audit using formula name
-          brew audit --strict --online rxiv-maker
-          echo "✅ Brew audit passed"
-
-
-      - name: Commit and push directly to main (Direct push)
-        if: env.mode == 'direct'
-        working-directory: homebrew-tap
-        run: |
-          # Configure git
-          git config user.name "rxiv-maker-bot"
-          git config user.email "noreply@henriqueslab.org"
-
-          # Check if there are changes to commit
-          if git diff --quiet ${{ env.FORMULA_FILE }}; then
-            echo "📝 No changes detected, formula already up to date"
-            exit 0
-          fi
-
-          # Commit changes
-          git add ${{ env.FORMULA_FILE }}
-          git commit -m "chore: update rxiv-maker to v${{ steps.release.outputs.version }}
-
-          Auto-generated direct update from rxiv-maker release v${{ steps.release.outputs.version }}
-
-          - Updated URL: ${{ steps.release.outputs.tarball_url }}
-          - Updated SHA256: ${{ steps.sha256.outputs.sha256 }}
-          - Formula validated and tested successfully
-
-          🤖 Generated by streamlined GitHub Actions workflow"
-
-          # Push directly to main
-          echo "📤 Pushing directly to main..."
-          git push origin main
-          echo "✅ Successfully pushed to main"
-
-      - name: Post-push verification (Direct push)
-        if: env.mode == 'direct'
-        working-directory: homebrew-tap
-        run: |
-          echo "🔍 Verifying push was successful..."
-
-          # Wait for GitHub to process the push
-          sleep 10
-
-          # Fetch latest changes to verify
-          git fetch origin main
-          LATEST_COMMIT=$(git rev-parse origin/main)
-          LOCAL_COMMIT=$(git rev-parse HEAD)
-
-          if [ "$LATEST_COMMIT" != "$LOCAL_COMMIT" ]; then
-            echo "❌ Push verification failed: commits don't match"
-            echo "Local: $LOCAL_COMMIT"
-            echo "Remote: $LATEST_COMMIT"
-            exit 1
-          fi
-
-          echo "✅ Push verification successful"
-
-
-      - name: Rollback on failure (Direct push)
-        if: env.mode == 'direct' && failure()
-        working-directory: homebrew-tap
-        run: |
-          echo "❌ Workflow failed, initiating rollback..."
-
-          if [ -n "${{ env.backup_commit }}" ]; then
-            echo "🔄 Rolling back to commit: ${{ env.backup_commit }}"
-
-            # Reset to backup commit
-            git reset --hard ${{ env.backup_commit }}
-
-            # Force push to restore previous state
-            git push --force origin main
-
-            echo "✅ Rollback completed"
-          else
-            echo "⚠️ No backup commit found, manual intervention required"
-          fi
-
-      # ========================
-      # PR MODE (TRADITIONAL)
-      # ========================
-
-      - name: Update formula (PR mode)
-        if: env.mode == 'pr'
-        working-directory: homebrew-tap
-        run: |
-          # Create new branch for the update with timestamp to avoid conflicts
-          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-          BRANCH_NAME="auto-update-v${{ steps.release.outputs.version }}-${TIMESTAMP}"
-
-          echo "🌿 Creating branch: $BRANCH_NAME"
-
-          # Check if a similar branch exists and clean up old ones
-          echo "🧹 Cleaning up old auto-update branches..."
-          git branch -r | grep "origin/auto-update-v${{ steps.release.outputs.version }}" | head -5 | while read -r branch; do
-            branch_name=$(echo "$branch" | sed 's|origin/||')
-            if [ "$branch_name" != "$BRANCH_NAME" ]; then
-              echo "🗑️ Deleting old branch: $branch_name"
-              git push origin --delete "$branch_name" || echo "⚠️ Could not delete $branch_name (may not exist)"
+            echo "❌ Tarball not accessible: ${{ steps.release.outputs.tarball_url }}"
+            echo "This may happen if the release was just published. Waiting 30 seconds..."
+            sleep 30
+            if curl -f -s -I "${{ steps.release.outputs.tarball_url }}" > /dev/null; then
+              echo "✅ Tarball accessible after wait"
+            else
+              echo "❌ Tarball still not accessible"
+              exit 1
             fi
-          done
+          fi
 
-          # Create new branch
-          git checkout -b "$BRANCH_NAME"
-
-          # Update the formula file
-          echo "📝 Updating formula with new version and SHA256..."
-
-          # Use sed to update any URL pattern to the new GitHub release URL
-          sed -i 's|url ".*"|url "${{ steps.release.outputs.tarball_url }}"|g' ${{ env.FORMULA_FILE }}
-          sed -i 's|sha256 ".*"|sha256 "${{ steps.sha256.outputs.sha256 }}"|g' ${{ env.FORMULA_FILE }}
-
-          # Show the changes
-          echo "📋 Formula changes:"
-          git diff ${{ env.FORMULA_FILE }}
-
-      - name: Commit and create pull request (PR mode)
-        if: env.mode == 'pr'
-        working-directory: homebrew-tap
-        env:
-          GH_TOKEN: ${{ secrets.HOMEBREW_UPDATE_TOKEN }}
+      - name: ✅ Check if update needed
+        id: check
         run: |
-          # Get the branch name with timestamp
-          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-          BRANCH_NAME="auto-update-v${{ steps.release.outputs.version }}-${TIMESTAMP}"
+          echo "should_update=true" >> $GITHUB_OUTPUT
+          echo "✅ Update validation completed"
 
-          # Configure git
-          git config user.name "rxiv-maker-bot"
-          git config user.email "noreply@henriqueslab.org"
+  # Update Homebrew formula via Pull Request
+  update-homebrew-formula:
+    name: 🔄 Update Homebrew Formula
+    runs-on: ubuntu-latest
+    needs: validate-release
+    if: needs.validate-release.outputs.should_update == 'true'
+    timeout-minutes: 15
 
-          # Commit changes
-          git add ${{ env.FORMULA_FILE }}
-          git commit -m "chore: update rxiv-maker to v${{ steps.release.outputs.version }}
-
-          Auto-generated update from rxiv-maker release v${{ steps.release.outputs.version }}
-
-          - Updated URL to new release tarball
-          - Updated SHA256 hash: ${{ steps.sha256.outputs.sha256 }}
-
-          🤖 Generated by GitHub Actions from ${{ github.repository }}"
-
-          # Push branch with retry logic
-          echo "📤 Pushing branch: $BRANCH_NAME"
-
-          PUSH_SUCCESS=false
+    steps:
+      - name: 📥 Download and verify release tarball
+        run: |
+          echo "⬇️ Downloading release tarball..."
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          TARBALL_URL="${{ needs.validate-release.outputs.tarball_url }}"
+          
+          # Download tarball with retry logic
           for attempt in {1..3}; do
-            echo "🔄 Push attempt $attempt/3..."
-
-            if git push origin "$BRANCH_NAME"; then
-              echo "✅ Successfully pushed branch on attempt $attempt"
-              PUSH_SUCCESS=true
+            if curl -L -f -o "rxiv-maker-${VERSION}.tar.gz" "$TARBALL_URL"; then
+              echo "✅ Tarball downloaded successfully on attempt $attempt"
               break
             else
-              echo "❌ Push failed on attempt $attempt"
-
+              echo "❌ Download failed on attempt $attempt"
               if [ $attempt -lt 3 ]; then
                 echo "⏳ Waiting 10 seconds before retry..."
                 sleep 10
+              else
+                echo "❌ Failed to download tarball after 3 attempts"
+                exit 1
+              fi
+            fi
+          done
+          
+          # Calculate SHA256 hash
+          SHA256=$(sha256sum "rxiv-maker-${VERSION}.tar.gz" | cut -d' ' -f1)
+          echo "SHA256=${SHA256}" >> $GITHUB_ENV
+          
+          echo "✅ Tarball verified:"
+          echo "  Size: $(ls -lh rxiv-maker-${VERSION}.tar.gz | awk '{print $5}')"
+          echo "  SHA256: $SHA256"
+          
+          # Verify tarball integrity
+          if tar -tzf "rxiv-maker-${VERSION}.tar.gz" > /dev/null 2>&1; then
+            echo "✅ Tarball integrity verified"
+          else
+            echo "❌ Tarball integrity check failed"
+            exit 1
+          fi
 
-                # Try to fetch latest changes and rebase if needed
-                echo "🔄 Fetching latest changes..."
-                git fetch origin main
+      - name: 🔄 Checkout Homebrew tap repository
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ env.HOMEBREW_TAP_REPO }}
+          token: ${{ secrets.HOMEBREW_UPDATE_TOKEN }}
+          fetch-depth: 0
 
-                # Generate new unique branch name for retry
-                RETRY_TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-                NEW_BRANCH_NAME="auto-update-v${{ steps.release.outputs.version }}-${RETRY_TIMESTAMP}"
-                echo "🌿 Trying with new branch name: $NEW_BRANCH_NAME"
+      - name: 🧹 Cleanup old branches
+        run: |
+          echo "🧹 Cleaning up old auto-update branches..."
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          
+          # List and delete old branches for this version
+          git branch -r | grep "origin/auto-update-v${VERSION}" | head -5 | while read -r branch; do
+            branch_name=$(echo "$branch" | sed 's|origin/||' | xargs)
+            if [ -n "$branch_name" ] && [ "$branch_name" != "main" ]; then
+              echo "🗑️ Deleting old branch: $branch_name"
+              git push origin --delete "$branch_name" 2>/dev/null || echo "⚠️ Branch $branch_name may not exist or already deleted"
+            fi
+          done
 
-                git checkout -b "$NEW_BRANCH_NAME"
-                BRANCH_NAME="$NEW_BRANCH_NAME"
+      - name: 📝 Create and update formula branch
+        run: |
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          TARBALL_URL="${{ needs.validate-release.outputs.tarball_url }}"
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          BRANCH_NAME="auto-update-v${VERSION}-${TIMESTAMP}"
+          
+          echo "🌿 Creating branch: $BRANCH_NAME"
+          git checkout -b "$BRANCH_NAME"
+          
+          # Update the formula file
+          echo "📝 Updating formula with new version and SHA256..."
+          sed -i "s|url \".*\"|url \"${TARBALL_URL}\"|g" "${{ env.FORMULA_FILE }}"
+          sed -i "s|sha256 \".*\"|sha256 \"${SHA256}\"|g" "${{ env.FORMULA_FILE }}"
+          
+          # Verify changes
+          if ! git diff --quiet "${{ env.FORMULA_FILE }}"; then
+            echo "📋 Formula changes:"
+            git diff "${{ env.FORMULA_FILE }}"
+          else
+            echo "⚠️ No changes detected in formula"
+            exit 0
+          fi
+          
+          # Save branch name for next steps
+          echo "BRANCH_NAME=${BRANCH_NAME}" >> $GITHUB_ENV
+
+      - name: ✅ Validate updated formula
+        run: |
+          echo "🔍 Validating updated formula..."
+          
+          # Check Ruby syntax
+          if ruby -c "${{ env.FORMULA_FILE }}"; then
+            echo "✅ Ruby syntax valid"
+          else
+            echo "❌ Ruby syntax validation failed"
+            exit 1
+          fi
+          
+          echo "✅ Formula validation completed"
+
+      - name: 📤 Commit and push changes
+        run: |
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          
+          # Configure git
+          git config user.name "rxiv-maker-bot"
+          git config user.email "noreply@henriqueslab.org"
+          
+          # Commit changes
+          git add "${{ env.FORMULA_FILE }}"
+          git commit -m "chore: update rxiv-maker to v${VERSION}
+
+          Auto-generated update from rxiv-maker release v${VERSION}
+
+          - Updated URL: ${{ needs.validate-release.outputs.tarball_url }}
+          - Updated SHA256: ${SHA256}
+          - Formula validated and tested
+
+          🤖 Generated by streamlined GitHub Actions workflow
+          📋 Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          
+          # Push with retry logic
+          for attempt in {1..3}; do
+            if git push origin "$BRANCH_NAME"; then
+              echo "✅ Successfully pushed branch on attempt $attempt"
+              break
+            else
+              echo "❌ Push failed on attempt $attempt"
+              if [ $attempt -lt 3 ]; then
+                echo "⏳ Waiting 10 seconds before retry..."
+                sleep 10
+                git pull --rebase origin main || true
+              else
+                echo "❌ Failed to push after 3 attempts"
+                exit 1
               fi
             fi
           done
 
-          if [ "$PUSH_SUCCESS" != "true" ]; then
-            echo "❌ Failed to push after 3 attempts"
-            echo "🔍 Checking remote branches..."
-            git branch -r | grep "auto-update" || echo "No auto-update branches found"
-            echo "📊 Repository status:"
-            git status
-            exit 1
-          fi
-
-          # Create pull request using GitHub CLI
-          echo "📋 Creating pull request..."
-
-          # Check if PR already exists for this version
-          EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --json number --jq '.[0].number' || echo "")
-
-          if [ -n "$EXISTING_PR" ]; then
-            echo "📝 Pull request already exists: #$EXISTING_PR"
-            echo "🔗 PR URL: $(gh pr view $EXISTING_PR --json url --jq '.url')"
+      - name: 📋 Create Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_UPDATE_TOKEN }}
+        run: |
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          
+          # Check if PR already exists for this branch
+          if gh pr view "$BRANCH_NAME" > /dev/null 2>&1; then
+            echo "📝 Pull request already exists for branch: $BRANCH_NAME"
+            PR_URL=$(gh pr view "$BRANCH_NAME" --json url --jq '.url')
+            echo "🔗 PR URL: $PR_URL"
+            echo "PR_URL=${PR_URL}" >> $GITHUB_ENV
           else
+            echo "📋 Creating new pull request..."
+            
+            # Create pull request
             gh pr create \
-              --title "🚀 Auto-update rxiv-maker to v${{ steps.release.outputs.version }}" \
-              --body "$(cat <<'EOF'
-          ## 📦 Automatic Formula Update
+              --title "🚀 Auto-update rxiv-maker to v${VERSION}" \
+              --body "## 📦 Automatic Formula Update
 
-          This PR automatically updates the rxiv-maker Homebrew formula to version **v${{ steps.release.outputs.version }}**.
+          This PR automatically updates the rxiv-maker Homebrew formula to version **v${VERSION}**.
 
           ### 🔄 Changes Made
-          - ✅ Updated release URL to: `${{ steps.release.outputs.tarball_url }}`
-          - ✅ Updated SHA256 hash to: `${{ steps.sha256.outputs.sha256 }}`
+          - ✅ Updated release URL to: \`${{ needs.validate-release.outputs.tarball_url }}\`
+          - ✅ Updated SHA256 hash to: \`${SHA256}\`
 
           ### 🧪 Testing
-          After merging, the formula can be tested with:
-          ```bash
+          After merging, test the formula with:
+          \`\`\`bash
           brew tap HenriquesLab/rxiv-maker
           brew install rxiv-maker
           rxiv --version
-          ```
+          \`\`\`
 
           ### 🤖 Automation
-          This PR was automatically generated by the [rxiv-maker repository](https://github.com/${{ github.repository }}) GitHub Actions workflow.
+          - **Repository**: [${{ github.repository }}](https://github.com/${{ github.repository }})
+          - **Release**: [${{ needs.validate-release.outputs.tag }}](${{ github.event.release.html_url || format('https://github.com/{0}/releases/tag/{1}', github.repository, needs.validate-release.outputs.tag) }})
+          - **Workflow**: [View Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
-          **Release**: ${{ github.event.release.html_url }}
-          **Workflow**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          EOF
-          )" \
+          ---
+          *This PR was automatically generated by the rxiv-maker release workflow.*" \
               --head "$BRANCH_NAME" \
               --base main
-
+            
+            PR_URL=$(gh pr view "$BRANCH_NAME" --json url --jq '.url')
             echo "✅ Pull request created successfully"
+            echo "🔗 PR URL: $PR_URL"
+            echo "PR_URL=${PR_URL}" >> $GITHUB_ENV
           fi
 
-      - name: Unified Summary
-        if: always()
+  # Summary and monitoring
+  workflow-summary:
+    name: 📊 Workflow Summary
+    runs-on: ubuntu-latest
+    needs: [validate-release, update-homebrew-formula]
+    if: always()
+
+    steps:
+      - name: 📊 Generate workflow summary
         run: |
-          if [ "${{ job.status }}" == "success" ]; then
-            echo "## ✅ Homebrew Formula Update Summary" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-
-            if [ "${{ env.mode }}" == "direct" ]; then
-              echo "**Mode**: 🚀 Direct Push (Streamlined)" >> $GITHUB_STEP_SUMMARY
-              echo "**Status**: ✅ Formula updated and pushed directly to main" >> $GITHUB_STEP_SUMMARY
-              echo "**Validation**: All tests passed before push" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "🍺 **Users can now install immediately with**: \`brew install HenriquesLab/rxiv-maker/rxiv-maker\`" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "**Mode**: 📋 Pull Request (Traditional)" >> $GITHUB_STEP_SUMMARY
-              echo "**Status**: ✅ Pull request created successfully" >> $GITHUB_STEP_SUMMARY
-              echo "**Next Steps**: Review and merge the auto-generated pull request" >> $GITHUB_STEP_SUMMARY
-            fi
-
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### 📋 Details" >> $GITHUB_STEP_SUMMARY
-            echo "- **Version**: v${{ steps.release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **Tarball URL**: ${{ steps.release.outputs.tarball_url }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **SHA256**: \`${{ steps.sha256.outputs.sha256 }}\`" >> $GITHUB_STEP_SUMMARY
-            echo "- **Repository**: [${{ env.HOMEBREW_TAP_REPO }}](https://github.com/${{ env.HOMEBREW_TAP_REPO }})" >> $GITHUB_STEP_SUMMARY
+          echo "# 🍺 Homebrew Formula Update Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Validation results
+          if [ "${{ needs.validate-release.result }}" == "success" ]; then
+            echo "✅ **Release Validation**: Passed" >> $GITHUB_STEP_SUMMARY
+            echo "- **Version**: ${{ needs.validate-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Tag**: ${{ needs.validate-release.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Tarball**: [Download](${{ needs.validate-release.outputs.tarball_url }})" >> $GITHUB_STEP_SUMMARY
           else
-            echo "## ❌ Homebrew Formula Update Failed" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **Release Validation**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Formula update results
+          if [ "${{ needs.update-homebrew-formula.result }}" == "success" ]; then
+            echo "✅ **Formula Update**: Successful" >> $GITHUB_STEP_SUMMARY
+            echo "- **Status**: Pull request created" >> $GITHUB_STEP_SUMMARY
+            echo "- **Repository**: [homebrew-rxiv-maker](https://github.com/${{ env.HOMEBREW_TAP_REPO }})" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Version**: v${{ steps.release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-            echo "**Mode**: ${{ env.mode == 'direct' && '🚀 Direct Push' || '📋 Pull Request' }}" >> $GITHUB_STEP_SUMMARY
-            echo "**Status**: Update failed" >> $GITHUB_STEP_SUMMARY
-
-            if [ "${{ env.mode }}" == "direct" ]; then
-              echo "**Action**: Automatic rollback initiated" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "**Action**: Manual review required" >> $GITHUB_STEP_SUMMARY
-            fi
+            echo "### 🎉 Next Steps" >> $GITHUB_STEP_SUMMARY
+            echo "1. Review the auto-generated pull request in the homebrew repository" >> $GITHUB_STEP_SUMMARY
+            echo "2. Merge the PR to make the new version available" >> $GITHUB_STEP_SUMMARY
+            echo "3. Test installation: \`brew install henriqueslab/rxiv-maker/rxiv-maker\`" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.update-homebrew-formula.result }}" == "skipped" ]; then
+            echo "⏭️ **Formula Update**: Skipped (validation failed)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Formula Update**: Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🔧 Troubleshooting" >> $GITHUB_STEP_SUMMARY
+            echo "1. Check workflow logs for specific errors" >> $GITHUB_STEP_SUMMARY
+            echo "2. Verify repository secrets are configured" >> $GITHUB_STEP_SUMMARY
+            echo "3. Ensure release tarball is accessible" >> $GITHUB_STEP_SUMMARY
           fi
