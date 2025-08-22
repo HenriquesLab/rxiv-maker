@@ -55,7 +55,7 @@ authors:
                     "rxiv_maker.core.environment_manager.EnvironmentManager.get_manuscript_path",
                     return_value=str(manuscript_dir),
                 ),
-                patch("rxiv_maker.engine.build_manager.BuildManager") as mock_build_manager,
+                patch("rxiv_maker.cli.commands.build.BuildManager") as mock_build_manager,
             ):
                 mock_build_manager.return_value.build.return_value = True
 

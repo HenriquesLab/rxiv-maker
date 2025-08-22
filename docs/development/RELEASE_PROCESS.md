@@ -9,6 +9,7 @@ The rxiv-maker project uses a comprehensive release pipeline that includes:
 - Binary distribution for major platforms
 - PyPI package publishing
 - Homebrew formula updates
+- APT repository updates (Ubuntu/Debian)
 - Docker image publishing
 - GitHub releases with artifacts
 
@@ -137,6 +138,50 @@ docker build -t henriqueslab/rxiv-maker-base:v1.4.8 -f src/docker/images/base/Do
 docker run --rm henriqueslab/rxiv-maker-base:v1.4.8 python3 --version
 ```
 
+### APT Repository Updates (Ubuntu/Debian)
+
+**Location:** External repository at `HenriquesLab/apt-rxiv-maker`
+
+**Automated Process:**
+1. Release workflow triggers APT repository workflow via GitHub dispatch
+2. APT workflow downloads new version from PyPI
+3. Debian package is built with proper dependencies
+4. Package is published to the apt-repo branch
+5. Repository metadata is updated automatically
+
+**Cross-Repository Coordination:**
+- **Main repository:** `HenriquesLab/rxiv-maker`
+- **APT repository:** `HenriquesLab/apt-rxiv-maker`
+- **Workflow trigger:** `publish-apt.yml` with version parameter
+- **Required secret:** `DISPATCH_PAT` for cross-repository workflow triggering
+
+**Manual Update (if needed):**
+```bash
+# Trigger APT repository update manually
+gh workflow run publish-apt.yml \
+  --repo HenriquesLab/apt-rxiv-maker \
+  --field version="1.4.8" \
+  --field dry-run="false"
+
+# Monitor workflow progress
+gh run list --repo HenriquesLab/apt-rxiv-maker
+
+# Test installation after workflow completes
+sudo apt update
+sudo apt install rxiv-maker
+```
+
+**Validation:**
+```bash
+# Test APT installation
+sudo apt update
+sudo apt show rxiv-maker  # Should show new version
+
+# Test functionality
+rxiv --version  # Should match release version
+rxiv check-installation
+```
+
 ## Release Checklist
 
 ### Pre-Release
@@ -154,14 +199,16 @@ docker run --rm henriqueslab/rxiv-maker-base:v1.4.8 python3 --version
 - [ ] GitHub Actions workflow completed successfully
 - [ ] All artifacts uploaded to GitHub release (including track changes PDF)
 - [ ] PyPI package published
-- [ ] Package managers updated (Homebrew)
+- [ ] Package managers updated (Homebrew, APT)
 - [ ] Docker images published
+- [ ] APT repository workflow triggered successfully
 - [ ] Release notes reviewed and published
 
 ### Post-Release
 
 - [ ] Homebrew formula working (test installation)
 - [ ] PyPI installation working (`pip install rxiv-maker`)
+- [ ] APT installation working (`sudo apt install rxiv-maker`)
 - [ ] Docker images working (`docker run henriqueslab/rxiv-maker-base:latest`)
 - [ ] Documentation site updated
 - [ ] Social media/community announcements

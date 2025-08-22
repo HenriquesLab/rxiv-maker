@@ -6,7 +6,7 @@ import sys
 from ..utils.logging import InstallLogger
 
 try:
-    from packaging import version
+    from packaging.version import parse as parse_version
 
     HAS_PACKAGING = True
 except ImportError:
@@ -96,7 +96,7 @@ class SystemLibsHandler:
             required_version = "3.11.0"
 
             try:
-                return version.parse(current_version) >= version.parse(required_version)
+                return parse_version(current_version) >= parse_version(required_version)
             except Exception as e:
                 self.logger.debug(f"Error parsing version with packaging library: {e}")
                 # Fall back to simple comparison

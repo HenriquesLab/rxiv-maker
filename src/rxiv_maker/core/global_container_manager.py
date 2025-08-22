@@ -10,7 +10,7 @@ import os
 import threading
 import time
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from ..engines.abstract import AbstractContainerEngine
 from ..engines.factory import get_container_engine
@@ -41,7 +41,7 @@ class GlobalContainerManager:
             self._warmed_up = False
             GlobalContainerManager._initialized = True
 
-    def _load_session_config(self) -> Dict[str, any]:
+    def _load_session_config(self) -> Dict[str, Any]:
         """Load container session configuration from environment."""
         return {
             # Container behavior mode: reuse (default), minimal, isolated
@@ -116,7 +116,7 @@ class GlobalContainerManager:
         logger.debug(f"Container engine ready: {engine.engine_name}")
         return engine
 
-    def _get_session_config_for_mode(self) -> Dict[str, any]:
+    def _get_session_config_for_mode(self) -> Dict[str, Any]:
         """Get session configuration based on container mode."""
         mode = self._session_config["mode"]
 
@@ -193,7 +193,7 @@ class GlobalContainerManager:
         logger.debug(f"Cleaned up {cleanup_count} container engines")
         return cleanup_count
 
-    def get_engine_stats(self) -> Dict[str, any]:
+    def get_engine_stats(self) -> Dict[str, Any]:
         """Get statistics about cached engines and their sessions.
 
         Returns:

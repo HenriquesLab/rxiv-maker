@@ -1,0 +1,88 @@
+name: 🐳 Docker Build (Python-Driven)
+
+on:
+  push:
+    branches: [main, dev]
+    paths:
+      - 'src/docker/**'
+      - 'src/py/**'
+      - 'pyproject.toml'
+      - 'requirements*.txt'
+      - '.github/workflows/docker-python.yml'
+
+  pull_request:
+    branches: [main, dev]
+    paths:
+      - 'src/docker/**'
+      - 'src/py/**'
+      - 'pyproject.toml'
+      - 'requirements*.txt'
+      - '.github/workflows/docker-python.yml'
+
+  release:
+    types: [published]
+
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'Platforms to build (comma-separated)'
+        default: 'linux/amd64,linux/arm64'
+        type: string
+      push_to_registry:
+        description: 'Push to registry'
+        type: boolean
+        default: false
+      debug:
+        description: 'Enable debug logging'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  docker_build:
+    name: 🐳 Docker Build & Push
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml requests
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Login to Registry
+        if: github.event_name == 'release' || inputs.push_to_registry == true
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Run Docker Builder
+        run: |
+          python .github/scripts/docker/builder.py \
+            --platforms "${{ inputs.platforms || 'linux/amd64,linux/arm64' }}" \
+            ${{ (github.event_name == 'release' || inputs.push_to_registry == true) && '--push' || '' }} \
+            ${{ inputs.debug == true && '--debug' || '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_REF_TYPE: ${{ github.ref_type }}
+          GITHUB_SHA: ${{ github.sha }}

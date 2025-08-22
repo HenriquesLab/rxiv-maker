@@ -6,7 +6,7 @@ creation while maintaining logical separation for different operation types.
 
 import logging
 from enum import Enum
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +116,7 @@ class SessionOptimizer:
         return descriptions.get(optimized_key, "Unknown session type")
 
     @classmethod
-    def get_all_session_types(cls) -> Dict[str, Dict[str, any]]:
+    def get_all_session_types(cls) -> Dict[str, Dict[str, Any]]:
         """Get all session types with their configuration.
 
         Returns:

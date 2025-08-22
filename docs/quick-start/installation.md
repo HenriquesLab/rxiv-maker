@@ -55,23 +55,23 @@ wsl --install -d Ubuntu-22.04
 
 # 3. Launch Ubuntu from Start Menu and create user account
 
-# 4. Update system and install dependencies
+# 4. Update system
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y python3.11 python3.11-venv python3-pip nodejs npm git make curl
 
-# 5. Install LaTeX (recommended for best results)
-sudo apt install -y texlive-latex-recommended texlive-fonts-recommended
+# 5. Add APT repository and install rxiv-maker with dependencies
+sudo apt install ca-certificates
+curl -fsSL https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg
+echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/rxiv-maker.gpg] https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo stable main' | sudo tee /etc/apt/sources.list.d/rxiv-maker.list
+sudo apt update
+sudo apt install rxiv-maker
 
-# 6. Install rxiv-maker
-pip install rxiv-maker
-
-# 7. Verify installation
+# 6. Verify installation
 rxiv check-installation
 
-# 8. Initialize your first manuscript
+# 7. Initialize your first manuscript
 rxiv init MY_PAPER/
 
-# 9. Build PDF
+# 8. Build PDF
 rxiv pdf MY_PAPER/
 ```
 
@@ -339,7 +339,34 @@ make pdf MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT
 <details>
 <summary><strong>🐧 Linux Installation (Ubuntu/Debian)</strong></summary>
 
-**Prerequisites:**
+**🚀 Option A: APT Repository (Recommended)**
+
+Complete installation with automatic dependency management:
+
+```bash
+# 1. Add APT repository
+sudo apt update
+sudo apt install ca-certificates
+curl -fsSL https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg
+echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/rxiv-maker.gpg] https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo stable main' | sudo tee /etc/apt/sources.list.d/rxiv-maker.list
+
+# 2. Install rxiv-maker with all dependencies
+sudo apt update
+sudo apt install rxiv-maker
+
+# 3. Verify installation
+rxiv check-installation
+
+# 4. Create your first manuscript
+rxiv init my-paper
+cd my-paper
+rxiv pdf
+```
+
+**🛠️ Option B: Development Setup**
+
+For contributors and advanced users:
+
 ```bash
 # Update package list
 sudo apt update
@@ -351,10 +378,7 @@ sudo apt install -y python3.11 python3.11-venv python3-pip nodejs npm git make c
 sudo apt install -y texlive-full  # Complete installation (~4GB)
 # OR
 sudo apt install -y texlive-latex-recommended texlive-fonts-recommended  # Minimal (~500MB)
-```
 
-**Setup:**
-```bash
 # Clone repository
 git clone https://github.com/henriqueslab/rxiv-maker.git
 cd rxiv-maker

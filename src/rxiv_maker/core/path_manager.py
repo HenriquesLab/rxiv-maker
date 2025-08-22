@@ -257,7 +257,7 @@ class PathManager:
 
     def _resolve_manuscript_path(self) -> Path:
         """Resolve manuscript path from various sources."""
-        if self._manuscript_path_raw:
+        if self._manuscript_path_raw is not None:
             # Use provided path
             raw_path = str(self._manuscript_path_raw).rstrip("/")  # Fix trailing slash
             path = self.normalize_path(raw_path)
@@ -286,7 +286,7 @@ class PathManager:
     def _resolve_manuscript_name(self) -> str:
         """Resolve manuscript name with proper handling of edge cases."""
         # Check original raw path first for edge cases
-        if self._manuscript_path_raw:
+        if self._manuscript_path_raw is not None:
             raw_path = str(self._manuscript_path_raw).rstrip("/")
             raw_name = os.path.basename(raw_path)
             # Check if raw input was edge case

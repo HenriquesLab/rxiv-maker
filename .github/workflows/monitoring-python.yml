@@ -1,0 +1,69 @@
+name: 🏥 Health & Token Monitoring (Python-Driven)
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Enable debug output'
+        type: boolean
+        default: false
+      check_type:
+        description: 'Type of check to run'
+        type: choice
+        options:
+          - 'all'
+          - 'health'
+          - 'tokens'
+        default: 'all'
+
+jobs:
+  monitoring:
+    name: 🔍 Repository Monitoring
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install aiohttp pyyaml requests
+
+      - name: 🏥 Run Health Check
+        if: inputs.check_type == 'all' || inputs.check_type == 'health'
+        run: |
+          python .github/scripts/monitoring/cross_repo_health.py \
+            ${{ inputs.debug && '--debug' || '' }} \
+            --json > health_report.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔑 Run Token Health Check
+        if: inputs.check_type == 'all' || inputs.check_type == 'tokens'
+        run: |
+          python .github/scripts/monitoring/token_monitor.py \
+            ${{ inputs.debug && '--debug' || '' }} \
+            --json > token_report.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: 📊 Upload Reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: monitoring-reports
+          path: |
+            health_report.json
+            token_report.json
+          retention-days: 30
