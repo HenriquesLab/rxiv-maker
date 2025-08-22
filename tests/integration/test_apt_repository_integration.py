@@ -40,13 +40,17 @@ class TestAPTRepositoryIntegration(unittest.TestCase):
 
         apt_job = workflow_data["jobs"]["apt-repository"]
 
-        # Check dependencies
-        self.assertIn("build", apt_job["needs"])
+        # Check dependencies - updated for new workflow structure
+        expected_deps = ["critical-path-validation", "github-release", "pypi", "wait-for-pypi-propagation"]
+        for dep in expected_deps:
+            self.assertIn(dep, apt_job["needs"])
         self.assertIn("pypi", apt_job["needs"])
 
-        # Check conditional execution
+        # Check conditional execution - updated for actual workflow logic
+        self.assertIn("needs.critical-path-validation.result", apt_job["if"])
+        self.assertIn("needs.github-release.result", apt_job["if"])
         self.assertIn("needs.pypi.result", apt_job["if"])
-        self.assertIn("!inputs.dry-run", apt_job["if"])
+        self.assertIn("needs.wait-for-pypi-propagation.result", apt_job["if"])
 
     def test_workflow_uses_correct_repository_reference(self):
         """Test that workflow references the correct apt-rxiv-maker repository."""
