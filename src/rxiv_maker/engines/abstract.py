@@ -897,6 +897,21 @@ if __name__ == "__main__":
             if result.returncode != 0:
                 return False
 
+            # Upgrade to latest rxiv-maker version from PyPI (for cutting-edge features)
+            upgrade_cmd = [
+                engine_type,
+                "exec",
+                container_id,
+                "/usr/local/bin/upgrade-to-latest-rxiv.sh",
+            ]
+            result = subprocess.run(upgrade_cmd, capture_output=True, text=True, timeout=60)
+            # Don't fail initialization if upgrade fails - APT version will work
+            if result.returncode != 0:
+                import logging
+
+                logger = logging.getLogger(__name__)
+                logger.debug(f"Rxiv-maker upgrade failed, using APT version: {result.stderr.strip()}")
+
             # Test Python availability and basic imports
             python_test = [
                 engine_type,
@@ -910,7 +925,7 @@ if __name__ == "__main__":
             if result.returncode != 0:
                 return False
 
-            # Test critical Python dependencies
+            # Test critical Python dependencies and rxiv-maker availability
             deps_test = [
                 engine_type,
                 "exec",
@@ -927,6 +942,18 @@ except ImportError as e:
 """,
             ]
             result = subprocess.run(deps_test, capture_output=True, text=True, timeout=20)
+            if result.returncode != 0:
+                return False
+
+            # Test rxiv-maker CLI availability (from APT or upgraded version)
+            rxiv_test = [
+                engine_type,
+                "exec",
+                container_id,
+                "rxiv",
+                "--version",
+            ]
+            result = subprocess.run(rxiv_test, capture_output=True, text=True, timeout=10)
             if result.returncode != 0:
                 return False
 
