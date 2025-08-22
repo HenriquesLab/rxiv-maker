@@ -20,7 +20,7 @@ class TestAPTRepositoryIntegration(unittest.TestCase):
     def setUp(self):
         """Set up test environment."""
         self.repo_root = Path(__file__).parent.parent.parent
-        self.workflow_file = self.repo_root / ".github" / "workflows" / "release-simple.yml"
+        self.workflow_file = self.repo_root / ".github" / "workflows" / "release-python.yml"
 
     def test_workflow_has_apt_repository_job(self):
         """Test that the release workflow includes APT repository job."""
@@ -202,7 +202,7 @@ class TestAPTRepositoryValidation(unittest.TestCase):
     def test_apt_repository_branch_consistency(self):
         """Test that all references use the same repository branch."""
         readme_file = self.repo_root / "README.md"
-        workflow_file = self.repo_root / ".github" / "workflows" / "release-simple.yml"
+        workflow_file = self.repo_root / ".github" / "workflows" / "release-python.yml"
 
         files_to_check = [readme_file, workflow_file]
         branches = set()

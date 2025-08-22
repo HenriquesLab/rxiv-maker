@@ -24,7 +24,7 @@ class TestBinaryDistributionWorkflow:
 
     def test_github_release_workflow_structure(self):
         """Test that the GitHub release workflow is properly structured."""
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
         assert workflow_path.exists(), "Release workflow not found"
 
         content = workflow_path.read_text()
@@ -61,7 +61,7 @@ class TestBinaryDistributionWorkflow:
     def test_version_synchronization_workflow(self):
         """Test that version synchronization triggers are properly configured."""
         # Check main release workflow
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
         content = workflow_path.read_text()
 
         # Should trigger package manager updates (homebrew-update job exists)
@@ -136,7 +136,7 @@ class TestBinaryDistributionWorkflow:
 
     def test_binary_compatibility_matrix(self):
         """Test that we're building for the right platform combinations."""
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
         content = workflow_path.read_text()
 
         # Should build on supported platform
@@ -144,7 +144,7 @@ class TestBinaryDistributionWorkflow:
 
     def test_pyinstaller_configuration_completeness(self):
         """Test that PyInstaller configuration includes all necessary components."""
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
         content = workflow_path.read_text()
 
         # Should include the package name for building
@@ -154,7 +154,7 @@ class TestBinaryDistributionWorkflow:
 
     def test_package_manager_trigger_configuration(self):
         """Test that package manager updates are properly triggered."""
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
         content = workflow_path.read_text()
 
         # Should trigger Homebrew updates
@@ -252,7 +252,7 @@ class TestReleaseWorkflowIntegration:
 
     def test_workflow_job_dependencies(self):
         """Test that workflow jobs have correct dependencies."""
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
         content = workflow_path.read_text()
 
         # Parse basic job structure
@@ -268,7 +268,7 @@ class TestReleaseWorkflowIntegration:
 
     def test_artifact_handling(self):
         """Test that artifacts are properly handled in workflow."""
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
         content = workflow_path.read_text()
 
         # Should handle artifacts (upload/download)
@@ -277,7 +277,7 @@ class TestReleaseWorkflowIntegration:
 
     def test_error_handling_in_workflow(self):
         """Test that workflow has proper error handling."""
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
         content = workflow_path.read_text()
 
         # Should have error handling configurations (timeout or failure handling)
@@ -300,7 +300,7 @@ class TestReleaseWorkflowIntegration:
 
     def test_security_considerations(self):
         """Test that workflow follows security best practices."""
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
         content = workflow_path.read_text()
 
         # Should use official actions with pinned versions
@@ -317,7 +317,7 @@ class TestReleaseWorkflowIntegration:
     @pytest.mark.timeout(120)  # YAML validation may require file processing
     def test_workflow_yaml_validity(self):
         """Test that workflow YAML is valid."""
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
 
         if not workflow_path.exists():
             pytest.skip("Release workflow not found")
@@ -348,7 +348,7 @@ class TestDistributionCompliance:
 
     def test_binary_size_considerations(self):
         """Test that package building considers size optimization."""
-        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
+        workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
         content = workflow_path.read_text()
 
         # Should build package efficiently

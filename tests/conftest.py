@@ -237,9 +237,9 @@ def execution_engine(request):
                         timeout=10,
                     )
                     if result.returncode != 0:
-                        print("🔄 Reinstalling rxiv-maker in reused container...")
+                        print("🔄 Upgrading rxiv-maker to latest version in reused container...")
                         subprocess.run(
-                            [engine_name, "exec", container_id, "pip", "install", "-e", "/workspace"], check=True
+                            [engine_name, "exec", container_id, "/usr/local/bin/upgrade-to-latest-rxiv.sh"], check=True
                         )
                 except Exception:
                     # Container not suitable, create new one
@@ -787,11 +787,11 @@ def class_execution_engine(request):
                         timeout=10,
                     )
                     if result.returncode != 0:
-                        print("🔄 Reinstalling rxiv-maker in reused container...")
+                        print("🔄 Upgrading rxiv-maker to latest version in reused container...")
                         subprocess.run(
-                            [engine_name, "exec", container_id, "pip", "install", "-e", "/workspace"], check=True
+                            [engine_name, "exec", container_id, "/usr/local/bin/upgrade-to-latest-rxiv.sh"], check=True
                         )
-                        print("✅ rxiv-maker reinstalled successfully")
+                        print("✅ rxiv-maker upgraded to latest version successfully")
                 except Exception:
                     # Container not suitable, create new one
                     container_id = None
