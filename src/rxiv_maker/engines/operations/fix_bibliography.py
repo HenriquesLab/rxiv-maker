@@ -28,7 +28,7 @@ except ImportError:
     print("Install with: pip install crossref-commons")
     sys.exit(1)
 
-from rxiv_maker.utils.doi_cache import DOICache
+from rxiv_maker.core.cache.doi_cache import DOICache
 from rxiv_maker.validators.doi_validator import DOIValidator
 
 logger = logging.getLogger(__name__)

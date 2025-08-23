@@ -11,9 +11,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from .error_recovery import RecoveryEnhancedMixin
-from .logging_config import get_logger
-from .path_manager import PathManager
+from ..error_recovery import RecoveryEnhancedMixin
+from ..logging_config import get_logger
+from ..path_manager import PathManager
 
 logger = get_logger()
 
@@ -470,7 +470,7 @@ class ContainerExecutionManager(ExecutionManager):
         self.engine_type = engine_type
 
         # Import container engine and global manager
-        from .global_container_manager import get_global_container_manager
+        from ..global_container_manager import get_global_container_manager
 
         # Use global container manager for shared engine instances
         global_manager = get_global_container_manager()

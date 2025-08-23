@@ -11,8 +11,8 @@ import sys
 import warnings
 from pathlib import Path
 
-from ..converters.md2tex import extract_content_sections
-from ..utils import find_manuscript_md
+from ...converters.md2tex import extract_content_sections
+from ...utils import find_manuscript_md
 
 # Issue deprecation warning
 warnings.warn(

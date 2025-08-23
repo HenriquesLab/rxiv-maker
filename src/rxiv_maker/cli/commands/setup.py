@@ -86,7 +86,7 @@ def setup(
         # Handle Python dependencies (unless system-only mode)
         if mode != "system-only":
             try:
-                from ...engine.setup_environment import main as setup_environment_main
+                from ...engines.operations.setup_environment import main as setup_environment_main
 
                 # Prepare arguments for Python setup
                 args = []
@@ -121,7 +121,7 @@ def setup(
         # Handle system dependencies (unless python-only mode)
         if mode != "python-only":
             try:
-                from ...install.manager import InstallManager, InstallMode
+                from ...core.managers.install_manager import InstallManager, InstallMode
 
                 # Map setup modes to install modes
                 install_mode_map = {

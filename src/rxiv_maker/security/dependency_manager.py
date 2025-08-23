@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
-from ..utils.advanced_cache import AdvancedCache
+from rxiv_maker.core.cache.advanced_cache import AdvancedCache
 
 try:
     from ..utils.retry import get_with_retry

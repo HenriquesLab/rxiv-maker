@@ -14,9 +14,10 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import click
 
+from rxiv_maker.core.cache.advanced_cache import clear_all_caches, get_cache_statistics
+from rxiv_maker.core.cache.bibliography_cache import get_bibliography_cache
+
 from ...docker.optimization import DockerBuildOptimizer
-from ...utils.advanced_cache import clear_all_caches, get_cache_statistics
-from ...utils.bibliography_cache import get_bibliography_cache
 from ...utils.platform import safe_console_print
 
 try:

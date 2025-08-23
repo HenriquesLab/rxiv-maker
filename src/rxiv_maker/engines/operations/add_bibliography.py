@@ -18,7 +18,7 @@ if __name__ == "__main__":
 from crossref_commons.retrieval import get_publication_as_json
 
 try:
-    from ..utils.retry import get_with_retry
+    from ...utils.retry import get_with_retry
 except ImportError:
     # Fallback when retry module isn't available
     def get_with_retry(url: str, max_attempts: int = 3, timeout: int = 30, **kwargs) -> Response:
@@ -26,7 +26,7 @@ except ImportError:
         return requests.get(url, timeout=timeout, **kwargs)
 
 
-from rxiv_maker.utils.doi_cache import DOICache
+from rxiv_maker.core.cache.doi_cache import DOICache
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ class BibliographyAdder:
             try:
                 # Normalize input to proper DOI format
                 try:
-                    from ..utils.url_to_doi import normalize_doi_input
+                    from ...utils.url_to_doi import normalize_doi_input
 
                     doi = normalize_doi_input(doi_input)
                     if doi_input != doi:

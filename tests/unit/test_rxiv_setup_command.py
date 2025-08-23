@@ -64,7 +64,7 @@ class TestSetupCommandStructure(unittest.TestCase):
         """Test that InstallManager can be imported from install module."""
         # Test that we can import InstallManager from the install module (not setup module)
         try:
-            from rxiv_maker.install.manager import InstallManager, InstallMode
+            from rxiv_maker.core.managers.install_manager import InstallManager, InstallMode
 
             self.assertTrue(callable(InstallManager))
             # InstallMode is an enum, check for common values
@@ -93,7 +93,7 @@ class TestSetupCommandStructure(unittest.TestCase):
         """Test that setup_environment_main can be imported from engine module."""
         # Test that we can import from the engine module (not setup module)
         try:
-            from rxiv_maker.engine.setup_environment import main as setup_environment_main
+            from rxiv_maker.engines.operations.setup_environment import main as setup_environment_main
 
             self.assertTrue(callable(setup_environment_main))
         except ImportError:
@@ -144,7 +144,7 @@ class TestSetupCommandComponents(unittest.TestCase):
         """Test InstallMode enum usage."""
         # Test that InstallMode can be imported and used
         try:
-            from rxiv_maker.install.manager import InstallMode
+            from rxiv_maker.core.managers.install_manager import InstallMode
 
             # Test enum has expected values or is callable
             self.assertTrue(hasattr(InstallMode, "FULL") or callable(InstallMode) or len(list(InstallMode)) > 0)
@@ -171,7 +171,7 @@ class TestSetupCommandIntegration(unittest.TestCase):
     def test_engine_module_access(self):
         """Test access to engine modules."""
         try:
-            from rxiv_maker.engine.setup_environment import main
+            from rxiv_maker.engines.operations.setup_environment import main
 
             self.assertTrue(callable(main))
         except ImportError:
@@ -181,7 +181,7 @@ class TestSetupCommandIntegration(unittest.TestCase):
     def test_install_module_access(self):
         """Test access to install modules."""
         try:
-            from rxiv_maker.install.manager import InstallManager
+            from rxiv_maker.core.managers.install_manager import InstallManager
 
             self.assertTrue(callable(InstallManager))
         except ImportError:

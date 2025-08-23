@@ -21,8 +21,8 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 import psutil
 
-from .error_recovery import RecoveryEnhancedMixin
-from .logging_config import get_logger
+from ..error_recovery import RecoveryEnhancedMixin
+from ..logging_config import get_logger
 
 logger = get_logger()
 

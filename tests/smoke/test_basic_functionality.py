@@ -144,7 +144,7 @@ class TestBuildManager(unittest.TestCase):
 
     def test_build_manager_initialization(self):
         """Test build manager can be initialized."""
-        from rxiv_maker.engine.build_manager import BuildManager
+        from rxiv_maker.engines.build_manager import BuildManager
 
         manager = BuildManager(self.test_dir)
         self.assertIsNotNone(manager)
@@ -153,7 +153,7 @@ class TestBuildManager(unittest.TestCase):
 
     def test_style_directory_detection(self):
         """Test style directory detection."""
-        from rxiv_maker.engine.build_manager import BuildManager
+        from rxiv_maker.engines.build_manager import BuildManager
 
         manager = BuildManager(self.test_dir)
         style_dir = manager.style_dir

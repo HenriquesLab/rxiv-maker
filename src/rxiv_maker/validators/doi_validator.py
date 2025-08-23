@@ -26,14 +26,16 @@ from .doi import (
 )
 
 try:
-    from ..utils.bibliography_cache import get_bibliography_cache
+    from rxiv_maker.core.cache.bibliography_cache import get_bibliography_cache
+    from rxiv_maker.core.cache.doi_cache import DOICache
+
     from ..utils.bibliography_checksum import get_bibliography_checksum_manager
-    from ..utils.doi_cache import DOICache
 except ImportError:
     # Fallback for script execution
-    from ..utils.bibliography_cache import get_bibliography_cache
+    from rxiv_maker.core.cache.bibliography_cache import get_bibliography_cache
+    from rxiv_maker.core.cache.doi_cache import DOICache
+
     from ..utils.bibliography_checksum import get_bibliography_checksum_manager
-    from ..utils.doi_cache import DOICache
 
 logger = logging.getLogger(__name__)
 

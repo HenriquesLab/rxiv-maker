@@ -242,7 +242,7 @@ def main(
 
     # Container engine optimization: check availability early for container engines
     if engine in ["docker", "podman"]:
-        from ..engines.factory import get_container_engine
+        from ..engines.core.factory import get_container_engine
 
         try:
             if verbose:

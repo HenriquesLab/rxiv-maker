@@ -11,8 +11,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Set
 
-from ..install.manager import InstallManager, InstallMode
-from .logging_config import get_logger
+from ..logging_config import get_logger
+from .install_manager import InstallManager, InstallMode
 from .resource_manager import get_resource_manager
 
 logger = get_logger()

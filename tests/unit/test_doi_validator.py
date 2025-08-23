@@ -22,7 +22,7 @@ except ImportError:
 
     pytest = MockPytest()
 
-from rxiv_maker.utils.doi_cache import DOICache
+from rxiv_maker.core.cache.doi_cache import DOICache
 from rxiv_maker.validators.base_validator import ValidationLevel
 from rxiv_maker.validators.doi_validator import DOIValidator
 

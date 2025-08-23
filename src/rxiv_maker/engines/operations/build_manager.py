@@ -5,14 +5,14 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
-from ..core.environment_manager import EnvironmentManager
-from ..core.global_container_manager import get_global_container_manager
-from ..core.logging_config import get_logger, set_log_directory
-from ..core.path_manager import PathManager
-from ..core.session_optimizer import get_optimized_session_key
-from ..utils.figure_checksum import get_figure_checksum_manager
-from ..utils.operation_ids import create_operation
-from ..utils.performance import get_performance_tracker
+from ...core.environment_manager import EnvironmentManager
+from ...core.global_container_manager import get_global_container_manager
+from ...core.logging_config import get_logger, set_log_directory
+from ...core.path_manager import PathManager
+from ...core.session_optimizer import get_optimized_session_key
+from ...utils.figure_checksum import get_figure_checksum_manager
+from ...utils.operation_ids import create_operation
+from ...utils.performance import get_performance_tracker
 
 logger = get_logger()
 
@@ -253,7 +253,7 @@ class BuildManager:
             if self.verbose:
                 validation_cmd.append("--verbose")
 
-            from ..core.session_optimizer import get_optimized_session_key
+            from ...core.session_optimizer import get_optimized_session_key
 
             result = self.container_engine.run_command(
                 command=validation_cmd, session_key=get_optimized_session_key("validation")
@@ -556,7 +556,7 @@ class BuildManager:
 
         try:
             # Import and call the generate_preprint function directly
-            from ..processors.yaml_processor import extract_yaml_metadata
+            from ...processors.yaml_processor import extract_yaml_metadata
             from .generate_preprint import generate_preprint
 
             # Find the manuscript file and extract metadata
@@ -575,7 +575,7 @@ class BuildManager:
             yaml_metadata = extract_yaml_metadata(str(manuscript_md))
 
             # Inject Rxiv-Maker citation if requested
-            from ..utils import inject_rxiv_citation
+            from ...utils import inject_rxiv_citation
 
             inject_rxiv_citation(yaml_metadata)
 
@@ -771,8 +771,8 @@ class BuildManager:
     def copy_pdf_to_manuscript(self) -> bool:
         """Copy generated PDF to manuscript directory with custom name."""
         try:
-            from ..processors.yaml_processor import extract_yaml_metadata
-            from ..utils import copy_pdf_to_manuscript_folder, find_manuscript_md
+            from ...processors.yaml_processor import extract_yaml_metadata
+            from ...utils import copy_pdf_to_manuscript_folder, find_manuscript_md
 
             # Find and parse the manuscript markdown using the known manuscript path
             manuscript_md = find_manuscript_md(self.manuscript_path)
@@ -800,8 +800,8 @@ class BuildManager:
     def run_word_count_analysis(self) -> bool:
         """Run word count analysis on the manuscript."""
         try:
-            from ..converters.md2tex import extract_content_sections
-            from ..utils import find_manuscript_md
+            from ...converters.md2tex import extract_content_sections
+            from ...utils import find_manuscript_md
 
             # Find the manuscript markdown file using the known manuscript path
             manuscript_md = find_manuscript_md(self.manuscript_path)
@@ -929,7 +929,7 @@ class BuildManager:
         """Run PDF validation using local installation."""
         try:
             # Import and call the validate_pdf function directly
-            from ..validators.pdf_validator import validate_pdf
+            from ...validators.pdf_validator import validate_pdf
 
             # Call the PDF validation function directly
             result = validate_pdf(self.manuscript_path, str(self.output_pdf))

@@ -10,7 +10,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from rxiv_maker.core.execution_manager import (
+from rxiv_maker.core.managers.execution_manager import (
     AsyncLocalExecutionManager,
     ExecutionContext,
     ExecutionMode,

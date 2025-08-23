@@ -175,7 +175,7 @@ class TestCheckInstallationCommand:
         assert "status" in json_str or "components" in json_str
 
     @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
-    @patch("rxiv_maker.install.manager.InstallManager")
+    @patch("rxiv_maker.core.managers.install_manager.InstallManager")
     @patch("rxiv_maker.cli.commands.check_installation.Console")
     def test_fix_flag_success(self, mock_console, mock_install_manager, mock_verify):
         """Test fix flag with successful repair."""
@@ -222,7 +222,7 @@ class TestCheckInstallationCommand:
         assert recheck
 
     @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
-    @patch("rxiv_maker.install.manager.InstallManager")
+    @patch("rxiv_maker.core.managers.install_manager.InstallManager")
     @patch("rxiv_maker.cli.commands.check_installation.Console")
     def test_fix_flag_failure(self, mock_console, mock_install_manager, mock_verify):
         """Test fix flag with failed repair."""
@@ -257,7 +257,7 @@ class TestCheckInstallationCommand:
         assert log_location
 
     @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
-    @patch("rxiv_maker.install.manager.InstallManager")
+    @patch("rxiv_maker.core.managers.install_manager.InstallManager")
     @patch("rxiv_maker.cli.commands.check_installation.Console")
     def test_fix_flag_exception(self, mock_console, mock_install_manager, mock_verify):
         """Test fix flag with exception during repair."""
@@ -500,7 +500,7 @@ class TestCheckInstallationCommandEdgeCases:
 
     @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
     @patch("rxiv_maker.cli.commands.check_installation.Console")
-    @patch("rxiv_maker.install.manager.InstallManager")
+    @patch("rxiv_maker.core.managers.install_manager.InstallManager")
     def test_combined_flags(self, mock_install_manager, mock_console, mock_verify):
         """Test combining multiple flags."""
         mock_verify.return_value = {

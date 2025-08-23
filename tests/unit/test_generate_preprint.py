@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, mock_open, patch
 
-from rxiv_maker.engine.generate_preprint import generate_preprint, main
+from rxiv_maker.engines.operations.generate_preprint import generate_preprint, main
 
 
 class TestGeneratePreprintCore(unittest.TestCase):
@@ -26,12 +26,12 @@ class TestGeneratePreprintCore(unittest.TestCase):
             "affiliation": "Test University",
         }
 
-    @patch("rxiv_maker.engine.generate_preprint.create_output_dir")
-    @patch("rxiv_maker.engine.generate_preprint.get_template_path")
-    @patch("rxiv_maker.engine.generate_preprint.find_manuscript_md")
-    @patch("rxiv_maker.engine.generate_preprint.process_template_replacements")
-    @patch("rxiv_maker.engine.generate_preprint.write_manuscript_output")
-    @patch("rxiv_maker.engine.generate_preprint.generate_supplementary_tex")
+    @patch("rxiv_maker.engines.operations.generate_preprint.create_output_dir")
+    @patch("rxiv_maker.engines.operations.generate_preprint.get_template_path")
+    @patch("rxiv_maker.engines.operations.generate_preprint.find_manuscript_md")
+    @patch("rxiv_maker.engines.operations.generate_preprint.process_template_replacements")
+    @patch("rxiv_maker.engines.operations.generate_preprint.write_manuscript_output")
+    @patch("rxiv_maker.engines.operations.generate_preprint.generate_supplementary_tex")
     def test_generate_preprint_basic_workflow(
         self,
         mock_generate_supp,
@@ -63,12 +63,12 @@ class TestGeneratePreprintCore(unittest.TestCase):
         # Verify result
         self.assertEqual(result, "/output/manuscript.tex")
 
-    @patch("rxiv_maker.engine.generate_preprint.create_output_dir")
-    @patch("rxiv_maker.engine.generate_preprint.get_template_path")
-    @patch("rxiv_maker.engine.generate_preprint.find_manuscript_md")
-    @patch("rxiv_maker.engine.generate_preprint.process_template_replacements")
-    @patch("rxiv_maker.engine.generate_preprint.write_manuscript_output")
-    @patch("rxiv_maker.engine.generate_preprint.generate_supplementary_tex")
+    @patch("rxiv_maker.engines.operations.generate_preprint.create_output_dir")
+    @patch("rxiv_maker.engines.operations.generate_preprint.get_template_path")
+    @patch("rxiv_maker.engines.operations.generate_preprint.find_manuscript_md")
+    @patch("rxiv_maker.engines.operations.generate_preprint.process_template_replacements")
+    @patch("rxiv_maker.engines.operations.generate_preprint.write_manuscript_output")
+    @patch("rxiv_maker.engines.operations.generate_preprint.generate_supplementary_tex")
     def test_generate_preprint_with_manuscript_path(
         self,
         mock_generate_supp,
@@ -91,8 +91,8 @@ class TestGeneratePreprintCore(unittest.TestCase):
         mock_find_md.assert_called_once_with(custom_path)
         self.assertEqual(result, "/output/manuscript.tex")
 
-    @patch("rxiv_maker.engine.generate_preprint.create_output_dir")
-    @patch("rxiv_maker.engine.generate_preprint.get_template_path")
+    @patch("rxiv_maker.engines.operations.generate_preprint.create_output_dir")
+    @patch("rxiv_maker.engines.operations.generate_preprint.get_template_path")
     def test_generate_preprint_template_file_error(self, mock_get_template, mock_create_dir):
         """Test error handling when template file cannot be read."""
         mock_get_template.return_value = "/nonexistent/template.tex"
@@ -103,9 +103,9 @@ class TestGeneratePreprintCore(unittest.TestCase):
 
         mock_create_dir.assert_called_once_with(self.output_dir)
 
-    @patch("rxiv_maker.engine.generate_preprint.create_output_dir")
-    @patch("rxiv_maker.engine.generate_preprint.get_template_path")
-    @patch("rxiv_maker.engine.generate_preprint.find_manuscript_md")
+    @patch("rxiv_maker.engines.operations.generate_preprint.create_output_dir")
+    @patch("rxiv_maker.engines.operations.generate_preprint.get_template_path")
+    @patch("rxiv_maker.engines.operations.generate_preprint.find_manuscript_md")
     def test_generate_preprint_find_manuscript_error(self, mock_find_md, mock_get_template, mock_create_dir):
         """Test error handling when manuscript markdown cannot be found."""
         mock_get_template.return_value = "/fake/template.tex"
@@ -117,10 +117,10 @@ class TestGeneratePreprintCore(unittest.TestCase):
 
         mock_find_md.assert_called_once_with(None)
 
-    @patch("rxiv_maker.engine.generate_preprint.create_output_dir")
-    @patch("rxiv_maker.engine.generate_preprint.get_template_path")
-    @patch("rxiv_maker.engine.generate_preprint.find_manuscript_md")
-    @patch("rxiv_maker.engine.generate_preprint.process_template_replacements")
+    @patch("rxiv_maker.engines.operations.generate_preprint.create_output_dir")
+    @patch("rxiv_maker.engines.operations.generate_preprint.get_template_path")
+    @patch("rxiv_maker.engines.operations.generate_preprint.find_manuscript_md")
+    @patch("rxiv_maker.engines.operations.generate_preprint.process_template_replacements")
     def test_generate_preprint_process_template_error(
         self, mock_process_template, mock_find_md, mock_get_template, mock_create_dir
     ):
@@ -136,12 +136,19 @@ class TestGeneratePreprintCore(unittest.TestCase):
     def test_generate_preprint_empty_metadata(self):
         """Test preprint generation with empty metadata."""
         with (
-            patch("rxiv_maker.engine.generate_preprint.create_output_dir"),
-            patch("rxiv_maker.engine.generate_preprint.get_template_path", return_value="/fake/template.tex"),
-            patch("rxiv_maker.engine.generate_preprint.find_manuscript_md", return_value=Path("/fake/md")),
-            patch("rxiv_maker.engine.generate_preprint.process_template_replacements", return_value="content"),
-            patch("rxiv_maker.engine.generate_preprint.write_manuscript_output", return_value="/output/file.tex"),
-            patch("rxiv_maker.engine.generate_preprint.generate_supplementary_tex"),
+            patch("rxiv_maker.engines.operations.generate_preprint.create_output_dir"),
+            patch(
+                "rxiv_maker.engines.operations.generate_preprint.get_template_path", return_value="/fake/template.tex"
+            ),
+            patch("rxiv_maker.engines.operations.generate_preprint.find_manuscript_md", return_value=Path("/fake/md")),
+            patch(
+                "rxiv_maker.engines.operations.generate_preprint.process_template_replacements", return_value="content"
+            ),
+            patch(
+                "rxiv_maker.engines.operations.generate_preprint.write_manuscript_output",
+                return_value="/output/file.tex",
+            ),
+            patch("rxiv_maker.engines.operations.generate_preprint.generate_supplementary_tex"),
             patch("builtins.open", mock_open(read_data="template")),
         ):
             result = generate_preprint(self.output_dir, {})
@@ -155,7 +162,7 @@ class TestGeneratePreprintCLI(unittest.TestCase):
         """Set up test environment."""
         self.temp_dir = tempfile.mkdtemp()
 
-    @patch("rxiv_maker.engine.generate_preprint.generate_preprint")
+    @patch("rxiv_maker.engines.operations.generate_preprint.generate_preprint")
     @patch("pathlib.Path.exists")
     @patch("argparse.ArgumentParser.parse_args")
     def test_main_with_default_args(self, mock_parse_args, mock_path_exists, mock_generate):
@@ -181,7 +188,7 @@ class TestGeneratePreprintCLI(unittest.TestCase):
         mock_generate.assert_called_once_with(".", mock_yaml_data)
         self.assertEqual(result, 0)
 
-    @patch("rxiv_maker.engine.generate_preprint.generate_preprint")
+    @patch("rxiv_maker.engines.operations.generate_preprint.generate_preprint")
     @patch("pathlib.Path.exists")
     @patch("argparse.ArgumentParser.parse_args")
     def test_main_with_custom_args(self, mock_parse_args, mock_path_exists, mock_generate):
@@ -205,7 +212,7 @@ class TestGeneratePreprintCLI(unittest.TestCase):
         mock_generate.assert_called_once_with("/custom/output", mock_yaml_data)
         self.assertEqual(result, 0)
 
-    @patch("rxiv_maker.engine.generate_preprint.generate_preprint")
+    @patch("rxiv_maker.engines.operations.generate_preprint.generate_preprint")
     @patch("pathlib.Path.exists")
     @patch("argparse.ArgumentParser.parse_args")
     def test_main_config_file_not_exists(self, mock_parse_args, mock_path_exists, mock_generate):
@@ -224,7 +231,7 @@ class TestGeneratePreprintCLI(unittest.TestCase):
         mock_generate.assert_called_once_with(".", {})
         self.assertEqual(result, 0)
 
-    @patch("rxiv_maker.engine.generate_preprint.generate_preprint")
+    @patch("rxiv_maker.engines.operations.generate_preprint.generate_preprint")
     @patch("pathlib.Path.exists")
     @patch("argparse.ArgumentParser.parse_args")
     def test_main_yaml_loading_error(self, mock_parse_args, mock_path_exists, mock_generate):
@@ -245,7 +252,7 @@ class TestGeneratePreprintCLI(unittest.TestCase):
             with self.assertRaises(ValueError):
                 main()
 
-    @patch("rxiv_maker.engine.generate_preprint.generate_preprint")
+    @patch("rxiv_maker.engines.operations.generate_preprint.generate_preprint")
     @patch("pathlib.Path.exists")
     @patch("argparse.ArgumentParser.parse_args")
     def test_main_generate_preprint_error(self, mock_parse_args, mock_path_exists, mock_generate):
@@ -272,7 +279,7 @@ class TestGeneratePreprintCLI(unittest.TestCase):
 
         with (
             patch("pathlib.Path.exists", return_value=False),
-            patch("rxiv_maker.engine.generate_preprint.generate_preprint", return_value="/output/file.tex"),
+            patch("rxiv_maker.engines.operations.generate_preprint.generate_preprint", return_value="/output/file.tex"),
         ):
             main()
 
@@ -288,12 +295,12 @@ class TestGeneratePreprintIntegration(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.output_dir = Path(self.temp_dir) / "output"
 
-    @patch("rxiv_maker.engine.generate_preprint.create_output_dir")
-    @patch("rxiv_maker.engine.generate_preprint.get_template_path")
-    @patch("rxiv_maker.engine.generate_preprint.find_manuscript_md")
-    @patch("rxiv_maker.engine.generate_preprint.process_template_replacements")
-    @patch("rxiv_maker.engine.generate_preprint.write_manuscript_output")
-    @patch("rxiv_maker.engine.generate_preprint.generate_supplementary_tex")
+    @patch("rxiv_maker.engines.operations.generate_preprint.create_output_dir")
+    @patch("rxiv_maker.engines.operations.generate_preprint.get_template_path")
+    @patch("rxiv_maker.engines.operations.generate_preprint.find_manuscript_md")
+    @patch("rxiv_maker.engines.operations.generate_preprint.process_template_replacements")
+    @patch("rxiv_maker.engines.operations.generate_preprint.write_manuscript_output")
+    @patch("rxiv_maker.engines.operations.generate_preprint.generate_supplementary_tex")
     def test_full_workflow_integration(
         self,
         mock_generate_supp,
@@ -351,12 +358,23 @@ class TestGeneratePreprintIntegration(unittest.TestCase):
 
         for metadata in test_cases:
             with (
-                patch("rxiv_maker.engine.generate_preprint.create_output_dir"),
-                patch("rxiv_maker.engine.generate_preprint.get_template_path", return_value="/fake/template.tex"),
-                patch("rxiv_maker.engine.generate_preprint.find_manuscript_md", return_value=Path("/fake/md")),
-                patch("rxiv_maker.engine.generate_preprint.process_template_replacements", return_value="content"),
-                patch("rxiv_maker.engine.generate_preprint.write_manuscript_output", return_value="/output/file.tex"),
-                patch("rxiv_maker.engine.generate_preprint.generate_supplementary_tex"),
+                patch("rxiv_maker.engines.operations.generate_preprint.create_output_dir"),
+                patch(
+                    "rxiv_maker.engines.operations.generate_preprint.get_template_path",
+                    return_value="/fake/template.tex",
+                ),
+                patch(
+                    "rxiv_maker.engines.operations.generate_preprint.find_manuscript_md", return_value=Path("/fake/md")
+                ),
+                patch(
+                    "rxiv_maker.engines.operations.generate_preprint.process_template_replacements",
+                    return_value="content",
+                ),
+                patch(
+                    "rxiv_maker.engines.operations.generate_preprint.write_manuscript_output",
+                    return_value="/output/file.tex",
+                ),
+                patch("rxiv_maker.engines.operations.generate_preprint.generate_supplementary_tex"),
                 patch("builtins.open", mock_open(read_data="template")),
             ):
                 result = generate_preprint(self.output_dir, metadata)
@@ -371,7 +389,7 @@ class TestGeneratePreprintErrorHandling(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.output_dir = Path(self.temp_dir) / "output"
 
-    @patch("rxiv_maker.engine.generate_preprint.create_output_dir")
+    @patch("rxiv_maker.engines.operations.generate_preprint.create_output_dir")
     def test_create_output_dir_failure(self, mock_create_dir):
         """Test handling of output directory creation failure."""
         mock_create_dir.side_effect = PermissionError("Cannot create directory")
@@ -379,8 +397,8 @@ class TestGeneratePreprintErrorHandling(unittest.TestCase):
         with self.assertRaises(PermissionError):
             generate_preprint(self.output_dir, {})
 
-    @patch("rxiv_maker.engine.generate_preprint.create_output_dir")
-    @patch("rxiv_maker.engine.generate_preprint.get_template_path")
+    @patch("rxiv_maker.engines.operations.generate_preprint.create_output_dir")
+    @patch("rxiv_maker.engines.operations.generate_preprint.get_template_path")
     def test_template_permission_error(self, mock_get_template, mock_create_dir):
         """Test handling of template file permission error."""
         mock_get_template.return_value = "/restricted/template.tex"
@@ -389,11 +407,11 @@ class TestGeneratePreprintErrorHandling(unittest.TestCase):
             with self.assertRaises(PermissionError):
                 generate_preprint(self.output_dir, {})
 
-    @patch("rxiv_maker.engine.generate_preprint.create_output_dir")
-    @patch("rxiv_maker.engine.generate_preprint.get_template_path")
-    @patch("rxiv_maker.engine.generate_preprint.find_manuscript_md")
-    @patch("rxiv_maker.engine.generate_preprint.process_template_replacements")
-    @patch("rxiv_maker.engine.generate_preprint.write_manuscript_output")
+    @patch("rxiv_maker.engines.operations.generate_preprint.create_output_dir")
+    @patch("rxiv_maker.engines.operations.generate_preprint.get_template_path")
+    @patch("rxiv_maker.engines.operations.generate_preprint.find_manuscript_md")
+    @patch("rxiv_maker.engines.operations.generate_preprint.process_template_replacements")
+    @patch("rxiv_maker.engines.operations.generate_preprint.write_manuscript_output")
     def test_write_output_failure(
         self, mock_write_output, mock_process_template, mock_find_md, mock_get_template, mock_create_dir
     ):
@@ -407,12 +425,12 @@ class TestGeneratePreprintErrorHandling(unittest.TestCase):
             with self.assertRaises(IOError):
                 generate_preprint(self.output_dir, {})
 
-    @patch("rxiv_maker.engine.generate_preprint.create_output_dir")
-    @patch("rxiv_maker.engine.generate_preprint.get_template_path")
-    @patch("rxiv_maker.engine.generate_preprint.find_manuscript_md")
-    @patch("rxiv_maker.engine.generate_preprint.process_template_replacements")
-    @patch("rxiv_maker.engine.generate_preprint.write_manuscript_output")
-    @patch("rxiv_maker.engine.generate_preprint.generate_supplementary_tex")
+    @patch("rxiv_maker.engines.operations.generate_preprint.create_output_dir")
+    @patch("rxiv_maker.engines.operations.generate_preprint.get_template_path")
+    @patch("rxiv_maker.engines.operations.generate_preprint.find_manuscript_md")
+    @patch("rxiv_maker.engines.operations.generate_preprint.process_template_replacements")
+    @patch("rxiv_maker.engines.operations.generate_preprint.write_manuscript_output")
+    @patch("rxiv_maker.engines.operations.generate_preprint.generate_supplementary_tex")
     def test_supplementary_generation_failure(
         self,
         mock_generate_supp,

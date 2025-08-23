@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from rxiv_maker.engine.cleanup import CleanupManager
+from rxiv_maker.engines.operations.cleanup import CleanupManager
 
 
 class TestCleanupManager(unittest.TestCase):

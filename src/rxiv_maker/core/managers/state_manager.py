@@ -15,8 +15,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-from .error_recovery import RecoveryEnhancedMixin
-from .logging_config import get_logger
+from ..error_recovery import RecoveryEnhancedMixin
+from ..logging_config import get_logger
 
 logger = get_logger()
 

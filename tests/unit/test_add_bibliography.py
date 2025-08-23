@@ -8,7 +8,7 @@ from unittest.mock import patch
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from rxiv_maker.engine.add_bibliography import BibliographyAdder
+from rxiv_maker.engines.operations.add_bibliography import BibliographyAdder
 
 
 class TestBibliographyAdder:
@@ -25,7 +25,7 @@ class TestBibliographyAdder:
 
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    @patch("rxiv_maker.engine.add_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.add_bibliography.DOICache")
     def test_init(self, mock_cache):
         """Test BibliographyAdder initialization."""
         adder = BibliographyAdder(str(self.manuscript_path))
@@ -34,7 +34,7 @@ class TestBibliographyAdder:
         assert adder.bib_file == self.manuscript_path / "03_REFERENCES.bib"
         mock_cache.assert_called_once()
 
-    @patch("rxiv_maker.engine.add_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.add_bibliography.DOICache")
     def test_init_string_path(self, mock_cache):
         """Test BibliographyAdder initialization with string path."""
         path_str = "/test/path"
@@ -44,7 +44,7 @@ class TestBibliographyAdder:
         assert adder.bib_file == Path(path_str) / "03_REFERENCES.bib"
         mock_cache.assert_called_once()
 
-    @patch("rxiv_maker.engine.add_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.add_bibliography.DOICache")
     def test_doi_regex_valid(self, mock_cache):
         """Test DOI regex with valid DOIs."""
         adder = BibliographyAdder(str(self.manuscript_path))
@@ -54,7 +54,7 @@ class TestBibliographyAdder:
         for doi in valid_dois:
             assert adder.DOI_REGEX.match(doi), f"DOI {doi} should be valid"
 
-    @patch("rxiv_maker.engine.add_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.add_bibliography.DOICache")
     def test_doi_regex_invalid(self, mock_cache):
         """Test DOI regex with invalid DOIs."""
         adder = BibliographyAdder(str(self.manuscript_path))
@@ -64,8 +64,8 @@ class TestBibliographyAdder:
         for doi in invalid_dois:
             assert not adder.DOI_REGEX.match(doi), f"DOI {doi} should be invalid"
 
-    @patch("rxiv_maker.engine.add_bibliography.DOICache")
-    @patch("rxiv_maker.engine.add_bibliography.get_publication_as_json")
+    @patch("rxiv_maker.engines.operations.add_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.add_bibliography.get_publication_as_json")
     def test_add_entries_no_bib_file(self, mock_get_pub, mock_cache):
         """Test add_entries when bibliography file doesn't exist - it creates one."""
         # Mock the DOI resolution
@@ -82,7 +82,7 @@ class TestBibliographyAdder:
 
         assert result is True  # Creates new file and adds entry
 
-    @patch("rxiv_maker.engine.add_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.add_bibliography.DOICache")
     def test_add_entries_empty_list(self, mock_cache):
         """Test add_entries with empty DOI list."""
         # Create bibliography file
@@ -95,7 +95,7 @@ class TestBibliographyAdder:
 
         assert result is True  # Should succeed but do nothing
 
-    @patch("rxiv_maker.engine.add_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.add_bibliography.DOICache")
     def test_add_entries_invalid_doi(self, mock_cache):
         """Test add_entries with invalid DOI format."""
         # Create bibliography file

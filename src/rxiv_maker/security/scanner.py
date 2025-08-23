@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from ..utils.advanced_cache import AdvancedCache
+from rxiv_maker.core.cache.advanced_cache import AdvancedCache
 
 logger = logging.getLogger(__name__)
 

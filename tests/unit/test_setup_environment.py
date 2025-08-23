@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from rxiv_maker.engine.setup_environment import EnvironmentSetup
+from rxiv_maker.engines.operations.setup_environment import EnvironmentSetup
 
 
 class TestEnvironmentSetup:
@@ -558,7 +558,7 @@ class TestMainFunction:
         mock_setup_class.return_value = mock_setup_instance
 
         # Import and call main
-        from rxiv_maker.engine.setup_environment import main
+        from rxiv_maker.engines.operations.setup_environment import main
 
         main()
 
@@ -587,7 +587,7 @@ class TestMainFunction:
         mock_setup_class.return_value = mock_setup_instance
 
         # Import and call main
-        from rxiv_maker.engine.setup_environment import main
+        from rxiv_maker.engines.operations.setup_environment import main
 
         main()
 
@@ -615,7 +615,7 @@ class TestMainFunction:
         mock_setup_class.return_value = mock_setup_instance
 
         # Import and call main, expecting SystemExit
-        from rxiv_maker.engine.setup_environment import main
+        from rxiv_maker.engines.operations.setup_environment import main
 
         with pytest.raises(SystemExit) as exc_info:
             main()

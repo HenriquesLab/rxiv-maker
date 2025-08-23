@@ -7,10 +7,10 @@ import sys
 from enum import Enum
 from pathlib import Path
 
-from .platform_installers import LinuxInstaller, MacOSInstaller, WindowsInstaller
-from .utils.logging import InstallLogger
-from .utils.progress import ProgressIndicator
-from .utils.verification import verify_installation
+from ...install.platform_installers import LinuxInstaller, MacOSInstaller, WindowsInstaller
+from ...install.utils.logging import InstallLogger
+from ...install.utils.progress import ProgressIndicator
+from ...install.utils.verification import verify_installation
 
 
 class InstallMode(Enum):

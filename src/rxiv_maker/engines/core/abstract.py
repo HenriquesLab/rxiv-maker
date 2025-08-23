@@ -42,7 +42,8 @@ class ContainerSession:
                 ],
                 capture_output=True,
                 text=True,
-                encoding="latin-1",
+                encoding="utf-8",
+                errors="replace",
                 timeout=5,
             )
             if result.returncode == 0:
@@ -70,7 +71,8 @@ class ContainerSession:
                 [self.engine_type, "stop", self.container_id],
                 capture_output=True,
                 text=True,
-                encoding="latin-1",
+                encoding="utf-8",
+                errors="replace",
                 timeout=10,
             )
             if stop_result.returncode != 0:
@@ -83,7 +85,8 @@ class ContainerSession:
                 [self.engine_type, "rm", self.container_id],
                 capture_output=True,
                 text=True,
-                encoding="latin-1",
+                encoding="utf-8",
+                errors="replace",
                 timeout=10,
             )
             if rm_result.returncode != 0:
@@ -377,7 +380,8 @@ class AbstractContainerEngine(ABC):
                 exec_cmd,
                 capture_output=capture_output,
                 text=True,
-                encoding="latin-1",  # Handle all byte values gracefully
+                encoding="utf-8",
+                errors="replace",  # Handle all byte values gracefully
                 timeout=timeout,
                 **kwargs,
             )
@@ -614,6 +618,9 @@ class AbstractContainerEngine(ABC):
         for var in rxiv_vars:
             if var in os.environ:
                 env[var] = os.environ[var]
+
+        # Ensure UTF-8 encoding in containers
+        env.update({"PYTHONIOENCODING": "utf-8", "LC_ALL": "C.UTF-8", "LANG": "C.UTF-8"})
 
         return env
 

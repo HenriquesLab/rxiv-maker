@@ -35,7 +35,7 @@ class TestFigureWorkflowValidation:
 
     def test_figure_generation_pipeline(self, figure_test_manuscript):
         """Test the complete figure generation pipeline."""
-        from rxiv_maker.engine.generate_figures import FigureGenerator
+        from rxiv_maker.engines.operations.generate_figures import FigureGenerator
 
         manuscript_dir = figure_test_manuscript.get_manuscript_path()
         figures_dir = manuscript_dir / "FIGURES"
@@ -86,7 +86,7 @@ class TestFigureWorkflowValidation:
 
     def test_figure_copying_mechanism(self, figure_test_manuscript):
         """Test the figure copying mechanism in detail."""
-        from rxiv_maker.engine.build_manager import BuildManager
+        from rxiv_maker.engines.build_manager import BuildManager
 
         manuscript_dir = figure_test_manuscript.get_manuscript_path()
         output_dir = figure_test_manuscript.get_output_path()
@@ -144,7 +144,7 @@ class TestFigureWorkflowValidation:
 
     def test_latex_figure_integration(self, figure_test_manuscript):
         """Test LaTeX integration of figures."""
-        from rxiv_maker.engine.generate_preprint import generate_preprint
+        from rxiv_maker.engines.operations.generate_preprint import generate_preprint
         from rxiv_maker.processors.yaml_processor import extract_yaml_metadata
 
         manuscript_dir = figure_test_manuscript.get_manuscript_path()
@@ -378,7 +378,7 @@ class TestFigureWorkflowValidation:
         """Test that figures appear correctly in generated PDF (if PDF generation works)."""
         pytest.importorskip("subprocess")
 
-        from rxiv_maker.engine.build_manager import BuildManager
+        from rxiv_maker.engines.build_manager import BuildManager
 
         manuscript_dir = figure_test_manuscript.get_manuscript_path()
         output_dir = figure_test_manuscript.get_output_path()
@@ -429,7 +429,7 @@ class TestFigureWorkflowValidation:
 
     def test_figure_workflow_error_handling(self, figure_test_manuscript):
         """Test error handling in figure workflow."""
-        from rxiv_maker.engine.build_manager import BuildManager
+        from rxiv_maker.engines.build_manager import BuildManager
 
         manuscript_dir = figure_test_manuscript.get_manuscript_path()
         output_dir = figure_test_manuscript.get_output_path()
@@ -490,7 +490,7 @@ class TestFigureWorkflowValidation:
 
     def test_guillaume_ready_file_workflow_e2e(self, figure_test_manuscript):
         """E2E test for Guillaume's ready file detection issue (Issue #2)."""
-        from rxiv_maker.engine.generate_preprint import generate_preprint
+        from rxiv_maker.engines.operations.generate_preprint import generate_preprint
         from rxiv_maker.processors.yaml_processor import extract_yaml_metadata
 
         manuscript_dir = figure_test_manuscript.get_manuscript_path()
@@ -545,7 +545,7 @@ Panel references: (@fig:guillaume A) and (@fig:guillaume B).
 
     def test_guillaume_full_page_positioning_e2e(self, figure_test_manuscript):
         """E2E test for Guillaume's full-page positioning issue (Issue #4)."""
-        from rxiv_maker.engine.generate_preprint import generate_preprint
+        from rxiv_maker.engines.operations.generate_preprint import generate_preprint
         from rxiv_maker.processors.yaml_processor import extract_yaml_metadata
 
         manuscript_dir = figure_test_manuscript.get_manuscript_path()
@@ -596,7 +596,7 @@ Panel references: (@fig:guillaume A) and (@fig:guillaume B).
 
     def test_guillaume_section_headers_e2e(self, figure_test_manuscript):
         """E2E test for Guillaume's section header issue (Issue #3)."""
-        from rxiv_maker.engine.generate_preprint import generate_preprint
+        from rxiv_maker.engines.operations.generate_preprint import generate_preprint
         from rxiv_maker.processors.yaml_processor import extract_yaml_metadata
 
         manuscript_dir = figure_test_manuscript.get_manuscript_path()
@@ -655,7 +655,7 @@ This is the methods section.
 
     def test_guillaume_all_issues_integration_e2e(self, figure_test_manuscript):
         """E2E integration test for all Guillaume's issues working together."""
-        from rxiv_maker.engine.build_manager import BuildManager
+        from rxiv_maker.engines.build_manager import BuildManager
 
         manuscript_dir = figure_test_manuscript.get_manuscript_path()
         output_dir = figure_test_manuscript.get_output_path()

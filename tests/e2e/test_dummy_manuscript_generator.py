@@ -348,7 +348,7 @@ class TestE2EFigureWorkflow:
 
     def test_full_build_pipeline_with_dummy_manuscript(self, dummy_manuscript):
         """Test the complete build pipeline with dummy manuscript."""
-        from rxiv_maker.engine.build_manager import BuildManager
+        from rxiv_maker.engines.build_manager import BuildManager
 
         manuscript_dir = dummy_manuscript.get_manuscript_path()
         output_dir = dummy_manuscript.get_output_path()
@@ -547,7 +547,7 @@ class TestE2EFigureWorkflow:
         """Test complete PDF generation end-to-end (if LaTeX available)."""
         pytest.importorskip("subprocess")
 
-        from rxiv_maker.engine.build_manager import BuildManager
+        from rxiv_maker.engines.build_manager import BuildManager
 
         manuscript_dir = dummy_manuscript.get_manuscript_path()
         output_dir = dummy_manuscript.get_output_path()

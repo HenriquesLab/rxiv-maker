@@ -15,7 +15,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from ..utils.advanced_cache import AdvancedCache
+from rxiv_maker.core.cache.advanced_cache import AdvancedCache
 
 
 class DockerBuildOptimizer:

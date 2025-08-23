@@ -21,7 +21,7 @@ except ImportError:
     requests = None  # type: ignore
 
 try:
-    from ..utils.retry import get_with_retry
+    from ...utils.retry import get_with_retry
 except ImportError:
     # Fallback when retry module isn't available
     get_with_retry = None  # type: ignore
@@ -47,11 +47,11 @@ if __name__ == "__main__":
 
 # Import platform utilities and Docker manager with proper fallback handling
 try:
-    from ..core.environment_manager import EnvironmentManager
-    from ..core.path_manager import PathManager
+    from ...core.environment_manager import EnvironmentManager
+    from ...core.path_manager import PathManager
 
     # Docker manager import removed - now using global container manager
-    from ..utils.platform import platform_detector
+    from ...utils.platform import platform_detector
 except ImportError:
     # Fallback for when running as script
     import sys
@@ -120,7 +120,7 @@ class FigureGenerator:
         if self.enable_content_caching:
             try:
                 # Import here to avoid circular dependencies
-                from ..utils.figure_checksum import FigureChecksumManager
+                from ...utils.figure_checksum import FigureChecksumManager
 
                 # Use PathManager if available, otherwise use figures_dir parent
                 if self.path_manager:
@@ -145,7 +145,7 @@ class FigureGenerator:
                 workspace_dir = Path.cwd().resolve()
 
             # Use global container manager for shared engine instances
-            from ..core.global_container_manager import get_global_container_manager
+            from ...core.global_container_manager import get_global_container_manager
 
             global_manager = get_global_container_manager()
             self.container_engine = global_manager.get_container_engine(

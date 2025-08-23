@@ -3,7 +3,7 @@
 from pathlib import Path
 from unittest.mock import patch
 
-from rxiv_maker.engine.build_manager import BuildManager
+from rxiv_maker.engines.operations.build_manager import BuildManager
 
 
 class TestStyleFileResolution:

@@ -16,9 +16,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Generic, List, Optional, TypeVar
 
-from ..utils.cache_utils import get_cache_dir
-from .error_recovery import RecoveryEnhancedMixin
-from .logging_config import get_logger
+from ..cache.cache_utils import get_cache_dir
+from ..error_recovery import RecoveryEnhancedMixin
+from ..logging_config import get_logger
 
 logger = get_logger()
 

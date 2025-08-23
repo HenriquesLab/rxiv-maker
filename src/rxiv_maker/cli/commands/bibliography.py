@@ -52,7 +52,7 @@ def fix(ctx: click.Context, manuscript_path: str | None, dry_run: bool) -> None:
             task = progress.add_task("Fixing bibliography...", total=None)
 
             # Import bibliography fixing class directly
-            from ...engine.fix_bibliography import BibliographyFixer
+            from ...engines.operations.fix_bibliography import BibliographyFixer
 
             try:
                 # Create and use the BibliographyFixer class directly
@@ -143,7 +143,7 @@ def add(
             task = progress.add_task(f"Adding {len(dois)} bibliography entries...", total=None)
 
             # Import bibliography adding class directly
-            from ...engine.add_bibliography import BibliographyAdder
+            from ...engines.operations.add_bibliography import BibliographyAdder
 
             try:
                 # Create and use the BibliographyAdder class directly

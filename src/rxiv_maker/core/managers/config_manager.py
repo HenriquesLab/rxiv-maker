@@ -17,8 +17,8 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
-from ..core.error_codes import ErrorCode, create_validation_error
-from .validator import ConfigValidator
+from ...config.validator import ConfigValidator
+from ..error_codes import ErrorCode, create_validation_error
 
 logger = logging.getLogger(__name__)
 

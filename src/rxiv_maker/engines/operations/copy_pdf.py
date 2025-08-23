@@ -9,8 +9,8 @@ This module will be removed in a future version.
 
 import warnings
 
-from ..processors.yaml_processor import extract_yaml_metadata
-from ..utils import copy_pdf_to_manuscript_folder, find_manuscript_md
+from ...processors.yaml_processor import extract_yaml_metadata
+from ...utils import copy_pdf_to_manuscript_folder, find_manuscript_md
 
 # Issue deprecation warning
 warnings.warn(

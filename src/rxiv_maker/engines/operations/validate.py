@@ -17,15 +17,15 @@ import os
 from typing import Any
 
 try:
-    from ..processors.yaml_processor import extract_yaml_metadata, get_doi_validation_setting
-    from ..utils.file_helpers import find_manuscript_md
-    from ..validators.base_validator import ValidationLevel
-    from ..validators.citation_validator import CitationValidator
-    from ..validators.figure_validator import FigureValidator
-    from ..validators.latex_error_parser import LaTeXErrorParser
-    from ..validators.math_validator import MathValidator
-    from ..validators.reference_validator import ReferenceValidator
-    from ..validators.syntax_validator import SyntaxValidator
+    from ...processors.yaml_processor import extract_yaml_metadata, get_doi_validation_setting
+    from ...utils.file_helpers import find_manuscript_md
+    from ...validators.base_validator import ValidationLevel
+    from ...validators.citation_validator import CitationValidator
+    from ...validators.figure_validator import FigureValidator
+    from ...validators.latex_error_parser import LaTeXErrorParser
+    from ...validators.math_validator import MathValidator
+    from ...validators.reference_validator import ReferenceValidator
+    from ...validators.syntax_validator import SyntaxValidator
 
     VALIDATORS_AVAILABLE = True
 except ImportError:

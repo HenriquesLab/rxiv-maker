@@ -9,7 +9,7 @@ from unittest.mock import patch
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from rxiv_maker.engine import generate_docs
+from rxiv_maker.engines.operations import generate_docs
 
 
 class TestGenerateDocs:

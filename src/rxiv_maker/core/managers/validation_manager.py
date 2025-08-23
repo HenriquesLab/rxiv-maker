@@ -13,11 +13,11 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, Union
 
-from ..validators.base_validator import ValidationError, ValidationLevel
-from .error_codes import ErrorCode, create_validation_error
-from .error_recovery import RecoveryEnhancedMixin
-from .logging_config import get_logger
-from .path_manager import PathManager
+from ...validators.base_validator import ValidationError, ValidationLevel
+from ..error_codes import ErrorCode, create_validation_error
+from ..error_recovery import RecoveryEnhancedMixin
+from ..logging_config import get_logger
+from ..path_manager import PathManager
 
 logger = get_logger()
 
@@ -149,7 +149,7 @@ class CitationValidatorWrapper(BaseValidator):
         result = ValidationResult(validator_name=self.name, success=True, duration=0.0)
 
         try:
-            from ..validators.citation_validator import CitationValidator
+            from ...validators.citation_validator import CitationValidator
 
             validator = CitationValidator()
             # Use the existing validation logic
@@ -202,7 +202,7 @@ class DOIValidatorWrapper(BaseValidator):
         result = ValidationResult(validator_name=self.name, success=True, duration=0.0)
 
         try:
-            from ..validators.doi_validator import DOIValidator
+            from ...validators.doi_validator import DOIValidator
 
             validator = DOIValidator()
             validation_errors = validator.validate_manuscript_dois(str(manuscript_path))
@@ -252,7 +252,7 @@ class FigureValidatorWrapper(BaseValidator):
         result = ValidationResult(validator_name=self.name, success=True, duration=0.0)
 
         try:
-            from ..validators.figure_validator import FigureValidator
+            from ...validators.figure_validator import FigureValidator
 
             validator = FigureValidator()
             validation_errors = validator.validate_figures(str(manuscript_path))
@@ -302,7 +302,7 @@ class MathValidatorWrapper(BaseValidator):
         result = ValidationResult(validator_name=self.name, success=True, duration=0.0)
 
         try:
-            from ..validators.math_validator import MathValidator
+            from ...validators.math_validator import MathValidator
 
             validator = MathValidator()
             validation_errors = validator.validate_math_expressions(str(manuscript_path))
@@ -352,7 +352,7 @@ class SyntaxValidatorWrapper(BaseValidator):
         result = ValidationResult(validator_name=self.name, success=True, duration=0.0)
 
         try:
-            from ..validators.syntax_validator import SyntaxValidator
+            from ...validators.syntax_validator import SyntaxValidator
 
             validator = SyntaxValidator()
             validation_errors = validator.validate_syntax(str(manuscript_path))

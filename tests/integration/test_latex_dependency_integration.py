@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from rxiv_maker.engine.build_manager import BuildManager
+from rxiv_maker.engines.build_manager import BuildManager
 from rxiv_maker.install.dependency_handlers.latex import LaTeXHandler
 from rxiv_maker.install.utils.logging import InstallLogger
 

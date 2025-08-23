@@ -6,184 +6,195 @@
 
 <img src="src/logo/logo-rxiv-maker.svg" align="right" width="200" style="margin-left: 20px;"/>
 
-Rxiv-Maker transforms scientific writing by converting Markdown manuscripts into publication-ready PDFs with automated figure generation, professional LaTeX typesetting, and zero LaTeX expertise required.
+**Write scientific papers in Markdown. Generate publication-ready PDFs instantly.**
 
-**Key Features:** Scientific cross-references, automated Python/R figures, citation management, Docker support, and modern CLI with rich output.
+Rxiv-Maker transforms scientific writing by converting enhanced Markdown into professional PDFs with automated figure generation, citation management, and LaTeX typesetting - no LaTeX knowledge required.
 
-## 🚀 Getting Started
+## ✨ Why Rxiv-Maker?
 
-### 🎯 Quick Install
+### 🎯 **For Researchers**
+- **Write in Markdown**: Focus on content, not formatting
+- **Automated Figures**: Python/R scripts become publication figures  
+- **Smart Citations**: BibTeX integration with cross-references
+- **Instant PDFs**: From Markdown to camera-ready in seconds
+
+### 🚀 **For Teams**  
+- **Git-Friendly**: Version control for manuscripts and figures
+- **Reproducible**: All figures generated from code
+- **Collaborative**: Standard tools, no vendor lock-in
+- **Multi-Platform**: Works everywhere with Docker support
+
+### 📈 **For Publishers**
+- **arXiv Ready**: Generate submission packages automatically
+- **Journal Format**: Flexible output for any publication
+- **Track Changes**: Visual diff between manuscript versions
+- **Quality Assurance**: Built-in validation and error checking
+
+## 🔥 Quick Start
+
+**Get your first PDF in under 2 minutes:**
+
 ```bash
+# Install
 pip install rxiv-maker
-rxiv check-installation --fix  # Auto-install dependencies
+
+# Create manuscript 
 rxiv init my-paper
 cd my-paper
+
+# Generate PDF
 rxiv pdf
 ```
 
-### 📦 Dependencies by Platform
+**🎯 [Complete Getting Started Guide →](GETTING_STARTED.md)**
 
-<details>
-<summary><strong>🍎 macOS - Homebrew (Recommended)</strong></summary>
+## 🏆 Key Features
 
-**Install dependencies with Homebrew:**
+### 🎨 **Enhanced Markdown**
+- Scientific cross-references (`@fig:plot`, `@eq:formula`)
+- Auto-numbered figures, tables, and equations
+- Mathematical notation with LaTeX math
+- Code blocks with syntax highlighting
+
+### 📊 **Automated Figures**
+- Execute Python/R scripts during PDF generation
+- Matplotlib, ggplot2, and custom visualizations
+- Consistent styling and professional quality
+- Version-controlled figure code
+
+### 📚 **Citation Management**
+- BibTeX integration with `[@citation]` syntax
+- Automatic bibliography generation
+- Multiple citation styles (APA, Nature, etc.)
+- CrossRef DOI resolution
+
+### 🔧 **Developer Experience**
+- Modern CLI with rich output and progress bars
+- Docker support for consistent environments
+- Git-friendly workflow with meaningful diffs
+- Comprehensive validation and error reporting
+
+## 🌟 Example Manuscript
+
+**Input Markdown:**
+```markdown
+# Introduction
+
+Our analysis in Figure @fig:results shows significant improvement
+over previous methods [@smith2023; @jones2024].
+
+![Research Results](FIGURES/generate_plot.py)
+{#fig:results}
+
+The correlation coefficient was $r = 0.95$ (p < 0.001).
+
+## References
+```
+
+**Output:** Professional PDF with numbered figures, citations, and LaTeX-quality typesetting.
+
+## 📖 Documentation
+
+| Guide | Purpose | Time |
+|-------|---------|------|
+| **[🚀 Getting Started](GETTING_STARTED.md)** | Installation → First PDF | 5 min |
+| **[📚 User Guide](USER_GUIDE.md)** | Complete workflows & features | 30 min |
+| **[⚙️ CLI Reference](CLI_REFERENCE.md)** | All commands & options | 10 min |
+| **[🔧 Troubleshooting](TROUBLESHOOTING.md)** | Common issues & solutions | As needed |
+| **[👩‍💻 Developer Guide](DEVELOPER_GUIDE.md)** | Contributing & development | 45 min |
+
+## 🎯 Use Cases
+
+### 📄 **Research Papers**
+- arXiv preprints with automated submission packages
+- Journal submissions with flexible formatting
+- Conference papers with consistent styling
+
+### 📊 **Reports & Analyses**  
+- Data analysis reports with live figures
+- Technical documentation with code examples
+- Grant applications with professional formatting
+
+### 🎓 **Academic Workflows**
+- Thesis chapters with cross-references
+- Collaborative writing with version control
+- Supplementary materials with automated generation
+
+## 🏃‍♀️ Installation Options
+
+**Need different installation methods?** [View all options →](GETTING_STARTED.md#step-1-choose-your-installation-method)
+
+- **🔥 pip install**: Universal, works everywhere
+- **🍺 Homebrew**: macOS/Linux package management  
+- **🐳 Docker**: Containerized, zero config
+- **🌐 Google Colab**: Browser-based, no installation
+- **🪟 WSL2**: Best Windows experience
+
+## 🚀 Essential Commands
+
 ```bash
-# Install Homebrew if needed
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# Install system dependencies
-brew install python@3.11 node@20 texlive
-brew tap henriqueslab/rxiv-maker
-brew install rxiv-maker  # Complete installation with all dependencies
-
-# Verify installation
-rxiv check-installation
+rxiv init my-paper          # Create new manuscript
+rxiv pdf                    # Generate PDF  
+rxiv validate              # Check manuscript quality
+rxiv arxiv                 # Prepare arXiv submission
+rxiv track-changes v1 v2   # Visual version comparison
 ```
 
-</details>
+**[📖 Complete Command Reference →](CLI_REFERENCE.md)**
 
-<details>
-<summary><strong>🐧 Linux - Choose Your Method</strong></summary>
+## 🤝 Community
 
-**Option A: APT Repository (Ubuntu/Debian - Recommended)**
-```bash
-sudo apt update
-sudo apt install ca-certificates
-curl -fsSL https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg
-echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/rxiv-maker.gpg] https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo stable main' | sudo tee /etc/apt/sources.list.d/rxiv-maker.list
-sudo apt update
-sudo apt install rxiv-maker
-```
+- **💬 [GitHub Discussions](https://github.com/henriqueslab/rxiv-maker/discussions)** - Ask questions, share tips
+- **🐛 [Issues](https://github.com/henriqueslab/rxiv-maker/issues)** - Report bugs, request features  
+- **📚 [Examples](examples/)** - Real-world manuscript examples
+- **🧪 [Google Colab](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_colab.ipynb)** - Try without installing
 
-**Option B: Homebrew on Linux (All Distributions)**
-```bash
-# Install Homebrew on Linux
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+## 🏗️ Contributing
 
-# Install rxiv-maker with all dependencies
-brew tap henriqueslab/rxiv-maker  
-brew install rxiv-maker
+We welcome contributions! Whether it's:
 
-# Verify installation
-rxiv check-installation
-```
+- 🐛 Bug reports and fixes
+- ✨ New features and improvements  
+- 📖 Documentation enhancements
+- 🧪 Testing and validation
 
-</details>
-
-<details>
-<summary><strong>🪟 Windows - WSL2 (Recommended)</strong></summary>
-
-**Why WSL2?** WSL2 provides a full Linux environment on Windows, ensuring 100% compatibility with rxiv-maker's LaTeX and Python dependencies without the complexity of native Windows installations.
-
-**Step 1: Install WSL2 with Ubuntu**
-```powershell
-# Run Windows PowerShell as Administrator
-wsl --install -d Ubuntu-22.04
-# Restart computer when prompted
-```
-
-**Step 2: Setup rxiv-maker in WSL2 Ubuntu**
-```bash
-# Update system packages
-sudo apt update && sudo apt upgrade -y
-
-# Option A: APT Repository (Recommended - includes all dependencies)
-sudo apt install ca-certificates curl gpg
-curl -fsSL https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg
-echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/rxiv-maker.gpg] https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo stable main' | sudo tee /etc/apt/sources.list.d/rxiv-maker.list
-sudo apt update
-sudo apt install rxiv-maker
-
-# Option B: Python pip (manual dependency management)
-sudo apt install -y python3.11 python3-pip texlive-latex-recommended texlive-fonts-recommended
-pip install rxiv-maker
-
-# Verify installation
-rxiv check-installation
-```
-
-**Step 3: Access files between Windows and WSL2**
-```bash
-# Access Windows files from WSL2
-cd /mnt/c/Users/YourUsername/Documents
-
-# Access WSL2 files from Windows Explorer
-# Navigate to: \\wsl$\Ubuntu-22.04\home\yourusername
-```
-
-</details>
-
-### ✅ Verification
-```bash
-# Check installation status
-rxiv check-installation
-
-# Create test project
-rxiv init test-paper
-cd test-paper
-
-# Generate your first PDF
-rxiv pdf
-```
-
-### 🌐 Alternative Methods
-
-**🐳 Docker** (No local dependencies)
+**Quick contributor setup:**
 ```bash
 git clone https://github.com/henriqueslab/rxiv-maker.git
 cd rxiv-maker
-rxiv pdf --engine docker
+pip install -e ".[dev]"
+pre-commit install
 ```
 
-**🌐 Google Colab** (Browser-based)  
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_colab.ipynb)
+**[📋 Full Contributing Guide →](DEVELOPER_GUIDE.md)**
 
-## Essential Commands
+## 📄 Citation
 
-```bash
-rxiv pdf                            # Generate PDF
-rxiv validate                       # Check manuscript
-rxiv clean                          # Clean output files
-rxiv arxiv                          # Prepare arXiv submission
-```
-
-## Documentation
-
-📚 **[Progressive Learning Path](docs/quick-start/)** - 5min → 15min → Daily workflows
-
-📖 **[CLI Reference](docs/reference/cli-commands.md)** - Complete command documentation  
-
-🔧 **[Troubleshooting](docs/troubleshooting/common-issues.md)** - Common issues and solutions
-
-## Contributing
-
-```bash
-git clone https://github.com/henriqueslab/rxiv-maker.git
-pip install -e ".[dev]" && pre-commit install
-```
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
-
-## Citation
-
-If you use Rxiv-Maker in your research, please cite:
+If Rxiv-Maker helps your research, please cite:
 
 ```bibtex
 @misc{saraiva_2025_rxivmaker,
-      title={Rxiv-Maker: an automated template engine for streamlined scientific publications}, 
-      author={Bruno M. Saraiva and Guillaume Jaquemet and Ricardo Henriques},
-      year={2025},
-      eprint={2508.00836},
-      archivePrefix={arXiv},
-      url={https://arxiv.org/abs/2508.00836}, 
+  title={Rxiv-Maker: an automated template engine for streamlined scientific publications}, 
+  author={Bruno M. Saraiva and Guillaume Jaquemet and Ricardo Henriques},
+  year={2025},
+  eprint={2508.00836},
+  archivePrefix={arXiv},
+  url={https://arxiv.org/abs/2508.00836}
 }
 ```
 
-## License
+## 📜 License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**© 2025 Jacquemet and Henriques Labs | Rxiv-Maker**  
+<div align="center">
+
+**🔬 From [Jacquemet](https://github.com/guijacquemet) and [Henriques](https://github.com/HenriquesLab) Labs**
+
 *"Because science is hard enough without fighting with LaTeX."*
+
+**[🚀 Start Writing →](GETTING_STARTED.md)** | **[📚 Learn More →](USER_GUIDE.md)** | **[⚙️ Commands →](CLI_REFERENCE.md)**
+
+</div>

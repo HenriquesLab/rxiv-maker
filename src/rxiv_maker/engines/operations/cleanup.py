@@ -10,7 +10,7 @@ This script handles cross-platform cleanup operations including:
 import os
 from pathlib import Path
 
-from ..utils.platform import platform_detector
+from ...utils.platform import platform_detector
 
 
 class CleanupManager:
@@ -271,7 +271,7 @@ class CleanupManager:
         self.log("Cleaning cache files...", "STEP")
 
         # Import migration utilities
-        from ..utils.cache_utils import (
+        from ...core.cache.cache_utils import (
             cleanup_legacy_rxiv_cache_dir,
             get_legacy_rxiv_cache_dir,
             migrate_rxiv_cache_directory,
@@ -328,7 +328,7 @@ class CleanupManager:
             subfolder: Optional subfolder to clean (e.g., 'doi', 'advanced')
                       If None, cleans the entire cache directory
         """
-        from ..utils.cache_utils import get_cache_dir
+        from ...core.cache.cache_utils import get_cache_dir
 
         try:
             cache_dir = get_cache_dir(subfolder)
