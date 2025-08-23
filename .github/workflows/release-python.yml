@@ -25,7 +25,7 @@ on:
 
 permissions:
   contents: write
-  id-token: write
+  id-token: write  # Required for PyPI OIDC trusted publishing
 
 jobs:
   release:
@@ -58,5 +58,5 @@ jobs:
             ${{ inputs.version && format('--version {0}', inputs.version) || '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
           DISPATCH_PAT: ${{ secrets.DISPATCH_PAT }}
+          # OIDC token is automatically available via id-token: write permission
