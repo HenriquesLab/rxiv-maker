@@ -212,7 +212,7 @@ class ManuscriptService(BaseService):
 
             # Ensure output directory exists
             create_output_dir(output_dir)
-            output_path = self.validate_path(output_dir, must_exist=True, must_be_dir=True)
+            self.validate_path(output_dir, must_exist=True, must_be_dir=True)
 
             # Load template
             template_path = get_template_path()

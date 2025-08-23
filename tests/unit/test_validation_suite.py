@@ -74,7 +74,6 @@ except ImportError:
     DOI_PDF_VALIDATORS_AVAILABLE = False
 
 try:
-    from rxiv_maker.core.cache.bibliography_cache import BibliographyCache
     from rxiv_maker.core.cache.doi_cache import DOICache
 
     CACHE_AVAILABLE = True
@@ -634,7 +633,7 @@ class TestValidationIntegration(ValidationTestBase):
         Invalid math: $\\invalid{syntax$
         """
 
-        manuscript_file = self.create_test_file("full_manuscript.md", manuscript_content)
+        self.create_test_file("full_manuscript.md", manuscript_content)
 
         # Test with multiple validators
         validators = []

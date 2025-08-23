@@ -214,9 +214,20 @@ def cache_health_check() -> Dict[str, Any]:
 
 
 # Convenience aliases for backward compatibility
-get_bibliography_cache = lambda: get_cache("bibliography")
-get_doi_cache = lambda: get_cache("doi")
-clear_all_caches = lambda: clear_cache("all")
+def get_bibliography_cache():
+    """Get the bibliography cache instance."""
+    return get_cache("bibliography")
+
+
+def get_doi_cache():
+    """Get the DOI cache instance."""
+    return get_cache("doi")
+
+
+def clear_all_caches():
+    """Clear all caches."""
+    return clear_cache("all")
+
 
 __all__ = [
     "get_cache",

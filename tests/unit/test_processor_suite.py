@@ -44,7 +44,7 @@ except ImportError:
 
 # Import processor components with fallbacks
 try:
-    from rxiv_maker.processors.yaml_processor import extract_yaml_metadata, process_yaml_config, validate_yaml_structure
+    from rxiv_maker.processors.yaml_processor import extract_yaml_metadata, validate_yaml_structure
 
     YAML_PROCESSOR_AVAILABLE = True
 except ImportError:
@@ -700,8 +700,7 @@ class TestProcessorIntegration(ProcessorTestBase):
                     f"{name} processor should throw appropriate exception types",
                 )
 
-    @pytest.mark.parametrize("processor_type", ["yaml", "citation", "math", "figure", "template"])
-    def test_processor_availability(self, processor_type):
+    def test_processor_availability(self):
         """Test that processors handle unavailable dependencies gracefully."""
         availability_map = {
             "yaml": YAML_PROCESSOR_AVAILABLE,
@@ -711,14 +710,14 @@ class TestProcessorIntegration(ProcessorTestBase):
             "template": TEMPLATE_PROCESSOR_AVAILABLE,
         }
 
-        is_available = availability_map[processor_type]
-
-        if is_available:
-            # Processor should be functional
-            self.assertTrue(True, f"{processor_type} processor is available and functional")
-        else:
-            # Test suite should handle unavailable processors gracefully
-            self.assertTrue(True, f"{processor_type} processor gracefully unavailable")
+        for processor_type, is_available in availability_map.items():
+            with self.subTest(processor_type=processor_type):
+                if is_available:
+                    # Processor should be functional
+                    self.assertTrue(True, f"{processor_type} processor is available and functional")
+                else:
+                    # Test suite should handle unavailable processors gracefully
+                    self.assertTrue(True, f"{processor_type} processor gracefully unavailable")
 
 
 if __name__ == "__main__":

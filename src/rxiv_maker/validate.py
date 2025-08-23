@@ -27,22 +27,15 @@ logger = logging.getLogger(__name__)
 
 # Import validation components with fallbacks
 try:
-    from .services.base import ServiceResult
     from .services.manuscript_service import ManuscriptService
-    from .services.validation_service import ValidationConfig, ValidationService, ValidationSummary
+    from .services.validation_service import ValidationConfig, ValidationService
 
     VALIDATION_AVAILABLE = True
 except ImportError:
     logger.debug("Validation services not available")
     VALIDATION_AVAILABLE = False
 
-try:
-    from .validators.base_validator import ValidationLevel
-
-    VALIDATORS_AVAILABLE = True
-except ImportError:
-    logger.debug("Individual validators not available")
-    VALIDATORS_AVAILABLE = False
+VALIDATORS_AVAILABLE = True
 
 
 def validate(

@@ -56,14 +56,14 @@ except ImportError:
 
 # Import infrastructure components with fallbacks
 try:
-    from rxiv_maker.docker.manager import DockerManager, get_docker_manager
+    from rxiv_maker.docker.manager import get_docker_manager
 
     DOCKER_AVAILABLE = True
 except ImportError:
     DOCKER_AVAILABLE = False
 
 try:
-    from rxiv_maker.utils.platform import PlatformDetector, platform_detector
+    from rxiv_maker.utils.platform import platform_detector
 
     PLATFORM_UTILS_AVAILABLE = True
 except ImportError:
@@ -98,11 +98,12 @@ def is_docker_available():
 def is_network_available():
     """Check if network connectivity is available."""
     try:
+        import urllib.error
         import urllib.request
 
         urllib.request.urlopen("http://google.com", timeout=5)
         return True
-    except:
+    except (urllib.error.URLError, OSError, TimeoutError):
         return False
 
 
@@ -129,7 +130,7 @@ class InfrastructureTestBase(unittest.TestCase):
                         shutil.rmtree(file_path)
                     else:
                         Path(file_path).unlink()
-            except:
+            except (OSError, IOError, PermissionError):
                 pass
 
         # Clean up temp directory
@@ -444,13 +445,13 @@ class TestFilesystemIntegration(InfrastructureTestBase):
         output_dir = self.temp_dir / "test_output"
 
         # Should create directory if it doesn't exist
-        result = create_output_dir(str(output_dir))
+        create_output_dir(str(output_dir))
 
         self.assertTrue(output_dir.exists())
         self.assertTrue(output_dir.is_dir())
 
         # Should handle existing directory gracefully
-        result2 = create_output_dir(str(output_dir))
+        create_output_dir(str(output_dir))
         self.assertTrue(output_dir.exists())
 
     def test_file_permission_handling(self):
@@ -468,7 +469,7 @@ class TestFilesystemIntegration(InfrastructureTestBase):
             # Test graceful handling of permission errors
             try:
                 with open(restricted_file, "r") as f:
-                    content = f.read()
+                    f.read()
                 self.fail("Should have raised PermissionError")
             except PermissionError:
                 pass  # Expected
@@ -570,7 +571,7 @@ class TestFilesystemIntegration(InfrastructureTestBase):
                 pass  # May reject some paths as unsafe, which is acceptable
 
         for path in unsafe_paths:
-            with self.assertRaises((ValueError, SecurityError, Exception)):
+            with self.assertRaises((ValueError, Exception)):
                 safe_path_join(base_dir, path)
 
 

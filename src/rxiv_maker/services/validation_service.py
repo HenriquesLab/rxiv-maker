@@ -9,7 +9,6 @@ from .manuscript_service import ManuscriptService
 
 # Import validators with fallback
 try:
-    from ..validators.base_validator import ValidationLevel
     from ..validators.citation_validator import CitationValidator
     from ..validators.doi_validator import DOIValidator
     from ..validators.figure_validator import FigureValidator
