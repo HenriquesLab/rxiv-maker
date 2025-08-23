@@ -542,7 +542,7 @@ class TestMainFunction:
     """Test the main function and argument parsing."""
 
     @patch("argparse.ArgumentParser.parse_args")
-    @patch("rxiv_maker.engine.setup_environment.EnvironmentSetup")
+    @patch("rxiv_maker.engines.operations.setup_environment.EnvironmentSetup")
     def test_main_default_args(self, mock_setup_class, mock_parse_args):
         """Test main function with default arguments."""
         # Mock argument parsing
@@ -571,7 +571,7 @@ class TestMainFunction:
         mock_setup_instance.run_setup.assert_called_once()
 
     @patch("argparse.ArgumentParser.parse_args")
-    @patch("rxiv_maker.engine.setup_environment.EnvironmentSetup")
+    @patch("rxiv_maker.engines.operations.setup_environment.EnvironmentSetup")
     def test_main_custom_args(self, mock_setup_class, mock_parse_args):
         """Test main function with custom arguments."""
         # Mock argument parsing
@@ -599,7 +599,7 @@ class TestMainFunction:
         )
 
     @patch("argparse.ArgumentParser.parse_args")
-    @patch("rxiv_maker.engine.setup_environment.EnvironmentSetup")
+    @patch("rxiv_maker.engines.operations.setup_environment.EnvironmentSetup")
     def test_main_setup_failure(self, mock_setup_class, mock_parse_args):
         """Test main function when setup fails."""
         # Mock argument parsing
