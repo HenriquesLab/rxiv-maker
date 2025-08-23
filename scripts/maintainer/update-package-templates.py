@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Unified Package Template Update Script.
+"""Homebrew Package Template Update Script.
 
-This script provides a unified way to update both Homebrew and Scoop package
-manager files from templates with proper validation and error handling.
+This script updates Homebrew package manager files from templates with proper
+validation and error handling. Windows users are directed to WSL2+APT.
 """
 
 import hashlib
-import json
 import shutil
 import subprocess
 import sys
@@ -155,88 +154,19 @@ class TemplateUpdater:
 
         return True
 
-    def update_scoop_manifest(self, version: str) -> bool:
-        """Update Scoop manifest from template."""
-        print(f"🪣 Updating Scoop manifest for version {version}")
-
-        template_path = self.repo_root / "submodules/scoop-rxiv-maker/bucket/rxiv-maker.json.template"
-        output_path = self.repo_root / "submodules/scoop-rxiv-maker/bucket/rxiv-maker.json"
-
-        if not template_path.exists():
-            print(f"❌ Template not found: {template_path}")
-            return False
-
-        # Download and hash Windows binary
-        url = f"https://github.com/henriqueslab/rxiv-maker/releases/download/{version}/rxiv-maker-windows-x64.zip"
-
-        try:
-            hash_value, temp_file = self.download_and_hash(url)
-        except Exception as e:
-            print(f"❌ Failed to download Windows binary: {e}")
-            if self.dry_run:
-                print("🔍 DRY RUN: Would have downloaded binary and calculated checksum")
-                # For dry run with test versions, use dummy hash
-                hash_value = "a" * 64
-            else:
-                return False
-
-        # Read and process template
-        template_content = template_path.read_text()
-
-        # Replace placeholders
-        version_num = version.lstrip("v")
-        replacements = {
-            "{{VERSION}}": version,
-            "{{VERSION_NUM}}": version_num,
-            "{{WINDOWS_X64_SHA256}}": hash_value,
-        }
-
-        output_content = template_content
-        for placeholder, value in replacements.items():
-            output_content = output_content.replace(placeholder, value)
-
-        # Validate JSON and placeholders
-        try:
-            manifest = json.loads(output_content)
-        except json.JSONDecodeError as e:
-            print(f"❌ Invalid JSON structure: {e}")
-            return False
-
-        if "{{" in output_content and "}}" in output_content:
-            import re
-
-            remaining = re.findall(r"\{\{[^}]+\}\}", output_content)
-            print(f"❌ Unreplaced placeholders: {remaining}")
-            return False
-
-        if self.dry_run:
-            print("🔍 DRY RUN: Would write the following content:")
-            print(f"Target: {output_path}")
-            print("Content preview:")
-            print(json.dumps(manifest, indent=2)[:500] + "...")
-            return True
-
-        # Write output file with proper formatting
-        output_path.write_text(json.dumps(manifest, indent=4) + "\n")
-        print(f"✅ Updated Scoop manifest: {output_path}")
-
-        return True
-
     def update_all(self, version: str) -> bool:
-        """Update both Homebrew and Scoop packages."""
-        print(f"🚀 Updating all package managers for version {version}")
+        """Update Homebrew package (WSL2+APT used for Windows)."""
+        print(f"🚀 Updating Homebrew package for version {version}")
+        print("ℹ️  Windows users directed to WSL2+APT installation")
 
         homebrew_success = self.update_homebrew_formula(version)
-        scoop_success = self.update_scoop_manifest(version)
 
-        success = homebrew_success and scoop_success
-
-        if success:
-            print(f"✅ All package managers updated successfully for {version}")
+        if homebrew_success:
+            print(f"✅ Homebrew package updated successfully for {version}")
         else:
-            print("❌ Some package managers failed to update")
+            print("❌ Homebrew package update failed")
 
-        return success
+        return homebrew_success
 
 
 def main():
@@ -245,8 +175,7 @@ def main():
         print("Usage: python update-package-templates.py <command> <version> [--dry-run]")
         print("Commands:")
         print("  homebrew <version> - Update Homebrew formula")
-        print("  scoop <version> - Update Scoop manifest")
-        print("  all <version> - Update all package managers")
+        print("  all <version> - Update Homebrew (Windows uses WSL2+APT)")
         print("Options:")
         print("  --dry-run - Show what would be done without making changes")
         sys.exit(1)
@@ -270,12 +199,11 @@ def main():
     with TemplateUpdater(repo_root, dry_run=dry_run) as updater:
         if command == "homebrew":
             success = updater.update_homebrew_formula(version)
-        elif command == "scoop":
-            success = updater.update_scoop_manifest(version)
         elif command == "all":
             success = updater.update_all(version)
         else:
             print(f"❌ Unknown command: {command}")
+            print("Available commands: homebrew, all")
             sys.exit(1)
 
         sys.exit(0 if success else 1)

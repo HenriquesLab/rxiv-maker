@@ -3,6 +3,8 @@ name: 🍺 Homebrew Formula Update (Python-Driven)
 on:
   release:
     types: [published]
+  repository_dispatch:
+    types: [update-formula]
   workflow_dispatch:
     inputs:
       tag_name:
@@ -20,7 +22,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   update_homebrew_formula:
@@ -47,7 +48,8 @@ jobs:
           python .github/scripts/homebrew/formula_updater.py \
             ${{ inputs.tag_name && format('--tag {0}', inputs.tag_name) || '' }} \
             ${{ inputs.force_update == true && '--force' || '' }} \
-            ${{ inputs.debug == true && '--debug' || '' }}
+            ${{ inputs.debug == true && '--debug' || '' }} \
+            --direct-commit
         env:
           GITHUB_TOKEN: ${{ secrets.DISPATCH_PAT }}
           GITHUB_REF_NAME: ${{ inputs.tag_name || github.ref_name }}

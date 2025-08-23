@@ -266,7 +266,7 @@ class ReleaseOrchestrator:
             success = trigger_workflow(
                 owner="henriqueslab",
                 repo=self.config.homebrew_repo,
-                workflow_id="update-formula.yml",  # Assuming this workflow exists
+                workflow_id="homebrew-python.yml",  # Updated to match actual workflow
                 ref="main",
                 inputs=inputs,
                 github_token=self.github_token,
