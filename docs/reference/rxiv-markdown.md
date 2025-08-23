@@ -189,7 +189,7 @@ FIGURES/
 ```
 
 ### Figure Troubleshooting
-For comprehensive troubleshooting of figure positioning, layout issues, and advanced positioning techniques, see the **[Figure Positioning Guide](../tutorials/figure-positioning.md)**.
+For comprehensive troubleshooting of figure positioning, layout issues, and advanced positioning techniques, see the **[Complete Figure Guide](../guides/figures-guide.md)**.
 
 ---
 
@@ -361,7 +361,7 @@ This text has a footnote[^1].
 
 ## Related Documentation
 
-- **[Figure Positioning Guide](../tutorials/figure-positioning.md)** - Complete guide to figure placement and layout
+- **[Complete Figure Guide](../guides/figures-guide.md)** - Complete guide to figure positioning, formatting, and troubleshooting
 - **[User Guide](../getting-started/user_guide.md)** - Complete usage instructions
 - **[Troubleshooting Guide](../troubleshooting/common-issues.md)** - Common issues and solutions
 - **[CLI Reference](../CLI_REFERENCE.md)** - Command-line interface documentation

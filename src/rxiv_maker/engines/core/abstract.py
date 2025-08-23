@@ -708,7 +708,7 @@ if __name__ == "__main__":
     sys.exit(generate_mermaid_svg())
 '''
 
-        from ..core.session_optimizer import get_optimized_session_key
+        from ...core.session_optimizer import get_optimized_session_key
 
         return self.run_command(
             command=["python3", "-c", python_script], session_key=get_optimized_session_key("mermaid_generation")
@@ -730,7 +730,7 @@ if __name__ == "__main__":
             except ValueError:
                 docker_working_dir = "/workspace/output"
 
-        from ..core.session_optimizer import get_optimized_session_key
+        from ...core.session_optimizer import get_optimized_session_key
 
         optimized_session_key = get_optimized_session_key("python_execution")
 
@@ -768,7 +768,7 @@ if __name__ == "__main__":
             except ValueError:
                 docker_working_dir = "/workspace/output"
 
-        from ..core.session_optimizer import get_optimized_session_key
+        from ...core.session_optimizer import get_optimized_session_key
 
         optimized_session_key = get_optimized_session_key("r_execution")
 
@@ -823,7 +823,7 @@ if __name__ == "__main__":
             except ValueError:
                 docker_working_dir = "/workspace/output"
 
-        from ..core.session_optimizer import get_optimized_session_key
+        from ...core.session_optimizer import get_optimized_session_key
 
         results = []
         session_key = get_optimized_session_key("latex_compilation")
