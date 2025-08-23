@@ -22,7 +22,7 @@ class TestCITestingMatrix:
 
     def test_release_workflow_exists(self):
         """Test that the release workflow exists."""
-        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
+        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
         assert release_workflow_path.exists(), "Release workflow not found"
 
     def test_python_version_matrix(self):
@@ -51,7 +51,7 @@ class TestCITestingMatrix:
 
     def test_binary_build_matrix(self):
         """Test that release workflow sets reasonable timeouts and steps."""
-        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
+        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
         if not release_workflow_path.exists():
             pytest.skip("Release workflow not found")
 
@@ -62,7 +62,7 @@ class TestCITestingMatrix:
 
     def test_architecture_matrix(self):
         """Test that Docker images are built for multiple architectures when applicable."""
-        docker_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
+        docker_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
         if not docker_workflow_path.exists():
             pytest.skip("Release workflow not found")
 
@@ -98,7 +98,7 @@ class TestCITestingMatrix:
     def test_timeout_configurations(self):
         """Test that appropriate timeouts are configured."""
         test_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "ci.yml"
-        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
+        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
         build_pdf_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "docker-build.yml"
 
         workflows = []
@@ -279,7 +279,7 @@ class TestCIPerformanceMatrix:
 
     def test_build_time_considerations(self):
         """Test that build times are reasonable across platforms."""
-        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
+        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
         if not release_workflow_path.exists():
             pytest.skip("Release workflow not found")
 
@@ -298,7 +298,7 @@ class TestCIPerformanceMatrix:
     def test_cache_configuration(self):
         """Test that caching is properly configured to improve CI performance."""
         test_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "ci.yml"
-        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
+        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
 
         workflows = [p for p in [test_workflow_path, release_workflow_path] if p.exists()]
         if not workflows:
@@ -325,7 +325,7 @@ class TestCIPerformanceMatrix:
 
     def test_resource_optimization(self):
         """Test that CI resources are optimized for binary building."""
-        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
+        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
         if not release_workflow_path.exists():
             pytest.skip("Release workflow not found")
 
@@ -372,7 +372,7 @@ class TestCIQualityAssurance:
     def test_security_scanning(self):
         """Test that security scanning is included where appropriate."""
         test_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "ci.yml"
-        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
+        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
 
         workflows = [p for p in [test_workflow_path, release_workflow_path] if p.exists()]
         if not workflows:
@@ -402,7 +402,7 @@ class TestCIQualityAssurance:
 
     def test_artifact_retention_policy(self):
         """Test that artifact retention is properly configured."""
-        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-simple.yml"
+        release_workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
         if not release_workflow_path.exists():
             pytest.skip("Release workflow not found")
 

@@ -163,13 +163,57 @@ class ReleaseOrchestrator:
             return True
 
         try:
-            # This would be implemented with the GitHub API
-            # For now, we'll assume it succeeds if we have the token
-            # In real implementation, use PyGithub or requests to create release
+            import subprocess
 
-            self.logger.info(f"Would create GitHub release {self.version}")
-            # TODO: Implement actual GitHub release creation
+            # Generate release notes from git commits since last tag
+            try:
+                # Get previous tag
+                prev_tag_result = subprocess.run(
+                    ["git", "describe", "--abbrev=0", "--tags", f"{self.version}^"],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                prev_tag = prev_tag_result.stdout.strip()
 
+                # Get commit log since previous tag
+                log_result = subprocess.run(
+                    ["git", "log", f"{prev_tag}..{self.version}", "--oneline", "--no-merges"],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                commits = log_result.stdout.strip()
+
+                # Basic release notes
+                if commits:
+                    release_notes = f"## Changes in {self.version}\n\n"
+                    for line in commits.split("\n"):
+                        if line.strip():
+                            release_notes += f"- {line.strip()}\n"
+                else:
+                    release_notes = f"Release {self.version}"
+
+            except subprocess.CalledProcessError:
+                release_notes = f"Release {self.version}"
+
+            # Create GitHub release using gh CLI
+            gh_cmd = [
+                "gh",
+                "release",
+                "create",
+                self.version,
+                "--title",
+                f"{self.version}",
+                "--notes",
+                release_notes,
+                "--repo",
+                "henriqueslab/rxiv-maker",
+            ]
+
+            subprocess.run(gh_cmd, capture_output=True, text=True, check=True)
+
+            self.logger.info(f"Created GitHub release {self.version}")
             self.release_state["github_release_created"] = True
             log_step(self.logger, "GitHub release created", "SUCCESS")
             return True
@@ -188,12 +232,29 @@ class ReleaseOrchestrator:
             return True
 
         try:
-            # This would run the actual PyPI publishing commands
-            # For now, we'll simulate it
+            import os
+            import subprocess
 
-            self.logger.info(f"Would publish {self.config.package_name}=={self.version.lstrip('v')} to PyPI")
-            # TODO: Implement actual PyPI publishing (hatch publish, twine, etc.)
+            clean_version = self.version.lstrip("v")
 
+            # Build the package first
+            self.logger.info("Building package...")
+            build_cmd = ["python", "-m", "build", "--sdist", "--wheel"]
+            subprocess.run(build_cmd, check=True, cwd=".")
+
+            # Publish to PyPI using twine
+            self.logger.info(f"Publishing {self.config.package_name}=={clean_version} to PyPI...")
+
+            # Set up environment for twine
+            env = os.environ.copy()
+            env["TWINE_USERNAME"] = "__token__"
+            env["TWINE_PASSWORD"] = self.pypi_token
+
+            # Publish with twine
+            publish_cmd = ["python", "-m", "twine", "upload", "dist/*"]
+            subprocess.run(publish_cmd, env=env, capture_output=True, text=True, check=True)
+
+            self.logger.info(f"Successfully published {self.config.package_name}=={clean_version} to PyPI")
             self.release_state["pypi_published"] = True
             log_step(self.logger, "PyPI publishing", "SUCCESS")
             return True
