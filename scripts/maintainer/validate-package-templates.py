@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Package Template Validation Script.
+"""Homebrew Package Template Validation Script.
 
-This script validates both package manager templates and their generated files
+This script validates Homebrew package manager templates and their generated files
 to ensure they meet the required standards and contain all necessary placeholders.
+Windows users are directed to WSL2+APT.
 """
 
 import hashlib
-import json
 import re
 import sys
 from pathlib import Path
@@ -55,69 +55,6 @@ class PackageValidator:
 
         return len(self.errors) == 0
 
-    def validate_scoop_template(self, template_path: Path) -> bool:
-        """Validate Scoop manifest template."""
-        if not template_path.exists():
-            self.errors.append(f"Scoop template not found: {template_path}")
-            return False
-
-        content = template_path.read_text()
-
-        # Check if it's valid JSON structure (with placeholders)
-        try:
-            # Replace placeholders with dummy values for JSON validation
-            test_content = content
-            placeholders = {
-                "{{VERSION_NUM}}": "1.0.0",
-                "{{VERSION}}": "v1.0.0",
-                "{{WINDOWS_X64_SHA256}}": "a" * 64,
-            }
-
-            for placeholder, value in placeholders.items():
-                test_content = test_content.replace(placeholder, value)
-
-            json.loads(test_content)
-        except json.JSONDecodeError as e:
-            self.errors.append(f"Invalid JSON structure in Scoop template: {e}")
-            return False
-
-        # Required placeholders
-        required_placeholders = [
-            "{{VERSION_NUM}}",
-            "{{VERSION}}",
-            "{{WINDOWS_X64_SHA256}}",
-        ]
-
-        # Check for required placeholders
-        for placeholder in required_placeholders:
-            if placeholder not in content:
-                self.errors.append(f"Missing required placeholder in Scoop template: {placeholder}")
-
-        # Parse as JSON to validate structure
-        temp_json = json.loads(test_content)
-
-        # Required fields
-        required_fields = [
-            "version",
-            "description",
-            "homepage",
-            "license",
-            "url",
-            "hash",
-            "bin",
-        ]
-        for field in required_fields:
-            if field not in temp_json:
-                self.errors.append(f"Missing required field in Scoop template: {field}")
-
-        # Check autoupdate configuration
-        if "autoupdate" not in temp_json:
-            self.warnings.append("Missing autoupdate configuration in Scoop template")
-        elif "url" not in temp_json["autoupdate"]:
-            self.warnings.append("Missing autoupdate URL in Scoop template")
-
-        return len(self.errors) == 0
-
     def validate_generated_homebrew(self, formula_path: Path, version: str, checksums: dict[str, str]) -> bool:
         """Validate generated Homebrew formula."""
         if not formula_path.exists():
@@ -141,40 +78,6 @@ class PackageValidator:
                 self.errors.append(f"Checksum for {platform} not found in generated formula")
             elif not re.match(r"^[a-f0-9]{64}$", checksum):
                 self.errors.append(f"Invalid checksum format for {platform}: {checksum}")
-
-        return len(self.errors) == 0
-
-    def validate_generated_scoop(self, manifest_path: Path, version: str, checksum: str) -> bool:
-        """Validate generated Scoop manifest."""
-        if not manifest_path.exists():
-            self.errors.append(f"Generated Scoop manifest not found: {manifest_path}")
-            return False
-
-        try:
-            content = manifest_path.read_text()
-            manifest = json.loads(content)
-        except json.JSONDecodeError as e:
-            self.errors.append(f"Invalid JSON in generated Scoop manifest: {e}")
-            return False
-
-        # Check that placeholders have been replaced
-        content_str = json.dumps(manifest)
-        if "{{" in content_str and "}}" in content_str:
-            placeholders_found = re.findall(r"\{\{[^}]+\}\}", content_str)
-            self.errors.append(f"Unreplaced placeholders in generated manifest: {placeholders_found}")
-
-        # Check version
-        expected_version = version.lstrip("v")
-        if manifest.get("version") != expected_version:
-            self.errors.append(f"Version mismatch: expected {expected_version}, got {manifest.get('version')}")
-
-        # Check checksum
-        if manifest.get("hash") != checksum:
-            self.errors.append(f"Checksum mismatch: expected {checksum}, got {manifest.get('hash')}")
-
-        # Validate checksum format
-        if not re.match(r"^[a-f0-9]{64}$", checksum):
-            self.errors.append(f"Invalid checksum format: {checksum}")
 
         return len(self.errors) == 0
 
@@ -208,9 +111,9 @@ def main():
     if len(sys.argv) < 2:
         print("Usage: python validate-package-templates.py <command> [args...]")
         print("Commands:")
-        print("  validate-templates - Validate template files")
-        print("  validate-generated <version> - Validate generated files")
+        print("  validate-templates - Validate Homebrew template files")
         print("  validate-checksum <file> <expected_hash> - Validate file checksum")
+        print("Note: Windows users are directed to WSL2+APT installation")
         sys.exit(1)
 
     validator = PackageValidator()
@@ -222,18 +125,16 @@ def main():
         repo_root = script_dir.parent
 
         homebrew_template = repo_root / "submodules/homebrew-rxiv-maker/Formula/rxiv-maker.rb.template"
-        scoop_template = repo_root / "submodules/scoop-rxiv-maker/bucket/rxiv-maker.json.template"
 
-        print("🔍 Validating package templates...")
+        print("🔍 Validating Homebrew template...")
+        print("ℹ️  Windows users directed to WSL2+APT installation")
 
         homebrew_valid = validator.validate_homebrew_template(homebrew_template)
-        scoop_valid = validator.validate_scoop_template(scoop_template)
 
         error_count, warning_count, errors, warnings = validator.get_summary()
 
         print("\n📊 Validation Results:")
         print(f"  ✅ Homebrew template: {'Valid' if homebrew_valid else 'Invalid'}")
-        print(f"  ✅ Scoop template: {'Valid' if scoop_valid else 'Invalid'}")
         print(f"  🚨 Errors: {error_count}")
         print(f"  ⚠️  Warnings: {warning_count}")
 
