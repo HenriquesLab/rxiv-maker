@@ -350,7 +350,7 @@ def main():
 
     # Generate report
     output_file = args.output or "documentation_validation_report.md"
-    report = validator.generate_validation_report(summary, output_file)
+    validator.generate_validation_report(summary, output_file)
 
     # Print summary
     print("\n📋 VALIDATION SUMMARY")

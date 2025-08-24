@@ -43,7 +43,7 @@ jobs:
     - name: 🔧 Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y bash shellcheck
+        sudo apt-get install -y bash shellcheck bc
 
     - name: 📦 Install Python dependencies
       run: |
@@ -53,13 +53,18 @@ jobs:
     - name: 🧪 Run documentation validation
       id: validate
       run: |
+        set +e  # Don't exit on error - we want to capture the result
         python scripts/validate_documentation.py \
           --docs-dir . \
           --output validation_report.md \
           ${{ github.event.inputs.verbose == 'true' && '--verbose' || '' }}
 
-        # Capture exit code
-        echo "validation_result=$?" >> $GITHUB_OUTPUT
+        # Capture exit code immediately
+        validation_exit_code=$?
+        echo "validation_result=$validation_exit_code" >> $GITHUB_OUTPUT
+
+        # Re-enable error exit for subsequent steps
+        set -e
 
     - name: 📊 Parse validation results
       id: results
@@ -91,7 +96,7 @@ jobs:
         fi
 
     - name: 📋 Upload validation report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: documentation-validation-report
