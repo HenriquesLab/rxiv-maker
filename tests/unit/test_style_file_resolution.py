@@ -118,7 +118,7 @@ class TestStyleFilePackaging:
         # Mock the __file__ location to simulate pip installation
         mock_build_manager_file = mock_engine_dir / "build_manager.py"
 
-        with patch("rxiv_maker.engine.build_manager.__file__", str(mock_build_manager_file)):
+        with patch("rxiv_maker.engines.operations.build_manager.__file__", str(mock_build_manager_file)):
             build_manager = BuildManager(
                 manuscript_path=str(manuscript_dir), output_dir=str(output_dir), skip_validation=True
             )
@@ -147,7 +147,7 @@ class TestStyleFilePackaging:
         # Mock the __file__ location to simulate development installation
         mock_build_manager_file = mock_engine_dir / "build_manager.py"
 
-        with patch("rxiv_maker.engine.build_manager.__file__", str(mock_build_manager_file)):
+        with patch("rxiv_maker.engines.operations.build_manager.__file__", str(mock_build_manager_file)):
             build_manager = BuildManager(
                 manuscript_path=str(manuscript_dir), output_dir=str(output_dir), skip_validation=True
             )
@@ -237,7 +237,7 @@ class TestStyleFilePackaging:
         second_path.mkdir(parents=True, exist_ok=True)
         (second_path / "rxiv_maker_style.cls").write_text("% Mock style")
 
-        with patch("rxiv_maker.engine.build_manager.__file__", str(mock_engine_file)):
+        with patch("rxiv_maker.engines.operations.build_manager.__file__", str(mock_engine_file)):
             build_manager = BuildManager(
                 manuscript_path=str(manuscript_dir), output_dir=str(output_dir), skip_validation=True
             )

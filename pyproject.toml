@@ -228,6 +228,10 @@ markers = [
     "system: System-level integration tests",
     "flaky: Tests that are known to be flaky or unstable",
     "ci_exclude: Tests to exclude in CI environments",
+    "processor: marks tests as processor-related tests",
+    "medium: marks tests as medium-duration tests",
+    "docker: marks tests as Docker-related tests",
+    "podman: marks tests as Podman-related tests",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",
