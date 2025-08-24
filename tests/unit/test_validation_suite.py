@@ -158,12 +158,19 @@ class TestBaseValidators(ValidationTestBase):
 
     def test_validation_result_creation(self):
         """Test validation result object creation."""
-        result = ValidationResult(level=ValidationLevel.ERROR, message="Test error message", line=1, column=5)
+        # Create a ValidationError (which is what this test was actually meant to test)
+        error = ValidationError(level=ValidationLevel.ERROR, message="Test error message", line_number=1, column=5)
 
-        self.assertEqual(result.level, ValidationLevel.ERROR)
-        self.assertEqual(result.message, "Test error message")
-        self.assertEqual(result.line, 1)
-        self.assertEqual(result.column, 5)
+        self.assertEqual(error.level, ValidationLevel.ERROR)
+        self.assertEqual(error.message, "Test error message")
+        self.assertEqual(error.line_number, 1)
+        self.assertEqual(error.column, 5)
+
+        # Test actual ValidationResult creation
+        result = ValidationResult(validator_name="test_validator", errors=[error], metadata={})
+        self.assertEqual(result.validator_name, "test_validator")
+        self.assertEqual(len(result.errors), 1)
+        self.assertTrue(result.has_errors)
 
     def test_validation_error_exception(self):
         """Test validation error exception handling."""
