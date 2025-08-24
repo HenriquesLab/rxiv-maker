@@ -30,7 +30,7 @@ class TestCLIIntegration:
             # Test init command
             self.runner.invoke(
                 main,
-                ["init", str(manuscript_dir), "--template", "basic"],
+                ["init", str(manuscript_dir)],
                 obj={"verbose": False, "engine": "local"},
                 input="Test Paper\nTest Subtitle\nTest Author\ntest@example.com\nTest University\n",
             )

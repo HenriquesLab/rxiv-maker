@@ -218,13 +218,13 @@ rxiv config set author "Dr. Your Name"
 rxiv config set engine docker  # Use across all projects
 ```
 
-#### Project Templates
+#### Initialize Projects
 ```bash
-# Create templates for different paper types
-rxiv init --template journal-article my-nature-paper
-rxiv init --template preprint my-arxiv-paper  
-rxiv init --template thesis my-chapter-1
-rxiv init --template report my-grant-report
+# Create preprints for different research areas
+rxiv init protein-folding-study
+rxiv init climate-modeling-analysis  
+rxiv init neural-network-optimization
+rxiv init genomics-pipeline-paper
 ```
 
 ---

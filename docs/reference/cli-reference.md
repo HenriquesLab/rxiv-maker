@@ -38,10 +38,8 @@ rxiv init . --force
 
 **Options**:
 - `<name>` - Project name (creates directory)
-- `--template <type>` - Template type (`article`, `preprint`, `thesis`, `report`)
 - `--force` - Initialize in non-empty directory
-- `--author <name>` - Set default author name
-- `--no-git` - Skip git repository initialization
+- `--no-interactive` - Skip interactive prompts and use defaults
 
 **Generated Files**:
 ```
@@ -55,14 +53,14 @@ my-paper/
 
 **Examples**:
 ```bash
-# Academic paper with author
-rxiv init nature-paper --author "Dr. Jane Smith" --template journal-article
+# Research preprint
+rxiv init my-research-preprint
 
-# Conference paper
-rxiv init conference-submission --template preprint
+# Biomedical preprint
+rxiv init covid-analysis
 
-# Thesis chapter
-rxiv init chapter-1 --template thesis
+# Computer science preprint
+rxiv init ml-algorithm-study
 ```
 
 ---

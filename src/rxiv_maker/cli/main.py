@@ -105,16 +105,6 @@ click.rich_click.OPTION_GROUPS = {
             "options": ["--help"],
         },
     ],
-    "rxiv init": [
-        {
-            "name": "Initialization Options",
-            "options": ["-t", "--template", "-f", "--force"],
-        },
-        {
-            "name": "Help",
-            "options": ["--help"],
-        },
-    ],
 }
 
 console = Console()

@@ -46,7 +46,7 @@ cd my-paper
 rxiv pdf
 ```
 
-**🎯 [Complete Getting Started Guide →](GETTING_STARTED.md)**
+**🎯 [Complete Getting Started Guide →](docs/quick-start/first-manuscript.md)**
 
 ## 🏆 Key Features
 
@@ -97,11 +97,11 @@ The correlation coefficient was $r = 0.95$ (p < 0.001).
 
 | Guide | Purpose | Time |
 |-------|---------|------|
-| **[🚀 Getting Started](GETTING_STARTED.md)** | Installation → First PDF | 5 min |
-| **[📚 User Guide](USER_GUIDE.md)** | Complete workflows & features | 30 min |
-| **[⚙️ CLI Reference](CLI_REFERENCE.md)** | All commands & options | 10 min |
-| **[🔧 Troubleshooting](TROUBLESHOOTING.md)** | Common issues & solutions | As needed |
-| **[👩‍💻 Developer Guide](DEVELOPER_GUIDE.md)** | Contributing & development | 45 min |
+| **[🚀 Getting Started](docs/quick-start/first-manuscript.md)** | Installation → First PDF | 5 min |
+| **[📚 User Guide](docs/guides/user_guide.md)** | Complete workflows & features | 30 min |
+| **[⚙️ CLI Reference](docs/reference/cli-reference.md)** | All commands & options | 10 min |
+| **[🔧 Troubleshooting](docs/troubleshooting/troubleshooting.md)** | Common issues & solutions | As needed |
+| **[👩‍💻 Developer Guide](docs/development/developer-guide.md)** | Contributing & development | 45 min |
 
 ## 🎯 Use Cases
 
@@ -122,7 +122,7 @@ The correlation coefficient was $r = 0.95$ (p < 0.001).
 
 ## 🏃‍♀️ Installation Options
 
-**Need different installation methods?** [View all options →](GETTING_STARTED.md#step-1-choose-your-installation-method)
+**Need different installation methods?** [View all options →](docs/quick-start/installation.md)
 
 - **🔥 pip install**: Universal, works everywhere
 - **🍺 Homebrew**: macOS/Linux package management  
@@ -140,7 +140,7 @@ rxiv arxiv                 # Prepare arXiv submission
 rxiv track-changes v1 v2   # Visual version comparison
 ```
 
-**[📖 Complete Command Reference →](CLI_REFERENCE.md)**
+**[📖 Complete Command Reference →](docs/reference/cli-reference.md)**
 
 ## 🤝 Community
 
@@ -166,7 +166,7 @@ pip install -e ".[dev]"
 pre-commit install
 ```
 
-**[📋 Full Contributing Guide →](DEVELOPER_GUIDE.md)**
+**[📋 Full Contributing Guide →](docs/development/developer-guide.md)**
 
 ## 📄 Citation
 
@@ -195,6 +195,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 *"Because science is hard enough without fighting with LaTeX."*
 
-**[🚀 Start Writing →](GETTING_STARTED.md)** | **[📚 Learn More →](USER_GUIDE.md)** | **[⚙️ Commands →](CLI_REFERENCE.md)**
+**[🚀 Start Writing →](docs/quick-start/first-manuscript.md)** | **[📚 Learn More →](docs/guides/user_guide.md)** | **[⚙️ Commands →](docs/reference/cli-reference.md)**
 
 </div>
