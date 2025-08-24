@@ -45,7 +45,7 @@ runs:
 
     - name: Install UV with optimized caching
       id: setup-uv
-      uses: astral-sh/setup-uv@v4
+      uses: astral-sh/setup-uv@v6
       with:
         version: "0.8.5"  # Pin to specific version for stability
         enable-cache: ${{ inputs.enable-cache == 'true' && 'true' || 'false' }}
@@ -58,7 +58,7 @@ runs:
 
     - name: Fallback UV installation on cache failure
       if: failure() && inputs.enable-cache == 'true'
-      uses: astral-sh/setup-uv@v4
+      uses: astral-sh/setup-uv@v6
       with:
         version: "0.8.5"
         enable-cache: false  # Disable cache entirely on fallback
