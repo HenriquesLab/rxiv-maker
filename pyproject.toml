@@ -232,6 +232,8 @@ markers = [
     "medium: marks tests as medium-duration tests",
     "docker: marks tests as Docker-related tests",
     "podman: marks tests as Podman-related tests",
+    "network: marks tests requiring network connectivity",
+    "filesystem: marks tests requiring filesystem operations",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",
