@@ -87,14 +87,13 @@ RXIV_ENGINE=DOCKER rxiv pdf
 **Options**:
 - `[manuscript_path]` - Path to manuscript directory (default: current)
 - `--output-dir <path>` - Output directory (default: `output/`)
-- `--engine <type>` - Build engine (`local`, `docker`, `podman`)
 - `--force-figures` - Regenerate all figures regardless of cache
 - `--skip-validation` - Skip manuscript validation (faster)
-- `--validate` - Run comprehensive validation before build
+- `--track-changes <tag>` - Track changes against specified git tag
 - `--verbose` - Detailed output for debugging
 - `--quiet` - Minimal output
-- `--journal-format` - Apply journal-specific formatting
-- `--draft` - Generate draft version with watermarks
+- `--debug` - Enable debug output
+- `--container-mode <mode>` - Container behavior (reuse/minimal/isolated)
 
 **Build Engines**:
 - **`local`** - Use local LaTeX installation (fastest)
@@ -103,17 +102,17 @@ RXIV_ENGINE=DOCKER rxiv pdf
 
 **Examples**:
 ```bash
-# Quick draft for review
-rxiv pdf --draft --skip-validation
+# Quick build skipping validation
+rxiv pdf --skip-validation
 
-# High-quality final version
-rxiv pdf --validate --force-figures
+# High-quality build with forced figures
+rxiv pdf --force-figures
 
 # Debug failing build
 rxiv pdf --verbose --engine local
 
-# Journal submission
-rxiv pdf --journal-format --output-dir submission/
+# Preprint submission
+rxiv pdf --force-figures --output-dir submission/
 
 # Team consistency
 RXIV_ENGINE=DOCKER rxiv pdf
@@ -135,26 +134,17 @@ RXIV_ENGINE=DOCKER rxiv pdf
 # Full validation
 rxiv validate
 
-# Quick syntax check
-rxiv validate --syntax-only
-
-# Detailed report
+# Detailed validation report
 rxiv validate --detailed
 
-# Specific checks
-rxiv validate --citations-only
-rxiv validate --figures-only
+# Skip DOI validation
+rxiv validate --no-doi
 ```
 
 **Options**:
 - `[manuscript_path]` - Path to manuscript (default: current)
-- `--detailed` - Extended validation report with suggestions
-- `--syntax-only` - Check Markdown syntax only
-- `--citations-only` - Validate citations and bibliography
-- `--figures-only` - Check figure references and files
-- `--strict` - Fail on warnings (not just errors)
-- `--fix` - Auto-fix issues where possible
-- `--output <format>` - Report format (`text`, `json`, `html`)
+- `--detailed` - Show detailed validation report
+- `--no-doi` - Skip DOI validation
 
 **Validation Checks**:
 - ✅ **Syntax**: Markdown structure and formatting
@@ -167,17 +157,14 @@ rxiv validate --figures-only
 
 **Examples**:
 ```bash
-# Pre-submission check
-rxiv validate --strict --detailed
+# Basic validation
+rxiv validate
 
-# Fix common issues automatically
-rxiv validate --fix
+# Detailed validation report
+rxiv validate --detailed
 
-# Generate HTML report
-rxiv validate --output html --detailed
-
-# CI/CD pipeline usage
-rxiv validate --output json > validation_report.json
+# Skip DOI validation for speed
+rxiv validate --no-doi
 ```
 
 **Exit Codes**:
@@ -195,20 +182,19 @@ rxiv validate --output json > validation_report.json
 # Create arXiv package
 rxiv arxiv
 
-# Include source files
-rxiv arxiv --include-source
+# Custom zip filename
+rxiv arxiv --zip-filename my-submission.zip
 
-# Custom package name
-rxiv arxiv --output my-submission.zip
+# Don't create zip file
+rxiv arxiv --no-zip
 ```
 
 **Options**:
 - `[manuscript_path]` - Path to manuscript (default: current)
-- `--output <filename>` - Output package name (default: `for_arxiv.zip`)
-- `--include-source` - Include Markdown source files
-- `--include-figures` - Include figure generation scripts
-- `--format <type>` - Package format (`zip`, `tar.gz`)
-- `--validate` - Validate before packaging
+- `--output-dir <path>` - Output directory for generated files
+- `--arxiv-dir <path>` - Custom arXiv directory path
+- `--zip-filename <name>` - Custom zip filename
+- `--no-zip` - Don't create zip file
 
 **Package Contents**:
 ```
@@ -223,13 +209,13 @@ for_arxiv.zip
 **Examples**:
 ```bash
 # Standard arXiv submission
-rxiv arxiv --validate
+rxiv arxiv
 
-# Full reproducible package
-rxiv arxiv --include-source --include-figures --output reproducible-submission.zip
+# Custom output directory
+rxiv arxiv --output-dir submission
 
-# Quick resubmission
-rxiv arxiv --output v2-submission.zip
+# Custom zip filename
+rxiv arxiv --zip-filename v2-submission.zip
 ```
 
 ---
@@ -251,12 +237,13 @@ rxiv clean --figures-only
 
 **Options**:
 - `[manuscript_path]` - Path to manuscript (default: current)
-- `--all` - Remove all generated files and caches
+- `--output-dir <path>` - Output directory to clean
 - `--figures-only` - Clean generated figures only
 - `--output-only` - Clean output directory only
+- `--arxiv-only` - Clean only arXiv files
+- `--temp-only` - Clean only temporary files
 - `--cache-only` - Clean caches only
-- `--dry-run` - Show what would be cleaned
-- `--force` - Skip confirmation prompts
+- `--all` - Clean all generated files and caches
 
 **Cleaned Items**:
 - `output/` directory contents
@@ -267,17 +254,17 @@ rxiv clean --figures-only
 
 **Examples**:
 ```bash
-# Safe cleanup (asks confirmation)
+# Clean output directory
 rxiv clean
 
-# Complete reset
-rxiv clean --all --force
+# Complete cleanup of all files
+rxiv clean --all
 
-# Preview cleanup
-rxiv clean --all --dry-run
-
-# Clean just broken figures
+# Clean only generated figures
 rxiv clean --figures-only
+
+# Clean only arXiv files
+rxiv clean --arxiv-only
 ```
 
 ---
@@ -377,38 +364,15 @@ rxiv config set --local citation-style nature
 
 ---
 
-### `rxiv serve` - Development Server
-
-**Purpose**: Live preview server for manuscript development.
-
-```bash
-# Start development server
-rxiv serve
-
-# Custom port and host
-rxiv serve --port 8080 --host 0.0.0.0
-
-# Auto-reload on changes
-rxiv serve --watch
-```
-
-**Features**:
-- Live PDF preview in browser
-- Auto-reload on file changes
-- Figure regeneration on script changes
-- Validation warnings in browser
-
----
-
 ## 🎯 Workflow Examples
 
 ### Complete Paper Workflow
 ```bash
 # 1. Initialize project
-rxiv init nature-submission --template journal-article
+rxiv init my-preprint-study
 
 # 2. Write and iterate
-cd nature-submission
+cd my-preprint-study
 # ... edit 01_MAIN.md and add figures ...
 
 # 3. Validate and generate
@@ -429,7 +393,7 @@ rxiv check-installation --fix
 # 2. Work on revisions
 git checkout -b my-revisions
 # ... make changes ...
-rxiv pdf --draft
+rxiv pdf --skip-validation
 
 # 3. Track changes
 rxiv track-changes main HEAD --output my-changes/
@@ -447,14 +411,14 @@ git tag submitted-v1  # Mark original submission
 
 # 2. Make revisions based on reviews
 # ... edit manuscript ...
-rxiv validate --strict
+rxiv validate --detailed
 
 # 3. Generate track changes
 rxiv track-changes submitted-v1 HEAD
 
-# 4. Prepare resubmission
-rxiv pdf --journal-format
-rxiv arxiv --output resubmission-v2.zip
+# 4. Prepare resubmission  
+rxiv pdf --force-figures
+rxiv arxiv --zip-filename resubmission-v2.zip
 ```
 
 ---
@@ -477,13 +441,10 @@ RXIV_ENGINE=DOCKER rxiv pdf
 ### Validation Problems
 ```bash
 # Detailed validation report
-rxiv validate --detailed --output html
+rxiv validate --detailed
 
-# Fix what's possible automatically
-rxiv validate --fix
-
-# Check specific issues
-rxiv validate --citations-only --verbose
+# Skip DOI validation for speed
+rxiv validate --no-doi
 ```
 
 ### Figure Generation Issues
@@ -555,15 +516,15 @@ export RXIV_PARALLEL_FIGURES=8  # Use 8 cores for figure generation
 rxiv validate --output json --strict
 
 # Generate artifacts
-rxiv pdf --validate
-rxiv arxiv --include-source
+rxiv pdf --force-figures
+rxiv arxiv
 ```
 
 ### Development Workflow
 ```bash
-# Live preview during writing
-rxiv serve --watch &
-# Edit in your favorite editor, see live changes in browser
+# Quick iteration during development
+rxiv pdf --skip-validation
+# Edit files and re-run for quick feedback
 ```
 
 **🎓 [Back to First Manuscript](../quick-start/first-manuscript.md) | 📚 [User Guide](../guides/user_guide.md) | 🔧 [Troubleshooting](../troubleshooting/troubleshooting.md)**

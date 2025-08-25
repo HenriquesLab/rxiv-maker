@@ -707,24 +707,7 @@ rxiv track-changes submitted-version revision-version \
 
 ---
 
-## 🎯 Publication & Submission Workflows
-
-### Journal Submissions
-
-#### Pre-Submission Checklist
-```bash
-# Complete validation
-rxiv validate --strict --detailed
-
-# Generate final PDF
-rxiv clean && rxiv pdf --force-figures
-
-# Validate citations
-rxiv validate --citations-only
-
-# Check word count (if required)
-wc -w 01_MAIN.md
-```
+## 🎯 arXiv & Preprint Workflows
 
 ### arXiv Submissions
 
