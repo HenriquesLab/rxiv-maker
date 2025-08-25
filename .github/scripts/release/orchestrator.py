@@ -178,7 +178,7 @@ class ReleaseOrchestrator:
                 "--repo",
                 "henriqueslab/rxiv-maker",
             ]
-            
+
             try:
                 subprocess.run(check_cmd, capture_output=True, text=True, check=True)
                 self.logger.info(f"GitHub release {self.version} already exists, skipping creation")
@@ -269,9 +269,12 @@ class ReleaseOrchestrator:
             # Publish to PyPI
             self.logger.info(f"Publishing {self.config.package_name}=={clean_version} to PyPI...")
 
+            # Try OIDC first if available, fallback to token-based publishing
+            oidc_success = False
+
             if self.use_oidc:
                 # Use PyPI's OIDC trusted publishing
-                self.logger.info("Using OIDC trusted publishing")
+                self.logger.info("Attempting OIDC trusted publishing")
 
                 # Set up environment for OIDC
                 env = os.environ.copy()
@@ -288,16 +291,22 @@ class ReleaseOrchestrator:
                     "dist/*",
                 ]
 
-                result = subprocess.run(publish_cmd, env=env, capture_output=True, text=True, check=True)
+                try:
+                    result = subprocess.run(publish_cmd, env=env, capture_output=True, text=True, check=True)
+                    self.logger.info("OIDC publishing successful!")
+                    self.logger.info("OIDC publishing command output:")
+                    self.logger.info(result.stdout)
+                    oidc_success = True
+                except subprocess.CalledProcessError as e:
+                    self.logger.warning(f"OIDC trusted publishing failed: {e}")
+                    self.logger.warning(f"OIDC stderr: {e.stderr if hasattr(e, 'stderr') else 'No stderr available'}")
+                    self.logger.info("Falling back to token-based publishing...")
 
-                self.logger.info("OIDC publishing command output:")
-                self.logger.info(result.stdout)
-
-            else:
+            if not oidc_success:
                 # Fallback to token-based publishing
-                self.logger.info("Using token-based publishing (fallback)")
+                self.logger.info("Using token-based publishing")
 
-                # Get PyPI token (only if not using OIDC)
+                # Get PyPI token
                 pypi_token = get_pypi_token()
 
                 # Set up environment for twine
@@ -307,7 +316,10 @@ class ReleaseOrchestrator:
 
                 # Publish with twine
                 publish_cmd = ["python", "-m", "twine", "upload", "dist/*"]
-                subprocess.run(publish_cmd, env=env, capture_output=True, text=True, check=True)
+                result = subprocess.run(publish_cmd, env=env, capture_output=True, text=True, check=True)
+                self.logger.info("Token-based publishing successful!")
+                if result.stdout:
+                    self.logger.info(f"Publishing output: {result.stdout}")
 
             self.logger.info(f"Successfully published {self.config.package_name}=={clean_version} to PyPI")
             self.release_state["pypi_published"] = True
