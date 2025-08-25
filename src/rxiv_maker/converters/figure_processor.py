@@ -6,16 +6,12 @@ including figure attributes, captions, and references.
 
 import os
 import re
-from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional, Tuple
 
 from .types import (
     FigureAttributes,
-    FigureCaption,
     FigureId,
     FigurePath,
-    FigurePosition,
-    FigureWidth,
     LatexContent,
     MarkdownContent,
 )
@@ -130,11 +126,6 @@ def parse_figure_attributes(attr_string: str) -> FigureAttributes:
 
     return attributes
 
-import re
-from typing import Optional, Dict, Any, Tuple
-
-import re
-from typing import Optional, Dict, Any, Tuple
 
 def create_latex_figure_environment(
     path: str,
@@ -147,9 +138,11 @@ def create_latex_figure_environment(
     # ---------- small helpers ----------
     def _b(k: str, d=False) -> bool:
         v = attributes.get(k, d)
-        if isinstance(v, bool): return v
-        return str(v).strip().lower() in {"1","true","yes","y","on"}
-    def _s(k: str, d: Optional[str]=None) -> Optional[str]:
+        if isinstance(v, bool):
+            return v
+        return str(v).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+    def _s(k: str, d: Optional[str] = None) -> Optional[str]:
         v = attributes.get(k, d)
         return None if v is None else str(v)
 
@@ -160,19 +153,20 @@ def create_latex_figure_environment(
     tex_path = f'"{latex_path}"' if " " in latex_path else latex_path
 
     # ---------- attributes ----------
-    user_pos      = _s("tex_position")
-    user_width    = attributes.get("width")
-    max_height    = attributes.get("max_height")
-    raw_id        = _s("id")
+    user_pos = _s("tex_position")
+    user_width = attributes.get("width")
+    max_height = attributes.get("max_height")
+    raw_id = _s("id")
     caption_width = _s("caption_width", r"0.95\textwidth")
-    barrier       = _b("barrier", False)
-    inline        = _b("inline", False)
-    landscape     = _b("landscape", False)
-    strict_width  = _b("strict_width", False)
-    is_span_req   = (attributes.get("span") == "2col") or _b("twocolumn", False)
-    fit           = (_s("fit") or "").lower()
-    if _b("fullpage", False): fit = "page"
-    singlecol_p   = _b("singlecol_floatpage", False)  # keep 1-col [p] only if you *really* want it
+    barrier = _b("barrier", False)
+    inline = _b("inline", False)
+    landscape = _b("landscape", False)
+    strict_width = _b("strict_width", False)
+    is_span_req = (attributes.get("span") == "2col") or _b("twocolumn", False)
+    fit = (_s("fit") or "").lower()
+    if _b("fullpage", False):
+        fit = "page"
+    singlecol_p = _b("singlecol_floatpage", False)  # keep 1-col [p] only if you *really* want it
 
     # ---------- caption markdown -> LaTeX ----------
     processed_caption = re.sub(r"\*\*([^*]+)\*\*", r"\\textbf{\1}", caption)
@@ -181,42 +175,61 @@ def create_latex_figure_environment(
     # ---------- placement sanitizers ----------
     def _strip_br(s: Optional[str]) -> str:
         return s[1:-1] if s and s.startswith("[") and s.endswith("]") else (s or "")
+
     def _pos_single(pos: Optional[str]) -> str:
-        if not pos: return "[!htbp]"
-        core = _strip_br(pos); filt = "".join(c for c in core if c in "htbp!")
+        if not pos:
+            return "[!htbp]"
+        core = _strip_br(pos)
+        filt = "".join(c for c in core if c in "htbp!")
         return f"[{filt or '!htbp'}]"
+
     def _pos_star(pos: Optional[str]) -> str:
-        if not pos: return "[!tbp]"
-        core = _strip_br(pos); filt = "".join(c for c in core if c in "tbp!")  # drop h/H
+        if not pos:
+            return "[!tbp]"
+        core = _strip_br(pos)
+        filt = "".join(c for c in core if c in "tbp!")  # drop h/H
         return f"[{filt or '!tbp'}]"
 
     # ---------- length parsing ----------
     ABS_DIM = re.compile(r"^[0-9]*\.?[0-9]+\s*(pt|bp|mm|cm|in|ex|em|dd|pc|sp)$")
+
     def _parse_len(expr, rel_unit: str) -> Tuple[str, str]:
         if expr is None:
             return rel_unit, ("rel-line" if rel_unit == r"\linewidth" else "rel-text")
         s = str(expr).strip()
-        if s in (r"\linewidth", r"\columnwidth"): return s, "rel-line"
-        if s in (r"\textwidth", r"\textheight"):  return s, ("rel-text" if "width" in s else "rel-height")
+        if s in (r"\linewidth", r"\columnwidth"):
+            return s, "rel-line"
+        if s in (r"\textwidth", r"\textheight"):
+            return s, ("rel-text" if "width" in s else "rel-height")
         m = re.fullmatch(r"([0-9]*\.?[0-9]+)\s*\\(line|column|text)(width|height)", s)
         if m:
             f = min(float(m.group(1)), 1.0)
             unit = "\\" + m.group(2) + m.group(3)
-            kind = "rel-line" if m.group(2) in ("line","column") else ("rel-text" if m.group(3)=="width" else "rel-height")
+            kind = (
+                "rel-line"
+                if m.group(2) in ("line", "column")
+                else ("rel-text" if m.group(3) == "width" else "rel-height")
+            )
             return f"{f:.3f}{unit}", kind
         if s.endswith("%") and re.fullmatch(r"[0-9]*\.?[0-9]+%", s):
-            f = min(float(s[:-1])/100.0, 1.0)
-            kind = "rel-line" if rel_unit == r"\linewidth" else ("rel-text" if rel_unit == r"\textwidth" else "rel-height")
+            f = min(float(s[:-1]) / 100.0, 1.0)
+            kind = (
+                "rel-line" if rel_unit == r"\linewidth" else ("rel-text" if rel_unit == r"\textwidth" else "rel-height")
+            )
             return f"{f:.3f}{rel_unit}", kind
         if re.fullmatch(r"[0-9]*\.?[0-9]+", s):
             f = min(float(s), 1.0)
-            kind = "rel-line" if rel_unit == r"\linewidth" else ("rel-text" if rel_unit == r"\textwidth" else "rel-height")
+            kind = (
+                "rel-line" if rel_unit == r"\linewidth" else ("rel-text" if rel_unit == r"\textwidth" else "rel-height")
+            )
             return f"{f:.3f}{rel_unit}", kind
-        if ABS_DIM.match(s): return s, "abs"
+        if ABS_DIM.match(s):
+            return s, "abs"
         return s, "unit"
 
     def _parse_height(h):
-        if h is None: return None
+        if h is None:
+            return None
         expr, _ = _parse_len(h, r"\textheight")
         return expr
 
@@ -225,11 +238,16 @@ def create_latex_figure_environment(
         w_expr, _ = _parse_len(user_width, r"\linewidth")
         h_expr = _parse_height(max_height)
         inc = [f"width={w_expr}", "keepaspectratio", "draft=false"]
-        if h_expr: inc.append(f"height={h_expr}")
-        if _b("clip"): inc.append("clip")
-        if _s("trim"): inc.append(f"trim={_s('trim')}")
-        if _s("angle"): inc.append(f"angle={_s('angle')}")
-        if _s("page"):  inc.append(f"page={_s('page')}")
+        if h_expr:
+            inc.append(f"height={h_expr}")
+        if _b("clip"):
+            inc.append("clip")
+        if _s("trim"):
+            inc.append(f"trim={_s('trim')}")
+        if _s("angle"):
+            inc.append(f"angle={_s('angle')}")
+        if _s("page"):
+            inc.append(f"page={_s('page')}")
         opts = "[" + ",".join(inc) + "]"
         out = [
             r"\begin{center}",
@@ -245,9 +263,10 @@ def create_latex_figure_environment(
             r"\endgroup",
             r"\end{center}",
         ]
-        if barrier: out.append(r"\FloatBarrier")
+        if barrier:
+            out.append(r"\FloatBarrier")
         out.append("")
-        return "\n".join([l for l in out if l != ""])
+        return "\n".join([line for line in out if line != ""])
 
     # ========================= float mode =========================
     figure_env, rel_unit, position = "figure", r"\linewidth", _pos_single(user_pos)
@@ -270,8 +289,8 @@ def create_latex_figure_environment(
     env_name = ("sidewaysfigure*" if figure_env == "figure*" else "sidewaysfigure") if landscape else figure_env
 
     # Single-column safety clamp
-    if env_name in {"figure","sidewaysfigure"} and not strict_width:
-        if w_kind in {"rel-text","abs"} or r"\textwidth" in w_expr:
+    if env_name in {"figure", "sidewaysfigure"} and not strict_width:
+        if w_kind in {"rel-text", "abs"} or r"\textwidth" in w_expr:
             w_expr = r"\linewidth"
 
     # Fit presets
@@ -285,10 +304,7 @@ def create_latex_figure_environment(
         h_expr = h_expr or (r"0.95\textheight" if position == "[p]" else r"\textheight")
 
     # Caption body for starred/page floats: use a top-aligned parbox WITHOUT centering.
-    if env_name.endswith("*"):
-        cap_body = r"\parbox[t]{" + caption_width + "}{" + processed_caption + "}"
-    else:
-        cap_body = processed_caption
+    # Note: cap_body is prepared but not used in current implementation
 
     is_star_or_floatpage = env_name.endswith("*") or (position == "[p]")
     cap_width_for_env = caption_width if is_star_or_floatpage else r"\linewidth"
@@ -298,18 +314,21 @@ def create_latex_figure_environment(
         rf"\captionsetup{{width={cap_width_for_env},singlelinecheck=false,justification=justified}}"
         r"\setlength{\abovecaptionskip}{6pt}\setlength{\belowcaptionskip}{6pt}"
         r"\ifdefined\justifying\justifying\fi"
-        f"\\caption{{{processed_caption}}}"
-        + (f"\\label{{{raw_id}}}" if raw_id else "")
-        + r"\endgroup"
+        f"\\caption{{{processed_caption}}}" + (f"\\label{{{raw_id}}}" if raw_id else "") + r"\endgroup"
     )
 
     # includegraphics options
     inc = [f"width={w_expr}", "keepaspectratio", "draft=false"]
-    if h_expr: inc.append(f"height={h_expr}")
-    if _b("clip"): inc.append("clip")
-    if _s("trim"): inc.append(f"trim={_s('trim')}")
-    if _s("angle"): inc.append(f"angle={_s('angle')}")
-    if _s("page"):  inc.append(f"page={_s('page')}")
+    if h_expr:
+        inc.append(f"height={h_expr}")
+    if _b("clip"):
+        inc.append("clip")
+    if _s("trim"):
+        inc.append(f"trim={_s('trim')}")
+    if _s("angle"):
+        inc.append(f"angle={_s('angle')}")
+    if _s("page"):
+        inc.append(f"page={_s('page')}")
     opts = "[" + ",".join(inc) + "]"
 
     # Wrapper width: \textwidth for starred or [p]; \linewidth otherwise
@@ -324,10 +343,10 @@ def create_latex_figure_environment(
         f"\\end{{{env_name}}}",
     ]
 
-    if barrier: lines.append(r"\FloatBarrier")
+    if barrier:
+        lines.append(r"\FloatBarrier")
     lines.append("")
     return "\n".join(lines)
-
 
 
 def _process_new_figure_format(text: MarkdownContent) -> LatexContent:
@@ -399,6 +418,7 @@ def _process_new_figure_format(text: MarkdownContent) -> LatexContent:
 
     return pattern.sub(_repl, text)
 
+
 def _process_figure_without_attributes(text: MarkdownContent) -> LatexContent:
     """Process figures without attributes: ![caption](path) or ![caption](path "title")."""
     import re
@@ -464,7 +484,7 @@ def _process_figure_without_attributes(text: MarkdownContent) -> LatexContent:
 
 
 def validate_figure_path(path: FigurePath) -> bool:
-    """Validate a figure path for LaTeX inclusion.
+    r"""Validate a figure path for LaTeX inclusion.
 
     Rules:
       - Allow common image/vector formats (png, jpg, jpeg, pdf, svg, eps).
@@ -482,14 +502,12 @@ def validate_figure_path(path: FigurePath) -> bool:
         return True
 
     # If extensionless, allow (LaTeX may infer extensions or your pipeline may add them).
-    import os
     root, ext = os.path.splitext(s)
     if ext == "":
         return True
 
     valid_extensions = {".png", ".jpg", ".jpeg", ".pdf", ".svg", ".eps"}
     return ext.lower() in valid_extensions
-
 
 
 def _process_figure_with_attributes(text: MarkdownContent) -> LatexContent:
