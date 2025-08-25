@@ -547,8 +547,8 @@ def pdf(session, engine):
         # Test make command PDF generation
         session.run("make", "pdf", env=env, external=True)
 
-        # Validate outputs exist
-        session.run("ls", "-la", "output/", external=True)
+        # Validate outputs exist (PDF is generated in EXAMPLE_MANUSCRIPT/output/)
+        session.run("ls", "-la", "EXAMPLE_MANUSCRIPT/output/", external=True)
     finally:
         # Post-test cleanup for container engines
         if engine in ["docker", "podman"]:
