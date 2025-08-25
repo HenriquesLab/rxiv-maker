@@ -169,6 +169,26 @@ class ReleaseOrchestrator:
         try:
             import subprocess
 
+            # Check if release already exists
+            check_cmd = [
+                "gh",
+                "release",
+                "view",
+                self.version,
+                "--repo",
+                "henriqueslab/rxiv-maker",
+            ]
+            
+            try:
+                subprocess.run(check_cmd, capture_output=True, text=True, check=True)
+                self.logger.info(f"GitHub release {self.version} already exists, skipping creation")
+                self.release_state["github_release_created"] = True
+                log_step(self.logger, "GitHub release already exists", "SUCCESS")
+                return True
+            except subprocess.CalledProcessError:
+                # Release doesn't exist, proceed to create it
+                pass
+
             # Generate release notes from git commits since last tag
             try:
                 # Get previous tag
