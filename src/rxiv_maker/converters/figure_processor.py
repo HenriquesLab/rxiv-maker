@@ -7,6 +7,7 @@ including figure attributes, captions, and references.
 import os
 import re
 from pathlib import Path
+from typing import Optional, Dict, Any
 
 from .types import (
     FigureAttributes,
@@ -129,197 +130,366 @@ def parse_figure_attributes(attr_string: str) -> FigureAttributes:
 
     return attributes
 
+import re
+from typing import Optional, Dict, Any, Tuple
+
+import re
+from typing import Optional, Dict, Any, Tuple
 
 def create_latex_figure_environment(
-    path: FigurePath,
-    caption: FigureCaption,
-    attributes: FigureAttributes | None = None,
-    is_supplementary: bool = False,
-) -> LatexContent:
-    """Create a complete LaTeX figure environment.
-
-    Args:
-        path: Path to the figure file
-        caption: Figure caption text
-        attributes: Optional figure attributes (position, width, id)
-        is_supplementary: Whether this is a supplementary figure
-
-    Returns:
-        Complete LaTeX figure environment
-    """
+    path: str,
+    caption: str,
+    attributes: Optional[Dict[str, Any]] = None,
+) -> str:
     if attributes is None:
         attributes = {}
 
-    # Convert path from FIGURES/ to Figures/ for LaTeX and handle new
-    # subdirectory structure
+    # ---------- small helpers ----------
+    def _b(k: str, d=False) -> bool:
+        v = attributes.get(k, d)
+        if isinstance(v, bool): return v
+        return str(v).strip().lower() in {"1","true","yes","y","on"}
+    def _s(k: str, d: Optional[str]=None) -> Optional[str]:
+        v = attributes.get(k, d)
+        return None if v is None else str(v)
+
+    # ---------- path ----------
     latex_path = path.replace("FIGURES/", "Figures/")
+    if latex_path.lower().endswith(".svg"):
+        latex_path = latex_path[:-4] + ".png"
+    tex_path = f'"{latex_path}"' if " " in latex_path else latex_path
 
-    # Handle new subdirectory structure: Figure__name.svg -> Figure__name/Figure__name.png
-    if "/" not in latex_path.split("Figures/")[-1]:  # Only if not already in subdirectory
-        # Extract figure name from path like "Figures/Figure__name.svg"
-        figure_name = os.path.splitext(os.path.basename(latex_path))[0]
-        figure_ext = os.path.splitext(latex_path)[1]
+    # ---------- attributes ----------
+    user_pos      = _s("tex_position")
+    user_width    = attributes.get("width")
+    max_height    = attributes.get("max_height")
+    raw_id        = _s("id")
+    caption_width = _s("caption_width", r"0.95\textwidth")
+    barrier       = _b("barrier", False)
+    inline        = _b("inline", False)
+    landscape     = _b("landscape", False)
+    strict_width  = _b("strict_width", False)
+    is_span_req   = (attributes.get("span") == "2col") or _b("twocolumn", False)
+    fit           = (_s("fit") or "").lower()
+    if _b("fullpage", False): fit = "page"
+    singlecol_p   = _b("singlecol_floatpage", False)  # keep 1-col [p] only if you *really* want it
 
-        # Check if figure already exists as ready file (direct in FIGURES/ directory)
-        # Resolve against manuscript path when available to avoid false negatives
-        manuscript_root = os.getenv("MANUSCRIPT_PATH")
-        if manuscript_root:
-            # Use the original path to check for ready files (preserves spaces and special chars)
-            original_figure_name = os.path.basename(path.replace("FIGURES/", ""))
-            ready_figure_fullpath = Path(manuscript_root) / "FIGURES" / original_figure_name
-        else:
-            original_figure_name = os.path.basename(path.replace("FIGURES/", ""))
-            ready_figure_fullpath = Path("FIGURES") / original_figure_name
-
-        if ready_figure_fullpath.exists():
-            # Ready figure exists, use it directly without subdirectory conversion
-            # latex_path already contains the correct ready file path (with Figures/ prefix)
-            # Ensure we preserve the original filename exactly as it appears in FIGURES/
-            latex_path = f"Figures/{original_figure_name}"
-        else:
-            # Convert to subdirectory format: Figures/Figure__name/Figure__name.ext
-            # Note: Keep original figure name with spaces for subdirectory
-            latex_path = f"Figures/{figure_name}/{figure_name}{figure_ext}"
-
-    # Convert SVG to PNG for LaTeX compatibility
-    if latex_path.endswith(".svg"):
-        latex_path = latex_path.replace(".svg", ".png")
-
-    # Get positioning first to inform 2-column decision
-    position: FigurePosition = attributes.get("tex_position", "ht")
-
-    # Get width (default to '\linewidth' if not specified)
-    width: FigureWidth = attributes.get("width", "\\linewidth")
-    if not width.startswith("\\"):
-        # Handle percentage values by converting to decimal
-        if width.endswith("%"):
-            # Convert percentage to decimal (e.g., "80%" -> "0.8")
-            percentage_value = float(width[:-1]) / 100
-            width = f"{percentage_value}\\linewidth"
-        else:
-            # Assume fraction of linewidth if no backslash
-            width = f"{width}\\linewidth"
-
-    # Check if this should be a 2-column spanning figure
-    is_twocolumn = (
-        attributes.get("span") == "2col" or attributes.get("twocolumn") == "true" or attributes.get("twocolumn") is True
-    )
-
-    # Store original position before modifications
-    original_position = position
-
-    # Auto-detect 2-column for full-width figures (but not for originally dedicated pages)
-    if not is_twocolumn and width == "\\textwidth" and original_position != "p":
-        is_twocolumn = True
-
-    # Handle dedicated page positioning - use [p] for dedicated pages
-    if original_position == "p":
-        # Keep position as 'p' for safer dedicated page placement
-        position = "p"
-        # ALL dedicated page figures use figure*[p] for full layout control
-        # The width parameter controls image size within the full-width container
-        is_twocolumn = True
-
-    # Only adjust positioning for two-column spanning figures that don't have explicit positioning
-    if is_twocolumn and position == "ht":
-        # For two-column spanning figures with default positioning, use 'tp' for better placement
-        position = "tp"
-
-    # Process caption text to remove markdown formatting
+    # ---------- caption markdown -> LaTeX ----------
     processed_caption = re.sub(r"\*\*([^*]+)\*\*", r"\\textbf{\1}", caption)
     processed_caption = re.sub(r"\*([^*]+)\*", r"\\textit{\1}", processed_caption)
 
-    # Process caption formatting - dedicated page figures use same formatting as two-column
-    if original_position == "p":
-        # Dedicated page figures use figure*[p] so should format like other figure* environments
-        # Use same logic as two-column spanning figures
-        if len(processed_caption) > 150:
-            # For longer captions, add justified text formatting
-            processed_caption = f"\\captionsetup{{width=\\textwidth,justification=justified}}\n{processed_caption}"
-        else:
-            # For shorter captions, just ensure full width
-            processed_caption = f"\\captionsetup{{width=\\textwidth}}\n{processed_caption}"
-    elif is_twocolumn:
-        # For 2-column spanning figures (figure*), ensure caption spans full width
-        # This ensures both figure and caption use the full text width
-        if len(processed_caption) > 150:
-            # For longer captions, add justified text formatting
-            processed_caption = f"\\captionsetup{{width=\\textwidth,justification=justified}}\n{processed_caption}"
-        else:
-            # For shorter captions, just ensure full width
-            processed_caption = f"\\captionsetup{{width=\\textwidth}}\n{processed_caption}"
-    elif width == "\\textwidth":
-        # For full-width figures that are NOT dedicated page, use captionsetup for proper formatting
-        # Two-column figures need \textwidth to span columns, but dedicated page figures don't
-        if len(processed_caption) > 150:
-            # For longer captions, add justified text formatting
-            processed_caption = f"\\captionsetup{{width=\\textwidth,justification=justified}}\n{processed_caption}"
-        else:
-            # For shorter captions, just ensure full width
-            processed_caption = f"\\captionsetup{{width=\\textwidth}}\n{processed_caption}"
+    # ---------- placement sanitizers ----------
+    def _strip_br(s: Optional[str]) -> str:
+        return s[1:-1] if s and s.startswith("[") and s.endswith("]") else (s or "")
+    def _pos_single(pos: Optional[str]) -> str:
+        if not pos: return "[!htbp]"
+        core = _strip_br(pos); filt = "".join(c for c in core if c in "htbp!")
+        return f"[{filt or '!htbp'}]"
+    def _pos_star(pos: Optional[str]) -> str:
+        if not pos: return "[!tbp]"
+        core = _strip_br(pos); filt = "".join(c for c in core if c in "tbp!")  # drop h/H
+        return f"[{filt or '!tbp'}]"
 
-    # Create LaTeX figure environment - use figure* for 2-column spanning
-    figure_env = "figure*" if is_twocolumn else "figure"
+    # ---------- length parsing ----------
+    ABS_DIM = re.compile(r"^[0-9]*\.?[0-9]+\s*(pt|bp|mm|cm|in|ex|em|dd|pc|sp)$")
+    def _parse_len(expr, rel_unit: str) -> Tuple[str, str]:
+        if expr is None:
+            return rel_unit, ("rel-line" if rel_unit == r"\linewidth" else "rel-text")
+        s = str(expr).strip()
+        if s in (r"\linewidth", r"\columnwidth"): return s, "rel-line"
+        if s in (r"\textwidth", r"\textheight"):  return s, ("rel-text" if "width" in s else "rel-height")
+        m = re.fullmatch(r"([0-9]*\.?[0-9]+)\s*\\(line|column|text)(width|height)", s)
+        if m:
+            f = min(float(m.group(1)), 1.0)
+            unit = "\\" + m.group(2) + m.group(3)
+            kind = "rel-line" if m.group(2) in ("line","column") else ("rel-text" if m.group(3)=="width" else "rel-height")
+            return f"{f:.3f}{unit}", kind
+        if s.endswith("%") and re.fullmatch(r"[0-9]*\.?[0-9]+%", s):
+            f = min(float(s[:-1])/100.0, 1.0)
+            kind = "rel-line" if rel_unit == r"\linewidth" else ("rel-text" if rel_unit == r"\textwidth" else "rel-height")
+            return f"{f:.3f}{rel_unit}", kind
+        if re.fullmatch(r"[0-9]*\.?[0-9]+", s):
+            f = min(float(s), 1.0)
+            kind = "rel-line" if rel_unit == r"\linewidth" else ("rel-text" if rel_unit == r"\textwidth" else "rel-height")
+            return f"{f:.3f}{rel_unit}", kind
+        if ABS_DIM.match(s): return s, "abs"
+        return s, "unit"
 
-    # For figures with captionsetup, extract and place it before \caption
-    if "\\captionsetup" in processed_caption:
-        # Extract the captionsetup command and the actual caption text
-        if processed_caption.startswith("\\captionsetup"):
-            lines = processed_caption.split("\n", 1)
-            captionsetup_cmd = lines[0]
-            actual_caption = lines[1] if len(lines) > 1 else ""
+    def _parse_height(h):
+        if h is None: return None
+        expr, _ = _parse_len(h, r"\textheight")
+        return expr
 
-            latex_figure = f"""\\begin{{{figure_env}}}[{position}]
-\\centering
-\\includegraphics[width={width}]{{{latex_path}}}
-{captionsetup_cmd}
-\\caption{{{actual_caption}}}"""
+    # ========================= inline (non-float) =========================
+    if inline:
+        w_expr, _ = _parse_len(user_width, r"\linewidth")
+        h_expr = _parse_height(max_height)
+        inc = [f"width={w_expr}", "keepaspectratio", "draft=false"]
+        if h_expr: inc.append(f"height={h_expr}")
+        if _b("clip"): inc.append("clip")
+        if _s("trim"): inc.append(f"trim={_s('trim')}")
+        if _s("angle"): inc.append(f"angle={_s('angle')}")
+        if _s("page"):  inc.append(f"page={_s('page')}")
+        opts = "[" + ",".join(inc) + "]"
+        out = [
+            r"\begin{center}",
+            r"\makebox[\linewidth][c]{",
+            f"  \\includegraphics{opts}{{{tex_path}}}",
+            r"}",
+            # Local caption: left/justified, never center
+            r"\begingroup",
+            r"\captionsetup{justification=raggedright,singlelinecheck=false}",
+            r"\setlength{\abovecaptionskip}{6pt}\setlength{\belowcaptionskip}{6pt}",
+            f"\\captionof{{figure}}{{{processed_caption}}}",
+            (f"\\label{{{raw_id}}}" if raw_id else ""),
+            r"\endgroup",
+            r"\end{center}",
+        ]
+        if barrier: out.append(r"\FloatBarrier")
+        out.append("")
+        return "\n".join([l for l in out if l != ""])
+
+    # ========================= float mode =========================
+    figure_env, rel_unit, position = "figure", r"\linewidth", _pos_single(user_pos)
+    w_expr, w_kind = _parse_len(user_width, rel_unit)
+
+    # Upgrade to two-column if requested or width ties to \textwidth
+    if is_span_req or r"\textwidth" in (user_width or "") or r"\textwidth" in w_expr:
+        figure_env, rel_unit, position = "figure*", r"\textwidth", _pos_star(user_pos)
+        w_expr, w_kind = _parse_len(user_width, rel_unit)
+
+    # Full-page: default to two-column float page unless explicitly forced single-column
+    if _strip_br(user_pos) == "p":
+        if singlecol_p:
+            figure_env, rel_unit, position = "figure", r"\textwidth", "[p]"
         else:
-            latex_figure = f"""\\begin{{{figure_env}}}[{position}]
-\\centering
-\\includegraphics[width={width}]{{{latex_path}}}
-\\caption{{{processed_caption}}}"""
+            figure_env, rel_unit, position = "figure*", r"\textwidth", "[p]"
+        w_expr, w_kind = _parse_len(user_width, rel_unit)
+
+    # Landscape
+    env_name = ("sidewaysfigure*" if figure_env == "figure*" else "sidewaysfigure") if landscape else figure_env
+
+    # Single-column safety clamp
+    if env_name in {"figure","sidewaysfigure"} and not strict_width:
+        if w_kind in {"rel-text","abs"} or r"\textwidth" in w_expr:
+            w_expr = r"\linewidth"
+
+    # Fit presets
+    h_expr = _parse_height(max_height)
+    if (fit == "page") and position == "[p]":
+        w_expr = r"\textwidth"
+        h_expr = h_expr or r"0.95\textheight"
+    elif fit == "width":
+        w_expr = r"\textwidth" if env_name.endswith("*") or position == "[p]" else r"\linewidth"
+    elif fit == "height":
+        h_expr = h_expr or (r"0.95\textheight" if position == "[p]" else r"\textheight")
+
+    # Caption body for starred/page floats: use a top-aligned parbox WITHOUT centering.
+    if env_name.endswith("*"):
+        cap_body = r"\parbox[t]{" + caption_width + "}{" + processed_caption + "}"
     else:
-        latex_figure = f"""\\begin{{{figure_env}}}[{position}]
-\\centering
-\\includegraphics[width={width}]{{{latex_path}}}
-\\caption{{{processed_caption}}}"""
+        cap_body = processed_caption
 
-    # Add label if ID is present
-    if "id" in attributes:
-        latex_figure += f"\n\\label{{{attributes['id']}}}"
+    is_star_or_floatpage = env_name.endswith("*") or (position == "[p]")
+    cap_width_for_env = caption_width if is_star_or_floatpage else r"\linewidth"
 
-    latex_figure += f"\n\\end{{{figure_env}}}"
+    local_caption = (
+        r"\begingroup"
+        rf"\captionsetup{{width={cap_width_for_env},singlelinecheck=false,justification=justified}}"
+        r"\setlength{\abovecaptionskip}{6pt}\setlength{\belowcaptionskip}{6pt}"
+        r"\ifdefined\justifying\justifying\fi"
+        f"\\caption{{{processed_caption}}}"
+        + (f"\\label{{{raw_id}}}" if raw_id else "")
+        + r"\endgroup"
+    )
 
-    # For dedicated page figures, ensure proper page placement
-    if original_position == "p":
-        # Use counter manipulation to force true dedicated page exclusivity
-        # dbltopnumber=1: allow only 1 two-column float per page
-        # clearpage: force page breaks before and after
-        latex_figure = f"\\clearpage\n\\setcounter{{dbltopnumber}}{{1}}\n{latex_figure}\n\\setcounter{{dbltopnumber}}{{2}}\n\\clearpage"
+    # includegraphics options
+    inc = [f"width={w_expr}", "keepaspectratio", "draft=false"]
+    if h_expr: inc.append(f"height={h_expr}")
+    if _b("clip"): inc.append("clip")
+    if _s("trim"): inc.append(f"trim={_s('trim')}")
+    if _s("angle"): inc.append(f"angle={_s('angle')}")
+    if _s("page"):  inc.append(f"page={_s('page')}")
+    opts = "[" + ",".join(inc) + "]"
 
-    return latex_figure
+    # Wrapper width: \textwidth for starred or [p]; \linewidth otherwise
+    wrapper_width = r"\textwidth" if is_star_or_floatpage else r"\linewidth"
+    lines = [
+        f"\n\\begin{{{env_name}}}{position}",
+        r"\centering",
+        rf"\makebox[{wrapper_width}][c]{{",
+        f"  \\includegraphics{opts}{{{tex_path}}}",
+        r"}",
+        local_caption,
+        f"\\end{{{env_name}}}",
+    ]
+
+    if barrier: lines.append(r"\FloatBarrier")
+    lines.append("")
+    return "\n".join(lines)
+
 
 
 def _process_new_figure_format(text: MarkdownContent) -> LatexContent:
-    r"""Process new figure format: ![](path)\n{attributes} **Caption text**."""
+    r"""Process the new figure format:
 
-    def process_new_figure_format_full(match: re.Match[str]) -> str:
-        path = match.group(1)
-        attr_string = match.group(2)
-        caption_text = match.group(3).strip()
+    ![](path)
+    {attributes} Caption text (may be multi-line until the next blank line)
 
-        # Parse attributes
-        attributes = parse_figure_attributes(attr_string)
-        return create_latex_figure_environment(path, caption_text, attributes)
+    Examples:
+      ![](FIGURES/Fig1.pdf)
+      {#fig:Figure1 width="\textwidth" tex_position="p"} **Title**.
+    """
+    import re
 
-    # Handle new format: ![](path)\n{attributes} **Caption text**
-    return re.sub(
-        r"!\[\]\(([^)]+)\)\s*\n\{([^}]+)\}\s*(.+?)(?=\n\n|\n$|$)",
-        process_new_figure_format_full,
-        text,
-        flags=re.MULTILINE | re.DOTALL,
+    # Allow: plain path, or quoted path "..." / '...'
+    # Attributes may contain quoted values and spaces.
+    # Caption is everything up to the next blank line (two consecutive newlines) or EOF.
+    pattern = re.compile(
+        r"""
+        ^[ \t]*                          # optional leading spaces
+        !\[\]                            # literal ![]
+        \(
+            (?P<path>                    # path can be quoted or unquoted (no newline)
+                "(?:[^"\\]|\\.)+"        # double-quoted path (allow escaped chars)
+                |'(?:[^'\\]|\\.)+'       # single-quoted path
+                |[^)\r\n]+               # unquoted path without ) or newline
+            )
+        \)
+        [ \t]*\r?\n                      # newline after )
+        [ \t]*\{                         # start attributes line (allow leading spaces)
+            (?P<attrs>                   # attributes content (no need to be ultra-fancy)
+                (?:
+                    [^{}\r\n"']+         # anything except braces/quotes/newlines
+                    |"(?:[^"\\]|\\.)*"   # double-quoted chunks
+                    |'(?:[^'\\]|\\.)*'   # single-quoted chunks
+                    |\s+                 # spaces/tabs
+                )*
+            )
+        \}[ \t]*                         # end attributes
+        (?P<caption>                     # caption until the next blank line or EOF
+            (?s:.*?)                     # DOTALL, non-greedy
+        )
+        (?=(?:\r?\n){2,}|\Z)             # stop at a blank line (>=2 newlines) or end
+        """,
+        re.MULTILINE | re.VERBOSE,
     )
+
+    def _strip_quotes(s: str) -> str:
+        if (len(s) >= 2) and ((s[0] == s[-1]) and s[0] in ("'", '"')):
+            return s[1:-1]
+        return s
+
+    def _repl(m: re.Match[str]) -> str:
+        path = _strip_quotes(m.group("path").strip())
+        attr_string = m.group("attrs").strip()
+        caption_text = m.group("caption").strip()
+
+        try:
+            attributes = parse_figure_attributes(attr_string)
+        except Exception:
+            # If attributes parsing fails, keep original block untouched
+            return m.group(0)
+
+        try:
+            return create_latex_figure_environment(path, caption_text, attributes)
+        except Exception:
+            # If LaTeX emission fails, keep original block untouched
+            return m.group(0)
+
+    return pattern.sub(_repl, text)
+
+def _process_figure_without_attributes(text: MarkdownContent) -> LatexContent:
+    """Process figures without attributes: ![caption](path) or ![caption](path "title")."""
+    import re
+
+    # Matches:
+    #   ![caption](path)
+    #   ![caption](path "optional title")
+    #   ![caption]("quoted path with spaces")
+    # Does NOT match if immediately followed by {attributes} (handled upstream).
+    pattern = re.compile(
+        r"""
+        !\[
+            (?P<cap>(?:\\\]|[^\]])*)      # caption (allow escaped ])
+        \]
+        \(
+            [ \t]*
+            (?P<path>                     # path: quoted or unquoted (no newline)
+                "(?:[^"\\]|\\.)+"         # double-quoted path
+                |'(?:[^'\\]|\\.)+'        # single-quoted path
+                |[^)\s][^)\r\n]*          # unquoted path (no leading space, up to ) or EOL)
+            )
+            (?:[ \t]+                     # optional title (ignored; used only if caption empty)
+               (?P<title>
+                    "(?:[^"\\]|\\.)*"     # "title"
+                    |'(?:[^'\\]|\\.)*'    # 'title'
+               )
+            )?
+            [ \t]*
+        \)
+        (?![ \t]*\{)                      # don't consume cases with immediate {attributes}
+        """,
+        re.VERBOSE,
+    )
+
+    def _strip_quotes(s: str) -> str:
+        s = s.strip()
+        if len(s) >= 2 and ((s[0] == s[-1]) and s[0] in ('"', "'")):
+            return s[1:-1]
+        return s
+
+    def _repl(m: re.Match[str]) -> str:
+        raw_cap = (m.group("cap") or "").strip()
+        raw_path = (m.group("path") or "").strip()
+        raw_title = (m.group("title") or "").strip()
+
+        path = _strip_quotes(raw_path)
+        caption = raw_cap if raw_cap else _strip_quotes(raw_title)
+
+        # Validate path before emitting LaTeX. If invalid, leave original markdown untouched.
+        try:
+            ok = validate_figure_path(path)
+        except Exception:
+            ok = False
+        if not ok:
+            return m.group(0)
+
+        try:
+            return create_latex_figure_environment(path, caption)
+        except Exception:
+            return m.group(0)
+
+    return pattern.sub(_repl, text)
+
+
+def validate_figure_path(path: FigurePath) -> bool:
+    """Validate a figure path for LaTeX inclusion.
+
+    Rules:
+      - Allow common image/vector formats (png, jpg, jpeg, pdf, svg, eps).
+      - Allow extensionless paths (LaTeX can resolve via \DeclareGraphicsExtensions).
+      - Allow http/https in case an upstream step resolves/downloads.
+    """
+    if not isinstance(path, str):
+        return False
+    s = path.strip().strip('"').strip("'")
+    if not s:
+        return False
+
+    # Remote URLs are allowed (caller may prefetch/replace).
+    if s.startswith(("http://", "https://")):
+        return True
+
+    # If extensionless, allow (LaTeX may infer extensions or your pipeline may add them).
+    import os
+    root, ext = os.path.splitext(s)
+    if ext == "":
+        return True
+
+    valid_extensions = {".png", ".jpg", ".jpeg", ".pdf", ".svg", ".eps"}
+    return ext.lower() in valid_extensions
+
 
 
 def _process_figure_with_attributes(text: MarkdownContent) -> LatexContent:
@@ -336,32 +506,6 @@ def _process_figure_with_attributes(text: MarkdownContent) -> LatexContent:
 
     # Handle figures with attributes (old format)
     return re.sub(r"!\[([^\]]*)\]\(([^)]+)\)\{([^}]+)\}", process_figure_with_attributes, text)
-
-
-def _process_figure_without_attributes(text: MarkdownContent) -> LatexContent:
-    """Process figures without attributes: ![caption](path)."""
-
-    def process_figure_without_attributes(match: re.Match[str]) -> str:
-        caption = match.group(1)
-        path = match.group(2)
-        return create_latex_figure_environment(path, caption)
-
-    # Handle figures without attributes (remaining ones)
-    return re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", process_figure_without_attributes, text)
-
-
-def validate_figure_path(path: FigurePath) -> bool:
-    """Validate that a figure path is properly formatted.
-
-    Args:
-        path: Figure file path
-
-    Returns:
-        True if path is valid, False otherwise
-    """
-    # Check for valid image extensions
-    valid_extensions = [".png", ".jpg", ".jpeg", ".pdf", ".svg", ".eps"]
-    return any(path.lower().endswith(ext) for ext in valid_extensions)
 
 
 def extract_figure_ids_from_text(text: MarkdownContent) -> list[FigureId]:
