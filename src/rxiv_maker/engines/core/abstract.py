@@ -42,8 +42,7 @@ class ContainerSession:
                 ],
                 capture_output=True,
                 text=True,
-                encoding="utf-8",
-                errors="replace",
+                encoding="latin-1",
                 timeout=5,
             )
             if result.returncode == 0:
@@ -71,8 +70,7 @@ class ContainerSession:
                 [self.engine_type, "stop", self.container_id],
                 capture_output=True,
                 text=True,
-                encoding="utf-8",
-                errors="replace",
+                encoding="latin-1",
                 timeout=10,
             )
             if stop_result.returncode != 0:
@@ -85,8 +83,7 @@ class ContainerSession:
                 [self.engine_type, "rm", self.container_id],
                 capture_output=True,
                 text=True,
-                encoding="utf-8",
-                errors="replace",
+                encoding="latin-1",
                 timeout=10,
             )
             if rm_result.returncode != 0:
@@ -380,8 +377,7 @@ class AbstractContainerEngine(ABC):
                 exec_cmd,
                 capture_output=capture_output,
                 text=True,
-                encoding="utf-8",
-                errors="replace",  # Handle all byte values gracefully
+                encoding="latin-1",  # Handle all byte values gracefully
                 timeout=timeout,
                 **kwargs,
             )
