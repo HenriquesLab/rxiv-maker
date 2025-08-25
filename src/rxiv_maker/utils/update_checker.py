@@ -21,7 +21,7 @@ from rich.console import Console
 
 from rxiv_maker.utils.unicode_safe import get_safe_icon, safe_print
 
-from .cache_utils import get_cache_dir, migrate_cache_file
+from ..core.cache.cache_utils import get_cache_dir, migrate_cache_file
 
 console = Console()
 

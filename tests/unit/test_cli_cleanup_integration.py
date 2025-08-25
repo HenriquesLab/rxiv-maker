@@ -46,14 +46,14 @@ class TestCLIContainerCleanupIntegration(unittest.TestCase):
         except ImportError:
             self.skipTest("CLI imports not available")
 
-    @patch("rxiv_maker.engines.factory.ContainerEngineFactory.cleanup_all_engines")
+    @patch("rxiv_maker.engines.core.factory.ContainerEngineFactory.cleanup_all_engines")
     def test_cleanup_integration_with_engine_factory(self, mock_cleanup):
         """Test cleanup integration through engine factory."""
         try:
             import sys
 
             sys.path.insert(0, "src")
-            from rxiv_maker.engines.factory import ContainerEngineFactory
+            from rxiv_maker.engines.core.factory import ContainerEngineFactory
 
             # Mock successful cleanup
             mock_cleanup.return_value = 2  # 2 engines cleaned up
@@ -76,11 +76,11 @@ class TestCLIContainerCleanupIntegration(unittest.TestCase):
             sys.path.insert(0, "src")
 
             # Test cleanup behavior during normal operations
-            with patch("rxiv_maker.engines.factory.ContainerEngineFactory.cleanup_all_engines") as mock_cleanup:
+            with patch("rxiv_maker.engines.core.factory.ContainerEngineFactory.cleanup_all_engines") as mock_cleanup:
                 mock_cleanup.return_value = 1
 
                 # Simulate CLI cleanup trigger
-                from rxiv_maker.engines.factory import ContainerEngineFactory
+                from rxiv_maker.engines.core.factory import ContainerEngineFactory
 
                 cleanup_count = ContainerEngineFactory.cleanup_all_engines()
 
@@ -99,14 +99,14 @@ class TestCLIContainerCleanupIntegration(unittest.TestCase):
 
             # Test Docker engine cleanup
             with patch.dict(os.environ, {"RXIV_ENGINE": "docker"}):
-                with patch("rxiv_maker.engines.factory.get_container_engine") as mock_get_engine:
+                with patch("rxiv_maker.engines.core.factory.get_container_engine") as mock_get_engine:
                     mock_engine = Mock()
                     mock_engine.engine_name = "docker"
                     mock_engine.cleanup_all_sessions.return_value = None
                     mock_get_engine.return_value = mock_engine
 
                     # Get engine and test cleanup
-                    from rxiv_maker.engines.factory import get_container_engine
+                    from rxiv_maker.engines.core.factory import get_container_engine
 
                     engine = get_container_engine("docker", workspace_dir=self.workspace_dir)
                     engine.cleanup_all_sessions()
@@ -115,14 +115,14 @@ class TestCLIContainerCleanupIntegration(unittest.TestCase):
 
             # Test Podman engine cleanup
             with patch.dict(os.environ, {"RXIV_ENGINE": "podman"}):
-                with patch("rxiv_maker.engines.factory.get_container_engine") as mock_get_engine:
+                with patch("rxiv_maker.engines.core.factory.get_container_engine") as mock_get_engine:
                     mock_engine = Mock()
                     mock_engine.engine_name = "podman"
                     mock_engine.cleanup_all_sessions.return_value = None
                     mock_get_engine.return_value = mock_engine
 
                     # Get engine and test cleanup
-                    from rxiv_maker.engines.factory import get_container_engine
+                    from rxiv_maker.engines.core.factory import get_container_engine
 
                     engine = get_container_engine("podman", workspace_dir=self.workspace_dir)
                     engine.cleanup_all_sessions()
@@ -144,11 +144,11 @@ class TestCLIContainerCleanupIntegration(unittest.TestCase):
             mock_run.return_value = Mock(returncode=0, stdout="Success")
 
             # Test cleanup integration with build operations
-            with patch("rxiv_maker.engines.factory.ContainerEngineFactory.cleanup_all_engines") as mock_cleanup:
+            with patch("rxiv_maker.engines.core.factory.ContainerEngineFactory.cleanup_all_engines") as mock_cleanup:
                 mock_cleanup.return_value = 1
 
                 # Simulate cleanup after build
-                from rxiv_maker.engines.factory import ContainerEngineFactory
+                from rxiv_maker.engines.core.factory import ContainerEngineFactory
 
                 cleanup_count = ContainerEngineFactory.cleanup_all_engines()
 
@@ -166,12 +166,12 @@ class TestCLIContainerCleanupIntegration(unittest.TestCase):
             sys.path.insert(0, "src")
 
             # Test that CLI doesn't crash when cleanup fails
-            with patch("rxiv_maker.engines.factory.ContainerEngineFactory.cleanup_all_engines") as mock_cleanup:
+            with patch("rxiv_maker.engines.core.factory.ContainerEngineFactory.cleanup_all_engines") as mock_cleanup:
                 mock_cleanup.side_effect = Exception("Cleanup failed")
 
                 # CLI should handle cleanup failures gracefully
                 try:
-                    from rxiv_maker.engines.factory import ContainerEngineFactory
+                    from rxiv_maker.engines.core.factory import ContainerEngineFactory
 
                     ContainerEngineFactory.cleanup_all_engines()
                     self.fail("Should have raised exception")
@@ -192,13 +192,13 @@ class TestCLIContainerCleanupIntegration(unittest.TestCase):
             # Test with session reuse enabled
             mock_env_get.return_value = "true"
 
-            with patch("rxiv_maker.engines.factory.get_container_engine") as mock_get_engine:
+            with patch("rxiv_maker.engines.core.factory.get_container_engine") as mock_get_engine:
                 mock_engine = Mock()
                 mock_engine.enable_session_reuse = True
                 mock_engine.cleanup_all_sessions.return_value = None
                 mock_get_engine.return_value = mock_engine
 
-                from rxiv_maker.engines.factory import get_container_engine
+                from rxiv_maker.engines.core.factory import get_container_engine
 
                 engine = get_container_engine("docker", workspace_dir=self.workspace_dir)
 
@@ -219,7 +219,7 @@ class TestCLIContainerCleanupIntegration(unittest.TestCase):
 
             sys.path.insert(0, "src")
 
-            with patch("rxiv_maker.engines.factory.get_container_engine") as mock_get_engine:
+            with patch("rxiv_maker.engines.core.factory.get_container_engine") as mock_get_engine:
                 mock_engine = Mock()
                 mock_engine.get_session_stats.return_value = {
                     "total_sessions": 3,
@@ -231,7 +231,7 @@ class TestCLIContainerCleanupIntegration(unittest.TestCase):
                 }
                 mock_get_engine.return_value = mock_engine
 
-                from rxiv_maker.engines.factory import get_container_engine
+                from rxiv_maker.engines.core.factory import get_container_engine
 
                 engine = get_container_engine("docker", workspace_dir=self.workspace_dir)
 
@@ -253,7 +253,7 @@ class TestCLIContainerCleanupIntegration(unittest.TestCase):
             sys.path.insert(0, "src")
 
             # Test cleanup with memory-constrained environments
-            with patch("rxiv_maker.engines.factory.get_container_engine") as mock_get_engine:
+            with patch("rxiv_maker.engines.core.factory.get_container_engine") as mock_get_engine:
                 mock_engine = Mock()
                 mock_engine.memory_limit = "1g"
                 mock_engine.cpu_limit = "1.0"
@@ -261,7 +261,7 @@ class TestCLIContainerCleanupIntegration(unittest.TestCase):
                 mock_engine.cleanup_all_sessions.return_value = None
                 mock_get_engine.return_value = mock_engine
 
-                from rxiv_maker.engines.factory import get_container_engine
+                from rxiv_maker.engines.core.factory import get_container_engine
 
                 engine = get_container_engine(
                     "docker", workspace_dir=self.workspace_dir, memory_limit="1g", cpu_limit="1.0"
@@ -406,12 +406,12 @@ class TestCLICleanupCommands(unittest.TestCase):
             sys.path.insert(0, "src")
 
             # Test dry-run functionality
-            with patch("rxiv_maker.engines.factory.ContainerEngineFactory.cleanup_all_engines") as mock_cleanup:
+            with patch("rxiv_maker.engines.core.factory.ContainerEngineFactory.cleanup_all_engines") as mock_cleanup:
                 # In dry-run mode, cleanup should not actually be called
                 mock_cleanup.return_value = 2
 
                 # Simulate dry-run check
-                from rxiv_maker.engines.factory import ContainerEngineFactory
+                from rxiv_maker.engines.core.factory import ContainerEngineFactory
 
                 available_engines = ContainerEngineFactory.get_supported_engines()
 
@@ -429,12 +429,12 @@ class TestCLICleanupCommands(unittest.TestCase):
             sys.path.insert(0, "src")
 
             # Test force cleanup
-            with patch("rxiv_maker.engines.factory.get_container_engine") as mock_get_engine:
+            with patch("rxiv_maker.engines.core.factory.get_container_engine") as mock_get_engine:
                 mock_engine = Mock()
                 mock_engine._cleanup_expired_sessions = Mock()
                 mock_get_engine.return_value = mock_engine
 
-                from rxiv_maker.engines.factory import get_container_engine
+                from rxiv_maker.engines.core.factory import get_container_engine
 
                 engine = get_container_engine("docker")
 

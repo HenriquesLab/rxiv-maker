@@ -227,7 +227,7 @@ class TestExampleManuscript:
         """Test full PDF generation using Python API."""
         print("\n🔧 Running Python API test with local execution")
 
-        from rxiv_maker.engine.build_manager import BuildManager
+        from rxiv_maker.engines.build_manager import BuildManager
 
         # Create build manager and run build
         build_manager = BuildManager(

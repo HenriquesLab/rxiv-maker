@@ -35,7 +35,7 @@ jobs:
 
     steps:
       - name: Checkout submodule repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ secrets.SYNC_TOKEN || secrets.GITHUB_TOKEN }}

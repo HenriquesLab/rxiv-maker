@@ -21,7 +21,7 @@ except ImportError:
     pytest = MockPytest()
 
 try:
-    from rxiv_maker.engine.validate import UnifiedValidator
+    from rxiv_maker.engines.validate import UnifiedValidator
     from rxiv_maker.validators.doi_validator import DOIValidator
 
     INTEGRATION_AVAILABLE = True

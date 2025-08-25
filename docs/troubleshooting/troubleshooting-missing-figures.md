@@ -1,94 +1,48 @@
-# Troubleshooting: Missing Figure Files
+# Troubleshooting Missing Figures
 
-## Problem: PDF Generation Fails Due to Missing Figure Files
+*This troubleshooting content has been integrated into the comprehensive troubleshooting guide.*
 
-### Symptoms
-- `rxiv pdf` fails with validation errors
-- Error messages like: "Figure file not found: FIGURES/SFigure__arxiv_growth/SFigure__arxiv_growth.png"
-- The validation shows missing figure files (PNG, PDF, SVG) in MANUSCRIPT/FIGURES/ subdirectories
+**👉 [View complete troubleshooting guide →](troubleshooting.md#figure-generation-failures)**
 
-### Root Cause
-The repository tracks generated figure files alongside their generation scripts (Python, R, Mermaid). If these figure files are accidentally deleted (e.g., by `rxiv clean`, manual deletion, or git operations), the build process will fail because the LaTeX compilation expects these files to exist.
-
-## ✅ Automatic Solution (Recommended)
-
-**As of the latest version, `rxiv pdf` automatically detects and runs all figure generation scripts!**
-
-Simply run:
-```bash
-rxiv pdf
-```
-
-The build system will:
-1. **Auto-detect missing figures** - Check if output files exist for each generation script
-2. **Execute figure generation scripts** - Automatically run `SFigure__arxiv_growth.py`, `SFigure__preprint_trends.R`, Mermaid diagrams, etc.
-3. **Generate missing files** - Create PNG, PDF, and SVG versions as appropriate
-4. **Continue with PDF build** - Proceed with LaTeX compilation
-
-### Manual Solution (If Needed)
-If you need to regenerate figures manually:
+## Quick Fixes for Figure Issues
 
 ```bash
-# Navigate to the FIGURES directory
-cd MANUSCRIPT/FIGURES
-
-# Activate the virtual environment
-source ../../.venv/bin/activate
-
-# Run the figure generation scripts
-python SFigure__arxiv_growth.py
-Rscript SFigure__preprint_trends.R
-
-# Generate Mermaid diagrams (automatically handled by rxiv)
-# Mermaid diagrams are now generated automatically via mermaid.ink API
-
-# Return to project root and test the build
-cd ../..
-rxiv pdf
-```
-
-### Advanced Figure Generation
-For more control, you can use the dedicated figure generation command:
-
-```bash
-# Generate all figures automatically (Mermaid + Python)
-rxiv figures --figures-dir MANUSCRIPT/FIGURES --verbose
-
-# Force regenerate all figures even if they exist
+# 🔥 Emergency figure fix - regenerate all figures
 rxiv pdf --force-figures
+
+# 🔍 Debug figure generation
+rxiv pdf --verbose
+
+# 🐳 Use Docker to bypass local issues
+RXIV_ENGINE=DOCKER rxiv pdf
 ```
 
-### How It Works
-The enhanced build system automatically:
-- **Detects figure generation scripts** (`.py`, `.R`, `.mmd` files) in the FIGURES directory
-- **Checks for corresponding outputs** (PNG, PDF, and SVG files in subdirectories)
-- **Runs missing scripts** using the project's Python environment and R installation
-- **Handles multiple formats**: Python scripts, R scripts, and Mermaid diagrams
+## Common Figure Problems
 
-### Prevention
-- The `rxiv clean` command removes generated figures, but `rxiv pdf` will automatically regenerate them
-- When cloning the repository, missing figures will be auto-generated on first build
-- The build process is now robust against missing figure files
+### Figure Not Appearing in PDF
+- **Check file path**: Ensure `FIGURES/script_name.py` exists
+- **Check script syntax**: Verify Python/R script runs without errors
+- **Force regeneration**: Use `--force-figures` flag
 
-### Why Generated Files Are Still Tracked
-Even with automatic generation, generated figure files (PNG, PDF, SVG) remain tracked in git because:
-- They ensure reproducible builds across different environments
-- Not all users have Python/R dependencies needed for figure generation
-- They provide immediate availability without requiring script execution
-- They serve as fallbacks when figure generation environments differ
-- They guarantee consistent output across different versions of plotting libraries
+### Script Execution Errors
+- **Python issues**: Check imports and dependencies
+- **R issues**: Verify R packages are installed
+- **Path issues**: Ensure relative paths work from manuscript directory
 
-## Related Issues
+### Figure Quality Problems
+- **Resolution**: Set `dpi=300` in matplotlib `savefig()`
+- **Format**: Use vector formats (SVG, PDF) when possible
+- **Size**: Match figure size to desired output dimensions
 
-### Figure Positioning and Layout Problems
-After resolving missing figure files, you might encounter figure positioning, spacing, or layout issues in your PDF. For comprehensive guidance on controlling figure placement and resolving positioning problems, see the **[Figure Positioning Guide](../tutorials/figure-positioning.md)**.
+## Quick Links
 
-Common positioning issues include:
-- Figures appearing on wrong pages
-- Poor spacing between figures and text
-- Panel reference formatting problems
-- Full-width figure layout issues
+- **[Figure Generation Failures](troubleshooting.md#figure-generation-failures)**
+- **[Python Environment Issues](troubleshooting.md#environment-setup-problems)**
+- **[Container Engine Issues](troubleshooting.md#container-engine-issues)**
+- **[Complete Figure Guide](../guides/figures-guide.md)**
 
-### Other Troubleshooting Resources
-- **[Common Issues Guide](common-issues.md)** - General troubleshooting for all Rxiv-Maker problems
-- **[Validation Guide](validate_manuscript.md)** - Manuscript validation and error resolution
+---
+
+**📖 Complete Troubleshooting:** [Troubleshooting Guide](troubleshooting.md)
+
+**📊 Figure Documentation:** [Complete Figure Guide](../guides/figures-guide.md)

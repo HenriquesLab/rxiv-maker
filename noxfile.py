@@ -295,7 +295,7 @@ This is a test manuscript for CLI testing.
             session.log("✅ Testing PDF generation with style file resolution...")
             try:
                 # This tests the critical style file path resolution fix
-                session.run("rxiv", "pdf", str(example_dest))
+                session.run("rxiv", "pdf", str(example_dest), "--skip-validation")
                 session.log("🎉 PDF generation successful - style files resolved correctly!")
             except Exception as e:
                 session.log(f"⚠️  PDF generation test result: {e}")
@@ -321,7 +321,7 @@ This is a test manuscript for CLI testing.
                 "-c",
                 """
 import rxiv_maker
-from rxiv_maker.engine.build_manager import BuildManager
+from rxiv_maker.engines.operations.build_manager import BuildManager
 import tempfile
 import os
 

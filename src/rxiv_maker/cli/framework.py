@@ -247,7 +247,7 @@ class ValidationCommand(BaseCommand):
             task = progress.add_task("Running validation...", total=None)
 
             # Import and run validation directly
-            from rxiv_maker.engine.validate import validate_manuscript
+            from rxiv_maker.engines.operations.validate import validate_manuscript
 
             # Determine DOI validation setting
             enable_doi_validation = None if not no_doi else False
@@ -301,7 +301,7 @@ class FiguresCommand(BaseCommand):
                 if self.verbose:
                     self.console.print("📦 Importing FigureGenerator class...", style="blue")
 
-                from rxiv_maker.engine.generate_figures import FigureGenerator
+                from rxiv_maker.engines.operations.generate_figures import FigureGenerator
 
                 if self.verbose:
                     self.console.print("📦 Successfully imported FigureGenerator!", style="green")

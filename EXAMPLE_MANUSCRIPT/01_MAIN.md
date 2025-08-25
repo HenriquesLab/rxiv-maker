@@ -31,7 +31,7 @@ Manuscript preparation becomes a transparent process that gives researchers acce
 ![](FIGURES/Figure__workflow/Figure__workflow.svg)
 {#fig:workflow width="\textwidth" tex_position="t"} **Rxiv-Maker Workflow: User Input vs. Automated Processing.** The framework clearly separates user responsibilities (content creation and configuration) from automated processes (parsing, conversion, compilation, and output generation). Users only need to write content and set preferences. At the same time, the system handles all technical aspects of manuscript preparation automatically, ensuring a streamlined workflow from markdown input to publication-ready PDF output.
 
-<!-- For comprehensive figure positioning guidance, see docs/tutorials/figure-positioning.md -->
+<!-- For comprehensive figure positioning guidance, see docs/guides/figures-guide.md -->
 <!-- This covers positioning attributes, width control, panel references, and troubleshooting -->
 
 The framework enables programmatic generation of figures and tables using Python and R scripting with visualisation libraries including Matplotlib [@Hunter2007_matplotlib] and Seaborn [@Waskom2021_seaborn]. 

@@ -82,16 +82,16 @@ class TestAPTRepositoryIntegration(unittest.TestCase):
 
     def test_apt_repository_url_structure(self):
         """Test that APT repository URLs are well-formed."""
-        # Read README to get APT repository URLs
-        readme_file = self.repo_root / "README.md"
-        with open(readme_file, "r") as f:
-            readme_content = f.read()
+        # Read installation docs to get APT repository URLs
+        install_file = self.repo_root / "docs" / "quick-start" / "installation.md"
+        with open(install_file, "r") as f:
+            install_content = f.read()
 
         # Extract APT repository URL
         url_pattern = r"https://raw\.githubusercontent\.com/HenriquesLab/apt-rxiv-maker/apt-repo"
-        urls = re.findall(url_pattern, readme_content)
+        urls = re.findall(url_pattern, install_content)
 
-        self.assertTrue(len(urls) > 0, "No APT repository URLs found in README")
+        self.assertTrue(len(urls) > 0, "No APT repository URLs found in installation docs")
 
         # Each URL should be properly structured
         for url in urls:
@@ -145,7 +145,7 @@ class TestAPTRepositoryIntegration(unittest.TestCase):
         # Check that orchestrator has APT workflow triggering logic
         self.assertIn("trigger_apt_workflow", orchestrator_content)
         self.assertIn("apt_repo", orchestrator_content)
-        self.assertIn("trigger_workflow", orchestrator_content)
+        self.assertIn("trigger_cross_repository_workflows", orchestrator_content)
 
     def test_workflow_summary_includes_apt(self):
         """Test that Python orchestrator handles APT repository coordination."""
@@ -208,10 +208,11 @@ class TestAPTRepositoryValidation(unittest.TestCase):
 
     def test_apt_repository_branch_consistency(self):
         """Test that all references use the same repository branch."""
-        readme_file = self.repo_root / "README.md"
+        install_file = self.repo_root / "docs" / "quick-start" / "installation.md"
         workflow_file = self.repo_root / ".github" / "workflows" / "release-python.yml"
+        troubleshoot_file = self.repo_root / "docs" / "troubleshooting" / "troubleshooting.md"
 
-        files_to_check = [readme_file, workflow_file]
+        files_to_check = [install_file, workflow_file, troubleshoot_file]
         branches = set()
 
         for file_path in files_to_check:

@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from rxiv_maker.engine.setup_environment import EnvironmentSetup
+from rxiv_maker.engines.operations.setup_environment import EnvironmentSetup
 
 
 class TestEnvironmentSetup:
@@ -542,7 +542,7 @@ class TestMainFunction:
     """Test the main function and argument parsing."""
 
     @patch("argparse.ArgumentParser.parse_args")
-    @patch("rxiv_maker.engine.setup_environment.EnvironmentSetup")
+    @patch("rxiv_maker.engines.operations.setup_environment.EnvironmentSetup")
     def test_main_default_args(self, mock_setup_class, mock_parse_args):
         """Test main function with default arguments."""
         # Mock argument parsing
@@ -558,7 +558,7 @@ class TestMainFunction:
         mock_setup_class.return_value = mock_setup_instance
 
         # Import and call main
-        from rxiv_maker.engine.setup_environment import main
+        from rxiv_maker.engines.operations.setup_environment import main
 
         main()
 
@@ -571,7 +571,7 @@ class TestMainFunction:
         mock_setup_instance.run_setup.assert_called_once()
 
     @patch("argparse.ArgumentParser.parse_args")
-    @patch("rxiv_maker.engine.setup_environment.EnvironmentSetup")
+    @patch("rxiv_maker.engines.operations.setup_environment.EnvironmentSetup")
     def test_main_custom_args(self, mock_setup_class, mock_parse_args):
         """Test main function with custom arguments."""
         # Mock argument parsing
@@ -587,7 +587,7 @@ class TestMainFunction:
         mock_setup_class.return_value = mock_setup_instance
 
         # Import and call main
-        from rxiv_maker.engine.setup_environment import main
+        from rxiv_maker.engines.operations.setup_environment import main
 
         main()
 
@@ -599,7 +599,7 @@ class TestMainFunction:
         )
 
     @patch("argparse.ArgumentParser.parse_args")
-    @patch("rxiv_maker.engine.setup_environment.EnvironmentSetup")
+    @patch("rxiv_maker.engines.operations.setup_environment.EnvironmentSetup")
     def test_main_setup_failure(self, mock_setup_class, mock_parse_args):
         """Test main function when setup fails."""
         # Mock argument parsing
@@ -615,7 +615,7 @@ class TestMainFunction:
         mock_setup_class.return_value = mock_setup_instance
 
         # Import and call main, expecting SystemExit
-        from rxiv_maker.engine.setup_environment import main
+        from rxiv_maker.engines.operations.setup_environment import main
 
         with pytest.raises(SystemExit) as exc_info:
             main()

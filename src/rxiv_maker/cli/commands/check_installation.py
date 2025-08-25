@@ -136,7 +136,7 @@ def _show_detailed_results(console: Console, results: dict):
 def _fix_missing_dependencies(console: Console, missing: list):
     """Attempt to fix missing dependencies."""
     try:
-        from ...install.manager import InstallManager, InstallMode
+        from ...core.managers.install_manager import InstallManager, InstallMode
 
         console.print("🔧 Starting repair process...")
 

@@ -15,7 +15,7 @@ class TestValidateCommand:
         self.runner = CliRunner()
 
     @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engine.validate.validate_manuscript")
+    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
     def test_successful_validation(self, mock_validate_manuscript, mock_progress):
         """Test successful manuscript validation."""
         # Mock Progress
@@ -38,7 +38,7 @@ class TestValidateCommand:
             mock_validate_manuscript.assert_called_once()
 
     @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engine.validate.validate_manuscript")
+    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
     def test_validation_failure(self, mock_validate_manuscript, mock_progress):
         """Test manuscript validation failure."""
         # Mock Progress
@@ -64,7 +64,7 @@ class TestValidateCommand:
             assert "to build anyway" in result.output
 
     @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engine.validate.validate_manuscript")
+    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
     def test_validation_success_exit_zero(self, mock_validate_manuscript, mock_progress):
         """Test validation with successful return - should be treated as success."""
         # Mock Progress
@@ -86,7 +86,7 @@ class TestValidateCommand:
             assert result.exit_code == 0
 
     @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engine.validate.validate_manuscript")
+    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
     def test_keyboard_interrupt_handling(self, mock_validate_manuscript, mock_progress):
         """Test keyboard interrupt handling."""
         # Mock Progress
@@ -108,7 +108,7 @@ class TestValidateCommand:
             assert "⏹️  validation interrupted by user" in result.output
 
     @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engine.validate.validate_manuscript")
+    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
     def test_unexpected_error_handling(self, mock_validate_manuscript, mock_progress):
         """Test unexpected error handling."""
         # Mock Progress
@@ -132,7 +132,7 @@ class TestValidateCommand:
             assert "Unexpected validation error" in result.output
 
     @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engine.validate.validate_manuscript")
+    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
     def test_default_manuscript_path_from_env(self, mock_validate_manuscript, mock_progress):
         """Test that default manuscript path is taken from environment."""
         # Mock Progress
@@ -164,7 +164,7 @@ class TestValidateCommand:
                 del os.environ["MANUSCRIPT_PATH"]
 
     @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engine.validate.validate_manuscript")
+    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
     def test_argv_manipulation(self, mock_validate_manuscript, mock_progress):
         """Test that argv manipulation doesn't affect validation."""
         # Mock Progress
@@ -188,7 +188,7 @@ class TestValidateCommand:
             mock_validate_manuscript.assert_called_once()
 
     @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engine.validate.validate_manuscript")
+    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
     def test_validation_options(self, mock_validate_manuscript, mock_progress):
         """Test that validation options are passed correctly."""
         # Mock Progress
@@ -221,7 +221,7 @@ class TestValidateCommand:
             assert kwargs["check_latex"] is True
 
     @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engine.validate.validate_manuscript")
+    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
     def test_verbose_error_reporting(self, mock_validate_manuscript, mock_progress):
         """Test that verbose mode shows exception traceback."""
         # Mock Progress
@@ -243,7 +243,7 @@ class TestValidateCommand:
             assert "❌ Unexpected error during validation" in result.output
 
     @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engine.validate.validate_manuscript")
+    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
     def test_progress_update_on_success(self, mock_validate_manuscript, mock_progress):
         """Test that progress is updated correctly on successful validation."""
         # Mock Progress
@@ -270,7 +270,7 @@ class TestValidateCommand:
             mock_progress_instance.update.assert_called_with(mock_task, description="✅ Validation completed")
 
     @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engine.validate.validate_manuscript")
+    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
     def test_progress_update_on_failure(self, mock_validate_manuscript, mock_progress):
         """Test that progress is updated correctly on failed validation."""
         # Mock Progress

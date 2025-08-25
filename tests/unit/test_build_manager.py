@@ -25,7 +25,7 @@ except ImportError:
     pytest = MockPytest()
 
 try:
-    from rxiv_maker.engine.build_manager import BuildManager
+    from rxiv_maker.engines.operations.build_manager import BuildManager
 
     BUILD_MANAGER_AVAILABLE = True
 except ImportError:
@@ -208,7 +208,7 @@ You've used 2 entries,
         build_manager = BuildManager(manuscript_path=self.manuscript_dir, output_dir=self.output_dir)
 
         # Mock the module-level logger to verify it's called when file writing fails
-        with patch("rxiv_maker.engine.build_manager.logger") as mock_logger:
+        with patch("rxiv_maker.engines.operations.build_manager.logger") as mock_logger:
             # Mock file operations to raise exception
             with patch("builtins.open", side_effect=PermissionError("Permission denied")):
                 # Should not raise exception but should log the error
@@ -232,7 +232,7 @@ You've used 2 entries,
         blg_file.write_text("This is BibTeX, Version 0.99d\nWarning--test warning\n")
 
         # Mock the module-level logger to verify it's called when BibTeX logging fails
-        with patch("rxiv_maker.engine.build_manager.logger") as mock_logger:
+        with patch("rxiv_maker.engines.operations.build_manager.logger") as mock_logger:
             # Mock open to raise exception when writing BibTeX log
             original_open = open
 

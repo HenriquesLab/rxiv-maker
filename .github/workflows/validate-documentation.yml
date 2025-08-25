@@ -1,0 +1,218 @@
+name: 📋 Validate Documentation
+
+# This workflow validates code examples in documentation
+# Part of Phase 3.4c: Create living documentation with automated validation
+
+on:
+  push:
+    paths:
+      - '*.md'
+      - 'docs/**/*.md'
+      - 'scripts/validate_documentation.py'
+      - '.github/workflows/validate-documentation.yml'
+  pull_request:
+    paths:
+      - '*.md'
+      - 'docs/**/*.md'
+      - 'scripts/validate_documentation.py'
+  schedule:
+    # Run weekly to catch changes in dependencies
+    - cron: '0 6 * * 1'  # Every Monday at 6 AM UTC
+  workflow_dispatch:
+    inputs:
+      verbose:
+        description: 'Enable verbose output'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  validate-documentation:
+    name: 🔍 Validate Documentation Code Examples
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v5
+
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: 🔧 Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y bash shellcheck bc
+
+    - name: 📦 Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyyaml
+
+    - name: 🧪 Run documentation validation
+      id: validate
+      run: |
+        set +e  # Don't exit on error - we want to capture the result
+        python scripts/validate_documentation.py \
+          --docs-dir . \
+          --output validation_report.md \
+          ${{ github.event.inputs.verbose == 'true' && '--verbose' || '' }}
+
+        # Capture exit code immediately
+        validation_exit_code=$?
+        echo "validation_result=$validation_exit_code" >> $GITHUB_OUTPUT
+
+        # Re-enable error exit for subsequent steps
+        set -e
+
+    - name: 📊 Parse validation results
+      id: results
+      run: |
+        # Extract key metrics from the validation report
+        if [ -f validation_report.md ]; then
+          total_files=$(grep "Files processed" validation_report.md | grep -o '[0-9]*' | head -1)
+          total_blocks=$(grep "Code blocks found" validation_report.md | grep -o '[0-9]*' | head -1)
+          valid_blocks=$(grep "Valid blocks" validation_report.md | grep -o '[0-9]*' | head -1)
+          invalid_blocks=$(grep "Invalid blocks" validation_report.md | grep -o '[0-9]*' | head -1)
+          success_rate=$(grep "Success rate" validation_report.md | grep -o '[0-9]*\.[0-9]*' | head -1)
+
+          echo "total_files=${total_files:-0}" >> $GITHUB_OUTPUT
+          echo "total_blocks=${total_blocks:-0}" >> $GITHUB_OUTPUT
+          echo "valid_blocks=${valid_blocks:-0}" >> $GITHUB_OUTPUT
+          echo "invalid_blocks=${invalid_blocks:-0}" >> $GITHUB_OUTPUT
+          echo "success_rate=${success_rate:-0}" >> $GITHUB_OUTPUT
+
+          # Determine status
+          if (( $(echo "$success_rate >= 95" | bc -l) )); then
+            echo "status=🟢 EXCELLENT" >> $GITHUB_OUTPUT
+          elif (( $(echo "$success_rate >= 90" | bc -l) )); then
+            echo "status=🟡 GOOD" >> $GITHUB_OUTPUT
+          elif (( $(echo "$success_rate >= 75" | bc -l) )); then
+            echo "status=🟠 NEEDS ATTENTION" >> $GITHUB_OUTPUT
+          else
+            echo "status=🔴 CRITICAL" >> $GITHUB_OUTPUT
+          fi
+        fi
+
+    - name: 📋 Upload validation report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: documentation-validation-report
+        path: validation_report.md
+        retention-days: 30
+
+    - name: 💬 Comment on PR (if applicable)
+      uses: actions/github-script@v7
+      if: github.event_name == 'pull_request'
+      with:
+        script: |
+          const fs = require('fs');
+          const path = 'validation_report.md';
+
+          if (fs.existsSync(path)) {
+            const report = fs.readFileSync(path, 'utf8');
+
+            // Create comment body
+            const commentBody = `## 📋 Documentation Validation Report
+
+          **Status**: ${{ steps.results.outputs.status }}
+          **Success Rate**: ${{ steps.results.outputs.success_rate }}%
+
+          - Files processed: ${{ steps.results.outputs.total_files }}
+          - Code blocks validated: ${{ steps.results.outputs.total_blocks }}
+          - Valid: ${{ steps.results.outputs.valid_blocks }} ✅
+          - Invalid: ${{ steps.results.outputs.invalid_blocks }} ❌
+
+          <details>
+          <summary>📖 Full Validation Report</summary>
+
+          \`\`\`markdown
+          ${report}
+          \`\`\`
+
+          </details>
+
+          *This validation ensures all code examples in documentation remain accurate and functional.*`;
+
+            // Post comment
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: commentBody
+            });
+          }
+
+    - name: 📧 Create issue for validation failures
+      uses: actions/github-script@v7
+      if: steps.validate.outputs.validation_result != '0' && github.event_name == 'schedule'
+      with:
+        script: |
+          const fs = require('fs');
+          const path = 'validation_report.md';
+
+          if (fs.existsSync(path)) {
+            const report = fs.readFileSync(path, 'utf8');
+            const date = new Date().toISOString().split('T')[0];
+
+            const issueBody = `## 📋 Weekly Documentation Validation Failed
+
+          **Date**: ${date}
+          **Status**: ${{ steps.results.outputs.status }}
+          **Success Rate**: ${{ steps.results.outputs.success_rate }}%
+
+          The weekly documentation validation has detected issues that need attention:
+
+          - Files processed: ${{ steps.results.outputs.total_files }}
+          - Code blocks validated: ${{ steps.results.outputs.total_blocks }}
+          - Valid: ${{ steps.results.outputs.valid_blocks }} ✅
+          - Invalid: ${{ steps.results.outputs.invalid_blocks }} ❌
+
+          ## 🔍 Issues Found
+
+          Please review the validation report and fix the identified issues to ensure our documentation remains accurate and helpful for users.
+
+          <details>
+          <summary>📖 Full Validation Report</summary>
+
+          \`\`\`markdown
+          ${report}
+          \`\`\`
+
+          </details>
+
+          ### 🛠️ How to Fix
+
+          1. Review the specific errors listed in the report
+          2. Update the problematic code examples in the documentation
+          3. Test the fixes locally using: \`python scripts/validate_documentation.py --verbose\`
+          4. Commit the fixes
+
+          This issue will be automatically closed when the validation passes again.`;
+
+            // Create issue
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `📋 Documentation Validation Failed - ${date}`,
+              body: issueBody,
+              labels: ['documentation', 'validation', 'automated']
+            });
+          }
+
+    - name: ❌ Fail job if validation failed
+      if: steps.validate.outputs.validation_result != '0'
+      run: |
+        echo "❌ Documentation validation failed with exit code: ${{ steps.validate.outputs.validation_result }}"
+        echo "📋 Please review the validation report and fix the identified issues."
+        echo "🔍 Run locally with: python scripts/validate_documentation.py --verbose"
+        exit 1
+
+    - name: ✅ Success summary
+      if: steps.validate.outputs.validation_result == '0'
+      run: |
+        echo "✅ Documentation validation passed!"
+        echo "📊 Success rate: ${{ steps.results.outputs.success_rate }}%"
+        echo "📝 All code examples in documentation are valid and functional."

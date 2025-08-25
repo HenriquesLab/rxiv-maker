@@ -9,8 +9,8 @@ import yaml
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from rxiv_maker.engine.build_manager import BuildManager
-from rxiv_maker.engine.prepare_arxiv import main as prepare_arxiv_main
+from rxiv_maker.engines.operations.build_manager import BuildManager
+from rxiv_maker.engines.operations.prepare_arxiv import main as prepare_arxiv_main
 
 from ...core.environment_manager import EnvironmentManager
 from ...core.path_manager import PathManager, PathResolutionError

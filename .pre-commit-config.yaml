@@ -91,6 +91,16 @@ repos:
         exclude: ^git_submodules/.*$
         pass_filenames: false
 
+      # Living Documentation Validation (Phase 3.4c)
+      - id: validate-documentation
+        name: 📋 Validate Documentation Code Examples
+        entry: scripts/check-docs.sh
+        language: system
+        files: .*\.md$
+        exclude: ^(git_submodules/.*|docs_validation_report\.md)$
+        pass_filenames: false
+        stages: [pre-commit, manual]
+
   # Repository integrity and contamination prevention safeguards (disabled - submodules removed)
   # Note: Submodule validation hooks removed as project no longer uses submodules for distribution
 

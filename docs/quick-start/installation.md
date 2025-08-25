@@ -546,7 +546,7 @@ make pdf MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT
 
 ## 🆘 Need Help?
 
-- **Quick Questions**: Check [User Guide](user_guide.md)
+- **Quick Questions**: Check [User Guide](../guides/user_guide.md)
 - **Installation Issues**: See [Troubleshooting](../troubleshooting/troubleshooting-missing-figures.md) 
 - **Platform Problems**: Visit [Local Development Guide](../platforms/LOCAL_DEVELOPMENT.md)
 - **Docker Issues**: Read [Docker Engine Mode Guide](../workflows/docker-engine-mode.md)

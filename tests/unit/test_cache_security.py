@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import pytest
 
-from rxiv_maker.utils.secure_cache_utils import (
+from rxiv_maker.core.cache.secure_cache_utils import (
     SecurityError,
     _check_disk_space,
     _is_safe_path_component,
@@ -157,7 +157,7 @@ class TestSymlinkProtection:
         unsafe_link.symlink_to(unsafe_target)
 
         # Mock get_secure_cache_dir to return our test directory
-        with patch("rxiv_maker.utils.secure_cache_utils.get_secure_cache_dir", return_value=cache_dir):
+        with patch("rxiv_maker.core.cache.secure_cache_utils.get_secure_cache_dir", return_value=cache_dir):
             results = validate_cache_security()
 
             # Should detect symlinks
@@ -174,7 +174,7 @@ class TestAtomicOperations:
 
     def test_atomic_file_write(self, tmp_path):
         """Test that file writes are atomic."""
-        from rxiv_maker.utils.secure_cache_utils import _atomic_write
+        from rxiv_maker.core.cache.secure_cache_utils import _atomic_write
 
         target_file = tmp_path / "target.txt"
         content = b"test content"
@@ -193,7 +193,7 @@ class TestAtomicOperations:
 
     def test_atomic_write_failure_cleanup(self, tmp_path):
         """Test that temporary files are cleaned up on failure."""
-        from rxiv_maker.utils.secure_cache_utils import _atomic_write
+        from rxiv_maker.core.cache.secure_cache_utils import _atomic_write
 
         target_file = tmp_path / "target.txt"
 
@@ -232,7 +232,7 @@ class TestDiskSpaceProtection:
         source_file.write_bytes(b"small content")
 
         # Test the size limit by temporarily lowering it
-        from rxiv_maker.utils import secure_cache_utils
+        from rxiv_maker.core.cache import secure_cache_utils
 
         # Backup original limit
         original_limit = secure_cache_utils.MAX_FILE_SIZE_MB
@@ -252,7 +252,7 @@ class TestDiskSpaceProtection:
 
     def test_insufficient_space_handling(self, tmp_path):
         """Test handling of insufficient disk space."""
-        with patch("rxiv_maker.utils.secure_cache_utils._check_disk_space", return_value=(False, 10)):
+        with patch("rxiv_maker.core.cache.secure_cache_utils._check_disk_space", return_value=(False, 10)):
             with pytest.raises(IOError, match="Insufficient disk space"):
                 get_secure_cache_dir("test")
 
@@ -288,7 +288,7 @@ class TestPermissionValidation:
 
             # Only run the test if we successfully set insecure permissions
             if current_mode & 0o022:  # Has world/group write permissions
-                with patch("rxiv_maker.utils.secure_cache_utils.get_secure_cache_dir", return_value=cache_dir):
+                with patch("rxiv_maker.core.cache.secure_cache_utils.get_secure_cache_dir", return_value=cache_dir):
                     results = validate_cache_security()
 
                     assert not results["permissions_ok"]
@@ -299,7 +299,7 @@ class TestPermissionValidation:
                 pytest.skip("Unable to create directory with insecure permissions (umask or filesystem restrictions)")
         else:
             # On Windows, just verify the function doesn't crash
-            with patch("rxiv_maker.utils.secure_cache_utils.get_secure_cache_dir", return_value=cache_dir):
+            with patch("rxiv_maker.core.cache.secure_cache_utils.get_secure_cache_dir", return_value=cache_dir):
                 results = validate_cache_security()
                 assert "permissions_ok" in results
 
@@ -340,7 +340,7 @@ class TestSecurityValidation:
         # Add some test content
         (cache_dir / "test.txt").write_text("test")
 
-        with patch("rxiv_maker.utils.secure_cache_utils.get_secure_cache_dir", return_value=cache_dir):
+        with patch("rxiv_maker.core.cache.secure_cache_utils.get_secure_cache_dir", return_value=cache_dir):
             results = validate_cache_security()
 
             assert "cache_dir" in results
@@ -358,12 +358,12 @@ class TestSecurityValidation:
         cache_dir.mkdir()
 
         # Mock a large cache
-        with patch("rxiv_maker.utils.secure_cache_utils.get_secure_cache_dir", return_value=cache_dir):
+        with patch("rxiv_maker.core.cache.secure_cache_utils.get_secure_cache_dir", return_value=cache_dir):
             # Create mock files that appear large
             for i in range(10):
                 (cache_dir / f"file{i}.bin").write_bytes(b"x" * 1000)
 
-            with patch("rxiv_maker.utils.secure_cache_utils.MAX_CACHE_SIZE_MB", 0.001):  # 1KB limit
+            with patch("rxiv_maker.core.cache.secure_cache_utils.MAX_CACHE_SIZE_MB", 0.001):  # 1KB limit
                 results = validate_cache_security()
 
                 assert not results["size_within_limits"]

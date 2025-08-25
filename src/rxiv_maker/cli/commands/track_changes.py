@@ -8,7 +8,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from ...core.environment_manager import EnvironmentManager
 from ...core.path_manager import PathManager, PathResolutionError
-from ...engine.build_manager import BuildManager
+from ...engines.operations.build_manager import BuildManager
 
 console = Console()
 

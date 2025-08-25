@@ -14,7 +14,7 @@ from typing import Any, Callable, Dict, List, Optional
 from ..converters.types import LatexContent, MarkdownContent, ProtectedContent
 from .error_recovery import RecoveryEnhancedMixin
 from .logging_config import get_logger
-from .resource_manager import get_resource_manager, managed_resources
+from .managers.resource_manager import get_resource_manager, managed_resources
 
 logger = get_logger()
 

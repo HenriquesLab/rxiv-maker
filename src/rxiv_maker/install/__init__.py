@@ -4,7 +4,7 @@ This module provides cross-platform installation and management of system depend
 required by rxiv-maker, including LaTeX, Node.js, R, and system libraries.
 """
 
-from .manager import InstallManager
+from ..core.managers.install_manager import InstallManager
 from .utils.verification import verify_installation
 
 __all__ = ["InstallManager", "verify_installation"]
