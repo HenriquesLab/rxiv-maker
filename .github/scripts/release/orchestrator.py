@@ -28,7 +28,6 @@ from logger import log_section, log_step, setup_logger
 from utils import (
     check_github_release_exists,
     check_pypi_package_available,
-    trigger_workflow,
     validate_environment,
     wait_for_condition,
 )
@@ -59,7 +58,9 @@ class ReleaseOrchestrator:
 
         # Get tokens and version
         self.github_token = get_github_token()
-        self.pypi_token = get_pypi_token() if not dry_run else "dry-run-token"
+        self.dispatch_token = os.getenv("DISPATCH_PAT") or self.github_token  # Use PAT for cross-repo triggers
+        # OIDC token is automatically available in GitHub Actions via id-token: write permission
+        self.use_oidc = not dry_run and os.getenv("GITHUB_ACTIONS") == "true"
         self.version = get_current_version()
 
         # Initialize state
@@ -75,6 +76,7 @@ class ReleaseOrchestrator:
         self.logger.info(f"Version: {self.version}")
         self.logger.info(f"Dry run: {self.dry_run}")
         self.logger.info(f"Force: {self.force}")
+        self.logger.info(f"Using OIDC: {self.use_oidc}")
 
     def run_release_pipeline(self) -> bool:
         """
@@ -125,7 +127,9 @@ class ReleaseOrchestrator:
         try:
             # Check environment variables
             required_vars = ["GITHUB_TOKEN"]
-            if not self.dry_run:
+            # OIDC doesn't require PYPI_TOKEN - it uses GitHub's built-in OIDC token
+            # Only validate PYPI_TOKEN if not using OIDC and not in dry-run mode
+            if not self.dry_run and not self.use_oidc:
                 required_vars.append("PYPI_TOKEN")
 
             validate_environment(required_vars)
@@ -242,17 +246,48 @@ class ReleaseOrchestrator:
             build_cmd = ["python", "-m", "build", "--sdist", "--wheel"]
             subprocess.run(build_cmd, check=True, cwd=".")
 
-            # Publish to PyPI using twine
+            # Publish to PyPI
             self.logger.info(f"Publishing {self.config.package_name}=={clean_version} to PyPI...")
 
-            # Set up environment for twine
-            env = os.environ.copy()
-            env["TWINE_USERNAME"] = "__token__"
-            env["TWINE_PASSWORD"] = self.pypi_token
+            if self.use_oidc:
+                # Use PyPI's OIDC trusted publishing
+                self.logger.info("Using OIDC trusted publishing")
 
-            # Publish with twine
-            publish_cmd = ["python", "-m", "twine", "upload", "dist/*"]
-            subprocess.run(publish_cmd, env=env, capture_output=True, text=True, check=True)
+                # Set up environment for OIDC
+                env = os.environ.copy()
+
+                # Publish with twine using OIDC
+                publish_cmd = [
+                    "python",
+                    "-m",
+                    "twine",
+                    "upload",
+                    "--repository",
+                    "pypi",
+                    "--trusted-publishing",
+                    "dist/*",
+                ]
+
+                result = subprocess.run(publish_cmd, env=env, capture_output=True, text=True, check=True)
+
+                self.logger.info("OIDC publishing command output:")
+                self.logger.info(result.stdout)
+
+            else:
+                # Fallback to token-based publishing
+                self.logger.info("Using token-based publishing (fallback)")
+
+                # Get PyPI token (only if not using OIDC)
+                pypi_token = get_pypi_token()
+
+                # Set up environment for twine
+                env = os.environ.copy()
+                env["TWINE_USERNAME"] = "__token__"
+                env["TWINE_PASSWORD"] = pypi_token
+
+                # Publish with twine
+                publish_cmd = ["python", "-m", "twine", "upload", "dist/*"]
+                subprocess.run(publish_cmd, env=env, capture_output=True, text=True, check=True)
 
             self.logger.info(f"Successfully published {self.config.package_name}=={clean_version} to PyPI")
             self.release_state["pypi_published"] = True
@@ -322,23 +357,35 @@ class ReleaseOrchestrator:
             return True
 
         try:
-            inputs = {"version": self.version, "package_name": self.config.package_name}
+            # Use repository_dispatch approach for cross-repository triggers
+            import requests
 
-            success = trigger_workflow(
-                owner="henriqueslab",
-                repo=self.config.homebrew_repo,
-                workflow_id="homebrew-python.yml",  # Updated to match actual workflow
-                ref="main",
-                inputs=inputs,
-                github_token=self.github_token,
-            )
+            headers = {
+                "Authorization": f"token {self.dispatch_token}",
+                "Accept": "application/vnd.github.v3+json",
+                "Content-Type": "application/json",
+            }
 
-            if success:
-                self.logger.info("Homebrew workflow triggered successfully")
+            data = {
+                "event_type": "update-formula",
+                "client_payload": {
+                    "version": self.version,
+                    "package_name": self.config.package_name,
+                    "triggered_by": "release-orchestrator",
+                },
+            }
+
+            url = f"https://api.github.com/repos/henriqueslab/{self.config.homebrew_repo}/dispatches"
+            response = requests.post(url, headers=headers, json=data, timeout=30)
+
+            if response.status_code == 204:
+                self.logger.info("Homebrew workflow triggered successfully via repository_dispatch")
+                return True
             else:
-                self.logger.error("Failed to trigger homebrew workflow")
-
-            return success
+                self.logger.error(
+                    f"Failed to trigger homebrew workflow. Status: {response.status_code}, Response: {response.text}"
+                )
+                return False
 
         except Exception as e:
             self.logger.error(f"Error triggering homebrew workflow: {e}")
@@ -351,23 +398,35 @@ class ReleaseOrchestrator:
             return True
 
         try:
-            inputs = {"version": self.version, "package_name": self.config.package_name}
+            # Use repository_dispatch approach for cross-repository triggers
+            import requests
 
-            success = trigger_workflow(
-                owner="henriqueslab",
-                repo=self.config.apt_repo,
-                workflow_id="update-package.yml",  # Assuming this workflow exists
-                ref="main",
-                inputs=inputs,
-                github_token=self.github_token,
-            )
+            headers = {
+                "Authorization": f"token {self.dispatch_token}",
+                "Accept": "application/vnd.github.v3+json",
+                "Content-Type": "application/json",
+            }
 
-            if success:
-                self.logger.info("APT workflow triggered successfully")
+            data = {
+                "event_type": "update-package",
+                "client_payload": {
+                    "version": self.version,
+                    "package_name": self.config.package_name,
+                    "triggered_by": "release-orchestrator",
+                },
+            }
+
+            url = f"https://api.github.com/repos/henriqueslab/{self.config.apt_repo}/dispatches"
+            response = requests.post(url, headers=headers, json=data, timeout=30)
+
+            if response.status_code == 204:
+                self.logger.info("APT workflow triggered successfully via repository_dispatch")
+                return True
             else:
-                self.logger.error("Failed to trigger APT workflow")
-
-            return success
+                self.logger.error(
+                    f"Failed to trigger APT workflow. Status: {response.status_code}, Response: {response.text}"
+                )
+                return False
 
         except Exception as e:
             self.logger.error(f"Error triggering APT workflow: {e}")

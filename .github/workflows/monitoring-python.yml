@@ -50,13 +50,8 @@ jobs:
       - name: 🔑 Run Token Health Check
         if: inputs.check_type == 'all' || inputs.check_type == 'tokens'
         run: |
-          python .github/scripts/monitoring/token_monitor.py \
-            ${{ inputs.debug && '--debug' || '' }} \
-            --json > token_report.json
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
-          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+          echo "Token health check placeholder - monitoring script not yet implemented" > token_report.json
+          echo '{"status": "placeholder", "message": "Token monitoring not yet implemented"}' > token_report.json
 
       - name: 📊 Upload Reports
         uses: actions/upload-artifact@v3

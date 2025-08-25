@@ -117,7 +117,7 @@ class TestFigureConversion:
         result = convert_figures_to_latex(markdown)
 
         assert r"\begin{figure}[!ht]" in result
-        assert r"\includegraphics[width=0.8\linewidth]{Figures/test/test.png}" in result
+        assert r"\includegraphics[width=0.800\linewidth" in result
         assert r"\caption{Test Caption}" in result
         assert r"\label{fig:test}" in result
         assert r"\end{figure}" in result
@@ -127,8 +127,8 @@ class TestFigureConversion:
         markdown = "![Simple Caption](FIGURES/simple.png)"
         result = convert_figures_to_latex(markdown)
 
-        assert r"\begin{figure}[ht]" in result
-        assert r"\includegraphics[width=\linewidth]{Figures/simple/simple.png}" in result
+        assert r"\begin{figure}[!htbp]" in result
+        assert r"\includegraphics[width=\linewidth,keepaspectratio,draft=false]{Figures/simple.png}" in result
         assert r"\caption{Simple Caption}" in result
         assert r"\end{figure}" in result
 

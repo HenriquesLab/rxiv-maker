@@ -145,6 +145,11 @@ def get_pypi_token() -> str:
     return token
 
 
+def get_pypi_token_optional() -> str:
+    """Get PyPI token from environment (optional for OIDC fallback)."""
+    return os.getenv("PYPI_TOKEN", "")
+
+
 def get_current_version() -> str:
     """Extract current version from git tag or environment."""
     # Try environment first (set by GitHub Actions)

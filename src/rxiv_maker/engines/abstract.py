@@ -42,6 +42,7 @@ class ContainerSession:
                 ],
                 capture_output=True,
                 text=True,
+                encoding="latin-1",
                 timeout=5,
             )
             if result.returncode == 0:
@@ -66,7 +67,11 @@ class ContainerSession:
         try:
             # Stop the container
             stop_result = subprocess.run(
-                [self.engine_type, "stop", self.container_id], capture_output=True, text=True, timeout=10
+                [self.engine_type, "stop", self.container_id],
+                capture_output=True,
+                text=True,
+                encoding="latin-1",
+                timeout=10,
             )
             if stop_result.returncode != 0:
                 logger.debug(
@@ -75,7 +80,11 @@ class ContainerSession:
 
             # Remove the container
             rm_result = subprocess.run(
-                [self.engine_type, "rm", self.container_id], capture_output=True, text=True, timeout=10
+                [self.engine_type, "rm", self.container_id],
+                capture_output=True,
+                text=True,
+                encoding="latin-1",
+                timeout=10,
             )
             if rm_result.returncode != 0:
                 logger.debug(
@@ -166,7 +175,9 @@ class AbstractContainerEngine(ABC):
 
         try:
             # First check if engine binary exists
-            version_result = subprocess.run([self.engine_name, "--version"], capture_output=True, text=True, timeout=5)
+            version_result = subprocess.run(
+                [self.engine_name, "--version"], capture_output=True, text=True, encoding="latin-1", timeout=5
+            )
 
             if version_result.returncode != 0:
                 if "permission denied" in version_result.stderr.lower():
@@ -182,7 +193,9 @@ class AbstractContainerEngine(ABC):
 
         try:
             # Then check if engine daemon/service is actually running
-            ps_result = subprocess.run([self.engine_name, "ps"], capture_output=True, text=True, timeout=10)
+            ps_result = subprocess.run(
+                [self.engine_name, "ps"], capture_output=True, text=True, encoding="latin-1", timeout=10
+            )
 
             if ps_result.returncode != 0:
                 stderr_lower = ps_result.stderr.lower()
@@ -364,6 +377,7 @@ class AbstractContainerEngine(ABC):
                 exec_cmd,
                 capture_output=capture_output,
                 text=True,
+                encoding="latin-1",  # Handle all byte values gracefully
                 timeout=timeout,
                 **kwargs,
             )
@@ -521,7 +535,7 @@ class AbstractContainerEngine(ABC):
                 remove=False,
             )
 
-            result = subprocess.run(container_cmd, capture_output=True, text=True, timeout=30)
+            result = subprocess.run(container_cmd, capture_output=True, text=True, encoding="latin-1", timeout=30)
 
             if result.returncode == 0:
                 container_id = result.stdout.strip()
@@ -893,7 +907,7 @@ if __name__ == "__main__":
                 "echo",
                 "container_ready",
             ]
-            result = subprocess.run(exec_cmd, capture_output=True, text=True, timeout=10)
+            result = subprocess.run(exec_cmd, capture_output=True, text=True, encoding="latin-1", timeout=10)
             if result.returncode != 0:
                 return False
 
@@ -904,7 +918,7 @@ if __name__ == "__main__":
                 container_id,
                 "/usr/local/bin/upgrade-to-latest-rxiv.sh",
             ]
-            result = subprocess.run(upgrade_cmd, capture_output=True, text=True, timeout=60)
+            result = subprocess.run(upgrade_cmd, capture_output=True, text=True, encoding="latin-1", timeout=60)
             # Don't fail initialization if upgrade fails - APT version will work
             if result.returncode != 0:
                 import logging
@@ -921,7 +935,7 @@ if __name__ == "__main__":
                 "-c",
                 "import sys; print(f'Python {sys.version_info.major}.{sys.version_info.minor}')",
             ]
-            result = subprocess.run(python_test, capture_output=True, text=True, timeout=15)
+            result = subprocess.run(python_test, capture_output=True, text=True, encoding="latin-1", timeout=15)
             if result.returncode != 0:
                 return False
 
@@ -941,7 +955,7 @@ except ImportError as e:
     exit(1)
 """,
             ]
-            result = subprocess.run(deps_test, capture_output=True, text=True, timeout=20)
+            result = subprocess.run(deps_test, capture_output=True, text=True, encoding="latin-1", timeout=20)
             if result.returncode != 0:
                 return False
 
@@ -953,7 +967,7 @@ except ImportError as e:
                 "rxiv",
                 "--version",
             ]
-            result = subprocess.run(rxiv_test, capture_output=True, text=True, timeout=10)
+            result = subprocess.run(rxiv_test, capture_output=True, text=True, encoding="latin-1", timeout=10)
             if result.returncode != 0:
                 return False
 
@@ -966,7 +980,7 @@ except ImportError as e:
                 "-c",
                 "which Rscript && Rscript --version || echo 'R not available'",
             ]
-            subprocess.run(r_test, capture_output=True, text=True, timeout=10)
+            subprocess.run(r_test, capture_output=True, text=True, encoding="latin-1", timeout=10)
 
             # Test LaTeX availability (non-blocking)
             latex_test = [
@@ -977,7 +991,7 @@ except ImportError as e:
                 "-c",
                 "which pdflatex && echo 'LaTeX ready' || echo 'LaTeX not available'",
             ]
-            subprocess.run(latex_test, capture_output=True, text=True, timeout=10)
+            subprocess.run(latex_test, capture_output=True, text=True, encoding="latin-1", timeout=10)
 
             # Set up workspace permissions
             workspace_setup = [
@@ -988,7 +1002,7 @@ except ImportError as e:
                 "-c",
                 "chmod -R 755 /workspace && mkdir -p /workspace/output",
             ]
-            result = subprocess.run(workspace_setup, capture_output=True, text=True, timeout=10)
+            result = subprocess.run(workspace_setup, capture_output=True, text=True, encoding="latin-1", timeout=10)
             return result.returncode == 0
 
         except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
