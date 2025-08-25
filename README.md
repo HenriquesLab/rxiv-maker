@@ -24,9 +24,8 @@ Rxiv-Maker transforms scientific writing by converting enhanced Markdown into pr
 - **Collaborative**: Standard tools, no vendor lock-in
 - **Multi-Platform**: Works everywhere with Docker support
 
-### 📈 **For Publishers**
+### 📈 **For Publishing**
 - **arXiv Ready**: Generate submission packages automatically
-- **Journal Format**: Flexible output for any publication
 - **Track Changes**: Visual diff between manuscript versions
 - **Quality Assurance**: Built-in validation and error checking
 
