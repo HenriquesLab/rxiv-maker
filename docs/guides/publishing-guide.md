@@ -1,6 +1,6 @@
-# Publishing Guide: From Manuscript to Publication
+# Preprint Guide: From Manuscript to arXiv
 
-Complete guide for preparing and submitting your manuscript for publication.
+Complete guide for preparing and submitting your preprint to arXiv and other preprint servers.
 
 ## Pre-Submission Checklist
 
@@ -46,52 +46,17 @@ rxiv arxiv
 ### arXiv Best Practices
 - **Timing**: Submit by 14:00 UTC for next-day publication
 - **Categories**: Choose primary and secondary categories carefully
-- **Comments**: Include journal submission status if relevant
+- **Comments**: Include preprint version or update notes if relevant
 - **Updates**: Use "replace" for corrections, not new submissions
 
-## Journal Submission
-
-### Prepare Journal-Specific Format
-```bash
-# Generate final PDF
-rxiv pdf
-
-# Check journal requirements:
-# - Word count limits
-# - Figure resolution requirements
-# - Reference format
-# - Supplementary material guidelines
-```
-
-### Common Journal Requirements
-
-#### High-Impact Journals (Nature, Science, Cell)
-- **Word limits**: 3000-4500 words (including references)
-- **Figures**: Maximum 4-6 main figures
-- **Format**: Single column for submission
-- **Supplementary**: Extensive supplementary allowed
-
-#### Specialized Journals
-- **Format**: Often double-column
-- **Length**: More flexible word counts
-- **Figures**: More figures typically allowed
-- **Specificity**: Domain-specific formatting requirements
-
-### Submission Process
-1. **Journal Selection**: Impact factor, scope, open access policy
-2. **Format Check**: Ensure manuscript meets guidelines
-3. **Cover Letter**: Explain significance and fit
-4. **Suggest Reviewers**: Provide 3-5 potential reviewers
-5. **Upload**: Submit through journal system
-
-## Version Control for Publications
+## Version Control for Preprints
 
 ### Tagging Versions
 ```bash
 # Tag submission versions
 git tag -a arxiv-v1 -m "arXiv submission v1"
-git tag -a journal-submitted -m "Journal submission to Nature"
-git tag -a revision-1 -m "First revision after peer review"
+git tag -a biorxiv-v1 -m "bioRxiv submission v1"
+git tag -a arxiv-v2 -m "Updated arXiv version with improvements"
 ```
 
 ### Track Changes Between Versions
@@ -102,36 +67,13 @@ rxiv track-changes arxiv-v1 --output-dir revision-outputs/
 # This creates a PDF highlighting all changes since arXiv v1
 ```
 
-## Responding to Peer Review
-
-### Prepare Revision
-1. **Create Response Document**: Address each reviewer comment
-2. **Track Changes**: Use change tracking to show modifications
-3. **Update Manuscript**: Make requested changes
-4. **Generate Clean Version**: Final PDF without change marks
-
-### Revision Workflow
-```bash
-# Before making changes
-git tag -a pre-revision -m "Before addressing reviewer comments"
-
-# Make your changes to manuscript files
-# Edit 01_MAIN.md, update figures, add references
-
-# Generate change-tracked version for editors
-rxiv track-changes pre-revision --output-dir reviewer-response/
-
-# Generate clean final version
-rxiv pdf --output-dir final-revision/
-```
-
 ## Open Access and Licensing
 
 ### Choose Appropriate License
 - **CC BY**: Most permissive, allows commercial use
 - **CC BY-NC**: Non-commercial use only
 - **CC BY-SA**: Share-alike requirement
-- **Traditional Copyright**: Journal retains rights
+- **All Rights Reserved**: Traditional copyright protection
 
 ### Funding Requirements
 Check if your funding agency requires:

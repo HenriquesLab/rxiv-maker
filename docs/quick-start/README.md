@@ -69,7 +69,7 @@ Choose your learning path based on your experience and time available.
 Once you've completed these guides, explore advanced topics:
 
 ### 📚 **Comprehensive Guides**
-- **[Publishing Guide](../guides/publishing-guide.md)** - Submission to peer review
+- **[Preprint Guide](../guides/publishing-guide.md)** - arXiv submission and preprint sharing
 - **[Writing Guide](../guides/writing-guide.md)** - Advanced Rxiv-Markdown syntax
 - **[Collaboration Guide](../guides/collaboration-guide.md)** - Multi-author workflows
 
