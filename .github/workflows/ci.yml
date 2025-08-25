@@ -60,6 +60,8 @@ env:
   FORCE_COLOR: 1
   UV_SYSTEM_PYTHON: 1
   PYTHONIOENCODING: utf-8
+  LC_ALL: C.UTF-8
+  LANG: C.UTF-8
 
 jobs:
   # Job 1: Fast unit tests and linting (always runs)

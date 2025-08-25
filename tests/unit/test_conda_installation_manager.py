@@ -9,7 +9,7 @@ import subprocess
 import unittest
 from unittest.mock import Mock, patch
 
-from rxiv_maker.install.manager import InstallManager, InstallMode
+from rxiv_maker.core.managers.install_manager import InstallManager, InstallMode
 
 
 class TestCondaInstallationManager(unittest.TestCase):

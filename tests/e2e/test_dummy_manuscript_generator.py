@@ -348,7 +348,7 @@ class TestE2EFigureWorkflow:
 
     def test_full_build_pipeline_with_dummy_manuscript(self, dummy_manuscript):
         """Test the complete build pipeline with dummy manuscript."""
-        from rxiv_maker.engine.build_manager import BuildManager
+        from rxiv_maker.engines.operations.build_manager import BuildManager
 
         manuscript_dir = dummy_manuscript.get_manuscript_path()
         output_dir = dummy_manuscript.get_output_path()
@@ -465,11 +465,11 @@ class TestE2EFigureWorkflow:
 
         # Test various panel reference cases
         test_cases = [
-            ("(@fig:ready_figure A)", "Fig. \\ref{fig:ready_figure}A)"),
-            ("(@fig:python_figure B)", "Fig. \\ref{fig:python_figure}B)"),
+            ("(@fig:ready_figure A)", "(Fig. \\ref{fig:ready_figure}{}A)"),
+            ("(@fig:python_figure B)", "(Fig. \\ref{fig:python_figure}{}B)"),
             (
                 "(@fig:r_figure C) and (@fig:mermaid_diagram D)",
-                "Fig. \\ref{fig:r_figure}C) and (Fig. \\ref{fig:mermaid_diagram}D)",
+                "(Fig. \\ref{fig:r_figure}{}C) and (Fig. \\ref{fig:mermaid_diagram}{}D)",
             ),
         ]
 
@@ -538,16 +538,18 @@ class TestE2EFigureWorkflow:
             attributes={"width": "\\textwidth", "tex_position": "p", "id": "fig:fullpage"},
         )
 
-        # Should use regular figure environment for dedicated page
-        assert "\\begin{figure}[p]" in latex_result, "Dedicated page figures should use figure[p]"
-        assert "\\begin{figure*}" not in latex_result, "Should NOT use figure* for dedicated page"
+        # Should use figure* environment for dedicated page for full layout control
+        assert "\\begin{figure*}[p]" in latex_result, (
+            "Dedicated page figures should use figure*[p] for full layout control"
+        )
+        assert "\\clearpage" in latex_result, "Dedicated page figures should have clearpage commands"
 
     @pytest.mark.slow
     def test_complete_pdf_generation_e2e(self, dummy_manuscript):
         """Test complete PDF generation end-to-end (if LaTeX available)."""
         pytest.importorskip("subprocess")
 
-        from rxiv_maker.engine.build_manager import BuildManager
+        from rxiv_maker.engines.operations.build_manager import BuildManager
 
         manuscript_dir = dummy_manuscript.get_manuscript_path()
         output_dir = dummy_manuscript.get_output_path()

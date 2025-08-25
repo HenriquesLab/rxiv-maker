@@ -152,7 +152,10 @@ class TestPlatformDetector(unittest.TestCase):
         """Test virtual environment Python path on Windows."""
         with patch.object(self.detector, "is_windows", return_value=True):
             # Mock both venv_dir.exists() and python_path.exists() calls
-            with patch("pathlib.Path.exists", return_value=True):
+            with (
+                patch("pathlib.Path.exists", return_value=True),
+                patch.dict("os.environ", {"VIRTUAL_ENV": ""}, clear=False),  # Clear VIRTUAL_ENV to test .venv path
+            ):
                 result = self.detector.get_venv_python_path()
                 # The actual implementation returns string representation which uses OS path separators
                 expected = str(Path(".venv") / "Scripts" / "python.exe")
@@ -162,7 +165,10 @@ class TestPlatformDetector(unittest.TestCase):
         """Test virtual environment Python path on Unix."""
         with patch.object(self.detector, "is_windows", return_value=False):
             # Mock both venv_dir.exists() and python_path.exists() calls
-            with patch("pathlib.Path.exists", return_value=True):
+            with (
+                patch("pathlib.Path.exists", return_value=True),
+                patch.dict("os.environ", {"VIRTUAL_ENV": ""}, clear=False),  # Clear VIRTUAL_ENV to test .venv path
+            ):
                 result = self.detector.get_venv_python_path()
                 # The actual implementation returns string representation which uses OS path separators
                 expected = str(Path(".venv") / "bin" / "python")
@@ -179,6 +185,7 @@ class TestPlatformDetector(unittest.TestCase):
         with (
             patch.object(self.detector, "is_windows", return_value=True),
             patch("pathlib.Path.exists", return_value=True),
+            patch.dict("os.environ", {"VIRTUAL_ENV": ""}, clear=False),  # Clear VIRTUAL_ENV to test .venv path
         ):
             result = self.detector.get_venv_activate_path()
             # The actual implementation returns string representation which uses OS path separators
@@ -190,6 +197,7 @@ class TestPlatformDetector(unittest.TestCase):
         with (
             patch.object(self.detector, "is_windows", return_value=False),
             patch("pathlib.Path.exists", return_value=True),
+            patch.dict("os.environ", {"VIRTUAL_ENV": ""}, clear=False),  # Clear VIRTUAL_ENV to test .venv path
         ):
             result = self.detector.get_venv_activate_path()
             # The actual implementation returns string representation which uses OS path separators

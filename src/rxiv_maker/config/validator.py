@@ -16,8 +16,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
 
+from ..core.cache.advanced_cache import AdvancedCache
 from ..core.error_codes import ErrorCode, create_validation_error
-from ..utils.advanced_cache import AdvancedCache
 
 logger = logging.getLogger(__name__)
 

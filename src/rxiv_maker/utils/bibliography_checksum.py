@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from .cache_utils import get_cache_dir, get_legacy_cache_dir, migrate_cache_file
+from ..core.cache.cache_utils import get_cache_dir, get_legacy_cache_dir, migrate_cache_file
 
 logger = logging.getLogger(__name__)
 

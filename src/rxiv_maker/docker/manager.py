@@ -51,6 +51,8 @@ class DockerSession:
                 ],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=5,
             )
             if result.returncode == 0:
@@ -141,7 +143,12 @@ class DockerManager:
     def _get_base_environment(self) -> dict[str, str]:
         """Get base environment variables for Docker containers."""
         # Use EnvironmentManager to get all rxiv-maker variables
-        return EnvironmentManager.get_all_rxiv_vars()
+        env = EnvironmentManager.get_all_rxiv_vars()
+
+        # Ensure UTF-8 encoding in containers
+        env.update({"PYTHONIOENCODING": "utf-8", "LC_ALL": "C.UTF-8", "LANG": "C.UTF-8"})
+
+        return env
 
     def translate_path_to_container(self, host_path: Path, workspace_mount: str = "/workspace") -> str:
         """Translate host path to container path.
@@ -776,6 +783,8 @@ finally:
                     ["docker", "image", "inspect", target_image],
                     capture_output=True,
                     text=True,
+                    encoding="utf-8",
+                    errors="replace",
                     timeout=10,
                 )
                 if result.returncode == 0:
@@ -790,6 +799,8 @@ finally:
                 ["docker", "pull", target_image],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=300,  # 5 minutes
             )
             return result.returncode == 0
@@ -939,6 +950,8 @@ finally:
                         ],
                         capture_output=True,
                         text=True,
+                        encoding="utf-8",
+                        errors="replace",
                         timeout=5,
                     )
 

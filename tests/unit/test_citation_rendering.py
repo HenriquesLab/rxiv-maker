@@ -101,7 +101,7 @@ More text with citations @test2023 and @another2023.
         (manuscript_dir / "03_REFERENCES.bib").write_text(bib_content)
 
         # Generate LaTeX using the actual system
-        from rxiv_maker.engine.build_manager import BuildManager
+        from rxiv_maker.engines.operations.build_manager import BuildManager
 
         output_dir = tmp_path / "output"
         output_dir.mkdir()
@@ -258,7 +258,7 @@ This system also integrates Mermaid.js [@Mermaid2023] for generating diagrams.
         (manuscript_dir / "03_REFERENCES.bib").write_text(bib_content)
 
         # Run the full build process
-        from rxiv_maker.engine.build_manager import BuildManager
+        from rxiv_maker.engines.operations.build_manager import BuildManager
 
         output_dir = tmp_path / "output"
         output_dir.mkdir()

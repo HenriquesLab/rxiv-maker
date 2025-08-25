@@ -7,8 +7,8 @@ from typing import Any, Dict, Optional
 import click
 import yaml
 
-from ...config.manager import get_config_manager
 from ...config.validator import ConfigValidator
+from ...core.managers.config_manager import get_config_manager
 from ...utils.platform import safe_print
 
 

@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 try:
-    from rxiv_maker.engine.generate_figures import FigureGenerator, MermaidRenderer
+    from rxiv_maker.engines.operations.generate_figures import FigureGenerator, MermaidRenderer
 except ImportError:
     # Create mock classes for testing if not available
     class FigureGenerator:

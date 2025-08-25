@@ -8,7 +8,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from ...core.environment_manager import EnvironmentManager
 from ...core.logging_config import get_logger, set_debug, set_log_directory, set_quiet
 from ...core.path_manager import PathManager, PathResolutionError
-from ...engine.build_manager import BuildManager
+from ...engines.operations.build_manager import BuildManager
 
 logger = get_logger()
 

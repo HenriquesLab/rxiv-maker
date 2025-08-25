@@ -56,24 +56,19 @@ Some more content with `code` formatting.
 
 def test_command_framework_integration():
     """Test CommandFramework integration with CLI commands."""
-    try:
-        from rxiv_maker.cli.framework import FiguresCommand, ValidationCommand
+    from rxiv_maker.cli.framework import FiguresCommand, ValidationCommand
 
-        # Test that commands can be instantiated
-        validation_cmd = ValidationCommand()
-        figures_cmd = FiguresCommand()
+    # Test that commands can be instantiated
+    validation_cmd = ValidationCommand()
+    figures_cmd = FiguresCommand()
 
-        # Test basic method availability
-        assert hasattr(validation_cmd, "execute_operation")
-        assert hasattr(validation_cmd, "setup_common_options")
-        assert hasattr(figures_cmd, "execute_operation")
+    # Test basic method availability
+    assert hasattr(validation_cmd, "execute_operation")
+    assert hasattr(validation_cmd, "setup_common_options")
+    assert hasattr(figures_cmd, "execute_operation")
 
-        print("✅ CommandFramework integration test passed")
-        return True
-
-    except Exception as e:
-        print(f"❌ CommandFramework integration test failed: {e}")
-        return False
+    # If we get here, the test passed
+    assert True  # Explicit assertion for pytest
 
 
 def test_dependency_manager_integration():

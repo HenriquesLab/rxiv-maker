@@ -20,7 +20,7 @@ import pytest
 # Import the components we're testing
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from rxiv_maker.core.execution_manager import (
+from rxiv_maker.core.managers.execution_manager import (
     ContainerExecutionManager,
     ExecutionContext,
     ExecutionMode,
@@ -398,7 +398,7 @@ class TestExecutionManagerIntegration:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
 
-            from rxiv_maker.core.resource_manager import get_resource_manager
+            from rxiv_maker.core.managers.resource_manager import get_resource_manager
 
             context = ExecutionContext(mode=ExecutionMode.LOCAL, working_dir=temp_path, output_dir=temp_path / "output")
 

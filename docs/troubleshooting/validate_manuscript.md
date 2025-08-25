@@ -74,7 +74,7 @@ ERROR: Figure file FIGURES/missing.png not found
 SUGGESTION: Create the figure file or update the figure path
 ```
 
-**Note:** Figure validation checks for file existence and basic syntax, but doesn't validate figure positioning and layout. For comprehensive guidance on figure positioning, sizing, and troubleshooting layout issues, see the **[Figure Positioning Guide](../tutorials/figure-positioning.md)**.
+**Note:** Figure validation checks for file existence and basic syntax, but doesn't validate figure positioning and layout. For comprehensive guidance on figure positioning, sizing, and troubleshooting layout issues, see the **[Complete Figure Guide](../guides/figures-guide.md)**.
 
 ### 5. Mathematical Expression Validation
 **What it checks:**
@@ -385,7 +385,7 @@ rxiv validate || {
 ## Related Resources
 
 ### Troubleshooting Guides
-- **[Figure Positioning Guide](../tutorials/figure-positioning.md)** - Complete guide to figure placement, sizing, and layout control
+- **[Complete Figure Guide](../guides/figures-guide.md)** - Complete guide to figure positioning, formatting, and troubleshooting
 - **[Common Issues Guide](common-issues.md)** - General troubleshooting for all Rxiv-Maker problems  
 - **[Missing Figures Guide](troubleshooting-missing-figures.md)** - Resolving figure generation and file issues
 

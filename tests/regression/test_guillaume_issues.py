@@ -122,7 +122,7 @@ class TestPathResolution:
 
         This addresses issues with figure path display from Issue #96.
         """
-        from rxiv_maker.engine.generate_figures import FigureGenerator
+        from rxiv_maker.engines.operations.generate_figures import FigureGenerator
 
         with tempfile.TemporaryDirectory() as temp_dir:
             manuscript_dir = Path(temp_dir)
@@ -282,7 +282,7 @@ class TestGoogleColabIntegration:
             # Simulate timeout
             mock_run.side_effect = TimeoutError("Operation timed out")
 
-            from rxiv_maker.engine.generate_figures import FigureGenerator
+            from rxiv_maker.engines.operations.generate_figures import FigureGenerator
 
             with tempfile.TemporaryDirectory() as temp_dir:
                 generator = FigureGenerator(figures_dir=temp_dir, output_dir=temp_dir, engine="local")
@@ -1178,7 +1178,7 @@ acknowledge_rxiv_maker: false
                 os.chdir(manuscript_dir)
 
                 # Import and use the actual generation functions
-                from rxiv_maker.engine.generate_preprint import generate_preprint
+                from rxiv_maker.engines.operations.generate_preprint import generate_preprint
                 from rxiv_maker.processors.yaml_processor import extract_yaml_metadata
 
                 # Generate output

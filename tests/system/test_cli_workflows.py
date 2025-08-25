@@ -30,7 +30,7 @@ class TestCLIIntegration:
             # Test init command
             self.runner.invoke(
                 main,
-                ["init", str(manuscript_dir), "--template", "basic"],
+                ["init", str(manuscript_dir)],
                 obj={"verbose": False, "engine": "local"},
                 input="Test Paper\nTest Subtitle\nTest Author\ntest@example.com\nTest University\n",
             )
@@ -43,7 +43,7 @@ class TestCLIIntegration:
             assert (manuscript_dir / "FIGURES").exists()
 
             # Test validate command
-            with patch("rxiv_maker.engine.validate.main") as mock_validate:
+            with patch("rxiv_maker.engines.operations.validate.main") as mock_validate:
                 mock_validate.return_value = None  # Success
 
                 self.runner.invoke(
@@ -101,7 +101,7 @@ authors:
             (manuscript_dir / "03_REFERENCES.bib").write_text("")
 
             # Test bibliography add command
-            with patch("rxiv_maker.engine.add_bibliography.main") as mock_add:
+            with patch("rxiv_maker.engines.operations.add_bibliography.main") as mock_add:
                 mock_add.return_value = None
 
                 self.runner.invoke(
@@ -113,7 +113,7 @@ authors:
                 mock_add.assert_called_once()
 
             # Test validate command (replaces deprecated bibliography validate)
-            with patch("rxiv_maker.engine.validate.main") as mock_validate:
+            with patch("rxiv_maker.engines.operations.validate.main") as mock_validate:
                 mock_validate.return_value = None
 
                 self.runner.invoke(
@@ -125,7 +125,7 @@ authors:
                 mock_validate.assert_called_once()
 
             # Test bibliography fix command
-            with patch("rxiv_maker.engine.fix_bibliography.main") as mock_fix:
+            with patch("rxiv_maker.engines.operations.fix_bibliography.main") as mock_fix:
                 mock_fix.return_value = None
 
                 self.runner.invoke(
@@ -153,7 +153,7 @@ authors:
             (manuscript_dir / "03_REFERENCES.bib").write_text("")
 
             # Test clean command
-            with patch("rxiv_maker.engine.cleanup.main") as mock_cleanup:
+            with patch("rxiv_maker.engines.operations.cleanup.main") as mock_cleanup:
                 mock_cleanup.return_value = None
 
                 self.runner.invoke(
@@ -165,7 +165,7 @@ authors:
                 mock_cleanup.assert_called_once()
 
             # Test clean with options
-            with patch("rxiv_maker.engine.cleanup.main") as mock_cleanup:
+            with patch("rxiv_maker.engines.operations.cleanup.main") as mock_cleanup:
                 mock_cleanup.return_value = None
 
                 self.runner.invoke(
@@ -204,7 +204,7 @@ authors:
             (manuscript_dir / "03_REFERENCES.bib").write_text("")
 
             # Test figures command
-            with patch("rxiv_maker.engine.generate_figures.FigureGenerator") as mock_generator_class:
+            with patch("rxiv_maker.engines.operations.generate_figures.FigureGenerator") as mock_generator_class:
                 mock_generator = Mock()
                 mock_generator.generate_all_figures.return_value = None
                 mock_generator_class.return_value = mock_generator
@@ -255,7 +255,7 @@ authors:
 
     def test_setup_command(self):
         """Test setup command."""
-        with patch("rxiv_maker.engine.setup_environment.main") as mock_setup:
+        with patch("rxiv_maker.engines.operations.setup_environment.main") as mock_setup:
             mock_setup.return_value = None
 
             self.runner.invoke(main, ["setup"], obj={"verbose": False, "engine": "local"})
@@ -298,7 +298,7 @@ authors:
             (manuscript_dir / "03_REFERENCES.bib").write_text("")
 
             # Test verbose flag
-            with patch("rxiv_maker.engine.validate.main") as mock_validate:
+            with patch("rxiv_maker.engines.operations.validate.main") as mock_validate:
                 mock_validate.return_value = None
 
                 self.runner.invoke(

@@ -13,20 +13,12 @@ console = Console()
 
 @click.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.argument("manuscript_path", type=click.Path(), required=False)
-@click.option(
-    "--template",
-    "-t",
-    type=click.Choice(["basic", "research", "preprint"]),
-    default="basic",
-    help="Template to use for initialization",
-)
 @click.option("--force", "-f", is_flag=True, help="Force overwrite existing files")
 @click.option("--no-interactive", is_flag=True, help="Skip interactive prompts and use defaults")
 @click.pass_context
 def init(
     ctx: click.Context,
     manuscript_path: str | None,
-    template: str,
     force: bool,
     no_interactive: bool,
 ) -> None:
@@ -47,10 +39,6 @@ def init(
     **Initialize custom manuscript directory:**
 
         $ rxiv init MY_PAPER/
-
-    **Use research template:**
-
-        $ rxiv init --template research
 
     **Force overwrite existing directory:**
 

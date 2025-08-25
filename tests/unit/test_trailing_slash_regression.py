@@ -2,7 +2,7 @@
 
 import os
 
-from rxiv_maker.engine.build_manager import BuildManager
+from rxiv_maker.engines.operations.build_manager import BuildManager
 
 
 class TestTrailingSlashRegression:

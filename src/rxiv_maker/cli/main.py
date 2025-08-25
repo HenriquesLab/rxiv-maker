@@ -105,16 +105,6 @@ click.rich_click.OPTION_GROUPS = {
             "options": ["--help"],
         },
     ],
-    "rxiv init": [
-        {
-            "name": "Initialization Options",
-            "options": ["-t", "--template", "-f", "--force"],
-        },
-        {
-            "name": "Help",
-            "options": ["--help"],
-        },
-    ],
 }
 
 console = Console()
@@ -242,7 +232,7 @@ def main(
 
     # Container engine optimization: check availability early for container engines
     if engine in ["docker", "podman"]:
-        from ..engines.factory import get_container_engine
+        from ..engines.core.factory import get_container_engine
 
         try:
             if verbose:

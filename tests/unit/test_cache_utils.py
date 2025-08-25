@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from rxiv_maker.utils.cache_utils import (
+from rxiv_maker.core.cache.cache_utils import (
     cleanup_legacy_cache_dir,
     cleanup_legacy_rxiv_cache_dir,
     get_cache_dir,
@@ -160,7 +160,7 @@ class TestCacheUtils:
         (rxiv_cache / "other_file.json").write_text('{"other": "data"}')
 
         # Mock get_cache_dir to return a temporary location
-        with patch("rxiv_maker.utils.cache_utils.get_cache_dir") as mock_get_cache_dir:
+        with patch("rxiv_maker.core.cache.cache_utils.get_cache_dir") as mock_get_cache_dir:
             mock_get_cache_dir.side_effect = lambda subfolder=None: (
                 tmp_path / "new_cache" / subfolder if subfolder else tmp_path / "new_cache"
             )
@@ -198,10 +198,10 @@ class TestCacheUtils:
         (rxiv_cache2 / "test2.json").write_text('{"test": "2"}')
 
         # Mock get_cache_dir to return a temporary location
-        with patch("rxiv_maker.utils.cache_utils.get_cache_dir") as mock_get_cache_dir:
+        with patch("rxiv_maker.core.cache.cache_utils.get_cache_dir") as mock_get_cache_dir:
             mock_get_cache_dir.return_value = tmp_path / "new_cache"
 
-            with patch("rxiv_maker.utils.cache_utils.migrate_rxiv_cache_directory") as mock_migrate:
+            with patch("rxiv_maker.core.cache.cache_utils.migrate_rxiv_cache_directory") as mock_migrate:
                 mock_migrate.return_value = True
 
                 # Pass explicit search paths to avoid finding real cache directories

@@ -7,13 +7,34 @@ Get from zero to your first scientific PDF in 5 minutes.
 - Python 3.11+ installed
 - 5 minutes of your time
 
-## Step 1: Install Rxiv-Maker (30 seconds)
+## Step 1: Install and Verify Rxiv-Maker (1 minute)
 
+### Quick Installation
 ```bash
 pip install rxiv-maker
 ```
 
-**✅ Success Check**: Run `rxiv --version` - you should see version information.
+**Need other installation methods?** See the [complete installation guide](installation.md) for Homebrew, Docker, Google Colab, and platform-specific options.
+
+### Complete Installation Verification
+**Copy and run this verification script:**
+```bash
+# Complete installation verification (copy and paste this)
+rxiv --version && echo "✅ CLI Working" && rxiv check-installation && echo "✅ Dependencies OK" && echo "🎉 Installation Complete!"
+```
+
+**Expected Output:**
+```
+rxiv-maker v1.5.26
+✅ CLI Working  
+🔍 Checking Python environment... ✅
+🔍 Checking LaTeX installation... ✅
+🔍 Checking Node.js installation... ✅
+✅ Dependencies OK
+🎉 Installation Complete!
+```
+
+**If verification fails:** Run `rxiv check-installation --fix` to auto-install missing dependencies.
 
 ## Step 2: Create Your First Manuscript (1 minute)
 

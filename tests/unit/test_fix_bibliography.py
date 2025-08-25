@@ -10,7 +10,7 @@ import requests
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from rxiv_maker.engine.fix_bibliography import BibliographyFixer
+from rxiv_maker.engines.operations.fix_bibliography import BibliographyFixer
 
 
 class TestBibliographyFixer:
@@ -27,7 +27,7 @@ class TestBibliographyFixer:
 
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_init_default(self, mock_cache):
         """Test BibliographyFixer initialization with default parameters."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -37,7 +37,7 @@ class TestBibliographyFixer:
         assert fixer.similarity_threshold == 0.8
         mock_cache.assert_called_once()
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_init_no_backup(self, mock_cache):
         """Test BibliographyFixer initialization with backup disabled."""
         fixer = BibliographyFixer(str(self.manuscript_path), backup=False)
@@ -46,7 +46,7 @@ class TestBibliographyFixer:
         assert fixer.backup is False
         mock_cache.assert_called_once()
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_init_string_path(self, mock_cache):
         """Test BibliographyFixer initialization with string path."""
         path_str = "/test/path"
@@ -55,7 +55,7 @@ class TestBibliographyFixer:
         assert fixer.manuscript_path == Path(path_str)
         mock_cache.assert_called_once()
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_fix_bibliography_no_bib_file(self, mock_cache):
         """Test fix_bibliography when bibliography file doesn't exist."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -65,8 +65,8 @@ class TestBibliographyFixer:
         assert result["success"] is False
         assert "not found" in result["error"]
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
-    @patch("rxiv_maker.engine.fix_bibliography.DOIValidator")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOIValidator")
     def test_fix_bibliography_no_issues(self, mock_validator_class, mock_cache):
         """Test fix_bibliography when no issues are found."""
         # Create bibliography file
@@ -86,7 +86,7 @@ class TestBibliographyFixer:
         assert result["success"] is True
         assert result["fixed_count"] == 0
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_parse_bibliography_simple(self, mock_cache):
         """Test parsing a simple bibliography entry."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -107,7 +107,7 @@ class TestBibliographyFixer:
         assert entry["author"] == "Test Author"
         assert entry["year"] == "2024"
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_parse_bibliography_multiple_entries(self, mock_cache):
         """Test parsing multiple bibliography entries."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -132,7 +132,7 @@ class TestBibliographyFixer:
         assert entries[1]["key"] == "second2023"
         assert entries[1]["type"] == "book"
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_parse_bibliography_empty(self, mock_cache):
         """Test parsing empty bibliography content."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -141,7 +141,7 @@ class TestBibliographyFixer:
 
         assert len(entries) == 0
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_extract_bib_fields_braces(self, mock_cache):
         """Test extracting fields with braces format."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -156,7 +156,7 @@ class TestBibliographyFixer:
         assert fields["author"] == "Test Author"
         assert fields["year"] == "2024"
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_extract_bib_fields_no_braces(self, mock_cache):
         """Test extracting fields without braces format."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -171,7 +171,7 @@ class TestBibliographyFixer:
         assert fields["author"] == "Test Author"
         assert fields["year"] == "2024"
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_extract_bib_fields_mixed(self, mock_cache):
         """Test extracting fields with mixed format."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -186,7 +186,7 @@ class TestBibliographyFixer:
         assert fields["author"] == "Test Author"
         assert fields["year"] == "2024"
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_is_fixable_error_no_title(self, mock_cache):
         """Test is_fixable_error when entry has no title."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -199,7 +199,7 @@ class TestBibliographyFixer:
 
         assert result is False
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_is_fixable_error_valid_error(self, mock_cache):
         """Test is_fixable_error with valid fixable error."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -212,7 +212,7 @@ class TestBibliographyFixer:
 
         assert result is True
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_is_fixable_error_unfixable_error(self, mock_cache):
         """Test is_fixable_error with unfixable error."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -225,7 +225,7 @@ class TestBibliographyFixer:
 
         assert result is False
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_identify_problematic_entries_no_errors(self, mock_cache):
         """Test identifying problematic entries when there are no validation errors."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -238,7 +238,7 @@ class TestBibliographyFixer:
 
         assert len(result) == 0
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_identify_problematic_entries_with_fixable_error(self, mock_cache):
         """Test identifying problematic entries with fixable errors."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -257,7 +257,7 @@ class TestBibliographyFixer:
         assert result[0]["key"] == "test"
         assert result[0]["validation_error"] == error
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_attempt_fix_entry_no_title(self, mock_cache):
         """Test attempt_fix_entry when entry has no title."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -268,8 +268,8 @@ class TestBibliographyFixer:
 
         assert result is None
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
-    @patch("rxiv_maker.engine.fix_bibliography.BibliographyFixer._search_crossref")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.BibliographyFixer._search_crossref")
     def test_attempt_fix_entry_no_candidates(self, mock_search, mock_cache):
         """Test attempt_fix_entry when no candidates are found."""
         mock_search.return_value = []
@@ -299,8 +299,8 @@ class TestBibliographyFixerCrossRef:
 
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
-    @patch("rxiv_maker.engine.fix_bibliography.requests.get")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.requests.get")
     def test_search_crossref_successful(self, mock_get, mock_cache):
         """Test successful CrossRef API search."""
         mock_response = MagicMock()
@@ -329,8 +329,8 @@ class TestBibliographyFixerCrossRef:
         assert results[0]["title"] == "Test Article"
         assert results[0]["authors"] == "Doe, John"
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
-    @patch("rxiv_maker.engine.fix_bibliography.requests.get")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.requests.get")
     def test_search_crossref_timeout(self, mock_get, mock_cache):
         """Test CrossRef API search with timeout."""
         mock_get.side_effect = requests.exceptions.Timeout("Request timed out")
@@ -340,8 +340,8 @@ class TestBibliographyFixerCrossRef:
 
         assert results == []
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
-    @patch("rxiv_maker.engine.fix_bibliography.requests.get")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.requests.get")
     def test_search_crossref_api_error(self, mock_get, mock_cache):
         """Test CrossRef API search with API error."""
         mock_response = MagicMock()
@@ -353,8 +353,8 @@ class TestBibliographyFixerCrossRef:
 
         assert results == []
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
-    @patch("rxiv_maker.engine.fix_bibliography.requests.get")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.requests.get")
     def test_search_crossref_empty_response(self, mock_get, mock_cache):
         """Test CrossRef API search with empty response."""
         mock_response = MagicMock()
@@ -382,7 +382,7 @@ class TestBibliographyFixerMatching:
 
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_find_best_match_perfect_match(self, mock_cache):
         """Test finding best match with perfect title match."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -403,7 +403,7 @@ class TestBibliographyFixerMatching:
         assert result is not None
         assert result["doi"] == "10.1000/test"
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_find_best_match_no_match(self, mock_cache):
         """Test finding best match when no good match exists."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -423,7 +423,7 @@ class TestBibliographyFixerMatching:
 
         assert result is None
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_calculate_confidence_high(self, mock_cache):
         """Test confidence calculation with high similarity."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -439,7 +439,7 @@ class TestBibliographyFixerMatching:
 
         assert confidence > 0.8
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_calculate_confidence_low(self, mock_cache):
         """Test confidence calculation with low similarity."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -455,7 +455,7 @@ class TestBibliographyFixerMatching:
 
         assert confidence < 0.5
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_extract_authors_single(self, mock_cache):
         """Test extracting authors with single author."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -466,7 +466,7 @@ class TestBibliographyFixerMatching:
 
         assert result == "Doe, John"
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_extract_authors_multiple(self, mock_cache):
         """Test extracting authors with multiple authors."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -481,7 +481,7 @@ class TestBibliographyFixerMatching:
 
         assert result == "Doe, John and Smith, Jane and Johnson, Bob"
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_extract_authors_missing_fields(self, mock_cache):
         """Test extracting authors with missing given/family names."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -508,7 +508,7 @@ class TestBibliographyFixerGeneration:
 
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_generate_fixed_entry_complete(self, mock_cache):
         """Test generating fixed bibliography entry with complete data."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -540,7 +540,7 @@ class TestBibliographyFixerGeneration:
         assert "volume = {42}" in result
         assert "doi = {10.1000/test}" in result
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_generate_fixed_entry_minimal(self, mock_cache):
         """Test generating fixed bibliography entry with minimal data."""
         fixer = BibliographyFixer(str(self.manuscript_path))
@@ -576,7 +576,7 @@ class TestBibliographyFixerFileOperations:
 
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_create_backup(self, mock_cache):
         """Test creating backup of bibliography file."""
         # Create test bibliography file
@@ -595,7 +595,7 @@ class TestBibliographyFixerFileOperations:
         backup_content = backup_file.read_text()
         assert backup_content == bib_content
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_apply_fixes_single(self, mock_cache):
         """Test applying single fix to bibliography file."""
         bib_content = """@article{test2024,
@@ -632,7 +632,7 @@ class TestBibliographyFixerFileOperations:
         assert "New Title" in updated_content
         assert "doi = {10.1000/new}" in updated_content
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     def test_apply_fixes_multiple(self, mock_cache):
         """Test applying multiple fixes to bibliography file."""
         bib_content = """@article{first2024,
@@ -702,7 +702,7 @@ class TestBibliographyFixerDOIValidation:
 
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     @patch("crossref_commons.retrieval.get_publication_as_json")
     def test_is_doi_valid_success(self, mock_get_pub, mock_cache):
         """Test DOI validation with valid DOI."""
@@ -719,7 +719,7 @@ class TestBibliographyFixerDOIValidation:
 
         assert result is True
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     @patch("crossref_commons.retrieval.get_publication_as_json")
     def test_is_doi_valid_not_found(self, mock_get_pub, mock_cache):
         """Test DOI validation with invalid DOI."""
@@ -736,7 +736,7 @@ class TestBibliographyFixerDOIValidation:
 
         assert result is False
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     @patch("crossref_commons.retrieval.get_publication_as_json")
     def test_is_doi_valid_timeout(self, mock_get_pub, mock_cache):
         """Test DOI validation with timeout."""
@@ -752,7 +752,7 @@ class TestBibliographyFixerDOIValidation:
 
         assert result is False
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
     @patch("crossref_commons.retrieval.get_publication_as_json")
     def test_is_doi_valid_connection_error(self, mock_get_pub, mock_cache):
         """Test DOI validation with connection error."""
@@ -783,10 +783,10 @@ class TestBibliographyFixerIntegration:
 
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
-    @patch("rxiv_maker.engine.fix_bibliography.DOIValidator")
-    @patch("rxiv_maker.engine.fix_bibliography.BibliographyFixer._search_crossref")
-    @patch("rxiv_maker.engine.fix_bibliography.BibliographyFixer._is_doi_valid")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOIValidator")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.BibliographyFixer._search_crossref")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.BibliographyFixer._is_doi_valid")
     def test_fix_bibliography_complete_workflow(self, mock_doi_valid, mock_search, mock_validator_class, mock_cache):
         """Test complete bibliography fixing workflow."""
         # Create bibliography file with problematic entry
@@ -833,8 +833,8 @@ class TestBibliographyFixerIntegration:
         assert "10.1000/fixed" in updated_content
         assert "Author, Known" in updated_content
 
-    @patch("rxiv_maker.engine.fix_bibliography.DOICache")
-    @patch("rxiv_maker.engine.fix_bibliography.DOIValidator")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOICache")
+    @patch("rxiv_maker.engines.operations.fix_bibliography.DOIValidator")
     def test_fix_bibliography_dry_run(self, mock_validator_class, mock_cache):
         """Test bibliography fixing in dry run mode."""
         # Create bibliography file
