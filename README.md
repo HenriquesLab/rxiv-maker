@@ -6,9 +6,9 @@
 
 <img src="src/logo/logo-rxiv-maker.svg" align="right" width="200" style="margin-left: 20px;"/>
 
-**Write scientific papers in Markdown. Generate publication-ready PDFs instantly.**
+**Write scientific preprints in Markdown. Generate publication-ready PDFs instantly.**
 
-Rxiv-Maker transforms scientific writing by converting enhanced Markdown into professional PDFs with automated figure generation, citation management, and LaTeX typesetting - no LaTeX knowledge required.
+Rxiv-Maker transforms scientific preprint writing by converting enhanced Markdown into professional PDFs with automated figure generation, citation management, and LaTeX typesetting - no LaTeX knowledge required. One beautiful template, infinite possibilities.
 
 ## ✨ Why Rxiv-Maker?
 
@@ -104,9 +104,9 @@ The correlation coefficient was $r = 0.95$ (p < 0.001).
 
 ## 🎯 Use Cases
 
-### 📄 **Research Papers**
+### 📄 **Research Preprints**
 - arXiv preprints with automated submission packages
-- Journal submissions with flexible formatting
+- bioRxiv and other preprint servers with professional formatting
 - Conference papers with consistent styling
 
 ### 📊 **Reports & Analyses**  
