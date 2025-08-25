@@ -276,10 +276,11 @@ class ReleaseOrchestrator:
                 # Use PyPI's OIDC trusted publishing
                 self.logger.info("Attempting OIDC trusted publishing")
 
-                # Set up environment for OIDC
+                # Set up environment for OIDC - twine detects OIDC automatically
+                # when running in GitHub Actions with id-token: write permission
                 env = os.environ.copy()
 
-                # Publish with twine using OIDC
+                # Publish with twine using OIDC (no special flags needed)
                 publish_cmd = [
                     "python",
                     "-m",
@@ -287,7 +288,6 @@ class ReleaseOrchestrator:
                     "upload",
                     "--repository",
                     "pypi",
-                    "--trusted-publishing",
                     "dist/*",
                 ]
 
