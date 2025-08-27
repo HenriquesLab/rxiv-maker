@@ -174,8 +174,10 @@ class TestBaseValidators(ValidationTestBase):
 
     def test_validation_error_exception(self):
         """Test validation error exception handling."""
-        with self.assertRaises(ValidationError):
-            raise ValidationError("Test validation error")
+        from rxiv_maker.services.base import ValidationError as ValidationException
+
+        with self.assertRaises(ValidationException):
+            raise ValidationException("Test validation error")
 
 
 @pytest.mark.validation

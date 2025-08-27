@@ -8,6 +8,7 @@ import re
 from pathlib import Path
 
 try:
+    from .. import __version__
     from ..converters.md2tex import extract_content_sections
     from .author_processor import (
         generate_authors_and_affiliations,
@@ -22,6 +23,11 @@ except ImportError:
         generate_corresponding_authors,
         generate_extended_author_info,
     )
+
+    try:
+        from .. import __version__
+    except ImportError:
+        __version__ = "unknown"
 
 
 def get_template_path():
@@ -507,9 +513,7 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
     # Add RχIV-Maker acknowledgment if requested
     acknowledge_rxiv = yaml_metadata.get("acknowledge_rxiv_maker", False)
     if acknowledge_rxiv and not manuscript_prep_content.strip():
-        manuscript_prep_content = (
-            "This manuscript was prepared using {\\color{red}R}$\\chi$iv-Maker~\\cite{saraiva_2025_rxivmaker}."
-        )
+        manuscript_prep_content = f"This manuscript was prepared using {{\\color{{red}}R}}$\\chi$iv-Maker v{__version__}~\\cite{{saraiva_2025_rxivmaker}}."
 
     # Add license information if specified
     license_info = yaml_metadata.get("license", "")

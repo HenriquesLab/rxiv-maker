@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **🎯 Dynamic Version Injection**: Added dynamic version injection to Rxiv-Maker acknowledgment text
+  - **Version Display**: Acknowledgment text now shows "Rxiv-Maker v{version}" instead of just "Rxiv-Maker"
+  - **Automatic Updates**: Version number automatically updates with each release without manual intervention
+  - **Graceful Fallbacks**: Handles import failures gracefully with "unknown" fallback version
+  - **Backward Compatible**: Existing `acknowledge_rxiv_maker: true/false` setting works unchanged
+  - **Reproducibility**: Helps users identify which version generated their manuscript for better traceability
+
 - **🎯 Python Code Execution in Markdown**: Added secure Python code execution capabilities for dynamic content generation
   - **Inline Execution**: `{py: expression}` for inline calculations and expressions
   - **Block Execution**: `{{py: code}}` for multi-line code blocks with output formatting
@@ -32,6 +39,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Variable Persistence**: Demonstrated workflow with variables shared across code blocks  
   - **Security Examples**: Shows security restrictions in action
   - **Documentation**: Complete reference for all new features
+
+### Fixed
+- **🐛 ValidationError Test Suite**: Fixed pre-existing test failure in validation test suite
+  - **Root Cause**: Test was incorrectly trying to use `ValidationError` dataclass as an exception
+  - **Proper Import**: Updated test to import the correct `ValidationError` exception class from services module
+  - **Test Coverage**: All 1542+ unit tests now pass without failures
+  - **Architecture Clarity**: Improved distinction between validation dataclasses and service exceptions
 
 ## [v1.5.17] - 2025-08-17
 

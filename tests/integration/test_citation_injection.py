@@ -312,3 +312,58 @@ Original acknowledgements.
         # Verify content is correct
         assert "Rxiv-Maker: an automated template engine" in content
         assert "Bruno M. Saraiva and Guillaume Jaquemet and Ricardo Henriques" in content
+
+    def test_acknowledgment_includes_version_in_generated_manuscript(self):
+        """Test that acknowledgment text includes version in generated manuscript."""
+        from rxiv_maker import __version__
+        from rxiv_maker.engines.operations.generate_preprint import generate_preprint
+
+        # Create configuration with acknowledgment enabled
+        config_content = """
+        title:
+            long: "Test Manuscript with Version"
+        authors:
+            - name: "Test Author"
+              affiliations: ["Test University"]
+        affiliations:
+            - shortname: "Test University"
+              full_name: "Test University"
+        acknowledge_rxiv_maker: true
+        """
+
+        config_file = self.manuscript_dir / "00_CONFIG.yml"
+        config_file.write_text(config_content, encoding="utf-8")
+
+        # Create a simple manuscript
+        main_content = """# Test Manuscript
+
+This is a test manuscript to verify version injection.
+"""
+        main_file = self.manuscript_dir / "01_MAIN.md"
+        main_file.write_text(main_content, encoding="utf-8")
+
+        # Create bibliography file for citation to work
+        bib_file = self.manuscript_dir / "03_REFERENCES.bib"
+        bib_file.write_text("", encoding="utf-8")
+
+        # Extract YAML metadata
+        from rxiv_maker.processors.yaml_processor import extract_yaml_metadata
+
+        yaml_metadata = extract_yaml_metadata(str(config_file))
+
+        # Generate manuscript
+        with patch.dict(os.environ, {"MANUSCRIPT_PATH": str(self.manuscript_dir)}):
+            with patch("pathlib.Path.cwd", return_value=Path(self.manuscript_dir)):
+                tex_file = generate_preprint(str(self.output_dir), yaml_metadata)
+
+        # Read generated tex file
+        tex_content = Path(tex_file).read_text(encoding="utf-8")
+
+        # Verify version is included in acknowledgment text
+        assert "This manuscript was prepared using" in tex_content
+        assert f"R}}$\\chi$iv-Maker v{__version__}" in tex_content
+        assert "saraiva_2025_rxivmaker" in tex_content
+
+        # Verify it's in manuscriptinfo environment
+        assert "\\begin{manuscriptinfo}" in tex_content
+        assert "\\end{manuscriptinfo}" in tex_content

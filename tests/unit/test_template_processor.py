@@ -88,3 +88,47 @@ class TestTemplateProcessor:
         assert "Comprehensive Test" in result
         assert "Jane Doe" in result
         assert "comprehensive" in result
+
+    def test_acknowledgment_with_version_injection(self):
+        """Test that acknowledgment includes version when acknowledge_rxiv_maker is true."""
+        template_content = "<PY-RPL:MANUSCRIPT-PREPARATION-BLOCK>"
+        yaml_metadata = {"acknowledge_rxiv_maker": True}
+        article_md = "# Test Content"
+
+        result = process_template_replacements(template_content, yaml_metadata, article_md)
+
+        # Should contain acknowledgment text
+        assert "This manuscript was prepared using" in result
+        assert "R}$\\chi$iv-Maker" in result
+        # Should include version information
+        assert "v1.6.0" in result or "vunknown" in result
+        # Should contain citation
+        assert "saraiva_2025_rxivmaker" in result
+
+    def test_acknowledgment_disabled(self):
+        """Test that acknowledgment is not included when acknowledge_rxiv_maker is false."""
+        template_content = "<PY-RPL:MANUSCRIPT-PREPARATION-BLOCK>"
+        yaml_metadata = {"acknowledge_rxiv_maker": False}
+        article_md = "# Test Content"
+
+        result = process_template_replacements(template_content, yaml_metadata, article_md)
+
+        # Should not contain acknowledgment text
+        assert "This manuscript was prepared using" not in result
+
+    def test_acknowledgment_with_existing_manuscript_prep(self):
+        """Test that acknowledgment doesn't override existing manuscript preparation content."""
+        template_content = "Block: <PY-RPL:MANUSCRIPT-PREPARATION-BLOCK>"
+        yaml_metadata = {"acknowledge_rxiv_maker": True}
+        article_md = """# Test Content
+
+## Manuscript Preparation
+
+Custom manuscript preparation content here.
+"""
+
+        result = process_template_replacements(template_content, yaml_metadata, article_md)
+
+        # Should contain the custom content, not the default acknowledgment
+        assert "Custom manuscript preparation content here" in result
+        assert "This manuscript was prepared using" not in result
