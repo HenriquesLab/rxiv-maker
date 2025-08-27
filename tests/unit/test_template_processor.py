@@ -9,6 +9,11 @@ from rxiv_maker.processors.template_processor import (
     process_template_replacements,
 )
 
+try:
+    from rxiv_maker import __version__
+except ImportError:
+    __version__ = "unknown"
+
 
 class TestTemplateProcessor:
     """Test template processing functionality."""
@@ -101,7 +106,7 @@ class TestTemplateProcessor:
         assert "This manuscript was prepared using" in result
         assert "R}$\\chi$iv-Maker" in result
         # Should include version information
-        assert "v1.6.0" in result or "vunknown" in result
+        assert f"v{__version__}" in result or "vunknown" in result
         # Should contain citation
         assert "saraiva_2025_rxivmaker" in result
 
