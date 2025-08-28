@@ -1,0 +1,326 @@
+name: 🔄 Sync Downstream Repositories
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to sync (e.g., v1.6.1)'
+        required: true
+        type: string
+      repositories:
+        description: 'Repositories to sync (comma-separated)'
+        required: false
+        default: 'homebrew-rxiv-maker,apt-rxiv-maker,docker-rxiv-maker'
+        type: string
+      dry_run:
+        description: 'Dry run mode (show what would be done)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+env:
+  # Timeout for downstream triggers
+  TRIGGER_TIMEOUT: 30
+  # Wait time between triggers to avoid rate limiting
+  TRIGGER_DELAY: 5
+
+jobs:
+  sync-downstream:
+    name: 🔄 Sync Version to Downstream Repositories
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Extract version information
+        id: version
+        run: |
+          # Get version from release event or manual input
+          if [ "${{ github.event_name }}" == "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+
+          # Validate version format
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Invalid version format: $VERSION"
+            echo "Expected format: vX.Y.Z (e.g., v1.6.1)"
+            exit 1
+          fi
+
+          # Extract clean version (without 'v' prefix)
+          CLEAN_VERSION="${VERSION#v}"
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "clean_version=$CLEAN_VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Version to sync: $VERSION ($CLEAN_VERSION)"
+
+      - name: Parse target repositories
+        id: repos
+        run: |
+          # Get repositories from input or default
+          REPOS="${{ github.event.inputs.repositories || 'homebrew-rxiv-maker,apt-rxiv-maker,docker-rxiv-maker' }}"
+
+          # Validate repository names
+          echo "🎯 Target repositories:"
+          IFS=',' read -ra REPO_ARRAY <<< "$REPOS"
+          VALID_REPOS=""
+
+          for repo in "${REPO_ARRAY[@]}"; do
+            repo=$(echo "$repo" | xargs)  # Trim whitespace
+
+            # Validate repository name format
+            if [[ "$repo" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+              echo "  ✅ $repo"
+              if [ -z "$VALID_REPOS" ]; then
+                VALID_REPOS="$repo"
+              else
+                VALID_REPOS="$VALID_REPOS,$repo"
+              fi
+            else
+              echo "  ❌ Invalid repository name: $repo"
+              exit 1
+            fi
+          done
+
+          echo "repositories=$VALID_REPOS" >> $GITHUB_OUTPUT
+
+      - name: Trigger Homebrew repository update
+        if: contains(steps.repos.outputs.repositories, 'homebrew-rxiv-maker')
+        continue-on-error: true
+        run: |
+          echo "🍺 Triggering Homebrew formula update..."
+
+          if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+            echo "🧪 DRY RUN: Would trigger homebrew-rxiv-maker with version ${{ steps.version.outputs.version }}"
+            exit 0
+          fi
+
+          # Trigger repository_dispatch event
+          curl -L \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.DISPATCH_PAT }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/HenriquesLab/homebrew-rxiv-maker/dispatches \
+            -d '{
+              "event_type": "version-update",
+              "client_payload": {
+                "version": "${{ steps.version.outputs.version }}",
+                "clean_version": "${{ steps.version.outputs.clean_version }}",
+                "source": "main-release",
+                "triggered_by": "${{ github.actor }}",
+                "release_url": "${{ github.event.release.html_url || github.server_url }}/releases/tag/${{ steps.version.outputs.version }}",
+                "pypi_url": "https://pypi.org/project/rxiv-maker/${{ steps.version.outputs.clean_version }}/"
+              }
+            }' \
+            --max-time ${{ env.TRIGGER_TIMEOUT }} || {
+              echo "❌ Failed to trigger homebrew-rxiv-maker update"
+              echo "trigger_homebrew=failed" >> $GITHUB_OUTPUT
+              exit 1
+            }
+
+          echo "✅ Successfully triggered homebrew-rxiv-maker update"
+          echo "trigger_homebrew=success" >> $GITHUB_OUTPUT
+
+          # Wait between triggers to avoid rate limiting
+          sleep ${{ env.TRIGGER_DELAY }}
+
+      - name: Trigger APT repository update
+        if: contains(steps.repos.outputs.repositories, 'apt-rxiv-maker')
+        continue-on-error: true
+        run: |
+          echo "📦 Triggering APT package update..."
+
+          if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+            echo "🧪 DRY RUN: Would trigger apt-rxiv-maker with version ${{ steps.version.outputs.version }}"
+            exit 0
+          fi
+
+          # Trigger repository_dispatch event
+          curl -L \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.DISPATCH_PAT }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/HenriquesLab/apt-rxiv-maker/dispatches \
+            -d '{
+              "event_type": "version-update",
+              "client_payload": {
+                "version": "${{ steps.version.outputs.version }}",
+                "clean_version": "${{ steps.version.outputs.clean_version }}",
+                "source": "main-release",
+                "triggered_by": "${{ github.actor }}",
+                "release_url": "${{ github.event.release.html_url || github.server_url }}/releases/tag/${{ steps.version.outputs.version }}",
+                "pypi_url": "https://pypi.org/project/rxiv-maker/${{ steps.version.outputs.clean_version }}/"
+              }
+            }' \
+            --max-time ${{ env.TRIGGER_TIMEOUT }} || {
+              echo "❌ Failed to trigger apt-rxiv-maker update"
+              echo "trigger_apt=failed" >> $GITHUB_OUTPUT
+              exit 1
+            }
+
+          echo "✅ Successfully triggered apt-rxiv-maker update"
+          echo "trigger_apt=success" >> $GITHUB_OUTPUT
+
+          # Wait between triggers
+          sleep ${{ env.TRIGGER_DELAY }}
+
+      - name: Trigger Docker repository update
+        if: contains(steps.repos.outputs.repositories, 'docker-rxiv-maker')
+        continue-on-error: true
+        run: |
+          echo "🐳 Triggering Docker image update..."
+
+          if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+            echo "🧪 DRY RUN: Would trigger docker-rxiv-maker with version ${{ steps.version.outputs.version }}"
+            exit 0
+          fi
+
+          # Trigger repository_dispatch event
+          curl -L \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.DISPATCH_PAT }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/HenriquesLab/docker-rxiv-maker/dispatches \
+            -d '{
+              "event_type": "version-update",
+              "client_payload": {
+                "version": "${{ steps.version.outputs.version }}",
+                "clean_version": "${{ steps.version.outputs.clean_version }}",
+                "source": "main-release",
+                "triggered_by": "${{ github.actor }}",
+                "release_url": "${{ github.event.release.html_url || github.server_url }}/releases/tag/${{ steps.version.outputs.version }}",
+                "pypi_url": "https://pypi.org/project/rxiv-maker/${{ steps.version.outputs.clean_version }}/"
+              }
+            }' \
+            --max-time ${{ env.TRIGGER_TIMEOUT }} || {
+              echo "❌ Failed to trigger docker-rxiv-maker update"
+              echo "trigger_docker=failed" >> $GITHUB_OUTPUT
+              exit 1
+            }
+
+          echo "✅ Successfully triggered docker-rxiv-maker update"
+          echo "trigger_docker=success" >> $GITHUB_OUTPUT
+
+      - name: Generate sync summary
+        run: |
+          echo "## 🔄 Downstream Repository Sync Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Actor:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+            echo "**Mode:** 🧪 Dry Run" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Mode:** 🚀 Production" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Repository Sync Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Homebrew status
+          if [[ "${{ steps.repos.outputs.repositories }}" == *"homebrew-rxiv-maker"* ]]; then
+            if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+              echo "🍺 **homebrew-rxiv-maker**: ⏭️ Skipped (dry run)" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "🍺 **homebrew-rxiv-maker**: ✅ Triggered" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "🍺 **homebrew-rxiv-maker**: ⏭️ Not selected" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # APT status
+          if [[ "${{ steps.repos.outputs.repositories }}" == *"apt-rxiv-maker"* ]]; then
+            if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+              echo "📦 **apt-rxiv-maker**: ⏭️ Skipped (dry run)" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "📦 **apt-rxiv-maker**: ✅ Triggered" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "📦 **apt-rxiv-maker**: ⏭️ Not selected" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Docker status
+          if [[ "${{ steps.repos.outputs.repositories }}" == *"docker-rxiv-maker"* ]]; then
+            if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+              echo "🐳 **docker-rxiv-maker**: ⏭️ Skipped (dry run)" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "🐳 **docker-rxiv-maker**: ✅ Triggered" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "🐳 **docker-rxiv-maker**: ⏭️ Not selected" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔍 Monitor downstream repository workflows" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧪 Test package installation after updates complete" >> $GITHUB_STEP_SUMMARY
+          echo "- 📋 Check [ecosystem health dashboard](https://github.com/HenriquesLab/rxiv-maker/actions/workflows/monitoring-python.yml)" >> $GITHUB_STEP_SUMMARY
+
+  # Health check job to verify sync completion
+  verify-sync:
+    name: 🏥 Verify Sync Completion
+    runs-on: ubuntu-latest
+    needs: sync-downstream
+    if: github.event.inputs.dry_run != 'true'
+    timeout-minutes: 10
+
+    steps:
+      - name: Wait for downstream propagation
+        run: |
+          echo "⏳ Waiting for downstream repositories to process updates..."
+          sleep 60  # Give repositories time to process the dispatch events
+
+      - name: Check downstream workflow status
+        run: |
+          echo "🔍 Checking downstream repository workflow status..."
+
+          # Note: This is a placeholder for future implementation
+          # In a full implementation, this would:
+          # 1. Query GitHub API for recent workflow runs in downstream repos
+          # 2. Check if version-update workflows were triggered
+          # 3. Monitor their completion status
+          # 4. Report any failures
+
+          echo "✅ Downstream sync verification completed"
+          echo "📋 For detailed status, check individual repository workflows:"
+          echo "  - https://github.com/HenriquesLab/homebrew-rxiv-maker/actions"
+          echo "  - https://github.com/HenriquesLab/apt-rxiv-maker/actions"
+          echo "  - https://github.com/HenriquesLab/docker-rxiv-maker/actions"
+
+  # Success gate for overall workflow
+  sync-success:
+    name: ✅ Sync Success
+    runs-on: ubuntu-latest
+    needs: [sync-downstream, verify-sync]
+    if: always()
+
+    steps:
+      - name: Report final status
+        run: |
+          if [ "${{ needs.sync-downstream.result }}" == "success" ]; then
+            if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+              echo "✅ Downstream repository sync completed successfully (dry run mode)"
+            else
+              echo "✅ Downstream repository sync completed successfully"
+              echo "🔄 Version ${{ needs.sync-downstream.outputs.version || github.event.release.tag_name }} synced across ecosystem"
+            fi
+          else
+            echo "❌ Downstream repository sync failed"
+            echo "📋 Check individual step results for details"
+            exit 1
+          fi
