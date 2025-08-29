@@ -15,6 +15,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
@@ -23,7 +24,7 @@ classifiers = [
 ]
 description = "Automated LaTeX article generation with modern CLI and figure creation capabilities"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
     # Core scientific libraries for figure generation (optional for users who don't generate figures)
     "matplotlib>=3.7.0",
