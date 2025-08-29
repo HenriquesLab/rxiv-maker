@@ -1,0 +1,15 @@
+title:
+  long: "Figure Positioning Visual Test Manuscript"
+  short: "Figure Positioning Tests"
+
+authors:
+  - name: "Example Author"
+    affiliation: "Example University"
+    email: "example@university.edu"
+
+keywords: ["figure positioning", "blindtext", "latex", "examples"]
+
+acknowledge_rxiv_maker: false
+
+# Configuration specific to this example manuscript
+example_manuscript: true
