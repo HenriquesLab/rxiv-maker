@@ -172,8 +172,8 @@ class SyntaxValidator(BaseValidator):
         """Validate page control markers."""
         errors = []
 
-        # Protect code blocks and inline code from page marker validation
-        protected_content = self._protect_code_blocks(content)
+        # Protect code blocks, inline code, and HTML comments from page marker validation
+        protected_content = self._protect_validation_sensitive_content(content)
 
         for marker_type, pattern in self.PAGE_MARKERS.items():
             for match in pattern.finditer(protected_content):
@@ -295,8 +295,8 @@ class SyntaxValidator(BaseValidator):
         """Validate for unbalanced formatting markers."""
         errors = []
 
-        # Protect all code blocks and Python expressions from formatting validation
-        protected_content = self._protect_code_blocks(content)
+        # Protect all code blocks, HTML comments, and Python expressions from formatting validation
+        protected_content = self._protect_validation_sensitive_content(content)
 
         # Check for unbalanced bold formatting (**)
         lines = protected_content.split("\n")
@@ -498,8 +498,8 @@ class SyntaxValidator(BaseValidator):
         """Validate links and URLs."""
         errors = []
 
-        # Protect code blocks and inline code from URL validation
-        protected_content = self._protect_code_blocks(content)
+        # Protect code blocks, inline code, and HTML comments from URL validation
+        protected_content = self._protect_validation_sensitive_content(content)
 
         # Check markdown links
         for match in self.LINK_PATTERNS["markdown_link"].finditer(protected_content):
@@ -717,13 +717,21 @@ class SyntaxValidator(BaseValidator):
 
         return stats
 
-    def _protect_code_blocks(self, content: str) -> str:
-        """Protect code blocks and inline code from URL validation."""
+    def _protect_validation_sensitive_content(self, content: str) -> str:
+        """Protect code blocks, inline code, and HTML comments from validation."""
+        # Protect HTML comments first (they can contain any other syntax)
+        protected = re.sub(
+            r"<!--.*?-->",
+            lambda m: f"XXPROTECTEDCODEXX{len(m.group(0))}XXPROTECTEDCODEXX",
+            content,
+            flags=re.DOTALL,
+        )
+
         # Protect fenced code blocks
         protected = re.sub(
             r"```.*?```",
             lambda m: f"XXPROTECTEDCODEXX{len(m.group(0))}XXPROTECTEDCODEXX",
-            content,
+            protected,
             flags=re.DOTALL,
         )
 
