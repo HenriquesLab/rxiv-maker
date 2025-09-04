@@ -208,6 +208,10 @@ def generate_supplementary_tex(output_dir, yaml_metadata=None):
 % in the class file
 \\renewcommand{\\figurename}{Sup. Fig.}
 \\renewcommand{\\tablename}{Sup. Table}
+% Reset supplementary figure counter to start from 1
+\\setcounter{sfigure}{0}
+% Reset supplementary table counter to start from 1
+\\setcounter{stable}{0}
 
 """
 
