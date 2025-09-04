@@ -9,6 +9,7 @@ This module provides commands for:
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -16,6 +17,11 @@ import click
 
 from rxiv_maker.core.cache.advanced_cache import clear_all_caches, get_cache_statistics
 from rxiv_maker.core.cache.bibliography_cache import get_bibliography_cache
+from rxiv_maker.core.cache.cache_utils import (
+    auto_migrate_cache_to_strategy,
+    get_cache_config,
+    get_cache_location_info,
+)
 
 from ...docker.optimization import DockerBuildOptimizer
 from ...utils.platform import safe_console_print
@@ -60,6 +66,17 @@ def stats(output_format: str, manuscript: Optional[str] = None):
         bib_cache = get_bibliography_cache(manuscript)
         bib_stats = bib_cache.get_cache_statistics()
         all_stats["bibliography_cache"] = bib_stats
+
+        # Add cache configuration info
+        cache_config_info = bib_cache.get_cache_config_info()
+        all_stats["cache_configuration"] = cache_config_info
+
+        # Check if cache is in fallback mode and add warning
+        if hasattr(bib_cache, "_fallback_mode") and bib_cache._fallback_mode:
+            all_stats["warning"] = {
+                "message": "Bibliography cache is using global fallback due to manuscript-local strategy without manuscript directory",
+                "recommendation": "Navigate to a manuscript directory or use 'rxiv cache set-strategy global'",
+            }
 
         # Docker build cache
         docker_optimizer = DockerBuildOptimizer()
@@ -116,6 +133,13 @@ def clear(cache_type: str, manuscript: Optional[str] = None, confirm: bool = Fal
             bib_cache.clear_all_caches()
             cleared_counts["bibliography"] = "cleared"
 
+            # Check if cache was in fallback mode and show warning
+            if hasattr(bib_cache, "_fallback_mode") and bib_cache._fallback_mode:
+                safe_console_print(
+                    console,
+                    "⚠️  Note: Bibliography cache was using global fallback due to manuscript-local strategy without manuscript directory",
+                )
+
         if cache_type in ["all", "docker"]:
             docker_optimizer = DockerBuildOptimizer()
             docker_cleanup = docker_optimizer.cleanup_build_cache()
@@ -146,6 +170,13 @@ def cleanup(max_age_hours: int, dry_run: bool):
             bib_stats = bib_cache.get_cache_statistics()
             estimated = sum(stats.get("expired_entries", 0) for stats in bib_stats.values() if isinstance(stats, dict))
             cleanup_results["bibliography"] = {"estimated_cleanup": estimated}
+
+        # Check if cache was in fallback mode and show warning
+        if hasattr(bib_cache, "_fallback_mode") and bib_cache._fallback_mode:
+            safe_console_print(
+                console,
+                "⚠️  Note: Bibliography cache is using global fallback due to manuscript-local strategy without manuscript directory",
+            )
 
         # Docker cache cleanup
         docker_optimizer = DockerBuildOptimizer()
@@ -302,3 +333,181 @@ def _generate_optimization_recommendations(stats: Dict[str, Any]) -> Dict[str, l
         )
 
     return recommendations
+
+
+@cache_group.command()
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["table", "json"]),
+    default="table",
+    help="Output format for information",
+)
+def info(output_format: str):
+    """Show cache location and strategy information."""
+    try:
+        from ...core.cache.cache_utils import find_manuscript_directory, get_cache_dir, get_cache_strategy
+
+        cache_config = get_cache_config()
+
+        # Handle manuscript-local strategy when not in manuscript directory
+        strategy = get_cache_strategy()
+        manuscript_dir = find_manuscript_directory()
+
+        if strategy == "manuscript-local" and manuscript_dir is None:
+            # Provide helpful info when manuscript-local is configured but not in manuscript dir
+            location_info = {
+                "strategy": strategy,
+                "manuscript_dir": None,
+                "manuscript_cache": None,
+                "global_cache": str(get_cache_dir()),
+                "active_cache": "❌ No manuscript directory found",
+                "is_manuscript_local": False,
+                "manuscript_name": None,
+                "status": "warning",
+                "message": "Manuscript-local cache strategy is set, but you're not in a manuscript directory. Use 'rxiv cache set-strategy global' or navigate to a manuscript directory.",
+            }
+        else:
+            location_info = get_cache_location_info()
+
+        if output_format == "json":
+            combined_info = {**cache_config, **location_info}
+            safe_console_print(console, json.dumps(combined_info, indent=2))
+        else:
+            _print_cache_info_table(cache_config, location_info)
+
+    except Exception as e:
+        safe_console_print(console, f"❌ Error getting cache information: {e}")
+        raise click.ClickException(f"Failed to get cache information: {e}") from e
+
+
+@cache_group.command()
+@click.option(
+    "--target",
+    type=click.Choice(["manuscript-local", "global", "auto"]),
+    default="auto",
+    help="Target cache strategy",
+)
+@click.option("--force", is_flag=True, help="Force migration, overwriting existing files")
+@click.option("--dry-run", is_flag=True, help="Show what would be migrated without doing it")
+def migrate(target: str, force: bool, dry_run: bool):
+    """Migrate cache between global and manuscript-local storage."""
+    try:
+        if target == "auto":
+            # Use current strategy
+            target_strategy = None
+        else:
+            target_strategy = target
+
+        migration_results = auto_migrate_cache_to_strategy(
+            target_strategy=target_strategy, force=force, dry_run=dry_run
+        )
+
+        action_text = "Would migrate" if dry_run else "Migrated"
+
+        if migration_results["action"] == "no_migration_needed":
+            safe_console_print(
+                console, f"ℹ️  No migration needed: {migration_results.get('message', 'Already using target strategy')}"
+            )
+        elif migration_results["migration_results"] and migration_results["migration_results"]["success"]:
+            migrated_count = migration_results["migration_results"]["migrated_count"]
+            safe_console_print(console, f"✅ {action_text} {migrated_count} cache files successfully")
+
+            if migration_results["migration_results"]["migrated_files"]:
+                safe_console_print(console, "\nMigrated cache types:")
+                for file_info in migration_results["migration_results"]["migrated_files"]:
+                    action_icon = "📋" if dry_run else "✅"
+                    safe_console_print(console, f"  {action_icon} {file_info['type']}: {file_info['file_count']} files")
+        else:
+            error_msg = migration_results.get("migration_results", {}).get("error", "Unknown error")
+            safe_console_print(console, f"❌ Migration failed: {error_msg}")
+
+    except Exception as e:
+        safe_console_print(console, f"❌ Error during migration: {e}")
+        raise click.ClickException(f"Failed to migrate cache: {e}") from e
+
+
+@cache_group.command()
+@click.argument("strategy", type=click.Choice(["manuscript-local", "global"]))
+@click.option("--migrate-now", is_flag=True, help="Automatically migrate existing cache to new strategy")
+def set_strategy(strategy: str, migrate_now: bool):
+    """Set cache strategy via environment variable."""
+    import os
+
+    try:
+        # Set environment variable
+        os.environ["RXIV_CACHE_STRATEGY"] = strategy
+
+        safe_console_print(console, f"✅ Cache strategy set to: {strategy}")
+        safe_console_print(console, "💡 To make this permanent, add to your shell profile:")
+        safe_console_print(console, f"   export RXIV_CACHE_STRATEGY={strategy}")
+
+        if migrate_now:
+            safe_console_print(console, "\n🔄 Migrating existing cache...")
+            migration_results = auto_migrate_cache_to_strategy(target_strategy=strategy, force=False, dry_run=False)
+
+            if migration_results["migration_results"] and migration_results["migration_results"]["success"]:
+                migrated_count = migration_results["migration_results"]["migrated_count"]
+                safe_console_print(console, f"✅ Migrated {migrated_count} cache files to new strategy")
+            elif migration_results["action"] == "no_migration_needed":
+                safe_console_print(console, "ℹ️  No cache migration needed")
+            else:
+                safe_console_print(console, "⚠️  Cache migration encountered issues")
+
+    except Exception as e:
+        safe_console_print(console, f"❌ Error setting cache strategy: {e}")
+        raise click.ClickException(f"Failed to set cache strategy: {e}") from e
+
+
+def _print_cache_info_table(cache_config: Dict[str, Any], location_info: Dict[str, Any]) -> None:
+    """Print cache information in table format."""
+    safe_console_print(console, "🗂️  Cache Configuration & Location Information")
+    safe_console_print(console, "=" * 70)
+
+    # Strategy information
+    safe_console_print(console, f"\n🎯 Cache Strategy: {cache_config['strategy']}")
+    safe_console_print(console, f"📍 Strategy Source: {cache_config['strategy_source']}")
+
+    if cache_config.get("environment_override"):
+        safe_console_print(console, f"🔧 Environment Override: {cache_config['environment_override']}")
+
+    if cache_config.get("manuscript_config"):
+        safe_console_print(console, f"📝 Manuscript Config: {cache_config['manuscript_config']}")
+
+    # Location information
+    safe_console_print(console, "\n📁 Cache Locations:")
+    safe_console_print(console, "-" * 40)
+
+    if cache_config.get("manuscript_dir"):
+        safe_console_print(
+            console, f"📖 Manuscript: {cache_config['manuscript_name']} ({cache_config['manuscript_dir']})"
+        )
+    else:
+        safe_console_print(console, "📖 Manuscript: Not in manuscript directory")
+
+    active_icon = "🎯" if location_info["is_manuscript_local"] else "🌐"
+    safe_console_print(console, f"{active_icon} Active Cache: {location_info['active_cache']}")
+
+    if location_info["manuscript_cache"]:
+        status = "✅ Available" if location_info["is_manuscript_local"] else "📦 Available (not active)"
+        safe_console_print(console, f"📝 Manuscript Cache: {location_info['manuscript_cache']} - {status}")
+
+    safe_console_print(console, f"🌐 Global Cache: {location_info['global_cache']}")
+
+    # Show warning message if present
+    if location_info.get("status") == "warning" and location_info.get("message"):
+        safe_console_print(console, f"\n⚠️  Warning: {location_info['message']}")
+
+    # Environment info
+    env_strategy = os.environ.get("RXIV_CACHE_STRATEGY")
+    if env_strategy:
+        safe_console_print(console, f"\n🔧 Environment Variable: RXIV_CACHE_STRATEGY={env_strategy}")
+    else:
+        safe_console_print(console, "\n🔧 Environment Variable: Not set (using default)")
+
+    # Usage tips
+    safe_console_print(console, "\n💡 Usage Tips:")
+    safe_console_print(console, "   • Use 'rxiv cache migrate' to switch between strategies")
+    safe_console_print(console, "   • Use 'rxiv cache set-strategy manuscript-local|global'")
+    safe_console_print(console, "   • Manuscript-local: Cache travels with your project")
+    safe_console_print(console, "   • Global: Cache shared across all manuscripts")

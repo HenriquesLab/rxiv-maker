@@ -3,6 +3,7 @@
 from .arxiv import arxiv
 from .bibliography import bibliography
 from .build import build as pdf
+from .cache_management import cache_group as cache
 from .check_installation import check_installation
 from .clean import clean
 from .completion import completion_cmd
@@ -18,6 +19,7 @@ from .version import version
 __all__ = [
     "arxiv",
     "bibliography",
+    "cache",
     "pdf",
     "check_installation",
     "clean",

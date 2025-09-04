@@ -63,6 +63,337 @@ def get_legacy_rxiv_cache_dir() -> Path:
     return Path(".rxiv_cache")
 
 
+def find_manuscript_directory(start_path: Path | None = None, max_depth: int = 5) -> Path | None:
+    """Find the manuscript directory by locating 00_CONFIG.yml file.
+
+    Walks up the directory tree from the starting path to find a directory
+    containing 00_CONFIG.yml, which indicates a manuscript root.
+
+    Args:
+        start_path: Path to start searching from (defaults to current directory)
+        max_depth: Maximum depth to search up the directory tree
+
+    Returns:
+        Path to manuscript directory if found, None otherwise
+
+    Examples:
+        >>> find_manuscript_directory()
+        PosixPath('/path/to/manuscript')  # if 00_CONFIG.yml found
+
+        >>> find_manuscript_directory(Path('/path/to/manuscript/subdir'))
+        PosixPath('/path/to/manuscript')  # walks up to find config
+    """
+    current_path = (start_path or Path.cwd()).resolve()
+
+    for _i in range(max_depth):
+        config_file = current_path / "00_CONFIG.yml"
+        if config_file.exists() and config_file.is_file():
+            return current_path
+
+        # Move up one directory
+        parent = current_path.parent
+        if parent == current_path:
+            # Reached filesystem root
+            break
+        current_path = parent
+
+    return None
+
+
+def get_manuscript_cache_dir(subfolder: str | None = None, manuscript_dir: Path | None = None) -> Path | None:
+    """Get the manuscript-local cache directory (.rxiv_cache in manuscript directory).
+
+    Args:
+        subfolder: Optional subfolder within the cache directory
+        manuscript_dir: Manuscript directory (if None, auto-detected)
+
+    Returns:
+        Path to manuscript-local cache directory, or None if no manuscript found
+
+    Examples:
+        >>> get_manuscript_cache_dir()
+        PosixPath('/path/to/manuscript/.rxiv_cache')
+
+        >>> get_manuscript_cache_dir("doi")
+        PosixPath('/path/to/manuscript/.rxiv_cache/doi')
+    """
+    if manuscript_dir is None:
+        manuscript_dir = find_manuscript_directory()
+
+    if manuscript_dir is None:
+        return None
+
+    cache_dir = manuscript_dir / ".rxiv_cache"
+
+    if subfolder:
+        cache_dir = cache_dir / subfolder
+
+    # Ensure directory exists
+    try:
+        cache_dir.mkdir(parents=True, exist_ok=True)
+    except (OSError, PermissionError):
+        # Return None if we can't create the cache directory
+        return None
+
+    return cache_dir
+
+
+def get_cache_strategy() -> str:
+    """Determine which cache strategy to use.
+
+    Returns cache strategy:
+    - 'manuscript-local': Use .rxiv_cache in manuscript directory
+    - 'global': Use platform-standard cache directory
+
+    Strategy is determined in this order:
+    1. RXIV_CACHE_STRATEGY environment variable
+    2. Cache strategy in manuscript config (00_CONFIG.yml)
+    3. Default ('manuscript-local')
+
+    Returns:
+        Cache strategy string
+    """
+    # 1. Check environment variable for strategy override
+    env_strategy = os.environ.get("RXIV_CACHE_STRATEGY")
+    if env_strategy:
+        strategy = env_strategy.lower()
+        if strategy in ["manuscript-local", "local"]:
+            return "manuscript-local"
+        elif strategy in ["global", "system"]:
+            return "global"
+
+    # 2. Check manuscript config for cache strategy
+    manuscript_strategy = get_manuscript_cache_strategy()
+    if manuscript_strategy:
+        return manuscript_strategy
+
+    # 3. Default to manuscript-local
+    return "manuscript-local"
+
+
+def get_manuscript_cache_strategy() -> str | None:
+    """Get cache strategy from manuscript configuration.
+
+    Returns:
+        Cache strategy from manuscript config, or None if not found/configured
+    """
+    try:
+        manuscript_dir = find_manuscript_directory()
+        if manuscript_dir is None:
+            return None
+
+        config_file = manuscript_dir / "00_CONFIG.yml"
+        if not config_file.exists():
+            return None
+
+        # Try to read YAML config
+        try:
+            import yaml
+
+            with open(config_file, "r", encoding="utf-8") as f:
+                config = yaml.safe_load(f)
+
+            if not isinstance(config, dict):
+                return None
+
+            # Check for cache strategy in config
+            cache_config = config.get("cache", {})
+            if isinstance(cache_config, dict):
+                strategy = cache_config.get("strategy")
+                if strategy:
+                    strategy = strategy.lower()
+                    if strategy in ["manuscript-local", "local"]:
+                        return "manuscript-local"
+                    elif strategy in ["global", "system"]:
+                        return "global"
+
+        except (ImportError, yaml.YAMLError):
+            # YAML not available or invalid config - return None
+            pass
+
+    except Exception:
+        # Any other error - return None for safe fallback
+        pass
+
+    return None
+
+
+def get_cache_config() -> Dict[str, Any]:
+    """Get comprehensive cache configuration.
+
+    Returns:
+        Dictionary with cache configuration options
+
+    Examples:
+        >>> get_cache_config()
+        {
+            'strategy': 'fallback',
+            'strategy_source': 'environment',
+            'manuscript_local_enabled': True,
+            'global_cache_dir': '/home/user/.cache/rxiv-maker',
+            'manuscript_cache_dir': '/path/to/manuscript/.rxiv_cache',
+            'active_cache_dir': '/path/to/manuscript/.rxiv_cache'
+        }
+    """
+    # Determine strategy and its source
+    env_strategy = os.environ.get("RXIV_CACHE_STRATEGY")
+    manuscript_strategy = get_manuscript_cache_strategy()
+
+    strategy = get_cache_strategy()
+
+    # Determine strategy source
+    if env_strategy:
+        strategy_source = "environment"
+    elif manuscript_strategy:
+        strategy_source = "manuscript_config"
+    else:
+        strategy_source = "default"
+
+    # Get cache directories
+    manuscript_dir = find_manuscript_directory()
+    manuscript_cache_dir = get_manuscript_cache_dir() if manuscript_dir else None
+    global_cache_dir = get_cache_dir()
+
+    # Determine active cache directory
+    if strategy == "global":
+        active_cache_dir = global_cache_dir
+    elif strategy == "manuscript-local" and manuscript_cache_dir:
+        active_cache_dir = manuscript_cache_dir
+    elif manuscript_cache_dir:  # fallback with manuscript available
+        active_cache_dir = manuscript_cache_dir
+    else:  # fallback without manuscript
+        active_cache_dir = global_cache_dir
+
+    return {
+        "strategy": strategy,
+        "strategy_source": strategy_source,
+        "manuscript_local_enabled": manuscript_cache_dir is not None,
+        "global_cache_dir": str(global_cache_dir),
+        "manuscript_cache_dir": str(manuscript_cache_dir) if manuscript_cache_dir else None,
+        "active_cache_dir": str(active_cache_dir),
+        "manuscript_dir": str(manuscript_dir) if manuscript_dir else None,
+        "manuscript_name": get_manuscript_name(manuscript_dir),
+        "environment_override": env_strategy,
+        "manuscript_config": manuscript_strategy,
+    }
+
+
+def get_adaptive_cache_dir(subfolder: str | None = None) -> Path:
+    """Get cache directory based on current strategy.
+
+    Args:
+        subfolder: Optional subfolder within the cache directory
+
+    Returns:
+        Path to the appropriate cache directory
+
+    Examples:
+        >>> get_adaptive_cache_dir("doi")  # manuscript-local strategy
+        PosixPath('/path/to/manuscript/.rxiv_cache/doi')
+
+        >>> get_adaptive_cache_dir("doi")  # global strategy
+        PosixPath('/home/user/.cache/rxiv-maker/doi')
+    """
+    strategy = get_cache_strategy()
+
+    if strategy == "global":
+        return get_cache_dir(subfolder)
+
+    # manuscript-local strategy
+    manuscript_cache = get_manuscript_cache_dir(subfolder)
+
+    if manuscript_cache is not None:
+        return manuscript_cache
+
+    # No manuscript found - raise error for manuscript-local strategy
+    raise RuntimeError(
+        "Manuscript-local cache strategy specified but no manuscript directory found. "
+        "Make sure you're in a manuscript directory (containing 00_CONFIG.yml) or "
+        "set RXIV_CACHE_STRATEGY=global to use global cache."
+    )
+
+
+def get_manuscript_name(manuscript_dir: Path | None = None) -> str | None:
+    """Get the manuscript name from the manuscript directory.
+
+    Args:
+        manuscript_dir: Manuscript directory (if None, auto-detected)
+
+    Returns:
+        Manuscript directory name if found, None otherwise
+
+    Examples:
+        >>> get_manuscript_name()
+        'MANUSCRIPT'  # if in /path/to/MANUSCRIPT directory
+    """
+    if manuscript_dir is None:
+        manuscript_dir = find_manuscript_directory()
+
+    if manuscript_dir is None:
+        return None
+
+    return manuscript_dir.name
+
+
+def get_cache_location_info(subfolder: str | None = None) -> Dict[str, Any]:
+    """Get comprehensive information about cache location and strategy.
+
+    Args:
+        subfolder: Optional subfolder within the cache directory
+
+    Returns:
+        Dictionary with cache location information
+
+    Examples:
+        >>> get_cache_location_info("doi")
+        {
+            'strategy': 'fallback',
+            'manuscript_dir': '/path/to/manuscript',
+            'manuscript_cache': '/path/to/manuscript/.rxiv_cache/doi',
+            'global_cache': '/home/user/.cache/rxiv-maker/doi',
+            'active_cache': '/path/to/manuscript/.rxiv_cache/doi',
+            'is_manuscript_local': True
+        }
+    """
+    strategy = get_cache_strategy()
+    manuscript_dir = find_manuscript_directory()
+    manuscript_cache = get_manuscript_cache_dir(subfolder, manuscript_dir)
+    global_cache = get_cache_dir(subfolder)
+
+    # Determine active cache based on strategy
+    if strategy == "global":
+        active_cache = global_cache
+        is_manuscript_local = False
+    else:  # manuscript-local
+        if manuscript_cache is None:
+            raise RuntimeError("Manuscript-local cache required but no manuscript found")
+        active_cache = manuscript_cache
+        is_manuscript_local = True
+
+    return {
+        "strategy": strategy,
+        "manuscript_dir": str(manuscript_dir) if manuscript_dir else None,
+        "manuscript_cache": str(manuscript_cache) if manuscript_cache else None,
+        "global_cache": str(global_cache),
+        "active_cache": str(active_cache),
+        "is_manuscript_local": is_manuscript_local,
+        "manuscript_name": get_manuscript_name(manuscript_dir),
+    }
+
+
+def is_in_manuscript_directory() -> bool:
+    """Check if current working directory is within a manuscript directory.
+
+    Returns:
+        True if in a manuscript directory, False otherwise
+
+    Examples:
+        >>> is_in_manuscript_directory()
+        True  # if 00_CONFIG.yml found in current dir or parent dirs
+    """
+    return find_manuscript_directory() is not None
+
+
 def migrate_cache_file(legacy_path: Path, new_path: Path, force: bool = False) -> bool:
     """Migrate a cache file from legacy location to new standardized location.
 
@@ -163,6 +494,324 @@ def migrate_rxiv_cache_directory(source_dir: Path | None = None, force: bool = F
                 migrated_any = True
 
     return migrated_any
+
+
+def migrate_global_to_manuscript_cache(
+    manuscript_dir: Path | None = None, force: bool = False, dry_run: bool = False
+) -> Dict[str, Any]:
+    """Migrate global cache entries to manuscript-local cache.
+
+    Args:
+        manuscript_dir: Target manuscript directory (if None, auto-detected)
+        force: If True, overwrite existing files at new location
+        dry_run: If True, only show what would be migrated without actually doing it
+
+    Returns:
+        Dictionary with migration results
+    """
+    import logging
+    import shutil
+
+    logger = logging.getLogger(__name__)
+
+    if manuscript_dir is None:
+        manuscript_dir = find_manuscript_directory()
+
+    if manuscript_dir is None:
+        return {
+            "success": False,
+            "error": "No manuscript directory found",
+            "migrated_count": 0,
+            "migrated_files": [],
+        }
+
+    global_cache_dir = get_cache_dir("advanced")
+    manuscript_cache_dir = manuscript_dir / ".rxiv_cache"
+
+    migration_results = {
+        "success": True,
+        "manuscript_dir": str(manuscript_dir),
+        "global_cache_dir": str(global_cache_dir),
+        "manuscript_cache_dir": str(manuscript_cache_dir),
+        "migrated_count": 0,
+        "migrated_files": [],
+        "errors": [],
+        "dry_run": dry_run,
+    }
+
+    if not global_cache_dir.exists():
+        migration_results["error"] = "Global cache directory does not exist"
+        return migration_results
+
+    # Define cache types that should be migrated
+    cache_types_to_migrate = [
+        "doi_metadata",
+        "bibliography",
+        "bib_validation",
+        "citation_network",
+    ]
+
+    try:
+        for cache_type in cache_types_to_migrate:
+            global_cache_path = global_cache_dir / cache_type
+
+            if not global_cache_path.exists():
+                continue
+
+            manuscript_cache_path = manuscript_cache_dir / cache_type
+
+            # Check if we should migrate this cache type
+            if manuscript_cache_path.exists() and not force:
+                logger.info(f"Skipping {cache_type}: manuscript cache already exists")
+                continue
+
+            if dry_run:
+                # Count files that would be migrated
+                if global_cache_path.is_dir():
+                    file_count = len(list(global_cache_path.rglob("*")))
+                    migration_results["migrated_files"].append(
+                        {
+                            "type": cache_type,
+                            "source": str(global_cache_path),
+                            "destination": str(manuscript_cache_path),
+                            "file_count": file_count,
+                            "action": "would_migrate",
+                        }
+                    )
+                continue
+
+            # Perform actual migration
+            try:
+                if global_cache_path.is_dir():
+                    # Create target directory
+                    manuscript_cache_path.parent.mkdir(parents=True, exist_ok=True)
+
+                    # Copy directory tree
+                    if manuscript_cache_path.exists() and force:
+                        shutil.rmtree(manuscript_cache_path)
+
+                    shutil.copytree(global_cache_path, manuscript_cache_path, dirs_exist_ok=force)
+
+                    file_count = len(list(manuscript_cache_path.rglob("*")))
+                    migration_results["migrated_count"] += file_count
+                    migration_results["migrated_files"].append(
+                        {
+                            "type": cache_type,
+                            "source": str(global_cache_path),
+                            "destination": str(manuscript_cache_path),
+                            "file_count": file_count,
+                            "action": "migrated",
+                        }
+                    )
+
+                    logger.info(f"Migrated {cache_type} cache: {file_count} files")
+
+            except Exception as e:
+                error_msg = f"Failed to migrate {cache_type}: {e}"
+                migration_results["errors"].append(error_msg)
+                logger.error(error_msg)
+                migration_results["success"] = False
+
+    except Exception as e:
+        migration_results["success"] = False
+        migration_results["errors"].append(f"Migration failed: {e}")
+        logger.error(f"Global to manuscript cache migration failed: {e}")
+
+    return migration_results
+
+
+def migrate_manuscript_to_global_cache(
+    manuscript_dir: Path | None = None, force: bool = False, dry_run: bool = False
+) -> Dict[str, Any]:
+    """Migrate manuscript-local cache entries back to global cache.
+
+    Args:
+        manuscript_dir: Source manuscript directory (if None, auto-detected)
+        force: If True, overwrite existing files at global location
+        dry_run: If True, only show what would be migrated without actually doing it
+
+    Returns:
+        Dictionary with migration results
+    """
+    import logging
+    import shutil
+
+    logger = logging.getLogger(__name__)
+
+    if manuscript_dir is None:
+        manuscript_dir = find_manuscript_directory()
+
+    if manuscript_dir is None:
+        return {
+            "success": False,
+            "error": "No manuscript directory found",
+            "migrated_count": 0,
+            "migrated_files": [],
+        }
+
+    manuscript_cache_dir = manuscript_dir / ".rxiv_cache"
+    global_cache_dir = get_cache_dir("advanced")
+
+    migration_results = {
+        "success": True,
+        "manuscript_dir": str(manuscript_dir),
+        "manuscript_cache_dir": str(manuscript_cache_dir),
+        "global_cache_dir": str(global_cache_dir),
+        "migrated_count": 0,
+        "migrated_files": [],
+        "errors": [],
+        "dry_run": dry_run,
+    }
+
+    if not manuscript_cache_dir.exists():
+        migration_results["error"] = "Manuscript cache directory does not exist"
+        return migration_results
+
+    # Get manuscript name for global cache naming
+    manuscript_name = manuscript_dir.name
+
+    # Define cache types that should be migrated
+    cache_types_to_migrate = [
+        "doi_metadata",
+        "bibliography",
+        "bib_validation",
+        "citation_network",
+    ]
+
+    try:
+        for cache_type in cache_types_to_migrate:
+            manuscript_cache_path = manuscript_cache_dir / cache_type
+
+            if not manuscript_cache_path.exists():
+                continue
+
+            # Use manuscript name suffix for global cache
+            global_cache_path = global_cache_dir / f"{cache_type}_{manuscript_name}"
+
+            # Check if we should migrate this cache type
+            if global_cache_path.exists() and not force:
+                logger.info(f"Skipping {cache_type}: global cache already exists")
+                continue
+
+            if dry_run:
+                # Count files that would be migrated
+                if manuscript_cache_path.is_dir():
+                    file_count = len(list(manuscript_cache_path.rglob("*")))
+                    migration_results["migrated_files"].append(
+                        {
+                            "type": cache_type,
+                            "source": str(manuscript_cache_path),
+                            "destination": str(global_cache_path),
+                            "file_count": file_count,
+                            "action": "would_migrate",
+                        }
+                    )
+                continue
+
+            # Perform actual migration
+            try:
+                if manuscript_cache_path.is_dir():
+                    # Create target directory
+                    global_cache_path.parent.mkdir(parents=True, exist_ok=True)
+
+                    # Copy directory tree
+                    if global_cache_path.exists() and force:
+                        shutil.rmtree(global_cache_path)
+
+                    shutil.copytree(manuscript_cache_path, global_cache_path, dirs_exist_ok=force)
+
+                    file_count = len(list(global_cache_path.rglob("*")))
+                    migration_results["migrated_count"] += file_count
+                    migration_results["migrated_files"].append(
+                        {
+                            "type": cache_type,
+                            "source": str(manuscript_cache_path),
+                            "destination": str(global_cache_path),
+                            "file_count": file_count,
+                            "action": "migrated",
+                        }
+                    )
+
+                    logger.info(f"Migrated {cache_type} cache: {file_count} files")
+
+            except Exception as e:
+                error_msg = f"Failed to migrate {cache_type}: {e}"
+                migration_results["errors"].append(error_msg)
+                logger.error(error_msg)
+                migration_results["success"] = False
+
+    except Exception as e:
+        migration_results["success"] = False
+        migration_results["errors"].append(f"Migration failed: {e}")
+        logger.error(f"Manuscript to global cache migration failed: {e}")
+
+    return migration_results
+
+
+def auto_migrate_cache_to_strategy(
+    target_strategy: str | None = None, manuscript_dir: Path | None = None, force: bool = False, dry_run: bool = False
+) -> Dict[str, Any]:
+    """Automatically migrate cache based on desired strategy.
+
+    Args:
+        target_strategy: Desired cache strategy (if None, uses current strategy)
+        manuscript_dir: Manuscript directory (if None, auto-detected)
+        force: If True, overwrite existing files at target location
+        dry_run: If True, only show what would be migrated without actually doing it
+
+    Returns:
+        Dictionary with migration results
+    """
+    if target_strategy is None:
+        target_strategy = get_cache_strategy()
+
+    if manuscript_dir is None:
+        manuscript_dir = find_manuscript_directory()
+
+    # Determine current cache state and target state
+    current_has_manuscript_cache = manuscript_dir is not None and (manuscript_dir / ".rxiv_cache").exists()
+    current_has_global_cache = get_cache_dir("advanced").exists()
+
+    migration_results = {
+        "success": True,
+        "current_strategy": get_cache_strategy(),
+        "target_strategy": target_strategy,
+        "manuscript_dir": str(manuscript_dir) if manuscript_dir else None,
+        "current_has_manuscript_cache": current_has_manuscript_cache,
+        "current_has_global_cache": current_has_global_cache,
+        "action": "none",
+        "migration_results": None,
+        "dry_run": dry_run,
+    }
+
+    # Determine what migration is needed
+    if target_strategy in ["manuscript-local"] and manuscript_dir is not None:
+        if current_has_global_cache and not current_has_manuscript_cache:
+            # Migrate global -> manuscript
+            migration_results["action"] = "global_to_manuscript"
+            migration_results["migration_results"] = migrate_global_to_manuscript_cache(
+                manuscript_dir, force=force, dry_run=dry_run
+            )
+        elif not current_has_manuscript_cache:
+            migration_results["action"] = "no_migration_needed"
+            migration_results["message"] = "No global cache to migrate"
+
+    elif target_strategy == "global":
+        if current_has_manuscript_cache and manuscript_dir is not None:
+            # Migrate manuscript -> global
+            migration_results["action"] = "manuscript_to_global"
+            migration_results["migration_results"] = migrate_manuscript_to_global_cache(
+                manuscript_dir, force=force, dry_run=dry_run
+            )
+        else:
+            migration_results["action"] = "no_migration_needed"
+            migration_results["message"] = "No manuscript cache to migrate"
+
+    else:
+        migration_results["action"] = "no_migration_needed"
+        migration_results["message"] = f"No migration needed for {target_strategy} strategy"
+
+    return migration_results
 
 
 def migrate_all_rxiv_caches(search_paths: list[Path] | None = None, force: bool = False) -> int:
