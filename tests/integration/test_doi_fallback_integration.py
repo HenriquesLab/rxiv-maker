@@ -231,6 +231,7 @@ class TestDOIFallbackIntegration(unittest.TestCase):
             enable_fallback_apis=True,
             cache_dir=self.cache_dir,
             ignore_ci_environment=True,
+            ignore_network_check=True,
             force_validation=True,
         )
 
@@ -256,6 +257,7 @@ class TestDOIFallbackIntegration(unittest.TestCase):
             enable_fallback_apis=True,
             cache_dir=self.cache_dir,
             ignore_ci_environment=True,
+            ignore_network_check=True,
         )
 
         with patch.object(DOIValidator, "_validate_doi_metadata") as mock_validate2:
@@ -297,6 +299,7 @@ class TestDOIFallbackIntegration(unittest.TestCase):
                 enable_fallback_apis=True,
                 cache_dir=self.cache_dir,
                 ignore_ci_environment=True,
+                ignore_network_check=True,
                 force_validation=True,
             )
 
