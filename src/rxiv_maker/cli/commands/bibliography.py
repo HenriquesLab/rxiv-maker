@@ -1,12 +1,13 @@
 """Bibliography commands for rxiv-maker CLI."""
 
-import os
 import sys
-from pathlib import Path
 
 import click
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
+
+from ...core.environment_manager import EnvironmentManager
+from ...core.path_manager import PathManager, PathResolutionError
 
 console = Console()
 
@@ -30,16 +31,19 @@ def fix(ctx: click.Context, manuscript_path: str | None, dry_run: bool) -> None:
     """
     verbose = ctx.obj.get("verbose", False)
 
-    # Default to MANUSCRIPT if not specified
-    if manuscript_path is None:
-        manuscript_path = os.environ.get("MANUSCRIPT_PATH", "MANUSCRIPT")
+    # Use PathManager for path resolution and validation (same pattern as other commands)
+    try:
+        # Default to environment variable or fallback if not specified
+        if manuscript_path is None:
+            manuscript_path = EnvironmentManager.get_manuscript_path() or "MANUSCRIPT"
 
-    # Validate manuscript path exists
-    if not Path(manuscript_path).exists():
-        console.print(
-            f"❌ Error: Manuscript directory '{manuscript_path}' does not exist",
-            style="red",
-        )
+        # Use PathManager for path validation and resolution
+        path_manager = PathManager(manuscript_path=manuscript_path)
+        manuscript_path = str(path_manager.manuscript_path)
+
+    except PathResolutionError as e:
+        console.print(f"❌ Path resolution error: {e}", style="red")
+        console.print(f"💡 Run 'rxiv init {manuscript_path}' to create a new manuscript", style="yellow")
         sys.exit(1)
 
     try:
@@ -121,16 +125,19 @@ def add(
     """
     verbose = ctx.obj.get("verbose", False)
 
-    # Default to MANUSCRIPT if not specified
-    if manuscript_path is None:
-        manuscript_path = os.environ.get("MANUSCRIPT_PATH", "MANUSCRIPT")
+    # Use PathManager for path resolution and validation (same pattern as other commands)
+    try:
+        # Default to environment variable or fallback if not specified
+        if manuscript_path is None:
+            manuscript_path = EnvironmentManager.get_manuscript_path() or "MANUSCRIPT"
 
-    # Validate manuscript path exists
-    if not Path(manuscript_path).exists():
-        console.print(
-            f"❌ Error: Manuscript directory '{manuscript_path}' does not exist",
-            style="red",
-        )
+        # Use PathManager for path validation and resolution
+        path_manager = PathManager(manuscript_path=manuscript_path)
+        manuscript_path = str(path_manager.manuscript_path)
+
+    except PathResolutionError as e:
+        console.print(f"❌ Path resolution error: {e}", style="red")
+        console.print(f"💡 Run 'rxiv init {manuscript_path}' to create a new manuscript", style="yellow")
         sys.exit(1)
 
     try:

@@ -33,6 +33,7 @@ class AdvancedCache:
         max_disk_size_mb: int = 100,
         compression: bool = True,
         ttl_hours: int = 24,
+        cache_dir: Optional[Path] = None,
     ):
         """Initialize advanced cache.
 
@@ -42,6 +43,7 @@ class AdvancedCache:
             max_disk_size_mb: Maximum disk cache size in MB
             compression: Whether to compress disk storage
             ttl_hours: Time-to-live in hours
+            cache_dir: Custom cache directory (defaults to global cache)
         """
         self.name = name
         self.max_memory_items = max_memory_items
@@ -53,8 +55,12 @@ class AdvancedCache:
         self._memory_cache: Dict[str, Dict[str, Any]] = {}
         self._access_order: Dict[str, float] = {}
 
-        # Disk cache
-        self.cache_dir = get_cache_dir("advanced") / name
+        # Disk cache - use custom directory or default global cache
+        if cache_dir is not None:
+            self.cache_dir = cache_dir / name
+        else:
+            self.cache_dir = get_cache_dir("advanced") / name
+
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
         # Performance metrics

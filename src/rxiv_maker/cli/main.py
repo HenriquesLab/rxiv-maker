@@ -46,7 +46,7 @@ click.rich_click.COMMAND_GROUPS = {
         },
         {
             "name": "Configuration",
-            "commands": ["config", "check-installation", "completion"],
+            "commands": ["config", "cache", "check-installation", "completion"],
         },
         {
             "name": "Container Management",
@@ -281,6 +281,7 @@ main.add_command(commands.setup)
 # Deprecated: install-deps command removed (use 'rxiv setup' instead)
 main.add_command(commands.version)
 main.add_command(config_cmd, name="config")
+main.add_command(commands.cache, name="cache")
 main.add_command(check_installation, name="check-installation")
 main.add_command(commands.completion_cmd, name="completion")
 main.add_command(commands.containers_cmd, name="containers")

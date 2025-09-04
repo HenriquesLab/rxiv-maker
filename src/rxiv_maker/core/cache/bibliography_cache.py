@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from .advanced_cache import AdvancedCache, cached_function
+from .cache_utils import find_manuscript_directory, get_adaptive_cache_dir, get_cache_strategy
 
 logger = logging.getLogger(__name__)
 
@@ -26,29 +27,94 @@ class BibliographyCache:
         """Initialize bibliography cache.
 
         Args:
-            manuscript_name: Optional manuscript name for scoped caching
+            manuscript_name: Optional manuscript name for scoped caching (for backward compatibility)
         """
-        cache_suffix = f"_{manuscript_name}" if manuscript_name else ""
+        # Determine cache directory strategy
+        cache_strategy = get_cache_strategy()
+
+        if cache_strategy == "global":
+            # Use global cache with manuscript name suffix for scoping
+            cache_base_dir = None
+            cache_suffix = f"_{manuscript_name}" if manuscript_name else ""
+            use_custom_dir = False
+        else:
+            # Use manuscript-local cache directory
+            cache_base_dir = get_adaptive_cache_dir()
+            cache_suffix = ""  # No suffix needed for manuscript-local cache
+            use_custom_dir = True
 
         # Specialized caches for different operations
-        self.doi_metadata_cache = AdvancedCache(
-            name=f"doi_metadata{cache_suffix}",
-            max_memory_items=500,
-            max_disk_size_mb=50,
-            ttl_hours=168,  # 1 week
-        )
+        if use_custom_dir:
+            self.doi_metadata_cache = AdvancedCache(
+                name="doi_metadata",
+                max_memory_items=500,
+                max_disk_size_mb=50,
+                ttl_hours=168,  # 1 week
+                cache_dir=cache_base_dir,
+            )
 
-        self.bibliography_cache = AdvancedCache(
-            name=f"bibliography{cache_suffix}", max_memory_items=100, max_disk_size_mb=20, ttl_hours=24
-        )
+            self.bibliography_cache = AdvancedCache(
+                name="bibliography",
+                max_memory_items=100,
+                max_disk_size_mb=20,
+                ttl_hours=24,
+                cache_dir=cache_base_dir,
+            )
 
-        self.validation_cache = AdvancedCache(
-            name=f"bib_validation{cache_suffix}", max_memory_items=200, max_disk_size_mb=30, ttl_hours=48
-        )
+            self.validation_cache = AdvancedCache(
+                name="bib_validation",
+                max_memory_items=200,
+                max_disk_size_mb=30,
+                ttl_hours=48,
+                cache_dir=cache_base_dir,
+            )
 
-        self.citation_network_cache = AdvancedCache(
-            name=f"citation_network{cache_suffix}", max_memory_items=50, max_disk_size_mb=15, ttl_hours=72
-        )
+            self.citation_network_cache = AdvancedCache(
+                name="citation_network",
+                max_memory_items=50,
+                max_disk_size_mb=15,
+                ttl_hours=72,
+                cache_dir=cache_base_dir,
+            )
+        else:
+            # Use global cache with manuscript name suffixes (legacy behavior)
+            self.doi_metadata_cache = AdvancedCache(
+                name=f"doi_metadata{cache_suffix}",
+                max_memory_items=500,
+                max_disk_size_mb=50,
+                ttl_hours=168,  # 1 week
+            )
+
+            self.bibliography_cache = AdvancedCache(
+                name=f"bibliography{cache_suffix}",
+                max_memory_items=100,
+                max_disk_size_mb=20,
+                ttl_hours=24,
+            )
+
+            self.validation_cache = AdvancedCache(
+                name=f"bib_validation{cache_suffix}",
+                max_memory_items=200,
+                max_disk_size_mb=30,
+                ttl_hours=48,
+            )
+
+            self.citation_network_cache = AdvancedCache(
+                name=f"citation_network{cache_suffix}",
+                max_memory_items=50,
+                max_disk_size_mb=15,
+                ttl_hours=72,
+            )
+
+        # Store configuration info for debugging and reporting
+        manuscript_dir = find_manuscript_directory() if use_custom_dir else None
+        self.cache_config = {
+            "manuscript_dir": str(manuscript_dir) if manuscript_dir else None,
+            "cache_strategy": cache_strategy,
+            "using_manuscript_local": use_custom_dir,
+            "cache_base_dir": str(cache_base_dir) if cache_base_dir else None,
+            "cache_suffix": cache_suffix,
+        }
 
     def cache_doi_metadata(
         self,
@@ -360,17 +426,60 @@ class BibliographyCache:
 
         logger.info("Cleared all bibliography caches")
 
+    def get_cache_config_info(self) -> Dict[str, Any]:
+        """Get bibliography cache configuration information.
+
+        Returns:
+            Dictionary with cache configuration details
+        """
+        return {
+            **self.cache_config,
+            "doi_cache_dir": str(self.doi_metadata_cache.cache_dir),
+            "bibliography_cache_dir": str(self.bibliography_cache.cache_dir),
+            "validation_cache_dir": str(self.validation_cache.cache_dir),
+            "citation_network_cache_dir": str(self.citation_network_cache.cache_dir),
+        }
+
 
 # Global bibliography cache instance
 _global_bibliography_cache: Optional[BibliographyCache] = None
 
 
 def get_bibliography_cache(manuscript_name: Optional[str] = None) -> BibliographyCache:
-    """Get or create global bibliography cache instance."""
+    """Get or create global bibliography cache instance.
+
+    This function gracefully handles the case where manuscript-local cache strategy
+    is set but no manuscript directory is found, falling back to global cache
+    to prevent command failures.
+    """
     global _global_bibliography_cache
 
     if _global_bibliography_cache is None or manuscript_name:
-        _global_bibliography_cache = BibliographyCache(manuscript_name)
+        try:
+            _global_bibliography_cache = BibliographyCache(manuscript_name)
+        except RuntimeError as e:
+            if "Manuscript-local cache strategy specified but no manuscript directory found" in str(e):
+                # Temporarily use global cache when manuscript-local is configured but no manuscript found
+                import os
+
+                original_strategy = os.environ.get("RXIV_CACHE_STRATEGY")
+                try:
+                    # Temporarily set global strategy to create cache instance
+                    os.environ["RXIV_CACHE_STRATEGY"] = "global"
+                    _global_bibliography_cache = BibliographyCache(manuscript_name)
+
+                    # Add metadata to indicate this is a fallback situation
+                    _global_bibliography_cache._fallback_mode = True
+                    _global_bibliography_cache._fallback_reason = str(e)
+                finally:
+                    # Restore original strategy or remove if it wasn't set
+                    if original_strategy is not None:
+                        os.environ["RXIV_CACHE_STRATEGY"] = original_strategy
+                    else:
+                        os.environ.pop("RXIV_CACHE_STRATEGY", None)
+            else:
+                # Re-raise other RuntimeErrors
+                raise
 
     return _global_bibliography_cache
 
