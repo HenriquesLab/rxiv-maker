@@ -53,6 +53,7 @@ class DOIValidator(BaseValidator):
         cache_dir: str | None = None,
         force_validation: bool = False,
         ignore_ci_environment: bool = False,
+        ignore_network_check: bool = False,
         max_workers: int = 4,
         similarity_threshold: float = 0.8,
         enable_fallback_apis: bool = True,
@@ -70,6 +71,7 @@ class DOIValidator(BaseValidator):
             cache_dir: Directory for caching DOI metadata
             force_validation: Force validation even in CI environments
             ignore_ci_environment: Ignore CI environment detection
+            ignore_network_check: Ignore network connectivity check (useful for testing)
             max_workers: Maximum number of parallel workers for DOI validation
             similarity_threshold: Minimum similarity threshold for metadata comparison
             enable_fallback_apis: Whether to use fallback APIs when primary APIs fail
@@ -84,6 +86,7 @@ class DOIValidator(BaseValidator):
         self.enable_online_validation = enable_online_validation
         self.force_validation = force_validation
         self.ignore_ci_environment = ignore_ci_environment
+        self.ignore_network_check = ignore_network_check
         self.max_workers = max_workers
         self.enable_performance_optimizations = enable_performance_optimizations
 
@@ -187,8 +190,8 @@ class DOIValidator(BaseValidator):
             logger.info("Disabling online DOI validation in CI environment (use --force-validation to override)")
             self.enable_online_validation = False
 
-        # Check network connectivity before attempting online validation
-        if self.enable_online_validation and not self._check_network_connectivity():
+        # Check network connectivity before attempting online validation (unless bypassed for testing)
+        if self.enable_online_validation and not self.ignore_network_check and not self._check_network_connectivity():
             logger.warning("Network connectivity unavailable, skipping online DOI validation")
             self.enable_online_validation = False
 

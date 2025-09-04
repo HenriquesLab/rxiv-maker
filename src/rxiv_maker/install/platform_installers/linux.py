@@ -1,5 +1,6 @@
 """Linux-specific system dependency installer."""
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -53,6 +54,14 @@ class LinuxInstaller:
     def _command_exists(self, command: str) -> bool:
         """Check if a command exists."""
         return shutil.which(command) is not None
+
+    def _is_root(self) -> bool:
+        """Check if the current user is root."""
+        try:
+            return os.getuid() == 0
+        except AttributeError:
+            # Windows doesn't have getuid()
+            return False
 
     def install_system_libraries(self) -> bool:
         """Install system libraries required by Python packages."""
@@ -311,11 +320,17 @@ class LinuxInstaller:
         self.logger.info(f"Installing packages: {', '.join(packages)}")
 
         try:
+            # Check if we need sudo
+            use_sudo = not self._is_root()
+
             # Update package lists first
             if self.package_manager in ["apt", "apt-get"]:
                 self.logger.info("Updating package lists...")
+                cmd = [self.package_manager, "update"]
+                if use_sudo:
+                    cmd = ["sudo"] + cmd
                 subprocess.run(
-                    ["sudo", self.package_manager, "update"],
+                    cmd,
                     capture_output=True,
                     timeout=300,
                 )
@@ -325,14 +340,18 @@ class LinuxInstaller:
                 "dnf",
                 "yum",
             ]:
-                cmd = ["sudo", self.package_manager, "install", "-y"] + packages
+                cmd = [self.package_manager, "install", "-y"] + packages
             elif self.package_manager == "pacman":
-                cmd = ["sudo", self.package_manager, "-S", "--noconfirm"] + packages
+                cmd = [self.package_manager, "-S", "--noconfirm"] + packages
             elif self.package_manager == "apk":
-                cmd = ["sudo", self.package_manager, "add"] + packages
+                cmd = [self.package_manager, "add"] + packages
             else:
                 self.logger.error(f"Unknown package manager: {self.package_manager}")
                 return False
+
+            # Add sudo if needed
+            if use_sudo:
+                cmd = ["sudo"] + cmd
 
             result = subprocess.run(
                 cmd,
@@ -365,12 +384,19 @@ class LinuxInstaller:
             "collectbox",
         ]
 
+        # Check if we need sudo
+        use_sudo = not self._is_root()
+
         success = True
         for package in packages:
             try:
                 self.logger.debug(f"Installing LaTeX package: {package}")
+                cmd = ["tlmgr", "install", package]
+                if use_sudo:
+                    cmd = ["sudo"] + cmd
+
                 result = subprocess.run(
-                    ["sudo", "tlmgr", "install", package],
+                    cmd,
                     capture_output=True,
                     text=True,
                     timeout=120,

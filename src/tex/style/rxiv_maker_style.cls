@@ -130,6 +130,15 @@
   \end{figure}%
 }
 
+% Double-column supplementary figure environment
+\newenvironment{sfigure*}[1][htbp]{%
+  \begin{figure*}[#1]%
+  \renewcommand{\thefigure}{\thesfigure}%
+  \stepcounter{sfigure}%
+}{%
+  \end{figure*}%
+}
+
 % Supplementary tables counter and environments
 \newcounter{stable}
 \renewcommand{\thestable}{S\arabic{stable}}
