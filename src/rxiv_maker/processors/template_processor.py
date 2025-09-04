@@ -217,14 +217,19 @@ def generate_supplementary_tex(output_dir, yaml_metadata=None):
 
     # Process the LaTeX to convert figure environments to sfigure environments
     # Replace \begin{figure} with \begin{sfigure} and \end{figure} with \end{sfigure}
+    # Also handle two-column figures (figure* -> sfigure*)
     # Also preserve \newpage commands that come after figures
     # (with or without line breaks)
+    supplementary_latex = supplementary_latex.replace("\\begin{figure*}", "\\begin{sfigure*}")
     supplementary_latex = supplementary_latex.replace("\\begin{figure}", "\\begin{sfigure}")
     # Handle newpage with line breaks (using escaped backslashes)
+    supplementary_latex = supplementary_latex.replace("\\end{figure*}\n\\newpage", "\\end{sfigure*}\n\\newpage")
     supplementary_latex = supplementary_latex.replace("\\end{figure}\n\\newpage", "\\end{sfigure}\n\\newpage")
     # Handle newpage without line breaks
+    supplementary_latex = supplementary_latex.replace("\\end{figure*}\\newpage", "\\end{sfigure*}\\newpage")
     supplementary_latex = supplementary_latex.replace("\\end{figure}\\newpage", "\\end{sfigure}\\newpage")
     # Handle remaining figure endings
+    supplementary_latex = supplementary_latex.replace("\\end{figure*}", "\\end{sfigure*}")
     supplementary_latex = supplementary_latex.replace("\\end{figure}", "\\end{sfigure}")
 
     # Process the LaTeX to convert table environments to stable environments
