@@ -12,10 +12,11 @@
 2. [Manuscript Structure & Best Practices](#-manuscript-structure--best-practices)  
 3. [Advanced Markdown Features](#-advanced-markdown-features)
 4. [Figure Management & Automation](#-figure-management--automation)
-5. [Citation & Bibliography Management](#-citation--bibliography-management)
-6. [Collaboration & Version Control](#-collaboration--version-control)
-7. [Publication & Submission Workflows](#-publication--submission-workflows)
-8. [Advanced Configuration & Customization](#-advanced-configuration--customization)
+5. [🐍 **Python Execution & Data Analysis**](python-execution-guide.md) *(New!)*
+6. [Citation & Bibliography Management](#-citation--bibliography-management)
+7. [Collaboration & Version Control](#-collaboration--version-control)
+8. [Publication & Submission Workflows](#-publication--submission-workflows)
+9. [Advanced Configuration & Customization](#-advanced-configuration--customization)
 
 ---
 

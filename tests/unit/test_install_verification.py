@@ -2,19 +2,17 @@
 
 import subprocess
 import sys
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from rxiv_maker.install.utils.verification import (
     _check_latex,
-    _check_nodejs,
     _check_python,
     _check_r,
     _check_rxiv_maker,
     _check_system_libraries,
     _diagnose_latex,
-    _diagnose_nodejs,
     _diagnose_python,
     _diagnose_r,
     _diagnose_system_libs,
@@ -33,14 +31,13 @@ class TestVerifyInstallation:
         with (
             patch("rxiv_maker.install.utils.verification._check_python", return_value=True),
             patch("rxiv_maker.install.utils.verification._check_latex", return_value=True),
-            patch("rxiv_maker.install.utils.verification._check_nodejs", return_value=True),
             patch("rxiv_maker.install.utils.verification._check_r", return_value=True),
             patch("rxiv_maker.install.utils.verification._check_system_libraries", return_value=True),
             patch("rxiv_maker.install.utils.verification._check_rxiv_maker", return_value=True),
         ):
             results = verify_installation()
 
-            expected_components = ["python", "latex", "nodejs", "r", "system_libs", "rxiv_maker"]
+            expected_components = ["python", "latex", "r", "system_libs", "rxiv_maker"]
             assert all(component in results for component in expected_components)
             assert all(results[component] is True for component in expected_components)
 
@@ -50,7 +47,6 @@ class TestVerifyInstallation:
         with (
             patch("rxiv_maker.install.utils.verification._check_python", return_value=True),
             patch("rxiv_maker.install.utils.verification._check_latex", return_value=False),
-            patch("rxiv_maker.install.utils.verification._check_nodejs", return_value=True),
             patch("rxiv_maker.install.utils.verification._check_r", return_value=True),
             patch("rxiv_maker.install.utils.verification._check_system_libraries", return_value=True),
             patch("rxiv_maker.install.utils.verification._check_rxiv_maker", return_value=True),
@@ -65,7 +61,6 @@ class TestVerifyInstallation:
         mock_results = {
             "python": True,
             "latex": False,
-            "nodejs": True,
             "r": False,  # R is optional
             "system_libs": False,
             "rxiv_maker": True,
@@ -144,40 +139,6 @@ class TestIndividualChecks:
         assert result is False
 
     @patch("subprocess.run")
-    def test_check_nodejs_both_available(self, mock_run):
-        """Test _check_nodejs when both node and npm are available."""
-        mock_run.return_value = MagicMock(returncode=0)
-
-        result = _check_nodejs()
-
-        assert result is True
-        expected_calls = [
-            call(["node", "--version"], capture_output=True, text=True, timeout=10),
-            call(["npm", "--version"], capture_output=True, text=True, timeout=10),
-        ]
-        mock_run.assert_has_calls(expected_calls)
-
-    @patch("subprocess.run")
-    def test_check_nodejs_node_missing(self, mock_run):
-        """Test _check_nodejs when node is missing but npm is available."""
-        # Mock node failure, npm success
-        mock_run.side_effect = [MagicMock(returncode=1), MagicMock(returncode=0)]
-
-        result = _check_nodejs()
-
-        assert result is False
-
-    @patch("subprocess.run")
-    def test_check_nodejs_npm_missing(self, mock_run):
-        """Test _check_nodejs when node is available but npm is missing."""
-        # Mock node success, npm failure
-        mock_run.side_effect = [MagicMock(returncode=0), MagicMock(returncode=1)]
-
-        result = _check_nodejs()
-
-        assert result is False
-
-    @patch("subprocess.run")
     def test_check_r_available(self, mock_run):
         """Test _check_r when R is available."""
         mock_run.return_value = MagicMock(returncode=0)
@@ -185,7 +146,7 @@ class TestIndividualChecks:
         result = _check_r()
 
         assert result is True
-        mock_run.assert_called_once_with(["R", "--version"], capture_output=True, text=True, timeout=10)
+        mock_run.assert_called_once_with(["Rscript", "--version"], capture_output=True, text=True, timeout=10)
 
     @patch("subprocess.run")
     def test_check_r_not_available(self, mock_run):
@@ -254,14 +215,14 @@ class TestPrintVerificationResults:
         # Mock icons
         mock_get_icon.side_effect = lambda emoji, fallback: emoji
 
-        results = {"python": True, "latex": True, "nodejs": True, "r": True, "system_libs": True, "rxiv_maker": True}
+        results = {"python": True, "latex": True, "r": True, "system_libs": True, "rxiv_maker": True}
 
         _print_verification_results(results)
 
         # Verify print calls include success indicators
         print_calls = [call[0][0] for call in mock_print.call_args_list]
         success_lines = [line for line in print_calls if "✅ INSTALLED" in line]
-        assert len(success_lines) == 6  # All components should show as installed
+        assert len(success_lines) == 5  # All components should show as installed
 
     @patch("builtins.print")
     @patch("rxiv_maker.utils.unicode_safe.get_safe_icon")
@@ -270,13 +231,13 @@ class TestPrintVerificationResults:
         # Mock icons
         mock_get_icon.side_effect = lambda emoji, fallback: emoji
 
-        results = {"python": True, "latex": False, "nodejs": True, "r": False, "system_libs": False, "rxiv_maker": True}
+        results = {"python": True, "latex": False, "r": False, "system_libs": False, "rxiv_maker": True}
 
         _print_verification_results(results)
 
         # Verify warning message is shown
         print_calls = [call[0][0] for call in mock_print.call_args_list]
-        warning_lines = [line for line in print_calls if "⚠️  3 components missing" in line]
+        warning_lines = [line for line in print_calls if "⚠️  2 components missing" in line]
         assert len(warning_lines) == 1
 
     @patch("builtins.print")
@@ -286,7 +247,7 @@ class TestPrintVerificationResults:
         # Mock icons
         mock_get_icon.side_effect = lambda emoji, fallback: emoji
 
-        results = {"python": True, "latex": True, "nodejs": True, "r": True, "system_libs": True, "rxiv_maker": True}
+        results = {"python": True, "latex": True, "r": True, "system_libs": True, "rxiv_maker": True}
 
         _print_verification_results(results)
 
@@ -304,13 +265,12 @@ class TestDiagnoseInstallation:
         with (
             patch("rxiv_maker.install.utils.verification._diagnose_python", return_value={}),
             patch("rxiv_maker.install.utils.verification._diagnose_latex", return_value={}),
-            patch("rxiv_maker.install.utils.verification._diagnose_nodejs", return_value={}),
             patch("rxiv_maker.install.utils.verification._diagnose_r", return_value={}),
             patch("rxiv_maker.install.utils.verification._diagnose_system_libs", return_value={}),
         ):
             diagnosis = diagnose_installation()
 
-            expected_components = ["python", "latex", "nodejs", "r", "system_libs"]
+            expected_components = ["python", "latex", "r", "system_libs"]
             assert all(component in diagnosis for component in expected_components)
 
     def test_diagnose_python_current_version(self):
@@ -359,38 +319,6 @@ class TestDiagnoseInstallation:
         assert "pdflatex not found in PATH" in info["issues"]
 
     @patch("shutil.which")
-    @patch("subprocess.run")
-    def test_diagnose_nodejs_available(self, mock_run, mock_which):
-        """Test _diagnose_nodejs when Node.js is available."""
-        mock_which.return_value = "/usr/local/bin/node"
-        mock_run.side_effect = [
-            MagicMock(returncode=0, stdout="v18.17.0"),  # node --version
-            MagicMock(returncode=0, stdout="9.6.7"),  # npm --version
-        ]
-
-        info = _diagnose_nodejs()
-
-        assert info["installed"] is True
-        assert info["path"] == "/usr/local/bin/node"
-        assert info["version"] == "v18.17.0"
-        assert info["npm_version"] == "9.6.7"
-
-    @patch("shutil.which")
-    @patch("subprocess.run")
-    def test_diagnose_nodejs_npm_not_working(self, mock_run, mock_which):
-        """Test _diagnose_nodejs when npm is not working."""
-        mock_which.return_value = "/usr/local/bin/node"
-        mock_run.side_effect = [
-            MagicMock(returncode=0, stdout="v18.17.0"),  # node works
-            MagicMock(returncode=1, stdout=""),  # npm fails
-        ]
-
-        info = _diagnose_nodejs()
-
-        assert info["installed"] is False
-        assert "npm not working" in info["issues"]
-
-    @patch("shutil.which")
     def test_diagnose_r_not_found(self, mock_which):
         """Test _diagnose_r when R is not found."""
         mock_which.return_value = None
@@ -398,7 +326,7 @@ class TestDiagnoseInstallation:
         info = _diagnose_r()
 
         assert info["installed"] is False
-        assert "R not found in PATH (optional)" in info["issues"]
+        assert "Rscript not found in PATH (optional)" in info["issues"]
 
     @patch("builtins.__import__")
     def test_diagnose_system_libs_all_available(self, mock_import):
@@ -471,7 +399,6 @@ class TestCrossPlatformCompatibility:
 
         # All check functions should handle exceptions gracefully
         assert _check_latex() is False
-        assert _check_nodejs() is False
         assert _check_r() is False
 
     @patch("importlib.util.find_spec")
@@ -516,7 +443,6 @@ class TestEdgeCasesAndErrorHandling:
 
         # All should handle timeout gracefully
         assert _check_latex() is False
-        assert _check_nodejs() is False
         assert _check_r() is False
 
     @patch("shutil.which")

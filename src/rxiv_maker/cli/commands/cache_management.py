@@ -18,9 +18,9 @@ import click
 from rxiv_maker.core.cache.advanced_cache import clear_all_caches, get_cache_statistics
 from rxiv_maker.core.cache.bibliography_cache import get_bibliography_cache
 from rxiv_maker.core.cache.cache_utils import (
-    auto_migrate_cache_to_strategy,
-    get_cache_config,
-    get_cache_location_info,
+    find_manuscript_directory,
+    get_manuscript_cache_dir,
+    get_manuscript_name,
 )
 
 from ...docker.optimization import DockerBuildOptimizer
@@ -344,37 +344,38 @@ def _generate_optimization_recommendations(stats: Dict[str, Any]) -> Dict[str, l
     help="Output format for information",
 )
 def info(output_format: str):
-    """Show cache location and strategy information."""
+    """Show cache location information."""
     try:
-        from ...core.cache.cache_utils import find_manuscript_directory, get_cache_dir, get_cache_strategy
-
-        cache_config = get_cache_config()
-
-        # Handle manuscript-local strategy when not in manuscript directory
-        strategy = get_cache_strategy()
         manuscript_dir = find_manuscript_directory()
+        manuscript_name = get_manuscript_name(manuscript_dir)
 
-        if strategy == "manuscript-local" and manuscript_dir is None:
-            # Provide helpful info when manuscript-local is configured but not in manuscript dir
+        if manuscript_dir is None:
+            # Not in manuscript directory
             location_info = {
-                "strategy": strategy,
                 "manuscript_dir": None,
                 "manuscript_cache": None,
-                "global_cache": str(get_cache_dir()),
                 "active_cache": "❌ No manuscript directory found",
-                "is_manuscript_local": False,
-                "manuscript_name": None,
-                "status": "warning",
-                "message": "Manuscript-local cache strategy is set, but you're not in a manuscript directory. Use 'rxiv cache set-strategy global' or navigate to a manuscript directory.",
+                "status": "error",
+                "message": "You must be in a manuscript directory (containing 00_CONFIG.yml) to use cache.",
             }
         else:
-            location_info = get_cache_location_info()
+            cache_dir = get_manuscript_cache_dir()
+            location_info = {
+                "manuscript_dir": str(manuscript_dir),
+                "manuscript_cache": str(cache_dir),
+                "active_cache": str(cache_dir),
+                "manuscript_name": manuscript_name,
+                "status": "ok",
+                "message": "Using manuscript-local cache",
+            }
 
         if output_format == "json":
-            combined_info = {**cache_config, **location_info}
-            safe_console_print(console, json.dumps(combined_info, indent=2))
+            safe_console_print(console, json.dumps(location_info, indent=2))
         else:
-            _print_cache_info_table(cache_config, location_info)
+            # Simple table format output
+            safe_console_print(console, "Cache Information:")
+            for key, value in location_info.items():
+                safe_console_print(console, f"  {key}: {value}")
 
     except Exception as e:
         safe_console_print(console, f"❌ Error getting cache information: {e}")
@@ -393,15 +394,8 @@ def info(output_format: str):
 def migrate(target: str, force: bool, dry_run: bool):
     """Migrate cache between global and manuscript-local storage."""
     try:
-        if target == "auto":
-            # Use current strategy
-            target_strategy = None
-        else:
-            target_strategy = target
-
-        migration_results = auto_migrate_cache_to_strategy(
-            target_strategy=target_strategy, force=force, dry_run=dry_run
-        )
+        # Cache migration functionality temporarily disabled
+        migration_results = {"action": "no_migration_needed", "message": "Cache migration functionality not available"}
 
         action_text = "Would migrate" if dry_run else "Migrated"
 
@@ -444,7 +438,8 @@ def set_strategy(strategy: str, migrate_now: bool):
 
         if migrate_now:
             safe_console_print(console, "\n🔄 Migrating existing cache...")
-            migration_results = auto_migrate_cache_to_strategy(target_strategy=strategy, force=False, dry_run=False)
+            # Cache migration functionality temporarily disabled
+            migration_results = {"action": "no_migration_needed", "migration_results": {"success": False}}
 
             if migration_results["migration_results"] and migration_results["migration_results"]["success"]:
                 migrated_count = migration_results["migration_results"]["migrated_count"]

@@ -72,7 +72,12 @@ def copy_pdf_to_manuscript_folder(
         manuscript_path = os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
         manuscript_name = os.path.basename(manuscript_path.rstrip("/"))
 
+    # The LaTeX build generates PDF with the same name as the .tex file
+    # Check for both the manuscript_name.pdf and default MANUSCRIPT.pdf
     output_pdf = Path(output_dir) / f"{manuscript_name}.pdf"
+    if not output_pdf.exists():
+        # Fallback to MANUSCRIPT.pdf (default LaTeX output name)
+        output_pdf = Path(output_dir) / "MANUSCRIPT.pdf"
     if not output_pdf.exists():
         print(f"Warning: PDF not found at {output_pdf}")
         return None

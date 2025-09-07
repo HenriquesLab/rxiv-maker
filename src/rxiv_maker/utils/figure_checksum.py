@@ -12,7 +12,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from ..core.cache.cache_utils import get_cache_dir, get_legacy_cache_dir, migrate_cache_file
+from ..core.cache.cache_utils import get_manuscript_cache_dir
 
 logger = logging.getLogger(__name__)
 
@@ -25,14 +25,18 @@ class FigureChecksumManager:
 
         Args:
             manuscript_path: Path to the manuscript directory
-            cache_dir: Directory for cache files (if None, uses platform-standard location)
+            cache_dir: Directory for cache files (if None, uses manuscript .rxiv_cache)
         """
         self.manuscript_path = Path(manuscript_path)
         self.manuscript_name = self.manuscript_path.name
 
-        # Use standardized cache directory if not specified
+        # Use manuscript cache directory if not specified
         if cache_dir is None:
-            self.cache_dir = get_cache_dir("figures")
+            try:
+                self.cache_dir = get_manuscript_cache_dir("figures")
+            except RuntimeError:
+                # Fallback to manuscript-local cache if we can't find global manuscript dir
+                self.cache_dir = self.manuscript_path / ".rxiv_cache" / "figures"
         else:
             self.cache_dir = Path(cache_dir)
 
@@ -42,25 +46,8 @@ class FigureChecksumManager:
         self.checksum_file = self.cache_dir / f"figure_checksums_{self.manuscript_name}.json"
         self.figures_dir = self.manuscript_path / "FIGURES"
 
-        # Handle migration from legacy cache location
-        self._migrate_legacy_cache()
-
         # Load existing checksums
         self._checksums: dict[str, str] = self._load_checksums()
-
-    def _migrate_legacy_cache(self) -> None:
-        """Migrate cache file from legacy location if it exists."""
-        if self.cache_dir == get_cache_dir("figures"):
-            # Only migrate if using new standardized location
-            legacy_dir = get_legacy_cache_dir()
-            legacy_file = legacy_dir / f"figure_checksums_{self.manuscript_name}.json"
-
-            if legacy_file.exists():
-                try:
-                    migrate_cache_file(legacy_file, self.checksum_file)
-                    logger.info(f"Migrated figure checksums from {legacy_file} to {self.checksum_file}")
-                except Exception as e:
-                    logger.warning(f"Failed to migrate figure checksums: {e}")
 
     def _load_checksums(self) -> dict[str, str]:
         """Load existing checksums from cache file."""

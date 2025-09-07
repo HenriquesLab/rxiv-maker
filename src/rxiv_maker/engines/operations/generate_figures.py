@@ -20,6 +20,8 @@ try:
 except ImportError:
     requests = None  # type: ignore
 
+# PyPDF dependencies removed - using mermaid.ink ?fit parameter for tight bounds
+
 try:
     from ...utils.retry import get_with_retry
 except ImportError:
@@ -375,19 +377,18 @@ class FigureGenerator:
     def generate_mermaid_figure(self, mmd_file):
         """Generate figure from Mermaid diagram file using mermaid.ink API."""
         try:
-            # Create subdirectory for this figure
-            figure_dir = self.output_dir / mmd_file.stem
-            figure_dir.mkdir(parents=True, exist_ok=True)
+            # Output PDF directly in the same directory as the .mmd file
+            figure_dir = mmd_file.parent
 
-            # --- Step 1: Generate SVG using mermaid.ink API ---
-            svg_output_file = figure_dir / f"{mmd_file.stem}.svg"
+            # --- Generate only PDF using mermaid.ink API ---
+            pdf_output_file = figure_dir / f"{mmd_file.stem}.pdf"
 
             # Check if figure needs regeneration
-            if not self._should_regenerate_figure(mmd_file, svg_output_file):
+            if not self._should_regenerate_figure(mmd_file, pdf_output_file):
                 print(f"  ⚡ Skipping {mmd_file.name}: cached version is up-to-date")
                 return
 
-            print(f"  🎨 Generating SVG using mermaid.ink API: {figure_dir.name}/{svg_output_file.name}...")
+            print(f"  🎨 Generating PDF using mermaid.ink API: {figure_dir.name}/{pdf_output_file.name}...")
 
             # Read the mermaid diagram content
             mermaid_content = mmd_file.read_text(encoding="utf-8")
@@ -398,7 +399,7 @@ class FigureGenerator:
                     raise RuntimeError(f"{self.engine.title()} engine not initialized")
                 result = self.container_engine.run_mermaid_generation(
                     input_file=mmd_file.resolve(),
-                    output_file=svg_output_file.resolve(),
+                    output_file=pdf_output_file.resolve(),
                     background_color="transparent",
                 )
 
@@ -406,18 +407,18 @@ class FigureGenerator:
                     print(f"  ❌ Docker mermaid generation failed for {mmd_file.name}:")
                     print(f"     {result.stderr}")
 
-                    # Generate a placeholder SVG to prevent build failures
-                    print(f"  🔄 Creating placeholder SVG for {mmd_file.name}...")
-                    self._create_placeholder_svg(svg_output_file, mmd_file.name, result.stderr)
+                    # Generate a placeholder PDF to prevent build failures
+                    print(f"  🔄 Creating placeholder PDF for {mmd_file.name}...")
+                    self._create_placeholder_pdf(pdf_output_file, mmd_file.name, result.stderr)
                     return
             else:
                 # Use mermaid.ink API approach
-                success = self._generate_mermaid_with_api(mermaid_content, svg_output_file, mmd_file.name)
+                success = self._generate_mermaid_with_api(mermaid_content, pdf_output_file, mmd_file.name)
 
                 if not success:
-                    print(f"  🔄 Creating placeholder SVG for {mmd_file.name}...")
-                    self._create_placeholder_svg(
-                        svg_output_file,
+                    print(f"  🔄 Creating placeholder PDF for {mmd_file.name}...")
+                    self._create_placeholder_pdf(
+                        pdf_output_file,
                         mmd_file.name,
                         "mermaid.ink API approach failed - falling back to placeholder",
                     )
@@ -480,20 +481,20 @@ class FigureGenerator:
             print(f"     Warning: Could not fix SVG dimensions: {e}")
             return svg_content
 
-    def _generate_mermaid_with_api(self, mermaid_content, svg_output_file, diagram_name):
-        """Generate mermaid diagram in all formats using mermaid.ink API."""
+    def _generate_mermaid_with_api(self, mermaid_content, pdf_output_file, diagram_name):
+        """Generate mermaid diagram in PDF format using mermaid.ink API."""
         try:
             if requests is None:
                 print("  ⚠️  requests library not available")
-                print(f"     Creating placeholder SVG for: {diagram_name}")
-                self._create_placeholder_svg(
-                    svg_output_file,
+                print(f"     Creating placeholder PDF for: {diagram_name}")
+                self._create_placeholder_pdf(
+                    pdf_output_file,
                     diagram_name,
                     "requests library not available for mermaid.ink API",
                 )
                 return True
 
-            print(f"  🌐 Generating all formats using mermaid.ink API: {diagram_name}")
+            print(f"  🌐 Generating PDF using mermaid.ink API: {diagram_name}")
 
             # Parse mermaid file content
             diagram_content = self._parse_mermaid_file(mermaid_content)
@@ -503,22 +504,19 @@ class FigureGenerator:
             base64_string = base64.urlsafe_b64encode(diagram_bytes).decode("ascii")
 
             # Prepare output paths
-            figure_dir = svg_output_file.parent
-            stem_name = svg_output_file.stem
+            figure_dir = pdf_output_file.parent
+            stem_name = pdf_output_file.stem
 
-            # Define format endpoints
+            # Define format endpoints - PDF with fit parameter for tight bounds
             formats = {
-                "svg": f"https://mermaid.ink/svg/{base64_string}",
-                "png": f"https://mermaid.ink/img/{base64_string}?type=png",
                 "pdf": f"https://mermaid.ink/pdf/{base64_string}?fit",
             }
 
             generated_files = []
 
-            # Generate each format
+            # Generate PDF with fit parameter for tight bounds
             for format_type, api_url in formats.items():
                 output_file = figure_dir / f"{stem_name}.{format_type}"
-
                 print(f"     Requesting {format_type.upper()} from mermaid.ink...")
 
                 try:
@@ -529,16 +527,9 @@ class FigureGenerator:
                         response = requests.get(api_url, timeout=30)
                         response.raise_for_status()
 
-                    # Write the content
-                    if format_type == "svg":
-                        # For SVG, we can still apply dimension fixes if needed
-                        content = self._fix_svg_dimensions(response.text)
-                        with open(output_file, "w", encoding="utf-8") as f:
-                            f.write(content)
-                    else:
-                        # For PNG and PDF, write binary content directly
-                        with open(output_file, "wb") as f:
-                            f.write(response.content)
+                    # Write binary content directly
+                    with open(output_file, "wb") as f:
+                        f.write(response.content)
 
                     print(f"  ✅ Created {format_type.upper()}: {output_file}")
                     generated_files.append(f"{figure_dir.name}/{output_file.name}")
@@ -553,27 +544,26 @@ class FigureGenerator:
                 return True
             else:
                 print(f"  ❌ Failed to generate any formats for {diagram_name}")
-                # Create placeholder SVG as fallback
-                self._create_placeholder_svg(svg_output_file, diagram_name, "All mermaid.ink API requests failed")
+                # Create placeholder PDF as fallback
+                self._create_placeholder_pdf(pdf_output_file, diagram_name, "All mermaid.ink API requests failed")
                 return False
 
         except Exception as e:
             print(f"  ❌ Error in mermaid.ink API generation: {e}")
-            self._create_placeholder_svg(svg_output_file, diagram_name, f"Error generating mermaid diagram: {e}")
+            self._create_placeholder_pdf(pdf_output_file, diagram_name, f"Error generating mermaid diagram: {e}")
             return False
 
     def generate_python_figure(self, py_file):
         """Generate figure from Python script."""
         try:
-            # Create subdirectory for this figure
-            figure_dir = self.output_dir / py_file.stem
-            figure_dir.mkdir(parents=True, exist_ok=True)
+            # Output PDF directly in the same directory as the .py file
+            figure_dir = py_file.parent
 
-            # Check if figure needs regeneration (check for any output file)
-            output_patterns = ["*.png", "*.pdf", "*.svg", "*.eps"]
+            # Check if figure needs regeneration (check for PDF output file)
+            output_patterns = ["*.pdf"]
             existing_outputs = []
             for pattern in output_patterns:
-                existing_outputs.extend(figure_dir.glob(pattern))
+                existing_outputs.extend(figure_dir.glob(f"{py_file.stem}.pdf"))
 
             if existing_outputs and not self._should_regenerate_figure(py_file, existing_outputs[0]):
                 print(f"  ⚡ Skipping {py_file.name}: cached version is up-to-date")
@@ -587,7 +577,7 @@ class FigureGenerator:
                 # Use container engine execution with centralized manager
                 if self.container_engine is None:
                     raise RuntimeError(f"{self.engine.title()} engine not initialized")
-                env = {"RXIV_FIGURE_OUTPUT_DIR": str(figure_dir.absolute())}
+                env = {}
 
                 result = self.container_engine.run_python_script(
                     script_file=py_file.resolve(),
@@ -640,7 +630,8 @@ class FigureGenerator:
                     print(f"     {result.stderr}")
                 return
 
-            print("     Debug: Script executed successfully, now checking for files...")
+            if self.verbose:
+                print("     Debug: Script executed successfully, now checking for files...")
 
             # Check for generated files by scanning the figure subdirectory
             # Add a small delay to ensure files are fully written in CI environments
@@ -653,59 +644,38 @@ class FigureGenerator:
 
             os.sync() if hasattr(os, "sync") else None
 
-            print(f"     Debug: About to scan directory: {figure_dir.absolute()}")
-            print(f"     Debug: Directory exists: {figure_dir.exists()}")
-            if figure_dir.exists():
-                dir_contents = list(figure_dir.iterdir())
-                print(f"     Debug: Directory contents: {dir_contents}")
-            else:
-                print("     Debug: Directory does not exist!")
+            if self.verbose:
+                print(f"     Debug: About to scan directory: {figure_dir.absolute()}")
+                print(f"     Debug: Directory exists: {figure_dir.exists()}")
+                if figure_dir.exists():
+                    dir_contents = list(figure_dir.iterdir())
+                    print(f"     Debug: Directory contents: {dir_contents}")
+                else:
+                    print("     Debug: Directory does not exist!")
 
             current_files = set()
-            for ext in ["png", "pdf", "svg", "eps"]:
-                # Use rglob to find files recursively in subdirectories
-                found_files = list(figure_dir.rglob(f"*.{ext}"))
-                current_files.update(found_files)
-                file_names = [f.name for f in found_files]
-                print(f"     Debug: Found {len(found_files)} {ext} files: {file_names}")
+            # Only look for PDF files in the script directory
+            found_files = list(figure_dir.glob(f"{py_file.stem}.pdf"))
+            current_files.update(found_files)
+            file_names = [f.name for f in found_files]
+            if self.verbose:
+                print(f"     Debug: Found {len(found_files)} pdf files: {file_names}")
 
-            # Look for files that might have been created by this script
-            base_name = py_file.stem
-            potential_files = []
-            for file_path in current_files:
-                # Check if filename contains the base name or is a common figure pattern
-                if (
-                    base_name.lower() in file_path.stem.lower()
-                    or file_path.stem.lower().startswith("figure")
-                    or file_path.stem.lower().startswith("fig")
-                ):
-                    potential_files.append(file_path)
+            # Files found are the ones we expect (matching the script name)
+            potential_files = list(current_files)
 
             if potential_files:
                 print("  ✅ Generated figures:")
                 for gen_file in sorted(potential_files):
-                    # Show relative path from the original figures directory
-                    # figure_dir might be a subdirectory, so we need to get the path from the root FIGURES dir
-                    try:
-                        # Try to get relative path from the parent figures directory
-                        figures_root = figure_dir.parent if figure_dir.parent.name == "FIGURES" else figure_dir
-                        while figures_root.name != "FIGURES" and figures_root.parent != figures_root:
-                            figures_root = figures_root.parent
-                        if figures_root.name == "FIGURES":
-                            rel_path = gen_file.relative_to(figures_root)
-                        else:
-                            rel_path = gen_file.relative_to(figure_dir)
-                        print(f"     - {rel_path}")
-                    except ValueError:
-                        # Fallback: just show the filename
-                        print(f"     - {gen_file.name}")
+                    # Show filename only since files are in the same directory as script
+                    print(f"     - {gen_file.name}")
             else:
                 print(f"  ⚠️  No output files detected for {py_file.name}")
-                print(f"     Debug: Checked {len(current_files)} total files")
-                print(f"     Debug: Base name pattern: {base_name.lower()}")
-                if current_files:
-                    available_files = [f.name for f in current_files]
-                    print(f"     Debug: Available files: {available_files}")
+                if self.verbose:
+                    print(f"     Debug: Checked {len(current_files)} total files")
+                    if current_files:
+                        available_files = [f.name for f in current_files]
+                        print(f"     Debug: Available files: {available_files}")
                 return
 
             # Update cache after successful generation
@@ -724,15 +694,14 @@ class FigureGenerator:
                 print("Check https://www.r-project.org/ for installation instructions")
                 return
 
-            # Create subdirectory for this figure
-            figure_dir = self.output_dir / r_file.stem
-            figure_dir.mkdir(parents=True, exist_ok=True)
+            # Output PDF directly in the same directory as the .R file
+            figure_dir = r_file.parent
 
-            # Check if figure needs regeneration (check for any output file)
-            output_patterns = ["*.png", "*.pdf", "*.svg", "*.eps"]
+            # Check if figure needs regeneration (check for PDF output file)
+            output_patterns = ["*.pdf"]
             existing_outputs = []
             for pattern in output_patterns:
-                existing_outputs.extend(figure_dir.glob(pattern))
+                existing_outputs.extend(figure_dir.glob(f"{r_file.stem}.pdf"))
 
             if existing_outputs and not self._should_regenerate_figure(r_file, existing_outputs[0]):
                 print(f"  ⚡ Skipping {r_file.name}: cached version is up-to-date")
@@ -746,7 +715,7 @@ class FigureGenerator:
                 # Use container engine execution with centralized manager
                 if self.container_engine is None:
                     raise RuntimeError(f"{self.engine.title()} engine not initialized")
-                env = {"RXIV_FIGURE_OUTPUT_DIR": str(figure_dir.absolute())}
+                env = {}
 
                 result = self.container_engine.run_r_script(
                     script_file=r_file.resolve(),
@@ -755,13 +724,12 @@ class FigureGenerator:
                 )
             else:
                 # Use local R execution
-                cmd = f"Rscript {str(r_file.absolute())}"
+                cmd = ["Rscript", str(r_file.absolute())]
 
-                # Set environment variable to ensure script saves to correct location
+                # Run script in its own directory
                 import os
 
                 env = os.environ.copy()
-                env["RXIV_FIGURE_OUTPUT_DIR"] = str(figure_dir.absolute())
 
                 result = self.platform.run_command(
                     cmd,
@@ -783,41 +751,20 @@ class FigureGenerator:
                     print(f"     {result.stderr}")
                 return
 
-            # Check for generated files by scanning the figure subdirectory
+            # Check for generated PDF file by scanning the script directory
             current_files = set()
-            for ext in ["png", "pdf", "svg", "eps"]:
-                current_files.update(figure_dir.glob(f"*.{ext}"))
+            # Only look for PDF files matching the script name
+            found_files = list(figure_dir.glob(f"{r_file.stem}.pdf"))
+            current_files.update(found_files)
 
-            # Look for files that might have been created by this script
-            base_name = r_file.stem
-            potential_files = []
-            for file_path in current_files:
-                # Check if filename contains the base name or is a common figure pattern
-                if (
-                    base_name.lower() in file_path.stem.lower()
-                    or file_path.stem.lower().startswith("figure")
-                    or file_path.stem.lower().startswith("fig")
-                ):
-                    potential_files.append(file_path)
+            # Files found are the ones we expect (matching the script name)
+            potential_files = list(current_files)
 
             if potential_files:
                 print("  ✅ Generated figures:")
                 for gen_file in sorted(potential_files):
-                    # Show relative path from the original figures directory
-                    try:
-                        # Try to get relative path from the parent figures directory
-                        figures_root = figure_dir.parent if figure_dir.parent.name == "FIGURES" else figure_dir
-                        while figures_root.name != "FIGURES" and figures_root.parent != figures_root:
-                            figures_root = figures_root.parent
-
-                        if figures_root.name == "FIGURES":
-                            rel_path = gen_file.relative_to(figures_root)
-                        else:
-                            rel_path = gen_file.relative_to(figure_dir)
-                        print(f"     - {rel_path}")
-                    except ValueError:
-                        # Fallback: just show the filename
-                        print(f"     - {gen_file.name}")
+                    # Show filename only since files are in the same directory as script
+                    print(f"     - {gen_file.name}")
             else:
                 print(f"  ⚠️  No output files detected for {r_file.name}")
                 return
@@ -825,6 +772,13 @@ class FigureGenerator:
             # Update cache after successful generation
             self._update_figure_cache(r_file)
 
+        except FileNotFoundError as e:
+            if "Rscript" in str(e):
+                print(f"  ⚠️  Skipping {r_file.name}: Rscript not available")
+                print("     Ensure R is installed and accessible in your PATH")
+                print("     Check https://www.r-project.org/ for installation instructions")
+            else:
+                print(f"  ❌ File not found error executing {r_file.name}: {e}")
         except Exception as e:
             print(f"  ❌ Error executing {r_file.name}: {e}")
 
@@ -872,7 +826,13 @@ class FigureGenerator:
 
     def _check_rscript(self):
         """Check if Rscript is available."""
-        return self.platform.check_command_exists("Rscript")
+        import shutil
+
+        result = self.platform.check_command_exists("Rscript")
+        if self.verbose:
+            print(f"     Debug: Rscript check - shutil.which result: {shutil.which('Rscript')}")
+            print(f"     Debug: Rscript check - platform result: {result}")
+        return result
 
     def _create_placeholder_svg(self, svg_path, diagram_name, error_message):
         """Create a placeholder SVG when mermaid generation fails."""
@@ -947,6 +907,126 @@ class FigureGenerator:
                 print(f"  ✅ Created placeholder SVG: {svg_path}")
         except Exception as e:
             print(f"  ❌ Failed to create placeholder SVG: {e}")
+
+    def _create_placeholder_pdf(self, pdf_path, diagram_name, error_message):
+        """Create a placeholder PDF when mermaid generation fails."""
+        # Truncate long error messages for readability
+        if len(error_message) > 200:
+            error_message = error_message[:200] + "..."
+
+        # Create a simple PDF using reportlab or a minimal LaTeX approach
+        try:
+            from reportlab.lib.pagesizes import A4
+            from reportlab.pdfgen import canvas
+
+            pdf_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Create PDF with error message
+            c = canvas.Canvas(str(pdf_path), pagesize=A4)
+            width, height = A4
+
+            # Title
+            c.setFont("Helvetica-Bold", 16)
+            c.setFillColorRGB(0.8, 0.2, 0.2)  # Red color
+            c.drawCentredText(width / 2, height - 100, "⚠️ Mermaid Diagram Error")
+
+            # Diagram name
+            c.setFont("Helvetica", 12)
+            c.setFillColorRGB(0.1, 0.4, 0.8)  # Blue color
+            c.drawCentredText(width / 2, height - 130, f"Diagram: {diagram_name}")
+
+            # Error message
+            c.setFont("Helvetica", 10)
+            c.setFillColorRGB(0.4, 0.4, 0.4)  # Gray color
+            c.drawString(50, height - 180, f"Error: {error_message}")
+
+            # Instructions
+            c.setFont("Helvetica", 10)
+            c.setFillColorRGB(0.1, 0.4, 0.8)
+            instructions = [
+                "This placeholder was generated because mermaid diagram rendering failed.",
+                "To fix this:",
+                "1. Install Chromium: apt-get install chromium-browser",
+                "2. Or use alternative mermaid renderer",
+                "3. Or convert diagram to static image",
+            ]
+
+            y_pos = height - 220
+            for instruction in instructions:
+                c.drawString(50, y_pos, instruction)
+                y_pos -= 20
+
+            c.save()
+
+            # Use a safe path display that handles temporary directories
+            try:
+                relative_path = pdf_path.relative_to(Path.cwd())
+                print(f"  ✅ Created placeholder PDF: {relative_path}")
+            except ValueError:
+                # Path is not relative to cwd (e.g., in temp directory)
+                print(f"  ✅ Created placeholder PDF: {pdf_path}")
+
+        except ImportError:
+            # Fallback: create a simple text-based PDF using LaTeX if reportlab not available
+            try:
+                import subprocess
+
+                latex_content = f"""\\documentclass{{article}}
+\\usepackage[utf8]{{inputenc}}
+\\usepackage{{geometry}}
+\\geometry{{margin=1in}}
+\\begin{{document}}
+\\centering
+\\large \\textcolor{{red}}{{\\textbf{{⚠ Mermaid Diagram Error}}}}
+
+\\vspace{{0.5cm}}
+
+\\textcolor{{blue}}{{Diagram: {diagram_name}}}
+
+\\vspace{{0.5cm}}
+
+\\raggedright
+\\textbf{{Error:}} {error_message[:100]}
+
+\\vspace{{0.5cm}}
+
+This placeholder was generated because mermaid diagram rendering failed.
+
+To fix this:
+\\begin{{enumerate}}
+\\item Install Chromium: apt-get install chromium-browser
+\\item Or use alternative mermaid renderer
+\\item Or convert diagram to static image
+\\end{{enumerate}}
+
+\\end{{document}}"""
+
+                # Create temporary tex file
+                tex_path = pdf_path.with_suffix(".tex")
+                tex_path.write_text(latex_content, encoding="utf-8")
+
+                # Compile to PDF
+                subprocess.run(
+                    ["pdflatex", "-interaction=nonstopmode", str(tex_path)], cwd=pdf_path.parent, capture_output=True
+                )
+
+                # Clean up auxiliary files
+                for ext in [".tex", ".log", ".aux"]:
+                    aux_file = pdf_path.with_suffix(ext)
+                    if aux_file.exists():
+                        aux_file.unlink()
+
+                print(f"  ✅ Created placeholder PDF: {pdf_path}")
+
+            except Exception as e:
+                print(f"  ❌ Failed to create placeholder PDF: {e}")
+                # Final fallback: create an empty PDF
+                pdf_path.parent.mkdir(parents=True, exist_ok=True)
+                pdf_path.write_bytes(
+                    b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]>>endobj xref 0 4 0000000000 65535 f 0000000010 00000 n 0000000053 00000 n 0000000125 00000 n trailer<</Size 4/Root 1 0 R>> startxref 203 %%EOF"
+                )
+        except Exception as e:
+            print(f"  ❌ Failed to create placeholder PDF: {e}")
 
 
 # CLI integration

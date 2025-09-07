@@ -12,7 +12,6 @@ Usage:
     python SFigure__arxiv_growth.py --help    # Show help message
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -56,13 +55,13 @@ plt.rcParams.update(
 def load_and_process_data():
     """Load and process the arXiv submission data."""
     # Define the path to the data file
-    data_path = Path(__file__).parent / "DATA" / "SFigure__arxiv_growth" / "arxiv_monthly_submissions.csv"
+    data_path = Path(__file__).parent.parent / "DATA" / "arxiv_monthly_submissions.csv"
 
     # Load the data
     df = pd.read_csv(data_path)
 
-    # Convert month column to datetime
-    df["date"] = pd.to_datetime(df["month"], format="%Y-%m")
+    # Convert year_month column to datetime
+    df["date"] = pd.to_datetime(df["year_month"])
 
     # Sort by date to ensure proper chronological order
     df = df.sort_values("date").reset_index(drop=True)
@@ -133,7 +132,7 @@ def create_figure():
     # Find peak values with proper type handling
     peak_idx = df["submissions"].idxmax()
     peak_submissions = int(df.iloc[peak_idx]["submissions"])
-    peak_month = df.iloc[peak_idx]["month"]
+    peak_month = df.iloc[peak_idx]["year_month"]
     peak_date = pd.to_datetime(peak_month)
 
     # Add compact annotation for peak
@@ -155,45 +154,24 @@ def create_figure():
 
 
 def save_figure(fig, output_path=None):
-    """Save the figure in multiple formats."""
-    # Use environment variable if set, otherwise current working directory
+    """Save the figure as SVG."""
+    # Use script directory instead of environment variable
     if output_path is None:
-        env_output_dir = os.environ.get("RXIV_FIGURE_OUTPUT_DIR")
-        output_path = Path(env_output_dir) if env_output_dir else Path.cwd()
+        output_path = Path(__file__).parent
     else:
         output_path = Path(output_path)
 
-    # Save as PDF (vector format for LaTeX)
+    # Save only as PDF (vector format)
     fig.savefig(
         output_path / "SFigure__arxiv_growth.pdf",
-        dpi=300,
         bbox_inches="tight",
         facecolor="white",
         edgecolor="none",
     )
 
-    # Save as SVG (vector format for web)
-    fig.savefig(
-        output_path / "SFigure__arxiv_growth.svg",
-        bbox_inches="tight",
-        facecolor="white",
-        edgecolor="none",
-    )
-
-    # Save as high-resolution PNG (raster format for LaTeX compatibility)
-    fig.savefig(
-        output_path / "SFigure__arxiv_growth.png",
-        dpi=300,
-        bbox_inches="tight",
-        facecolor="white",
-        edgecolor="none",
-    )
-
-    # Print save locations
+    # Print save location
     print("Figure saved to:")
     print(f"  - {output_path / 'SFigure__arxiv_growth.pdf'}")
-    print(f"  - {output_path / 'SFigure__arxiv_growth.svg'}")
-    print(f"  - {output_path / 'SFigure__arxiv_growth.png'}")
 
 
 def main():
@@ -220,7 +198,7 @@ def main():
 
     except FileNotFoundError as e:
         print(f"Error: Could not find data file. {e}")
-        print("Please ensure arxiv_monthly_submissions.csv is in the DATA/SFigure__arxiv_growth/ directory.")
+        print("Please ensure arxiv_monthly_submissions.csv is in the DATA/ directory.")
     except Exception as e:
         print(f"Error creating figure: {e}")
         raise

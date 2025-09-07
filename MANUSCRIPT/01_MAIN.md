@@ -3,7 +3,7 @@
 
 ## Abstract
 
-Your abstract goes here. This should be a concise summary of your research. 
+Your abstract goes here. This should be a concise summary of your research.
 
 ## Introduction
 
@@ -14,11 +14,22 @@ $$E = mc^2$${#eq:einstein}
 
 And reference them using @eq:einstein.
 
+{{py:exec
+from datetime import datetime
+
+# Initialize manuscript data
+manuscript_date = datetime.now().strftime("%Y-%m-%d")
+}}
+
+You can now also use executable code within the manuscript, for example we're getting this build date {{py:get manuscript_date}} directly through a python, by through the `{{py:get manuscript_date}}` call.
+
 ## Results
 
-Present your results here. Include figures and tables:
+Present your results here.
 
-![](FIGURES/Figure__example/Figure__example.png)
+Include figures and tables:
+
+![](FIGURES/Figure__example.pdf)
 {#fig:example} **Example Figure Caption.** Describe what your figure shows.
 
 | Column 1 | Column 2 | Column 3 |
@@ -36,7 +47,7 @@ Discuss your findings here.
 
 ## Methods
 
-Describe your methodology here. For additional methodological details, see @snote:methods. Include code blocks when relevant:
+Describe your methodology here. For additional methodological details, see @snote:methods. Include traditional code blocks when showing examples:
 
 ```python
 # Example code

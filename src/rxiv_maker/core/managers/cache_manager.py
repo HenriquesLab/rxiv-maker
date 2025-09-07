@@ -16,7 +16,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Generic, List, Optional, TypeVar
 
-from ..cache.cache_utils import get_cache_dir
+from ..cache.cache_utils import get_manuscript_cache_dir
 from ..error_recovery import RecoveryEnhancedMixin
 from ..logging_config import get_logger
 
@@ -260,7 +260,7 @@ class DiskCache(CacheInterface[T]):
 
     def __init__(self, config: CacheConfig, cache_dir: Optional[Path] = None):
         self.config = config
-        self.cache_dir = cache_dir or get_cache_dir(config.name)
+        self.cache_dir = cache_dir or get_manuscript_cache_dir(config.name)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
         self.index_file = self.cache_dir / "cache_index.json"

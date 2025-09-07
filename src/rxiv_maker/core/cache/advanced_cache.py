@@ -18,7 +18,7 @@ from functools import wraps
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Tuple
 
-from .cache_utils import get_cache_dir
+from .cache_utils import get_manuscript_cache_dir
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ class AdvancedCache:
             max_disk_size_mb: Maximum disk cache size in MB
             compression: Whether to compress disk storage
             ttl_hours: Time-to-live in hours
-            cache_dir: Custom cache directory (defaults to global cache)
+            cache_dir: Custom cache directory (defaults to manuscript .rxiv_cache)
         """
         self.name = name
         self.max_memory_items = max_memory_items
@@ -55,11 +55,11 @@ class AdvancedCache:
         self._memory_cache: Dict[str, Dict[str, Any]] = {}
         self._access_order: Dict[str, float] = {}
 
-        # Disk cache - use custom directory or default global cache
+        # Disk cache - use custom directory or default manuscript cache
         if cache_dir is not None:
             self.cache_dir = cache_dir / name
         else:
-            self.cache_dir = get_cache_dir("advanced") / name
+            self.cache_dir = get_manuscript_cache_dir("advanced") / name
 
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -350,10 +350,14 @@ def cached_function(
     """
 
     def decorator(func: Callable) -> Callable:
-        cache = AdvancedCache(name=f"function_{cache_name}", ttl_hours=ttl_hours, compression=compression)
+        _cache = None
 
         @wraps(func)
         def wrapper(*args, **kwargs):
+            nonlocal _cache
+            if _cache is None:
+                _cache = AdvancedCache(name=f"function_{cache_name}", ttl_hours=ttl_hours, compression=compression)
+            cache = _cache
             # Generate cache key from function name and arguments
             key_data = {"function": func.__name__, "args": args, "kwargs": kwargs}
             base_key = hashlib.md5(
@@ -374,10 +378,16 @@ def cached_function(
 
             return result
 
-        # Add cache management methods
-        wrapper.cache = cache  # type: ignore[attr-defined]
-        wrapper.clear_cache = cache.clear  # type: ignore[attr-defined]
-        wrapper.cache_stats = cache.get_stats  # type: ignore[attr-defined]
+        # Add cache management methods (lazy access)
+        def get_cache():
+            nonlocal _cache
+            if _cache is None:
+                _cache = AdvancedCache(name=f"function_{cache_name}", ttl_hours=ttl_hours, compression=compression)
+            return _cache
+
+        wrapper.cache = property(lambda self: get_cache())  # type: ignore[attr-defined]
+        wrapper.clear_cache = lambda: get_cache().clear()  # type: ignore[attr-defined]
+        wrapper.cache_stats = lambda: get_cache().get_stats()  # type: ignore[attr-defined]
 
         return wrapper
 

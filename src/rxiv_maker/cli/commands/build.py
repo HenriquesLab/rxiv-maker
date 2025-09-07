@@ -35,6 +35,7 @@ logger = get_logger()
     help="Track changes against specified git tag",
     metavar="TAG",
 )
+@click.option("--keep-output", is_flag=True, help="Preserve existing output directory (default: clear before build)")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.option("--quiet", "-q", is_flag=True, help="Suppress non-essential output")
 @click.option("--debug", "-d", is_flag=True, help="Enable debug output")
@@ -51,6 +52,7 @@ def build(
     force_figures: bool,
     skip_validation: bool,
     track_changes: str | None,
+    keep_output: bool,
     verbose: bool,
     quiet: bool,
     debug: bool,
@@ -59,6 +61,8 @@ def build(
     """Generate a publication-ready PDF from your Markdown manuscript.
 
     Automated figure generation, professional typesetting, and bibliography management.
+
+    By default, clears the output directory before building to ensure clean builds.
 
     **MANUSCRIPT_PATH**: Directory containing your manuscript files.
     Defaults to MANUSCRIPT/
@@ -80,6 +84,10 @@ def build(
     **Skip validation for debugging:**
 
         $ rxiv pdf --skip-validation
+
+    **Keep existing output directory:**
+
+        $ rxiv pdf --keep-output
 
     **Track changes against git tag:**
 
@@ -170,6 +178,7 @@ def build(
                 force_figures=force_figures,
                 skip_validation=skip_validation,
                 track_changes_tag=track_changes,
+                clear_output=not keep_output,  # Clear output by default unless --keep-output is specified
                 verbose=verbose,
                 engine=engine,
             )

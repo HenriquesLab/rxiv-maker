@@ -22,9 +22,8 @@ plt.ylabel("Frequency")
 plt.title("Example Supplementary Figure")
 plt.grid(True, alpha=0.3)
 
-# Save as both PNG and PDF
-plt.savefig("SFigure__example.png", dpi=300, bbox_inches="tight")
-plt.savefig("SFigure__example.pdf", bbox_inches="tight")
+# Save only as PDF
+plt.savefig("SFigure__example.pdf", format="pdf", bbox_inches="tight")
 plt.close()
 
-print("SFigure__example generated successfully!")
+print("SFigure__example.pdf generated successfully!")

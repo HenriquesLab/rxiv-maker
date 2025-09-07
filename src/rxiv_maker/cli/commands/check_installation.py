@@ -16,7 +16,7 @@ def check_installation(detailed: bool, fix: bool, json: bool):
     """Check rxiv-maker installation and system dependencies.
 
     This command verifies that all required components are installed
-    and working correctly, including Python packages, LaTeX, Node.js,
+    and working correctly, including Python packages, LaTeX,
     and other system dependencies.
     """
     console = Console()
@@ -88,8 +88,7 @@ def _show_basic_results(console: Console, results: dict):
     component_descriptions = {
         "python": "Python 3.11+ runtime",
         "latex": "LaTeX distribution (pdflatex, bibtex)",
-        "nodejs": "Node.js and npm",
-        "r": "R language (optional)",
+        "r": "R language and Rscript (optional)",
         "system_libs": "System libraries for Python packages",
         "rxiv_maker": "rxiv-maker Python package",
     }

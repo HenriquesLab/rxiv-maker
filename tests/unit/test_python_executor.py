@@ -7,8 +7,8 @@ including security restrictions, error handling, and output formatting.
 import pytest
 
 from rxiv_maker.converters.python_executor import (
+    PythonExecutionError,
     PythonExecutor,
-    SecurityError,
     get_python_executor,
 )
 
@@ -181,13 +181,13 @@ class TestSecurityRestrictions:
 
     def test_security_validation(self):
         """Test the security validation directly."""
-        with pytest.raises(SecurityError):
+        with pytest.raises(PythonExecutionError):
             self.executor.validate_code_security("import os")
 
-        with pytest.raises(SecurityError):
+        with pytest.raises(PythonExecutionError):
             self.executor.validate_code_security("eval('test')")
 
-        with pytest.raises(SecurityError):
+        with pytest.raises(PythonExecutionError):
             self.executor.validate_code_security("open('file.txt')")
 
     def test_safe_code_validation(self):
@@ -412,3 +412,254 @@ print(f"Keys: {list(data.keys())}")
         # Print statement should also work
         result = self.executor.execute_inline("print('test')")
         assert result == "test"
+
+
+class TestNewExecutionModel:
+    """Test the new 3-step execution model with initialization and variable retrieval."""
+
+    def setup_method(self):
+        """Set up test executor for each test."""
+        self.executor = PythonExecutor()
+
+    def test_execute_initialization_block_basic(self):
+        """Test basic initialization block execution."""
+        code = """
+x = 42
+y = "hello world"
+data = [1, 2, 3, 4, 5]
+"""
+
+        # Should not raise exception
+        self.executor.execute_initialization_block(code)
+
+        # Variables should be in context
+        assert self.executor.execution_context.get("x") == 42
+        assert self.executor.execution_context.get("y") == "hello world"
+        assert self.executor.execution_context.get("data") == [1, 2, 3, 4, 5]
+
+    def test_execute_initialization_block_with_imports(self):
+        """Test initialization block with safe imports."""
+        code = """
+import math
+from datetime import datetime
+
+pi_value = math.pi
+current_time = datetime.now().strftime("%Y-%m-%d")
+"""
+
+        self.executor.execute_initialization_block(code)
+
+        # Should have imported successfully
+        assert abs(self.executor.execution_context.get("pi_value") - 3.14159) < 0.001
+        assert len(self.executor.execution_context.get("current_time")) == 10  # YYYY-MM-DD format
+
+    def test_execute_initialization_block_with_functions(self):
+        """Test initialization block with function definitions."""
+        code = """
+def calculate_mean(data):
+    return sum(data) / len(data)
+
+def calculate_std(data, mean):
+    import math
+    variance = sum((x - mean) ** 2 for x in data) / len(data)
+    return math.sqrt(variance)
+
+sample_data = [1, 2, 3, 4, 5]
+sample_mean = calculate_mean(sample_data)
+sample_std = calculate_std(sample_data, sample_mean)
+"""
+
+        self.executor.execute_initialization_block(code)
+
+        # Functions and results should be available
+        assert callable(self.executor.execution_context.get("calculate_mean"))
+        assert abs(self.executor.execution_context.get("sample_mean") - 3.0) < 0.001
+        assert self.executor.execution_context.get("sample_std") > 0
+
+    def test_execute_initialization_block_with_manuscript_context(self):
+        """Test initialization block with manuscript context for error reporting."""
+        code = "result = 'initialization_successful'"
+
+        self.executor.execute_initialization_block(code, manuscript_file="test_manuscript.md", line_number=25)
+
+        assert self.executor.execution_context.get("result") == "initialization_successful"
+
+    def test_execute_initialization_block_error_handling(self):
+        """Test error handling in initialization block."""
+        code = "undefined_variable_that_causes_error"
+
+        with pytest.raises(Exception):  # Should raise PythonExecutionError or similar
+            self.executor.execute_initialization_block(code)
+
+    def test_get_variable_value_basic(self):
+        """Test basic variable retrieval."""
+        # Set up context
+        self.executor.execution_context = {
+            "x": 42,
+            "message": "Hello World",
+            "pi": 3.14159,
+            "flag": True,
+            "none_value": None,
+        }
+
+        # Test retrieving different types
+        assert self.executor.get_variable_value("x") == "42"
+        assert self.executor.get_variable_value("message") == "Hello World"
+        assert self.executor.get_variable_value("pi") == "3.14159"
+        assert self.executor.get_variable_value("flag") == "True"
+        assert self.executor.get_variable_value("none_value") == "None"
+
+    def test_get_variable_value_complex_types(self):
+        """Test variable retrieval for complex data types."""
+        self.executor.execution_context = {
+            "list_data": [1, 2, 3, 4, 5],
+            "dict_data": {"key": "value", "number": 42},
+            "tuple_data": (1, 2, 3),
+            "set_data": {1, 2, 3},
+        }
+
+        # These should return string representations
+        list_result = self.executor.get_variable_value("list_data")
+        assert "[1, 2, 3, 4, 5]" in list_result
+
+        dict_result = self.executor.get_variable_value("dict_data")
+        assert "key" in dict_result and "value" in dict_result
+
+        tuple_result = self.executor.get_variable_value("tuple_data")
+        assert "(1, 2, 3)" in tuple_result
+
+    def test_get_variable_value_nonexistent(self):
+        """Test retrieval of non-existent variable."""
+        result = self.executor.get_variable_value("nonexistent_variable")
+
+        assert "Error:" in result
+        assert "not found" in result or "not defined" in result
+
+    def test_get_variable_value_function(self):
+        """Test retrieval of function objects."""
+        # Define a function in context
+        self.executor.execute_initialization_block("""
+def test_function(x):
+    return x * 2
+""")
+
+        result = self.executor.get_variable_value("test_function")
+        assert "function" in result.lower()
+
+    def test_three_step_workflow_integration(self):
+        """Test complete 3-step workflow: exec → get → manuscript integration."""
+        # Step 1: Execute initialization block
+        init_code = """
+import math
+from datetime import datetime
+
+# Simulate data analysis
+raw_data = [1, 4, 7, 8, 9, 10, 12, 15, 18, 20]
+sample_size = len(raw_data)
+mean_value = sum(raw_data) / len(raw_data)
+std_dev = math.sqrt(sum((x - mean_value) ** 2 for x in raw_data) / len(raw_data))
+analysis_date = datetime.now().strftime("%Y-%m-%d")
+
+# Derived metrics
+cv = std_dev / mean_value * 100  # Coefficient of variation
+summary = f"n={sample_size}, μ={mean_value:.2f}, σ={std_dev:.2f}"
+"""
+
+        self.executor.execute_initialization_block(init_code)
+
+        # Step 2: Retrieve variables for manuscript
+        sample_size_result = self.executor.get_variable_value("sample_size")
+        mean_result = self.executor.get_variable_value("mean_value")
+        std_result = self.executor.get_variable_value("std_dev")
+        cv_result = self.executor.get_variable_value("cv")
+        date_result = self.executor.get_variable_value("analysis_date")
+        summary_result = self.executor.get_variable_value("summary")
+
+        # Step 3: Verify results are manuscript-ready
+        assert sample_size_result == "10"
+        assert "10.4" in mean_result  # Should be approximately 10.4
+        assert float(std_result) > 0  # Should be a positive number
+        assert float(cv_result) > 0  # Should be a positive percentage
+        assert len(date_result) == 10  # YYYY-MM-DD format
+        assert "n=10" in summary_result and "μ=10.40" in summary_result
+
+    def test_context_persistence_across_methods(self):
+        """Test that context persists between initialization and retrieval."""
+        # Initialize with some data
+        self.executor.execute_initialization_block("persistent_var = 'test_value'")
+
+        # Add more data through regular execution
+        self.executor.execute_block("additional_var = persistent_var + '_extended'")
+
+        # Retrieve both variables
+        first_var = self.executor.get_variable_value("persistent_var")
+        second_var = self.executor.get_variable_value("additional_var")
+
+        assert first_var == "test_value"
+        assert second_var == "test_value_extended"
+
+    def test_initialization_error_with_context(self):
+        """Test error handling in initialization with manuscript context."""
+        code = "result = undefined_variable + 5"
+
+        try:
+            self.executor.execute_initialization_block(code, manuscript_file="error_test.md", line_number=42)
+            assert False, "Should have raised an exception"
+        except Exception as e:
+            # Error should contain useful information
+            error_str = str(e)
+            assert "error" in error_str.lower() or "Error" in error_str
+
+    def test_variable_formatting_consistency(self):
+        """Test that variable formatting is consistent and appropriate."""
+        # Set up various data types
+        self.executor.execute_initialization_block("""
+integer_val = 42
+float_val = 3.14159265359
+string_val = "Hello World"
+boolean_true = True
+boolean_false = False
+none_val = None
+large_number = 123456789
+scientific = 1.23e-5
+""")
+
+        # Test formatting
+        assert self.executor.get_variable_value("integer_val") == "42"
+        assert "3.14159" in self.executor.get_variable_value("float_val")
+        assert self.executor.get_variable_value("string_val") == "Hello World"
+        assert self.executor.get_variable_value("boolean_true") == "True"
+        assert self.executor.get_variable_value("boolean_false") == "False"
+        assert self.executor.get_variable_value("none_val") == "None"
+        assert self.executor.get_variable_value("large_number") == "123456789"
+        assert "1.23e-05" in self.executor.get_variable_value(
+            "scientific"
+        ) or "1.23e-5" in self.executor.get_variable_value("scientific")
+
+    def test_security_in_initialization_block(self):
+        """Test that security restrictions apply to initialization blocks."""
+        dangerous_code = "import os; os.system('echo test')"
+
+        with pytest.raises(Exception):  # Should raise PythonExecutionError
+            self.executor.execute_initialization_block(dangerous_code)
+
+    def test_imports_available_across_methods(self):
+        """Test that imports in initialization are available in later executions."""
+        # Import in initialization
+        self.executor.execute_initialization_block("""
+import math
+import random
+from datetime import datetime
+
+math_pi = math.pi
+""")
+
+        # Use imports in regular execution
+        self.executor.execute_block("sqrt_result = math.sqrt(16)")
+
+        # Should be available
+        pi_result = self.executor.get_variable_value("math_pi")
+        sqrt_result = self.executor.get_variable_value("sqrt_result")
+
+        assert "3.14159" in pi_result
+        assert sqrt_result == "4.0"

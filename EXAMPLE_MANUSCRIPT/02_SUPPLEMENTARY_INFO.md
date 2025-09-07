@@ -69,7 +69,6 @@
 
 {#stable:markdown-syntax} **Rxiv-Maker Markdown Syntax Overview.** Comprehensive mapping of markdown elements to their LaTeX equivalents, demonstrating the automated translation system that enables researchers to write in familiar markdown syntax whilst producing professional LaTeX output.
 
-
 <newpage>
 
 ## Supplementary Notes
@@ -104,16 +103,46 @@ Mathematical expressions within figure captions, table entries, and cross-refere
 
 Statistical notation commonly required in manuscripts is supported, including confidence intervals $\mu \pm \sigma$, probability distributions $P(X \leq x)$, and significance levels $p < 0.05$. Complex expressions involving summations $\sum_{i=1}^{n} x_i$, integrals $\int_{-\infty}^{\infty} f(x) dx$, and matrix operations $\mathbf{A}^{-1}\mathbf{b} = \mathbf{x}$ are rendered with appropriate spacing.
 
+{#snote:latex-injection} **Direct LaTeX Integration and Advanced Typesetting**
+
+While Rxiv-Maker's markdown-to-LaTeX conversion handles the majority of scientific publishing requirements, the framework provides direct LaTeX injection capabilities through `{{tex: ...}}` blocks for sophisticated typesetting scenarios that exceed markdown's capabilities. This approach offers researchers an "escape hatch" to access LaTeX's full typesetting power when needed, while maintaining the simplicity of markdown for routine content.
+
+Direct LaTeX injection is particularly valuable for complex tables with custom formatting, advanced mathematical layouts, specialized scientific notation, and publication-quality data presentation that requires precise control over spacing, alignment, and typography. The following example demonstrates a measurement data table utilizing LaTeX's professional table formatting capabilities:
+
+{{tex:
+\begin{stable}[h!]
+\centering
+\begin{tabular}{|l|c|c|r|}
+\hline
+\textbf{Sample} & \textbf{Temperature} & \textbf{Pressure} & \textbf{Yield} \\
+ & \textbf{(K)} & \textbf{(MPa)} & \textbf{(\%)} \\
+\hline
+Control & $298.15 \pm 0.05$ & $0.101 \pm 0.001$ & $85.3 \pm 2.1$ \\
+Sample A & $373.15 \pm 0.10$ & $0.250 \pm 0.005$ & $92.7 \pm 1.8$ \\
+Sample B & $423.15 \pm 0.15$ & $0.500 \pm 0.010$ & $96.1 \pm 1.4$ \\
+Sample C & $473.15 \pm 0.20$ & $1.000 \pm 0.020$ & $88.9 \pm 2.3$ \\
+\hline
+\multicolumn{3}{|l|}{Mean \pm Standard Deviation} & $90.8 \pm 4.5$ \\
+\hline
+\end{tabular}
+\captionsetup{justification=justified,singlelinecheck=false}
+\caption{\textbf{Example Measurement Results with Statistical Analysis}. The data shown is purely illustrative and does not represent actual experimental results.}
+\label{stable:experimental-results}
+\end{stable}
+}}
+
+This example showcases LaTeX features including professional table borders (`\hline`), custom column alignment specifications (`|l|c|c|r|`), multi-column headers, mathematical expressions with proper spacing, and scientific notation with uncertainties. Such precise formatting control enables researchers to meet the exacting typographical standards required for high-impact scientific publications while maintaining computational reproducibility through the framework's automated build processes.
+
 <newpage>
 
 ## Supplementary Figures 
 
-![](FIGURES/SFigure__arxiv_growth/SFigure__arxiv_growth.svg)
+![](FIGURES/SFigure__arxiv_growth.pdf)
 {#sfig:arxiv_growth width="100%"} **The growth of preprint submissions on the arXiv server from 1991 to 2025.** The data, sourced from arXiv's public statistics, is plotted using a Python script integrated into our Rxiv-Maker pipeline. This demonstrates the system's capacity for reproducible, data-driven figure generation directly within the publication workflow.
 
-![](FIGURES/SFigure__preprint_trends/SFigure__preprint_trends.svg)
-{#sfig:preprint_trends width="100%"} **Preprint Submission Trends Across Multiple Servers (2018-2025).** The figure displays the annual number of preprint submissions to major repositories, including arXiv, bioRxiv, and medRxiv. Data was collected from publicly available sources [@PubMedByYear2025] and visualised using a reproducible R script within the Rxiv-Maker pipeline. This approach ensures that the figure remains synchronised with the latest available data and supports transparent, data-driven scientific reporting.
+![](FIGURES/SFigure__preprint_trends.pdf)
+{#sfig:preprint_trends width="100%"} **Preprint Submission Trends Across Multiple Servers (2018-2025).** The figure displays the annual number of preprints indexed by PubMed from major repositories, including arXiv, bioRxiv, and medRxiv. Data was collected from publicly available sources [@PubMedByYear2025] and visualised using a reproducible R script within the Rxiv-Maker pipeline. This approach ensures that the figure remains synchronised with the latest available data and supports transparent, data-driven scientific reporting.
 
-![](FIGURES/SFigure__architecture/SFigure__architecture.svg)
+![](FIGURES/SFigure__architecture.pdf)
 {#sfig:architecture width="90%"} **Detailed System Architecture and Processing Layers.** Comprehensive technical diagram showing the complete Rxiv-Maker architecture, including input layer organisation, processing engine components (parsers, converters, generators), compilation infrastructure, output generation, and deployment methodology integration with Docker containerisation support. This figure illustrates the modular design that enables independent development and testing of system components across both local and containerised environments.
 

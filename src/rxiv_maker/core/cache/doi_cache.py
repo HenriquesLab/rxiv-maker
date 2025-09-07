@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from .cache_utils import get_cache_dir, get_legacy_cache_dir, migrate_cache_file
+from .cache_utils import get_manuscript_cache_dir
 
 logger = logging.getLogger(__name__)
 
@@ -24,15 +24,15 @@ class DOICache:
         """Initialize DOI cache.
 
         Args:
-            cache_dir: Directory to store cache files (if None, uses platform-standard location)
-            cache_filename: Name of the cache file (if None, uses manuscript-specific naming)
-            manuscript_name: Name of the manuscript (used for manuscript-specific caching)
+            cache_dir: Directory to store cache files (if None, uses manuscript .rxiv_cache)
+            cache_filename: Name of the cache file (if None, uses default naming)
+            manuscript_name: Name of the manuscript (used for cache file naming)
         """
         self.manuscript_name = manuscript_name
 
-        # Use standardized cache directory if not specified
+        # Use manuscript-local cache directory if not specified
         if cache_dir is None:
-            self.cache_dir = get_cache_dir("doi")
+            self.cache_dir = get_manuscript_cache_dir("doi")
         else:
             self.cache_dir = Path(cache_dir)
 
@@ -51,9 +51,6 @@ class DOICache:
         self.cache_expiry_days_extended = 90  # Extended cache during API outages
         self.negative_cache_hours = 1  # Cache API failures temporarily
 
-        # Handle migration from legacy cache location
-        self._migrate_legacy_cache()
-
         # Create cache directory if it doesn't exist
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -62,24 +59,6 @@ class DOICache:
 
         # Performance tracking
         self._stats = {"hits": 0, "misses": 0, "sets": 0, "expires": 0, "total_size": 0}
-
-    def _migrate_legacy_cache(self) -> None:
-        """Migrate cache file from legacy location if it exists."""
-        if self.cache_dir == get_cache_dir("doi"):
-            # Only migrate if using new standardized location
-            legacy_dir = get_legacy_cache_dir()
-
-            if self.manuscript_name is not None:
-                legacy_file = legacy_dir / f"doi_cache_{self.manuscript_name}.json"
-            else:
-                legacy_file = legacy_dir / "doi_cache.json"
-
-            if legacy_file.exists():
-                try:
-                    migrate_cache_file(legacy_file, self.cache_file)
-                    logger.info(f"Migrated DOI cache from {legacy_file} to {self.cache_file}")
-                except Exception as e:
-                    logger.warning(f"Failed to migrate DOI cache: {e}")
 
     def _load_cache(self) -> dict[str, Any]:
         """Load cache from file."""

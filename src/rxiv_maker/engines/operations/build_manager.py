@@ -40,6 +40,7 @@ class BuildManager:
         force_figures: bool = False,
         skip_validation: bool = False,
         skip_pdf_validation: bool = False,
+        clear_output: bool = True,
         verbose: bool = False,
         track_changes_tag: str | None = None,
         engine: str = "local",
@@ -52,6 +53,7 @@ class BuildManager:
             force_figures: Force regeneration of all figures
             skip_validation: Skip manuscript validation
             skip_pdf_validation: Skip PDF validation
+            clear_output: Clear output directory before build (default: True)
             verbose: Enable verbose output
             track_changes_tag: Git tag to track changes against
             engine: Execution engine ("local" or "docker")
@@ -63,6 +65,7 @@ class BuildManager:
         self.force_figures = force_figures or EnvironmentManager.is_force_figures()
         self.skip_validation = skip_validation
         self.skip_pdf_validation = skip_pdf_validation
+        self.clear_output = clear_output
         self.verbose = verbose or EnvironmentManager.is_verbose()
         self.track_changes_tag = track_changes_tag
         self.engine = engine or EnvironmentManager.get_rxiv_engine()
@@ -174,9 +177,16 @@ class BuildManager:
     def setup_output_directory(self) -> bool:
         """Create and set up the output directory."""
         try:
+            import shutil
+
+            # Clear output directory if requested (default behavior)
+            if self.clear_output and self.output_dir.exists():
+                shutil.rmtree(self.output_dir)
+                self.log("✅ Cleared existing output directory")
+
             self.output_dir.mkdir(parents=True, exist_ok=True)
             (self.output_dir / "Figures").mkdir(parents=True, exist_ok=True)
-            self.log(f"Output directory set up: {self.output_dir}")
+            self.log(f"✅ Output directory set up: {self.output_dir}")
             return True
         except Exception as e:
             self.log(f"Failed to create output directory: {e}", "ERROR")
@@ -285,7 +295,7 @@ class BuildManager:
 
             try:
                 # Change to manuscript directory for relative path resolution
-                os.chdir(self.path_manager.manuscript_path.parent)
+                os.chdir(self.path_manager.manuscript_path)
 
                 # Set environment variables using EnvironmentManager
                 original_env = EnvironmentManager.get_manuscript_path()

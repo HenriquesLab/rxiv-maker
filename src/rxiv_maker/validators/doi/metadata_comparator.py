@@ -229,19 +229,33 @@ class MetadataComparator:
         bib_clean = self._clean_journal_name(bib_journal).lower()
         pub_clean = self._clean_journal_name(datacite_publisher).lower()
 
-        # Check for known publisher-journal relationships that should not be flagged
+        # Enhanced publisher-journal relationships with more comprehensive mappings
         publisher_journal_mappings = {
-            # Common publishers and their journal patterns
-            "springer": ["springer", "nature", "bmr", "biomed"],
-            "ieee": ["ieee", "computer", "engineering", "science"],
-            "acm": ["acm", "computing", "machine", "computer"],
-            "elsevier": ["elsevier", "science", "cell", "lancet"],
-            "oxford": ["oxford", "oup", "journal", "university"],
+            # Springer mappings
+            "springer": [
+                "springer",
+                "nature",
+                "bmr",
+                "biomed",
+                "source code",
+                "biology",
+                "medicine",
+                "scientometrics",
+                "biodata",
+                "mining",
+                "machine learning",
+            ],
+            "ieee": ["ieee", "computer", "engineering", "science", "computing", "electronics"],
+            "acm": ["acm", "computing", "machine", "computer", "sigops", "operating"],
+            "elsevier": ["elsevier", "science", "cell", "lancet", "computer physics", "physics communications"],
+            "oxford": ["oxford", "oup", "journal", "university", "computer journal"],
             "cambridge": ["cambridge", "university", "press"],
             "wiley": ["wiley", "journal", "science"],
             "plos": ["plos", "public", "library", "science", "one", "computational", "biology"],
             "mit": ["mit", "press", "quantitative", "science"],
             "open journal": ["joss", "open", "source", "software"],
+            "national academy": ["pnas", "proceedings", "academy", "sciences"],
+            "f1000": ["f1000", "research"],
         }
 
         # Check if this looks like a publisher-journal relationship
@@ -251,11 +265,11 @@ class MetadataComparator:
                 if any(pattern in bib_clean for pattern in journal_patterns):
                     return None  # Don't report this as a mismatch
 
-        # Use more relaxed similarity threshold for publisher-journal comparisons (0.4 instead of 0.8)
+        # Use more relaxed similarity threshold for publisher-journal comparisons (0.3 instead of 0.8)
         from difflib import SequenceMatcher
 
         similarity = SequenceMatcher(None, bib_clean, pub_clean).ratio()
-        if similarity < 0.4:  # Much more relaxed for publisher/journal mismatches
+        if similarity < 0.3:  # Even more relaxed for publisher/journal mismatches
             return f"'{bib_journal}' vs '{datacite_publisher}' (similarity: {similarity:.2f})"
 
         return None

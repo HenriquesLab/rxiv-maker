@@ -7,6 +7,7 @@ including blindtext commands and the extensible framework for future commands.
 from rxiv_maker.converters.custom_command_processor import (
     COMMAND_PROCESSORS,
     _process_blindtext_commands,
+    _process_tex_commands,
     get_supported_commands,
     process_custom_commands,
     register_command_processor,
@@ -100,6 +101,143 @@ class TestBlindtextCommands:
         assert "`\\blindtext`" in result
 
 
+class TestTexCommands:
+    """Test TeX command processing."""
+
+    def test_basic_tex_conversion(self):
+        """Test basic TeX command conversion."""
+        input_text = "Before text\n\n{{tex: \\textbf{Hello World}}}\n\nAfter text"
+        expected = "Before text\n\n\\textbf{Hello World}\n\nAfter text"
+        result = _process_tex_commands(input_text)
+        assert result == expected
+
+    def test_multiline_tex_conversion(self):
+        """Test multiline TeX command conversion."""
+        input_text = """Before text
+
+{{tex:
+\\begin{table}
+\\centering
+\\caption{My Table}
+\\begin{tabular}{cc}
+A & B \\\\
+C & D
+\\end{tabular}
+\\end{table}
+}}
+
+After text"""
+        result = _process_tex_commands(input_text)
+        # Should contain the LaTeX table structure
+        assert "\\begin{table}" in result
+        assert "\\centering" in result
+        assert "\\caption{My Table}" in result
+        assert "\\begin{tabular}{cc}" in result
+        assert "\\end{table}" in result
+        # Should not contain the TeX command wrapper
+        assert "{{tex:" not in result
+        assert "}}" not in result.replace("\\end{table}", "")
+
+    def test_multiple_tex_commands(self):
+        """Test multiple TeX commands in same text."""
+        input_text = """
+        # Title
+
+        {{tex: \\textbf{Bold Text}}}
+
+        ## Section
+
+        {{tex: \\textit{Italic Text}}}
+
+        More content.
+
+        {{tex: \\underline{Underlined}}}
+        """
+        result = _process_tex_commands(input_text)
+        assert "\\textbf{Bold Text}" in result
+        assert "\\textit{Italic Text}" in result
+        assert "\\underline{Underlined}" in result
+        assert "{{tex:" not in result
+
+    def test_tex_with_whitespace(self):
+        """Test TeX commands with whitespace inside braces."""
+        input_text = "{{tex:   \\textbf{Text}   }}"
+        expected = "\\textbf{Text}"
+        result = _process_tex_commands(input_text)
+        assert result == expected
+
+    def test_tex_with_complex_latex(self):
+        """Test TeX commands with complex LaTeX structures."""
+        input_text = """{{tex:
+\\begin{equation}
+E = mc^2
+\\label{eq:einstein}
+\\end{equation}
+}}"""
+        result = _process_tex_commands(input_text)
+        assert "\\begin{equation}" in result
+        assert "E = mc^2" in result
+        assert "\\label{eq:einstein}" in result
+        assert "\\end{equation}" in result
+        assert "{{tex:" not in result
+
+    def test_tex_with_nested_braces(self):
+        """Test TeX commands with nested braces in LaTeX code."""
+        input_text = "{{tex: \\frac{\\partial u}{\\partial t} = \\nabla^2 u}}"
+        expected = "\\frac{\\partial u}{\\partial t} = \\nabla^2 u"
+        result = _process_tex_commands(input_text)
+        assert result == expected
+
+    def test_tex_preserves_special_characters(self):
+        """Test that TeX commands preserve special LaTeX characters."""
+        input_text = "{{tex: Price: \\$100 \\& tax: 5\\% (total: \\$105)}}"
+        expected = "Price: \\$100 \\& tax: 5\\% (total: \\$105)"
+        result = _process_tex_commands(input_text)
+        assert result == expected
+
+    def test_tex_in_various_contexts(self):
+        """Test TeX commands in different markdown contexts."""
+        input_text = """
+        > {{tex: \\textbf{Bold in blockquote}}}
+
+        - {{tex: \\textit{Italic in list}}}
+
+        1. {{tex: \\underline{Underlined in numbered list}}}
+
+        **{{tex: \\textsf{Sans serif}}} in bold**
+
+        *{{tex: \\texttt{Monospace}}} in italic*
+        """
+        result = _process_tex_commands(input_text)
+
+        assert "\\textbf{Bold in blockquote}" in result
+        assert "\\textit{Italic in list}" in result
+        assert "\\underline{Underlined in numbered list}" in result
+        assert "\\textsf{Sans serif}" in result
+        assert "\\texttt{Monospace}" in result
+        assert "{{tex:" not in result
+
+    def test_empty_tex_command(self):
+        """Test empty TeX command."""
+        input_text = "{{tex: }}"
+        expected = ""
+        result = _process_tex_commands(input_text)
+        assert result == expected
+
+    def test_tex_with_comments(self):
+        """Test TeX commands containing LaTeX comments."""
+        input_text = """{{tex:
+% This is a LaTeX comment
+\\textbf{Bold Text} % Another comment
+\\\\  % Line break
+\\textit{Italic Text}
+}}"""
+        result = _process_tex_commands(input_text)
+        assert "% This is a LaTeX comment" in result
+        assert "\\textbf{Bold Text} % Another comment" in result
+        assert "\\textit{Italic Text}" in result
+
+
 class TestCustomCommandProcessor:
     """Test the main custom command processor."""
 
@@ -109,6 +247,70 @@ class TestCustomCommandProcessor:
         expected = "\\blindtext and \\Blindtext"
         result = process_custom_commands(input_text)
         assert result == expected
+
+    def test_process_custom_commands_tex(self):
+        """Test that process_custom_commands handles TeX commands correctly."""
+        input_text = "{{tex: \\textbf{Bold}}} and {{tex: \\textit{Italic}}}"
+        expected = "\\textbf{Bold} and \\textit{Italic}"
+        result = process_custom_commands(input_text)
+        assert result == expected
+
+    def test_tex_code_protection_fenced(self):
+        """Test that fenced code blocks protect TeX commands from processing."""
+        input_text = """
+        Regular text with {{tex: \\textbf{Bold}}}.
+
+        ```
+        This {{tex: \\textit{Italic}}} should not be converted.
+        {{tex: \\underline{Underlined}}} also should not be converted.
+        ```
+
+        More {{tex: \\textsf{Sans}}} to convert.
+        """
+        result = process_custom_commands(input_text)
+
+        # Count occurrences of converted commands
+        converted_count = result.count("\\textbf{Bold}") + result.count("\\textsf{Sans}")
+        # Count preserved commands in code blocks
+        preserved_count = result.count("{{tex:")
+
+        # Should convert 2 commands outside code blocks
+        assert converted_count == 2
+        # Should preserve 2 commands inside code blocks
+        assert preserved_count == 2
+
+    def test_tex_code_protection_inline(self):
+        """Test that inline code protects TeX commands from processing."""
+        input_text = "Convert {{tex: \\textbf{Bold}}} but not `{{tex: \\textit{Italic}}}` in code."
+        result = process_custom_commands(input_text)
+
+        assert "\\textbf{Bold}" in result
+        assert "`{{tex: \\textit{Italic}}}`" in result
+        assert result.count("\\textbf{Bold}") == 1
+
+    def test_mixed_commands_tex_blindtext_python(self):
+        """Test mixing TeX commands with other commands like blindtext and Python."""
+        input_text = """
+{{blindtext}}
+
+{{tex: \\textbf{Bold TeX Text}}}
+
+{{py:exec
+calculation = 2 * 21
+}}
+
+The answer is {{py:get calculation}} and here's some {{tex: \\textit{italic text}}}.
+
+{{Blindtext}}
+"""
+        result = process_custom_commands(input_text)
+
+        # Should process all command types
+        assert "\\blindtext" in result  # Blindtext processed
+        assert "\\Blindtext" in result  # Blindtext processed
+        assert "\\textbf{Bold TeX Text}" in result  # TeX processed
+        assert "\\textit{italic text}" in result  # TeX processed
+        assert "The answer is 42" in result  # Python processed
 
     def test_code_protection_fenced(self):
         """Test that fenced code blocks are protected from command processing."""
@@ -182,9 +384,10 @@ class TestCommandRegistry:
     """Test the command processor registry system."""
 
     def test_default_supported_commands(self):
-        """Test that blindtext is in the default supported commands."""
+        """Test that blindtext and tex are in the default supported commands."""
         commands = get_supported_commands()
         assert "blindtext" in commands
+        assert "tex" in commands
 
     def test_register_new_processor(self):
         """Test registering a new command processor."""
@@ -302,3 +505,316 @@ class TestIntegrationWithMd2tex:
         # Should not contain original markdown commands
         assert "{{blindtext}}" not in result
         assert "{{Blindtext}}" not in result
+
+
+class TestPythonExecutionIntegration:
+    """Test the new Python execution syntax integration."""
+
+    def test_py_exec_command_processing(self):
+        """Test {{py:exec}} command processing."""
+        from rxiv_maker.converters.custom_command_processor import process_custom_commands
+
+        text = """
+Before execution:
+
+{{py:exec
+x = 42
+y = "hello"
+result = x * 2
+}}
+
+After execution.
+"""
+        result = process_custom_commands(text)
+        # Should not contain the original commands
+        assert "{{py:exec" not in result
+        # Should not have visible output for exec blocks
+        assert "84" not in result  # exec blocks don't output results
+
+    def test_py_get_command_processing(self):
+        """Test {{py:get}} command processing."""
+        from rxiv_maker.converters.custom_command_processor import process_custom_commands
+
+        text = """
+{{py:exec
+answer = 42
+message = "Hello World"
+}}
+
+The answer is {{py:get answer}} and the message is {{py:get message}}.
+"""
+        result = process_custom_commands(text)
+
+        # Should contain the retrieved values
+        assert "The answer is 42 and the message is Hello World." in result
+        # Should not contain the original commands
+        assert "{{py:exec" not in result
+        assert "{{py:get" not in result
+
+    def test_py_exec_get_workflow(self):
+        """Test complete py:exec → py:get workflow."""
+        from rxiv_maker.converters.custom_command_processor import process_custom_commands
+
+        text = """
+# Data Analysis
+
+{{py:exec
+import math
+
+# Sample data
+data = [1, 2, 3, 4, 5]
+n = len(data)
+mean = sum(data) / n
+variance = sum((x - mean) ** 2 for x in data) / n
+std_dev = math.sqrt(variance)
+}}
+
+Our analysis of {{py:get n}} samples shows:
+- Mean: {{py:get mean}}
+- Standard deviation: {{py:get std_dev}}
+"""
+        result = process_custom_commands(text)
+
+        # Should contain computed values
+        assert "Our analysis of 5 samples shows:" in result
+        assert "Mean: 3.0" in result
+        assert "Standard deviation:" in result
+
+        # Should not contain original commands
+        assert "{{py:exec" not in result
+        assert "{{py:get" not in result
+
+    def test_py_exec_with_functions(self):
+        """Test py:exec with function definitions."""
+        from rxiv_maker.converters.custom_command_processor import process_custom_commands
+
+        text = """
+{{py:exec
+def fibonacci(n):
+    if n <= 1:
+        return n
+    return fibonacci(n-1) + fibonacci(n-2)
+
+fib_10 = fibonacci(10)
+fib_sequence = [fibonacci(i) for i in range(8)]
+}}
+
+The 10th Fibonacci number is {{py:get fib_10}}.
+The first 8 Fibonacci numbers are {{py:get fib_sequence}}.
+"""
+        result = process_custom_commands(text)
+
+        assert "The 10th Fibonacci number is 55." in result
+        assert "[0, 1, 1, 2, 3, 5, 8, 13]" in result
+
+    def test_py_get_error_handling(self):
+        """Test error handling in py:get commands."""
+        from rxiv_maker.converters.custom_command_processor import process_custom_commands
+
+        text = """
+{{py:exec
+valid_var = "I exist"
+}}
+
+Valid: {{py:get valid_var}}
+Invalid: {{py:get nonexistent_variable}}
+"""
+        result = process_custom_commands(text)
+
+        assert "Valid: I exist" in result
+        assert "Error:" in result  # Should contain error message for invalid variable
+
+    def test_py_exec_security_restrictions(self):
+        """Test that security restrictions apply to py:exec."""
+        from rxiv_maker.converters.custom_command_processor import process_custom_commands
+
+        text = """
+{{py:exec
+import os
+os.system('echo test')
+}}
+
+This should be blocked.
+"""
+        result = process_custom_commands(text)
+
+        # Should contain error message about blocked execution
+        assert "blocked" in result.lower() or "error" in result.lower()
+
+    def test_multiple_py_exec_blocks(self):
+        """Test multiple py:exec blocks with shared context."""
+        from rxiv_maker.converters.custom_command_processor import process_custom_commands
+
+        text = """
+{{py:exec
+x = 10
+}}
+
+{{py:exec
+y = 20
+z = x + y  # Should have access to x from previous block
+}}
+
+Result: {{py:get z}}
+"""
+        result = process_custom_commands(text)
+
+        assert "Result: 30" in result
+
+    def test_py_commands_in_code_blocks_protected(self):
+        """Test that py: commands in code blocks are protected."""
+        from rxiv_maker.converters.custom_command_processor import process_custom_commands
+
+        text = """
+This should execute: {{py:exec x = 5}}
+
+```markdown
+This should NOT execute: {{py:exec y = 10}}
+And this should NOT be replaced: {{py:get x}}
+```
+
+This should work: {{py:get x}}
+"""
+        result = process_custom_commands(text)
+
+        # Should contain the executed value
+        assert "This should work: 5" in result
+
+        # Should preserve code block content
+        assert "{{py:exec y = 10}}" in result
+        assert "{{py:get x}}" in result  # The one in code block should be preserved
+
+    def test_py_exec_with_imports_and_calculations(self):
+        """Test py:exec with real-world-like calculations."""
+        from rxiv_maker.converters.custom_command_processor import process_custom_commands
+
+        text = """
+{{py:exec
+import math
+from datetime import datetime
+
+# Simulate research data
+sample_size = 100
+mean_value = 25.6
+std_error = 2.3
+confidence_level = 0.95
+
+# Calculate confidence interval
+t_critical = 1.96  # Approximate for large samples
+margin_error = t_critical * std_error / math.sqrt(sample_size)
+ci_lower = mean_value - margin_error
+ci_upper = mean_value + margin_error
+
+analysis_date = datetime.now().strftime("%Y-%m-%d")
+}}
+
+## Results
+
+Our analysis (conducted {{py:get analysis_date}}) of {{py:get sample_size}} samples revealed:
+
+- Mean: {{py:get mean_value}}
+- 95% CI: [{{py:get ci_lower}}, {{py:get ci_upper}}]
+"""
+        result = process_custom_commands(text)
+
+        # Should contain all computed values
+        assert "100 samples revealed:" in result
+        assert "Mean: 25.6" in result
+        assert "95% CI: [" in result and "]" in result
+        assert len(result.split("analysis_date")[0]) > 0  # Should contain a date
+
+    def test_py_commands_mixed_with_other_commands(self):
+        """Test py: commands mixed with other commands like blindtext."""
+        from rxiv_maker.converters.custom_command_processor import process_custom_commands
+
+        text = """
+{{blindtext}}
+
+{{py:exec
+calculation = 2 * 21
+}}
+
+The answer to everything is {{py:get calculation}}.
+
+{{Blindtext}}
+"""
+        result = process_custom_commands(text)
+
+        # Should process both command types
+        assert "\\blindtext" in result  # Blindtext processed
+        assert "\\Blindtext" in result  # Blindtext processed
+        assert "The answer to everything is 42." in result  # Python processed
+
+    def test_nested_py_commands_not_supported(self):
+        """Test that nested py: commands are not supported (edge case)."""
+        from rxiv_maker.converters.custom_command_processor import process_custom_commands
+
+        text = """
+{{py:exec
+nested_command = "{{py:get nonexistent}}"
+}}
+
+Value: {{py:get nested_command}}
+"""
+        result = process_custom_commands(text)
+
+        # Should contain the string literally, not execute nested command
+        assert "{{py:get nonexistent}}" in result
+
+    def test_py_exec_error_recovery(self):
+        """Test that errors in py:exec don't break subsequent processing."""
+        from rxiv_maker.converters.custom_command_processor import process_custom_commands
+
+        text = """
+{{py:exec
+good_var = "success"
+}}
+
+{{py:exec
+bad_var = undefined_function()
+}}
+
+{{py:exec
+another_good_var = "also success"
+}}
+
+First: {{py:get good_var}}
+Second: {{py:get bad_var}}
+Third: {{py:get another_good_var}}
+"""
+        result = process_custom_commands(text)
+
+        # Good variables should work
+        assert "First: success" in result
+        assert "Third: also success" in result
+
+        # Bad variable should show error
+        assert "Error:" in result
+
+    def test_py_exec_with_data_structures(self):
+        """Test py:exec with complex data structures."""
+        from rxiv_maker.converters.custom_command_processor import process_custom_commands
+
+        text = """
+{{py:exec
+# Complex data structures
+data_dict = {
+    'experiment_1': [1, 2, 3, 4, 5],
+    'experiment_2': [2, 4, 6, 8, 10],
+    'metadata': {'date': '2024-01-01', 'researcher': 'Dr. Smith'}
+}
+
+exp1_mean = sum(data_dict['experiment_1']) / len(data_dict['experiment_1'])
+exp2_mean = sum(data_dict['experiment_2']) / len(data_dict['experiment_2'])
+researcher = data_dict['metadata']['researcher']
+}}
+
+Analysis by {{py:get researcher}}:
+- Experiment 1 mean: {{py:get exp1_mean}}
+- Experiment 2 mean: {{py:get exp2_mean}}
+"""
+        result = process_custom_commands(text)
+
+        assert "Analysis by Dr. Smith:" in result
+        assert "Experiment 1 mean: 3.0" in result
+        assert "Experiment 2 mean: 6.0" in result

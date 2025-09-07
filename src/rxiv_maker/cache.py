@@ -27,7 +27,7 @@ try:
         AdvancedCache,
         BibliographyCache,
         DOICache,
-        get_cache_dir,
+        get_manuscript_cache_dir,
         get_secure_cache_dir,
         validate_cache_security,
     )
@@ -149,7 +149,10 @@ def cache_statistics() -> Dict[str, Any]:
 
     try:
         # Get cache directories
-        stats["cache_directory"] = str(get_cache_dir())
+        try:
+            stats["cache_directory"] = str(get_manuscript_cache_dir())
+        except RuntimeError:
+            stats["cache_directory"] = "No manuscript directory found"
         stats["secure_cache_directory"] = str(get_secure_cache_dir())
 
         # Get security validation

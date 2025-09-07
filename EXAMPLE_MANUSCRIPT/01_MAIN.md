@@ -21,22 +21,48 @@ Manuscript preparation becomes a transparent process that gives researchers acce
 <!-- Example 1: Standard single-column figure positioning -->
 <!-- tex_position="t" places the figure at the top of the page (recommended default) -->
 <!-- width not specified defaults to \linewidth (full column width) -->
-![](FIGURES/Figure__system_diagram/Figure__system_diagram.svg)
+![](FIGURES/Figure__system_diagram.pdf)
 {#fig:system_diagram tex_position="t"} **The Rxiv-Maker System Diagram.** The system integrates Markdown content, YAML metadata, Python and R scripts, and bibliography files through a processing engine. This engine leverages GitHub Actions, virtual environments, and LaTeX to produce a publication-ready scientific article, demonstrating a fully automated and reproducible pipeline.
 
 <!-- Example 2: Full-width two-column spanning figure -->
 <!-- width="\textwidth" makes the figure span both columns (use figure* environment) -->
 <!-- tex_position="t" maintains top placement preference -->  
 <!-- This combination is perfect for detailed workflow diagrams that need maximum width -->
-![](FIGURES/Figure__workflow/Figure__workflow.svg)
-{#fig:workflow width="\textwidth" tex_position="t"} **Rxiv-Maker Workflow: User Input vs. Automated Processing.** The framework clearly separates user responsibilities (content creation and configuration) from automated processes (parsing, conversion, compilation, and output generation). Users only need to write content and set preferences. At the same time, the system handles all technical aspects of manuscript preparation automatically, ensuring a streamlined workflow from markdown input to publication-ready PDF output.
+![](FIGURES/Figure__workflow.pdf)
+{#fig:workflow width="\textwidth" tex_position="t" caption_width="\textwidth"} **Rxiv-Maker Workflow: User Input vs. Automated Processing.** The framework clearly separates user responsibilities (content creation and configuration) from automated processes (parsing, conversion, compilation, and output generation). Users only need to write content and set preferences. At the same time, the system handles all technical aspects of manuscript preparation automatically, ensuring a streamlined workflow from markdown input to publication-ready PDF output.
 
 <!-- For comprehensive figure positioning guidance, see docs/guides/figures-guide.md -->
 <!-- This covers positioning attributes, width control, panel references, and troubleshooting -->
 
 The framework enables programmatic generation of figures and tables using Python and R scripting with visualisation libraries including Matplotlib [@Hunter2007_matplotlib] and Seaborn [@Waskom2021_seaborn]. 
 
-Figures can be generated directly from source datasets during compilation, establishing transparent connections between raw data, processing pipelines, and final visualisations. This executable manuscript approach eliminates the manual copy-and-paste workflow that traditionally introduces errors when transferring results between analysis and documentation [@perkel2022]. When datasets are updated or algorithms refined, affected figures are automatically regenerated, ensuring consistency and eliminating outdated visualisations. The system integrates Mermaid.js [@Mermaid2023_documentation] for generating technical diagrams from text-based syntax, with the complete range of supported methods detailed in @stable:figure-formats.
+{{py:exec
+import pandas as pd
+from datetime import datetime
+from pathlib import Path
+from data_updater import update_all_data_files
+
+print("Checking data file freshness...")
+update_results = update_all_data_files()
+print("Data update completed")
+
+data_path = Path("DATA/arxiv_monthly_submissions.csv")
+df = pd.read_csv(data_path)
+df['year_month'] = pd.to_datetime(df['year_month'])
+
+data_start_year = int(df['year_month'].dt.year.min())
+total_submissions = int(df['submissions'].sum())
+years_span = int(df['year_month'].dt.year.max() - df['year_month'].dt.year.min() + 1)
+compilation_date = datetime.now().strftime("%B %d, %Y")
+last_updated = datetime.fromtimestamp(data_path.stat().st_mtime).strftime("%B %Y")
+
+print(f"Successfully loaded {len(df)} months of arXiv data")
+print(f"Total submissions: {total_submissions:,}")
+}}
+
+Both data can be analysed and figures generated directly from source datasets during compilation, establishing transparent connections between raw data, processing pipelines, and final visualisations. The framework can automatically fetch the latest data from web sources including arXiv monthly submissions and preprint server statistics. For example, @sfig:arxiv_growth showcases {{py:get total_submissions}} arXiv submissions spanning {{py:get years_span}} years starting from {{py:get data_start_year}}. These statistics were computed live during manuscript compilation on {{py:get compilation_date}} with data last updated {{py:get last_updated}}.
+
+This executable manuscript approach eliminates the manual copy-and-paste workflow that traditionally introduces errors when transferring results between analysis and documentation [@perkel2022]. When datasets are updated or algorithms refined, affected figures are automatically regenerated, ensuring consistency and eliminating outdated visualisations. The system integrates Mermaid.js [@Mermaid2023_documentation] for generating technical diagrams from text-based syntax, with the complete range of supported methods detailed in @stable:figure-formats.
 
 This approach reframes manuscripts as executable outputs of the research process rather than static documentation. Built upon the HenriquesLab bioRxiv template [@HenriquesLab2015_template], Rxiv-Maker extends capabilities through automated processing pipelines. The architecture, detailed in @fig:system_diagram and @fig:workflow, provides automated build processes through GitHub Actions and virtual environments (technical details described in @snote:figure-generation).
 
@@ -76,7 +102,7 @@ The Visual Studio Code extension addresses adoption barriers by providing famili
 
 The system supports scientific publishing through organised project structure separating content, configuration, and computational elements. All manuscript content, metadata, and bibliographic references are version-controlled, ensuring transparency.
 
-The markdown-to-LaTeX conversion pipeline handles complex academic syntax including figures, tables, citations, and mathematical expressions while preserving semantic meaning and typographical quality. The system uses a multi-pass approach that protects literal content during transformation, ensuring intricate scientific expressions render accurately. 
+The markdown-to-LaTeX conversion pipeline handles complex academic syntax including figures, tables, citations, and mathematical expressions while preserving semantic meaning and typographical quality. The system uses a multi-pass approach that protects literal content during transformation, ensuring intricate scientific expressions render accurately. For advanced typesetting requirements that exceed markdown capabilities, the framework provides direct LaTeX injection through specialized code blocks, enabling access to LaTeX's full typesetting capabilities (@snote:latex-injection).
 
 The framework supports subscript and superscript notation essential for chemical formulas, allowing expressions such as $\text{H}_2\text{O}$, $\text{CO}_2$, $\text{Ca}^{2+}$, $\text{SO}_4^{2-}$, and $E=mc^2$, as well as temperature notation like 25°C.
 
@@ -122,7 +148,7 @@ For users without local LaTeX installations, the framework provides identical bu
 ### Markdown-to-LaTeX Conversion
 Manuscript conversion is handled by a Python processing engine that manages complex academic syntax requirements through "rxiv-markdown". This multi-pass conversion system uses content protection strategies to preserve computational elements such as code blocks and mathematical notation. It converts specialised academic elements including dynamic citations (`@smith2023`), programmatic figures, statistical tables, and supplementary notes before applying standard markdown formatting. 
 
-The system supports notation essential for scientific disciplines: subscript and superscript syntax for chemical formulas such as $\text{H}_2\text{O}$ and $\text{CO}_2$, mathematical expressions including Einstein's mass-energy equivalence (@eq:einstein), chemical notation such as $\text{Ca}^{2+}$ and $\text{SO}_4^{2-}$ (@eq:equilibrium), temperature specifications like 25°C, and statistical calculations including standard deviation (@eq:std_dev). Supported syntax is detailed in @stable:markdown-syntax. The framework supports complex mathematical expressions typical of computational workflows:
+The system supports notation essential for scientific disciplines: subscript and superscript syntax for chemical formulas such as $\text{H}_2\text{O}$ and $\text{CO}_2$, mathematical expressions including Einstein's mass-energy equivalence (@eq:einstein), chemical notation such as $\text{Ca}^{2+}$ and $\text{SO}_4^{2-}$ (@eq:equilibrium), temperature specifications like 25°C, and statistical calculations including standard deviation (@eq:std_dev). The framework supports complex mathematical expressions typical of computational workflows:
 
 $$\frac{\partial}{\partial t} \mathbf{u} + (\mathbf{u} \cdot \nabla) \mathbf{u} = -\frac{1}{\rho} \nabla p + \nu \nabla^2 \mathbf{u}$${#eq:navier_stokes}
 

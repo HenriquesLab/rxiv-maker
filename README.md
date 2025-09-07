@@ -55,11 +55,12 @@ rxiv pdf
 - Mathematical notation with LaTeX math
 - Code blocks with syntax highlighting
 
-### 📊 **Automated Figures**
+### 📊 **Automated Figures & Data Analysis**
 - Execute Python/R scripts during PDF generation
+- **🐍 NEW: Jupyter-like executable Python code blocks**
+- Real-time data analysis with `{{py:exec}}` and `{{py:get variable}}`
 - Matplotlib, ggplot2, and custom visualizations
-- Consistent styling and professional quality
-- Version-controlled figure code
+- Version-controlled figure code and analysis modules
 
 ### 📚 **Citation Management**
 - BibTeX integration with `[@citation]` syntax
@@ -79,18 +80,25 @@ rxiv pdf
 ```markdown
 # Introduction
 
-Our analysis in Figure @fig:results shows significant improvement
-over previous methods [@smith2023; @jones2024].
+{{py:exec
+import pandas as pd
+df = pd.read_csv("FIGURES/DATA/results.csv")
+correlation = df.corr().iloc[0,1]
+sample_size = len(df)
+}}
+
+Our analysis of {{py:get sample_size}} samples in Figure @fig:results shows 
+significant improvement over previous methods [@smith2023; @jones2024].
 
 ![Research Results](FIGURES/generate_plot.py)
 {#fig:results}
 
-The correlation coefficient was $r = 0.95$ (p < 0.001).
+The correlation coefficient was r = {{py:get correlation:.2f}} (p < 0.001).
 
 ## References
 ```
 
-**Output:** Professional PDF with numbered figures, citations, and LaTeX-quality typesetting.
+**Output:** Professional PDF with numbered figures, live data integration, citations, and LaTeX-quality typesetting.
 
 ## 📖 Documentation
 
@@ -98,6 +106,7 @@ The correlation coefficient was $r = 0.95$ (p < 0.001).
 |-------|---------|------|
 | **[🚀 Getting Started](docs/quick-start/first-manuscript.md)** | Installation → First PDF | 5 min |
 | **[📚 User Guide](docs/guides/user_guide.md)** | Complete workflows & features | 30 min |
+| **[🐍 Python Execution Guide](docs/guides/python-execution-guide.md)** | Jupyter-like code blocks & data analysis | 15 min |
 | **[⚙️ CLI Reference](docs/reference/cli-reference.md)** | All commands & options | 10 min |
 | **[🔧 Troubleshooting](docs/troubleshooting/troubleshooting.md)** | Common issues & solutions | As needed |
 | **[👩‍💻 Developer Guide](docs/development/developer-guide.md)** | Contributing & development | 45 min |

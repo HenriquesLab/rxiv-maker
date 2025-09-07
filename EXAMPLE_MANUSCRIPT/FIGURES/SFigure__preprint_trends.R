@@ -67,7 +67,7 @@ load_and_process_data <- function() {
   script_dir <- dirname(script_path)
 
   # Define the path to the data file
-  data_path <- file.path(script_dir, "DATA", "SFigure__preprint_trends", "pubmed_by_year.csv")
+  data_path <- file.path(dirname(script_dir), "DATA", "pubmed_by_year.csv")
 
   # Check if the file exists
   if (!file.exists(data_path)) {
@@ -77,8 +77,8 @@ load_and_process_data <- function() {
   # Load and process the data
   df <- read_csv(data_path, show_col_types = FALSE)  # Suppress column type messages
   df <- df %>%
-    pivot_longer(cols = c(preprint, medrxiv, biorxiv, arxiv), names_to = "source", values_to = "submissions") %>%
-    mutate(date = as.Date(paste0(Year, "-01-01"), format = "%Y-%m-%d")) %>%  # Convert year to Date
+    rename(source = server, submissions = publications) %>%  # Rename columns to match expected format
+    mutate(date = as.Date(paste0(year, "-01-01"), format = "%Y-%m-%d")) %>%  # Convert year to Date
     arrange(date, source)  # Ensure proper ordering
   return(df)
 }
@@ -89,14 +89,14 @@ create_figure <- function(df) {
   colors <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728")
 
   p <- ggplot(df, aes(x = date, y = submissions, color = source, fill = source)) +
-    geom_line(size = 1.2, alpha = 0.9) +
+    geom_line(linewidth = 1.2, alpha = 0.9) +
     geom_area(alpha = 0.15, position = "identity") +
     labs(
-      title = "Preprint Submissions by Year and Source",
+      title = "Pubmed Listed Preprints",
       x = "Year",
-      y = "Annual Submissions",
-      color = "Source",
-      fill = "Source"
+      y = "Annual Publications",
+      color = "Server",
+      fill = "Server"
     ) +
     scale_x_date(
       date_breaks = "1 year",
@@ -112,28 +112,27 @@ create_figure <- function(df) {
     theme(
       axis.title = element_text(face = "bold", color = "#333333"),
       plot.title = element_text(face = "bold", size = 11, hjust = 0.5, color = "#333333"),
-      panel.grid.minor = element_line(size = 0.25, color = "#E0E0E0"),
-      panel.grid.major = element_line(size = 0.4, color = "#D0D0D0"),
+      panel.grid.minor = element_line(linewidth = 0.25, color = "#E0E0E0"),
+      panel.grid.major = element_line(linewidth = 0.4, color = "#D0D0D0"),
       axis.text.x = element_text(angle = 45, hjust = 1, color = "#333333"),
       axis.text.y = element_text(color = "#333333"),
       legend.position = "bottom",
       legend.title = element_text(face = "bold"),
       panel.background = element_rect(fill = "#FAFAFA", color = NA),
-      plot.background = element_rect(fill = "white", color = NA)
+      plot.background = element_rect(fill = "white", color = NA),
+      plot.margin = margin(t = 20, r = 30, b = 10, l = 10, unit = "pt")
     )
   return(p)
 }
 
 # Save the figure
 save_figure <- function(p, output_path = NULL) {
-  # Use environment variable if set, otherwise current working directory
+  # Use script directory instead of environment variable
   if (is.null(output_path)) {
-    env_output_dir <- Sys.getenv("RXIV_FIGURE_OUTPUT_DIR", unset = "")
-    if (env_output_dir != "") {
-      output_path <- env_output_dir
-    } else {
-      output_path <- getwd()
-    }
+    # Get script directory
+    script_args <- commandArgs(trailingOnly = FALSE)
+    script_path <- normalizePath(sub("--file=", "", script_args[grep("--file=", script_args)]))
+    output_path <- dirname(script_path)
   }
 
   # Ensure the output directory exists
@@ -141,17 +140,11 @@ save_figure <- function(p, output_path = NULL) {
     dir.create(output_path, recursive = TRUE)
   }
 
-  # Save the figure in multiple formats
-  ggsave(file.path(output_path, "SFigure__preprint_trends.pdf"), plot = p, width = 3.5, height = 4, dpi = 300)
-  ggsave(file.path(output_path, "SFigure__preprint_trends.png"), plot = p, width = 3.5, height = 4, dpi = 300)
-
-  # Use svglite for SVG output
-  ggsave(file.path(output_path, "SFigure__preprint_trends.svg"), plot = p, width = 3.5, height = 4, device = svglite::svglite)
+  # Save only as PDF using cairo
+  ggsave(file.path(output_path, "SFigure__preprint_trends.pdf"), plot = p, width = 4.2, height = 4, device = cairo_pdf)
 
   cat("Figure saved to:\n")
   cat(paste0("  - ", file.path(output_path, "SFigure__preprint_trends.pdf"), "\n"))
-  cat(paste0("  - ", file.path(output_path, "SFigure__preprint_trends.png"), "\n"))
-  cat(paste0("  - ", file.path(output_path, "SFigure__preprint_trends.svg"), "\n"))
 }
 
 # Main function

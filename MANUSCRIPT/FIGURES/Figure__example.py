@@ -26,9 +26,8 @@ plt.title("Example Figure")
 plt.legend()
 plt.grid(True, alpha=0.3)
 
-# Save as both PNG and PDF
-plt.savefig("Figure__example.png", dpi=300, bbox_inches="tight")
-plt.savefig("Figure__example.pdf", bbox_inches="tight")
+# Save only as PDF
+plt.savefig("Figure__example.pdf", format="pdf", bbox_inches="tight")
 plt.close()
 
-print("Figure__example generated successfully!")
+print("Figure__example.pdf generated successfully!")
