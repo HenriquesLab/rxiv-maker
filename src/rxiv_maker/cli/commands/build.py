@@ -115,7 +115,16 @@ def build(
     try:
         # Default to environment variable or fallback if not specified
         if manuscript_path is None:
-            manuscript_path = EnvironmentManager.get_manuscript_path() or "MANUSCRIPT"
+            manuscript_path = EnvironmentManager.get_manuscript_path()
+            if manuscript_path is None:
+                # Try to find manuscript directory in current working directory or parent directories
+                from ...core.cache.cache_utils import find_manuscript_directory
+
+                manuscript_dir = find_manuscript_directory()
+                if manuscript_dir:
+                    manuscript_path = str(manuscript_dir)
+                else:
+                    manuscript_path = "MANUSCRIPT"
 
         # Use PathManager for path validation and resolution
         path_manager = PathManager(manuscript_path=manuscript_path, output_dir=output_dir)

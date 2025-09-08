@@ -120,10 +120,23 @@ class TestDOIValidator(unittest.TestCase):
         with open(config_path, "w") as f:
             f.write("title: Test Manuscript\nauthor: Test Author\n")
 
+        # Store original working directory
+        self.original_cwd = os.getcwd()
+
+    def create_validator(self, **kwargs):
+        """Helper method to create validator in correct directory context."""
+        # Change to manuscript directory for DOIValidator creation
+        os.chdir(self.manuscript_dir)
+        default_kwargs = {"enable_online_validation": False, "cache_dir": self.cache_dir}
+        default_kwargs.update(kwargs)
+        return DOIValidator(self.manuscript_dir, **default_kwargs)
+
     def tearDown(self):
         """Clean up test fixtures."""
         import shutil
 
+        # Restore original working directory
+        os.chdir(self.original_cwd)
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     @pytest.mark.fast
@@ -491,11 +504,7 @@ class TestDOIValidator(unittest.TestCase):
 
     def test_title_cleaning(self):
         """Test title cleaning for comparison."""
-        validator = DOIValidator(
-            self.manuscript_dir,
-            enable_online_validation=False,
-            cache_dir=self.cache_dir,
-        )
+        validator = self.create_validator()
 
         # Test LaTeX command removal
         latex_title = "Test \\textbf{bold} and \\textit{italic} text"
@@ -514,11 +523,7 @@ class TestDOIValidator(unittest.TestCase):
 
     def test_journal_cleaning(self):
         """Test journal name cleaning for comparison."""
-        validator = DOIValidator(
-            self.manuscript_dir,
-            enable_online_validation=False,
-            cache_dir=self.cache_dir,
-        )
+        validator = self.create_validator()
 
         # Test ampersand removal
         journal_name = "Science \\& Engineering"
@@ -586,11 +591,7 @@ class TestDOIValidator(unittest.TestCase):
 
     def test_similarity_threshold(self):
         """Test title similarity threshold."""
-        validator = DOIValidator(
-            self.manuscript_dir,
-            enable_online_validation=False,
-            cache_dir=self.cache_dir,
-        )
+        validator = self.create_validator()
 
         # Test similar titles (should pass)
         title1 = "A Study of Machine Learning Applications"
