@@ -299,11 +299,11 @@ This system also integrates Mermaid.js [@Mermaid2023] for generating diagrams.
         )
 
         # Check that .bbl file was created (proof that BibTeX ran)
-        bbl_path = output_dir / "test_manuscript.bbl"
+        bbl_path = output_dir / "MANUSCRIPT.bbl"
         assert bbl_path.exists(), "BibTeX did not run - this causes ? to appear instead of citations"
 
         # Check LaTeX log doesn't have "undefined citation" warnings
-        log_path = output_dir / "test_manuscript.log"
+        log_path = output_dir / "MANUSCRIPT.log"
         if log_path.exists():
             log_content = log_path.read_text()
             undefined_citations = re.findall(r"Citation.*undefined", log_content)

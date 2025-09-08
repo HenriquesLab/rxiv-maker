@@ -121,6 +121,12 @@ def _process_tex_commands(text: MarkdownContent) -> LatexContent:
             if brace_count == 0:
                 # Found matching braces, extract and process the TeX code
                 tex_code = text[start : j - 2].strip()  # Exclude the }}
+
+                # Fix encoding issues for common Unicode characters in TeX code
+                # Replace degree symbol with LaTeX command for better compatibility
+                tex_code = tex_code.replace("º", "\\degree")
+                tex_code = tex_code.replace("°", "\\degree")
+
                 result.append(tex_code)
                 i = j
             else:

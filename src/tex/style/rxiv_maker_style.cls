@@ -186,6 +186,51 @@
 \RequirePackage{url}        % URL formatting and line breaks
 \RequirePackage{seqsplit}   % Better long text breaking
 
+%% Enhanced line breaking and text wrapping configuration
+\RequirePackage{microtype}  % Improved typography and line breaking
+\RequirePackage{xspace}     % Better spacing after commands
+
+%% Configure URL breaking behavior
+\def\UrlBreaks{\do\/\do-\do.\do:} % Allow breaks at common URL characters
+\urlstyle{same}             % Use same font as surrounding text for URLs
+
+%% Emergency line breaking settings
+\emergencystretch=1em       % Allow extra stretch to prevent overfull lines
+\tolerance=1500             % More permissive line breaking (default 200)
+\hbadness=1500             % Suppress warnings for slightly loose lines
+\hfuzz=0.3pt               % Allow slight overfull without warnings
+
+%% Enhanced seqsplit configuration for long identifiers
+\renewcommand*{\seqsplit}[1]{%
+  \begingroup%
+  \def\my@str{#1}%
+  \expandafter\my@seqsplit\my@str\relax%
+  \endgroup%
+}
+
+%% Define macro for enhanced seqsplit that handles special characters
+\def\my@seqsplit#1#2\relax{%
+  \ifx\relax#2\relax%
+    #1% single character, output as is
+  \else%
+    \def\@tempa{#1}%
+    \ifx\@tempa\_% underscore
+      #1\discretionary{}{}{}%
+    \else%
+      \ifx\@tempa\-% hyphen
+        #1\discretionary{}{}{}%
+      \else%
+        \ifx\@tempa\.% period
+          #1\allowbreak%
+        \else%
+          #1\allowbreak% allow break after each character
+        \fi%
+      \fi%
+    \fi%
+    \my@seqsplit#2\relax%
+  \fi%
+}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Jacquemet and Henriques lab dependencies - End %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

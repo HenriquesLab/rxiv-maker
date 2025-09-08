@@ -131,10 +131,12 @@ class ContentProcessor(RecoveryEnhancedMixin):
         from ..converters.text_formatters import (
             convert_subscript_superscript_to_latex,
             escape_special_characters,
+            identify_long_technical_identifiers,
             process_code_spans,
             protect_bold_outside_texttt,
             protect_italic_outside_texttt,
             restore_protected_seqsplit,
+            wrap_long_strings_in_context,
         )
         from ..converters.url_processor import convert_links_to_latex
 
@@ -430,6 +432,28 @@ class ContentProcessor(RecoveryEnhancedMixin):
         )
 
         # Stage 5: Finalization - Final text formatting
+        # Add enhanced line breaking for technical identifiers before other formatting
+        self.register_processor(
+            "wrap_long_technical_identifiers",
+            identify_long_technical_identifiers,
+            ProcessorConfig(
+                name="wrap_long_technical_identifiers",
+                priority=ProcessorPriority.HIGH,
+                stage=ProcessingStage.FINALIZATION,
+            ),
+        )
+
+        self.register_processor(
+            "wrap_contextual_long_strings",
+            wrap_long_strings_in_context,
+            ProcessorConfig(
+                name="wrap_contextual_long_strings",
+                priority=ProcessorPriority.HIGH,
+                stage=ProcessingStage.FINALIZATION,
+                dependencies=["wrap_long_technical_identifiers"],
+            ),
+        )
+
         self.register_processor(
             "subscript_superscript",
             convert_subscript_superscript_to_latex,

@@ -35,6 +35,7 @@ from .table_processor import convert_table_references_to_latex, convert_tables_t
 from .text_formatters import (
     convert_subscript_superscript_to_latex,
     escape_special_characters,
+    find_and_replace_python_color,
     process_code_spans,
     protect_bold_outside_texttt,
     protect_italic_outside_texttt,
@@ -373,6 +374,9 @@ def _process_text_formatting(content: LatexContent, protected_backtick_content: 
 
     # Then convert backticks to texttt with proper underscore handling
     content = process_code_spans(content)
+
+    # Process protected Python color placeholders
+    content = find_and_replace_python_color(content)
 
     # Convert bold and italic AFTER processing backticks
     content = protect_bold_outside_texttt(content)
