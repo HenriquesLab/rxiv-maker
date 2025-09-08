@@ -111,24 +111,33 @@ pyyaml>=6.0
     def test_dependency_scanning(self, mock_run):
         """Test dependency vulnerability scanning."""
         try:
+            import os
             import sys
 
             sys.path.insert(0, "src")
             from rxiv_maker.security.dependency_manager import DependencyManager
 
-            # Mock subprocess response for dependency scan
-            mock_run.return_value = Mock(
-                returncode=0,
-                stdout=json.dumps({"vulnerabilities": [], "packages": ["requests==2.28.0", "numpy==1.21.0"]}),
-                stderr="",
-            )
+            # Change to manuscript directory so dependency manager can find the manuscript
+            old_cwd = os.getcwd()
+            os.chdir(self.project_dir / "manuscript")
 
-            manager = DependencyManager(self.project_dir)
+            try:
+                # Mock subprocess response for dependency scan
+                mock_run.return_value = Mock(
+                    returncode=0,
+                    stdout=json.dumps({"vulnerabilities": [], "packages": ["requests==2.28.0", "numpy==1.21.0"]}),
+                    stderr="",
+                )
 
-            if hasattr(manager, "scan_vulnerabilities"):
-                result = manager.scan_vulnerabilities()
-                self.assertIsNotNone(result)
-                mock_run.assert_called()
+                manager = DependencyManager(self.project_dir)
+
+                if hasattr(manager, "scan_vulnerabilities"):
+                    result = manager.scan_vulnerabilities()
+                    self.assertIsNotNone(result)
+                    mock_run.assert_called()
+
+            finally:
+                os.chdir(old_cwd)
 
         except ImportError:
             self.skipTest("Dependency manager module not available")
