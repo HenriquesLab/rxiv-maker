@@ -29,6 +29,12 @@ except ImportError:
     get_with_retry = None  # type: ignore
 
 try:
+    from ...utils.figure_checksum import get_figure_checksum_manager
+except ImportError:
+    # Fallback when figure checksum module isn't available
+    get_figure_checksum_manager = None  # type: ignore
+
+try:
     from rich.progress import (
         BarColumn,
         MofNCompleteColumn,
@@ -108,11 +114,19 @@ class FigureGenerator:
         # Supported formats
         self.supported_formats = ["png", "pdf", "svg", "jpg", "jpeg"]
 
-        # Figure caching system (optional optimization) - disabled for now due to interface mismatch
-        # TODO: Re-enable caching after fixing interface compatibility
-        self.enable_content_caching = False
-        if enable_content_caching:
-            print("Warning: Content caching disabled due to interface incompatibility")
+        # Figure caching system (optional optimization)
+        self.enable_content_caching = enable_content_caching
+        if self.enable_content_caching and get_figure_checksum_manager:
+            try:
+                # Use manuscript_path if available, otherwise fallback to current directory
+                checksum_path = manuscript_path or os.getcwd()
+                self.checksum_manager = get_figure_checksum_manager(checksum_path)
+            except Exception as e:
+                print(f"Warning: Failed to initialize figure checksum manager: {e}")
+                print("Content caching disabled")
+                self.enable_content_caching = False
+        elif self.enable_content_caching:
+            print("Warning: Content caching disabled - figure checksum module not available")
             self.enable_content_caching = False
 
         if self.output_format not in self.supported_formats:
@@ -160,8 +174,8 @@ class FigureGenerator:
 
             # Skip if file hasn't changed (content caching)
             if self.enable_content_caching:
-                file_hash = self.checksum_manager.calculate_file_hash(mmd_file)
-                if self.checksum_manager.is_file_unchanged(str(mmd_file), file_hash) and output_file.exists():
+                relative_path = str(mmd_file.relative_to(self.figures_dir))
+                if not self.checksum_manager.has_file_changed(relative_path) and output_file.exists():
                     if use_rich:
                         print(f"⏭️ [dim]Skipping {mmd_file.name}: No changes detected[/dim]")
                     else:
@@ -180,7 +194,8 @@ class FigureGenerator:
                 if success:
                     processed_files.append(mmd_file)
                     if self.enable_content_caching:
-                        self.checksum_manager.update_file_hash(str(mmd_file), file_hash)
+                        relative_path = str(mmd_file.relative_to(self.figures_dir))
+                        self.checksum_manager.update_file_checksum(relative_path)
                 else:
                     if use_rich:
                         print(f"❌ [red]Failed to generate {output_file.name}[/red]")
@@ -278,8 +293,8 @@ class FigureGenerator:
 
             # Skip if file hasn't changed (content caching)
             if self.enable_content_caching:
-                file_hash = self.checksum_manager.calculate_file_hash(py_file)
-                if self.checksum_manager.is_file_unchanged(str(py_file), file_hash):
+                relative_path = str(py_file.relative_to(self.figures_dir))
+                if not self.checksum_manager.has_file_changed(relative_path):
                     expected_outputs = self._get_expected_python_outputs(py_file)
                     if all(Path(output).exists() for output in expected_outputs):
                         if use_rich:
@@ -306,8 +321,8 @@ class FigureGenerator:
                 if result.returncode == 0:
                     processed_files.append(py_file)
                     if self.enable_content_caching:
-                        file_hash = self.checksum_manager.calculate_file_hash(py_file)
-                        self.checksum_manager.update_file_hash(str(py_file), file_hash)
+                        relative_path = str(py_file.relative_to(self.figures_dir))
+                        self.checksum_manager.update_file_checksum(relative_path)
 
                     if use_rich:
                         print(f"✅ [green]Python script completed: {py_file.name}[/green]")
@@ -383,8 +398,8 @@ class FigureGenerator:
 
             # Skip if file hasn't changed (content caching)
             if self.enable_content_caching:
-                file_hash = self.checksum_manager.calculate_file_hash(r_file)
-                if self.checksum_manager.is_file_unchanged(str(r_file), file_hash):
+                relative_path = str(r_file.relative_to(self.figures_dir))
+                if not self.checksum_manager.has_file_changed(relative_path):
                     expected_outputs = self._get_expected_r_outputs(r_file)
                     if all(Path(output).exists() for output in expected_outputs):
                         if use_rich:
@@ -411,8 +426,8 @@ class FigureGenerator:
                 if result.returncode == 0:
                     processed_files.append(r_file)
                     if self.enable_content_caching:
-                        file_hash = self.checksum_manager.calculate_file_hash(r_file)
-                        self.checksum_manager.update_file_hash(str(r_file), file_hash)
+                        relative_path = str(r_file.relative_to(self.figures_dir))
+                        self.checksum_manager.update_file_checksum(relative_path)
 
                     if use_rich:
                         print(f"✅ [green]R script completed: {r_file.name}[/green]")
@@ -538,7 +553,9 @@ class FigureGenerator:
         # Save cache state if enabled
         if self.enable_content_caching:
             try:
-                self.checksum_manager.save_cache()
+                # The checksum manager saves automatically in update_file_checksum
+                # but we can force a save here for any remaining updates
+                self.checksum_manager._save_checksums()
             except Exception as e:
                 if use_rich:
                     print(f"⚠️ [yellow]Warning: Failed to save figure cache: {e}[/yellow]")

@@ -316,7 +316,7 @@ class BuildManager:
                 result = subprocess.run(
                     ["pdflatex", "-interaction=nonstopmode", tex_file.name],
                     capture_output=True,
-                    text=True,
+                    text=False,
                     cwd=str(self.output_dir),
                     timeout=300,
                 )
@@ -324,9 +324,17 @@ class BuildManager:
                 if result.returncode != 0:
                     self.log("First pdflatex pass had warnings/errors", "WARNING")
                     if result.stdout and self.verbose:
-                        self.log(f"pdflatex stdout: {result.stdout[:500]}...")
+                        try:
+                            stdout_text = result.stdout.decode("utf-8", errors="replace")
+                            self.log(f"pdflatex stdout: {stdout_text[:500]}...")
+                        except Exception:
+                            self.log("pdflatex stdout: <unable to decode output>")
                     if result.stderr and self.verbose:
-                        self.log(f"pdflatex stderr: {result.stderr[:500]}...")
+                        try:
+                            stderr_text = result.stderr.decode("utf-8", errors="replace")
+                            self.log(f"pdflatex stderr: {stderr_text[:500]}...")
+                        except Exception:
+                            self.log("pdflatex stderr: <unable to decode output>")
                     # Continue processing - LaTeX can still generate PDF despite warnings
 
                 # Check if bibliography exists and run bibtex
@@ -337,7 +345,7 @@ class BuildManager:
                     bibtex_result = subprocess.run(
                         ["bibtex", tex_file.stem],
                         capture_output=True,
-                        text=True,
+                        text=False,
                         cwd=str(self.output_dir),
                         timeout=60,
                     )
@@ -350,7 +358,7 @@ class BuildManager:
                         result = subprocess.run(
                             ["pdflatex", "-interaction=nonstopmode", tex_file.name],
                             capture_output=True,
-                            text=True,
+                            text=False,
                             cwd=str(self.output_dir),
                             timeout=300,
                         )
@@ -358,7 +366,11 @@ class BuildManager:
                         if result.returncode != 0:
                             self.log("Second pdflatex pass failed", "WARNING")
                             if self.verbose:
-                                self.log(f"Second pass stderr: {result.stderr[:200]}...")
+                                try:
+                                    stderr_text = result.stderr.decode("utf-8", errors="replace")
+                                    self.log(f"Second pass stderr: {stderr_text[:200]}...")
+                                except Exception:
+                                    self.log("Second pass stderr: <unable to decode output>")
                     else:
                         self.log("Bibtex failed, continuing with single pass", "WARNING")
 
@@ -367,7 +379,7 @@ class BuildManager:
                 result = subprocess.run(
                     ["pdflatex", "-interaction=nonstopmode", tex_file.name],
                     capture_output=True,
-                    text=True,
+                    text=False,
                     cwd=str(self.output_dir),
                     timeout=300,
                 )
@@ -378,12 +390,20 @@ class BuildManager:
                     if result.returncode != 0:
                         self.log("PDF generated despite LaTeX warnings/errors", "WARNING")
                         if result.stderr and self.verbose:
-                            self.log(f"Final pass stderr: {result.stderr[:500]}...")
+                            try:
+                                stderr_text = result.stderr.decode("utf-8", errors="replace")
+                                self.log(f"Final pass stderr: {stderr_text[:500]}...")
+                            except Exception:
+                                self.log("Final pass stderr: <unable to decode output>")
                     return True
                 else:
                     self.log("PDF generation failed - no output file created", "ERROR")
                     if result.stderr:
-                        self.log(f"Final pass stderr: {result.stderr[:500]}...")
+                        try:
+                            stderr_text = result.stderr.decode("utf-8", errors="replace")
+                            self.log(f"Final pass stderr: {stderr_text[:500]}...")
+                        except Exception:
+                            self.log("Final pass stderr: <unable to decode output>")
                     return False
 
             finally:
@@ -434,6 +454,10 @@ class BuildManager:
             self.log(f"PDF validation error: {e}", "ERROR")
             return False
 
+    def compile_pdf(self) -> bool:
+        """Compile PDF from LaTeX sources. Alias for compile_latex for backward compatibility."""
+        return self.compile_latex()
+
     def copy_final_pdf(self):
         """Copy the final PDF to manuscript directory with proper naming."""
         try:
@@ -464,6 +488,28 @@ class BuildManager:
         except Exception as e:
             self.log(f"Failed to copy final PDF: {e}", "WARNING")
 
+    def copy_references(self):
+        """Copy references bibliography file to output directory."""
+        self.log("Copying references...", "STEP")
+
+        try:
+            # Check if references file exists
+            if not self.path_manager.references_bib.exists():
+                self.log("No references file found, skipping copy", "WARNING")
+                return False
+
+            # Copy references to output directory
+            import shutil
+
+            output_refs_path = self.output_dir / "03_REFERENCES.bib"
+            shutil.copy2(self.path_manager.references_bib, output_refs_path)
+            self.log(f"Copied {self.path_manager.references_bib.name} to output directory")
+            return True
+
+        except Exception as e:
+            self.log(f"Failed to copy references: {e}", "WARNING")
+            return False
+
     def copy_style_files(self):
         """Copy LaTeX style files to output directory using centralized PathManager."""
         self.log("Copying style files...", "STEP")
@@ -475,9 +521,19 @@ class BuildManager:
             for copied_file in copied_files:
                 self.log(f"Copied {copied_file.name} to output directory")
 
+            return True
+
         except Exception as e:
             self.log(f"Failed to copy style files: {e}", "ERROR")
             raise
+
+    def generate_tex_files(self):
+        """Generate LaTeX files (wrapper for backward compatibility)."""
+        try:
+            self.generate_manuscript_tex()
+            return True
+        except Exception:
+            return False
 
     def build(self) -> bool:
         """Execute the complete build process."""
@@ -507,24 +563,27 @@ class BuildManager:
                 # Step 4: Generate LaTeX manuscript
                 self.generate_manuscript_tex()
 
-                # Step 5: Copy style files
+                # Step 5: Copy references
+                self.copy_references()
+
+                # Step 6: Copy style files
                 self.copy_style_files()
 
-                # Step 6: Compile LaTeX to PDF
+                # Step 7: Compile LaTeX to PDF
                 if not self.compile_latex():
                     self.log("Build failed: LaTeX compilation failed", "ERROR")
                     op.add_metadata("latex_compilation_passed", False)
                     return False
                 op.add_metadata("latex_compilation_passed", True)
 
-                # Step 7: Validate PDF
+                # Step 8: Validate PDF
                 if not self.validate_pdf():
                     self.log("Build failed: PDF validation failed", "ERROR")
                     op.add_metadata("pdf_validation_passed", False)
                     return False
                 op.add_metadata("pdf_validation_passed", True)
 
-                # Step 8: Copy final PDF
+                # Step 9: Copy final PDF
                 self.copy_final_pdf()
 
                 # Success
