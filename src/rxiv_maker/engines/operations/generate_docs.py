@@ -164,8 +164,8 @@ def generate_api_docs(project_root: Path | None = None) -> bool:
         print(f"  - {rel_path}")
 
     # Generate documentation for key modules with better handling
-    print(f"\n📦 Generating docs for key Python modules...")
-    
+    print("\n📦 Generating docs for key Python modules...")
+
     # Find lazydocs executable
     lazydocs_cmd = shutil.which("lazydocs")
     if not lazydocs_cmd:
@@ -173,7 +173,7 @@ def generate_api_docs(project_root: Path | None = None) -> bool:
         lazydocs_available = False
     else:
         lazydocs_available = True
-        
+
         # Set up environment with proper Python path for import resolution
         env = os.environ.copy()
         src_path = str(project_root / "src")
@@ -181,24 +181,26 @@ def generate_api_docs(project_root: Path | None = None) -> bool:
             env["PYTHONPATH"] = f"{src_path}:{env['PYTHONPATH']}"
         else:
             env["PYTHONPATH"] = src_path
-        
+
         # Filter to key modules that are likely to work (avoid complex imports)
         simple_files = []
         for py_file in python_files:
             rel_path = py_file.relative_to(src_dir)
             path_str = str(rel_path)
-            
+
             # Only include files that are likely to work with lazydocs
-            if (path_str.endswith("__version__.py") or 
-                path_str.endswith("__init__.py") or
-                "logging" in path_str or
-                "utils" in path_str or
-                "error" in path_str or
-                path_str.endswith("validate.py")):
+            if (
+                path_str.endswith("__version__.py")
+                or path_str.endswith("__init__.py")
+                or "logging" in path_str
+                or "utils" in path_str
+                or "error" in path_str
+                or path_str.endswith("validate.py")
+            ):
                 simple_files.append(py_file)
-        
+
         print(f"Found {len(simple_files)} key modules to document")
-        
+
         # Generate documentation for each simple file
         for py_file in simple_files:
             rel_path = py_file.relative_to(src_dir)
@@ -211,7 +213,7 @@ def generate_api_docs(project_root: Path | None = None) -> bool:
                     f"rxiv_maker/{rel_path}",
                     "--output-path",
                     str(docs_dir),
-                    "--no-watermark", 
+                    "--no-watermark",
                     "--remove-package-prefix",
                     "--src-base-url",
                     "https://github.com/henriqueslab/rxiv-maker/blob/main/src",
@@ -227,11 +229,11 @@ def generate_api_docs(project_root: Path | None = None) -> bool:
                     env=env,
                     cwd=src_path,  # Run from src directory
                 )  # nosec B603
-                
+
                 successful_files.append(rel_path)
                 print(f"✅ {rel_path} documented successfully")
-                
-            except subprocess.CalledProcessError as e:
+
+            except subprocess.CalledProcessError:
                 failed_files.append(rel_path)
                 print(f"❌ Failed to document {rel_path}")
                 # Don't print detailed errors to keep output clean

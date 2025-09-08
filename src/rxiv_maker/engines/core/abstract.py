@@ -639,44 +639,41 @@ class AbstractContainerEngine(ABC):
         except ValueError:
             output_rel = Path("output") / output_file.name
 
-        # Python script for Mermaid generation using Kroki service
+        # Python script for Mermaid generation using mermaid.ink service
         python_script = f'''
 import sys
 import base64
 import urllib.request
 import urllib.parse
-import zlib
 from pathlib import Path
 
 def generate_mermaid_svg():
-    """Generate SVG from Mermaid using Kroki service."""
+    """Generate SVG from Mermaid using mermaid.ink service."""
     try:
         # Read the Mermaid file
         with open("/workspace/{input_rel}", "r") as f:
             mermaid_content = f.read().strip()
 
-        # Use Kroki service for Mermaid rendering
-        encoded_content = base64.urlsafe_b64encode(
-            zlib.compress(mermaid_content.encode("utf-8"))
-        ).decode("ascii")
+        # Use mermaid.ink service for Mermaid rendering (simple base64 encoding)
+        encoded_content = base64.b64encode(mermaid_content.encode("utf-8")).decode("ascii")
 
-        kroki_url = f"https://kroki.io/mermaid/svg/{{encoded_content}}"
+        mermaid_url = f"https://mermaid.ink/svg/{{encoded_content}}"
 
         try:
-            with urllib.request.urlopen(kroki_url, timeout=30) as response:
+            with urllib.request.urlopen(mermaid_url, timeout=30) as response:
                 if response.status == 200:
                     svg_content = response.read().decode("utf-8")
 
                     with open("/workspace/{output_rel}", "w") as f:
                         f.write(svg_content)
 
-                    print("Generated SVG using Kroki service")
+                    print("Generated SVG using mermaid.ink service")
                     return 0
                 else:
-                    raise Exception(f"Kroki service returned status {{response.status}}")
+                    raise Exception(f"mermaid.ink service returned status {{response.status}}")
 
-        except Exception as kroki_error:
-            print(f"Kroki service unavailable: {{kroki_error}}")
+        except Exception as mermaid_error:
+            print(f"mermaid.ink service unavailable: {{mermaid_error}}")
             # Fall back to a simple SVG placeholder
             fallback_svg = f"""<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="800" height="400" viewBox="0 0 800 400">
@@ -693,7 +690,7 @@ def generate_mermaid_svg():
             with open("/workspace/{output_rel}", "w") as f:
                 f.write(fallback_svg)
 
-            print("Generated fallback SVG (Kroki service unavailable)")
+            print("Generated fallback SVG (mermaid.ink service unavailable)")
             return 0
 
     except Exception as e:

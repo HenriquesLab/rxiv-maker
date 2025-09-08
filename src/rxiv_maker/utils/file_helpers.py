@@ -3,6 +3,8 @@
 import os
 from pathlib import Path
 
+from ..core.managers.file_manager import get_file_manager
+
 
 # Lazy import to avoid circular dependencies
 def _get_path_manager():
@@ -22,11 +24,17 @@ def create_output_dir(output_dir: str) -> None:
     Args:
         output_dir: Path to the output directory to create.
     """
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-        print(f"Created output directory: {output_dir}")
-    else:
+    # Check if directory already exists before creating for proper message
+    already_exists = os.path.exists(output_dir)
+
+    file_manager = get_file_manager()
+    file_manager.ensure_directory(output_dir)
+
+    # Legacy output messages for compatibility
+    if already_exists:
         print(f"Output directory already exists: {output_dir}")
+    else:
+        print(f"Created output directory: {output_dir}")
 
 
 def find_manuscript_md(manuscript_path: str | None = None) -> Path:
@@ -155,8 +163,10 @@ def write_manuscript_output(output_dir: str, template_content: str, manuscript_n
         manuscript_name = "MANUSCRIPT"
 
     output_file = Path(output_dir) / f"{manuscript_name}.tex"
-    with open(output_file, "w", encoding="utf-8") as f:
-        f.write(template_content)
+
+    # Use centralized file manager for consistent file operations
+    file_manager = get_file_manager()
+    file_manager.write_text_file(output_file, template_content, create_parents=True)
 
     print(f"Generated manuscript: {output_file}")
     return str(output_file)

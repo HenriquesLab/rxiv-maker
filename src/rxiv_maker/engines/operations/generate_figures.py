@@ -182,14 +182,14 @@ class FigureGenerator:
                         print(f"⏭️ Skipping {mmd_file.name}: No changes detected")
                     continue
 
-            # Use local Mermaid generation via web service (Kroki)
+            # Use local Mermaid generation via web service (mermaid.ink)
             try:
                 if use_rich:
                     print(f"🎨 [cyan]Generating {self.output_format.upper()} from {mmd_file.name}[/cyan]")
                 else:
                     print(f"🎨 Generating {self.output_format.upper()} from {mmd_file.name}")
 
-                success = self._generate_mermaid_via_kroki(mmd_file, output_file)
+                success = self._generate_mermaid_via_mermaid_ink(mmd_file, output_file)
 
                 if success:
                     processed_files.append(mmd_file)
@@ -210,8 +210,8 @@ class FigureGenerator:
 
         return processed_files
 
-    def _generate_mermaid_via_kroki(self, input_file: Path, output_file: Path) -> bool:
-        """Generate Mermaid diagram using Kroki online service."""
+    def _generate_mermaid_via_mermaid_ink(self, input_file: Path, output_file: Path) -> bool:
+        """Generate Mermaid diagram using mermaid.ink online service."""
         try:
             # Read the Mermaid file
             with open(input_file, "r", encoding="utf-8") as f:
@@ -274,7 +274,7 @@ class FigureGenerator:
                 # For PNG/PDF, we'd need additional libraries, so just create a text file
                 with open(output_file.with_suffix(".txt"), "w", encoding="utf-8") as f:
                     f.write(f"Mermaid diagram placeholder for {input_file.name}\n")
-                    f.write("Kroki service unavailable - diagram generation failed\n")
+                    f.write("mermaid.ink service unavailable - diagram generation failed\n")
                 return True
         except Exception:
             return False
@@ -372,9 +372,23 @@ class FigureGenerator:
                     output_path = self.figures_dir / match
                     outputs.append(str(output_path))
 
+            # If no specific patterns found, assume standard naming convention
+            # Many Python scripts save using the script name as base
+            if not outputs:
+                base_name = py_file.stem  # filename without extension
+                # Check for common output formats
+                for ext in [".pdf", ".png", ".svg"]:
+                    expected_file = self.figures_dir / f"{base_name}{ext}"
+                    if expected_file.exists() or ext == ".pdf":  # Always expect PDF as default
+                        outputs.append(str(expected_file))
+                        break
+
             return outputs
         except Exception:
-            return []
+            # Fallback: assume PDF output with same name as script
+            base_name = py_file.stem
+            expected_file = self.figures_dir / f"{base_name}.pdf"
+            return [str(expected_file)]
 
     def _execute_r_files(self, progress=None, task_id=None, use_rich: bool = True):
         """Execute R scripts to generate figures using local R."""
@@ -478,9 +492,23 @@ class FigureGenerator:
                     output_path = self.figures_dir / match
                     outputs.append(str(output_path))
 
+            # If no specific patterns found, assume standard naming convention
+            # Many R scripts save using the script name as base
+            if not outputs:
+                base_name = r_file.stem  # filename without extension
+                # Check for common output formats
+                for ext in [".pdf", ".png", ".svg"]:
+                    expected_file = self.figures_dir / f"{base_name}{ext}"
+                    if expected_file.exists() or ext == ".pdf":  # Always expect PDF as default
+                        outputs.append(str(expected_file))
+                        break
+
             return outputs
         except Exception:
-            return []
+            # Fallback: assume PDF output with same name as script
+            base_name = r_file.stem
+            expected_file = self.figures_dir / f"{base_name}.pdf"
+            return [str(expected_file)]
 
     def _check_rscript(self) -> bool:
         """Check if Rscript is available in the system."""

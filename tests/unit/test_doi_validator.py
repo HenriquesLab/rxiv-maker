@@ -548,6 +548,15 @@ class TestDOIValidator(unittest.TestCase):
         os.makedirs(unique_cache)
 
         try:
+            # Create required config file for manuscript directory detection
+            config_content = """
+title: "Test Manuscript"
+authors:
+  - name: "Test Author"
+"""
+            with open(os.path.join(unique_manuscript, "00_CONFIG.yml"), "w") as f:
+                f.write(config_content)
+
             # Create a simple bib file with valid DOI format
             bib_content = """
 @article{cached_test,
@@ -561,6 +570,10 @@ class TestDOIValidator(unittest.TestCase):
 
             with open(os.path.join(unique_manuscript, "03_REFERENCES.bib"), "w") as f:
                 f.write(bib_content)
+
+            # Change to manuscript directory for auto-detection to work
+            original_cwd = os.getcwd()
+            os.chdir(unique_manuscript)
 
             # Test with offline validation to avoid network issues in parallel tests
             validator1 = DOIValidator(
@@ -586,6 +599,8 @@ class TestDOIValidator(unittest.TestCase):
             self.assertEqual(result1.metadata["total_dois"], result2.metadata["total_dois"])
 
         finally:
+            # Restore original working directory
+            os.chdir(original_cwd)
             # Clean up temporary directory
             shutil.rmtree(unique_temp, ignore_errors=True)
 

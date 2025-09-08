@@ -44,7 +44,7 @@ click.rich_click.COMMAND_GROUPS = {
         },
         {
             "name": "Configuration",
-            "commands": ["cache", "check-installation", "completion"],
+            "commands": ["cache", "config", "check-installation", "completion"],
         },
         {
             "name": "Information",
@@ -212,6 +212,7 @@ main.add_command(commands.track_changes)
 main.add_command(commands.setup)
 main.add_command(commands.version)
 main.add_command(commands.cache, name="cache")
+main.add_command(commands.config, name="config")
 main.add_command(check_installation, name="check-installation")
 main.add_command(commands.completion_cmd, name="completion")
 # Removed: containers command (deprecated with container engine support)

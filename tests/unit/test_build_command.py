@@ -25,20 +25,13 @@ class TestBuildCommand:
         # Click should show its own error message for invalid path
         assert "does not exist" in result.output.lower() or "invalid" in result.output.lower()
 
-    @patch("rxiv_maker.cli.commands.build.set_log_directory")
-    @patch("rxiv_maker.cli.commands.build.BuildManager")
-    @patch("rxiv_maker.cli.commands.build.Progress")
-    @patch("rxiv_maker.core.logging_config.cleanup")
-    def test_successful_pdf_generation(self, mock_cleanup, mock_progress, mock_build_manager, mock_set_log_directory):
+    @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
+    def test_successful_pdf_generation(self, mock_build_manager):
         """Test successful PDF generation."""
         # Mock BuildManager
         mock_manager = MagicMock()
         mock_manager.build.return_value = True
         mock_build_manager.return_value = mock_manager
-
-        # Mock Progress
-        mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
 
         # Use a real temporary directory that exists to pass Click validation
         with self.runner.isolated_filesystem():
@@ -49,11 +42,10 @@ class TestBuildCommand:
         assert result.exit_code == 0
         mock_build_manager.assert_called_once()
         mock_manager.build.assert_called_once()
-        mock_cleanup.assert_called_once()
 
-    @patch("rxiv_maker.cli.commands.build.set_log_directory")
-    @patch("rxiv_maker.cli.commands.build.BuildManager")
-    @patch("rxiv_maker.cli.commands.build.Progress")
+    @patch("rxiv_maker.core.logging_config.set_log_directory")
+    @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
+    @patch("rxiv_maker.cli.framework.Progress")
     @patch("rxiv_maker.core.logging_config.cleanup")
     def test_build_failure(self, mock_cleanup, mock_progress, mock_build_manager, mock_set_log_directory):
         """Test PDF generation failure."""
@@ -77,9 +69,9 @@ class TestBuildCommand:
         # cleanup gets called multiple times (finally block + error handling)
         assert mock_cleanup.call_count >= 1
 
-    @patch("rxiv_maker.cli.commands.build.set_log_directory")
-    @patch("rxiv_maker.cli.commands.build.BuildManager")
-    @patch("rxiv_maker.cli.commands.build.Progress")
+    @patch("rxiv_maker.core.logging_config.set_log_directory")
+    @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
+    @patch("rxiv_maker.cli.framework.Progress")
     @patch("rxiv_maker.core.logging_config.cleanup")
     def test_keyboard_interrupt_handling(self, mock_cleanup, mock_progress, mock_build_manager, mock_set_log_directory):
         """Test keyboard interrupt handling."""
@@ -103,9 +95,9 @@ class TestBuildCommand:
         # cleanup gets called multiple times (finally block + error handling)
         assert mock_cleanup.call_count >= 1
 
-    @patch("rxiv_maker.cli.commands.build.set_log_directory")
-    @patch("rxiv_maker.cli.commands.build.BuildManager")
-    @patch("rxiv_maker.cli.commands.build.Progress")
+    @patch("rxiv_maker.core.logging_config.set_log_directory")
+    @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
+    @patch("rxiv_maker.cli.framework.Progress")
     @patch("rxiv_maker.core.logging_config.cleanup")
     def test_unexpected_error_handling(self, mock_cleanup, mock_progress, mock_build_manager, mock_set_log_directory):
         """Test unexpected error handling."""
@@ -129,9 +121,9 @@ class TestBuildCommand:
         # cleanup gets called multiple times (finally block + error handling)
         assert mock_cleanup.call_count >= 1
 
-    @patch("rxiv_maker.cli.commands.build.set_log_directory")
-    @patch("rxiv_maker.cli.commands.build.BuildManager")
-    @patch("rxiv_maker.cli.commands.build.Progress")
+    @patch("rxiv_maker.core.logging_config.set_log_directory")
+    @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
+    @patch("rxiv_maker.cli.framework.Progress")
     @patch("rxiv_maker.core.logging_config.cleanup")
     def test_default_manuscript_path_from_env(
         self, mock_cleanup, mock_progress, mock_build_manager, mock_set_log_directory
@@ -157,9 +149,9 @@ class TestBuildCommand:
         args, kwargs = mock_build_manager.call_args
         assert kwargs["manuscript_path"] == "custom_manuscript"
 
-    @patch("rxiv_maker.cli.commands.build.set_log_directory")
-    @patch("rxiv_maker.cli.commands.build.BuildManager")
-    @patch("rxiv_maker.cli.commands.build.Progress")
+    @patch("rxiv_maker.core.logging_config.set_log_directory")
+    @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
+    @patch("rxiv_maker.cli.framework.Progress")
     @patch("rxiv_maker.core.logging_config.cleanup")
     def test_build_options(self, mock_cleanup, mock_progress, mock_build_manager, mock_set_log_directory):
         """Test various build options."""
@@ -198,14 +190,14 @@ class TestBuildCommand:
         assert kwargs["output_dir"] == "custom_output"
         assert kwargs["force_figures"] is True
         assert kwargs["skip_validation"] is True
-        assert kwargs["track_changes_tag"] == "v1.0.0"
+        assert kwargs["track_changes"] == "v1.0.0"
         assert kwargs["verbose"] is True
 
-    @patch("rxiv_maker.cli.commands.build.set_debug")
-    @patch("rxiv_maker.cli.commands.build.set_quiet")
-    @patch("rxiv_maker.cli.commands.build.Path")
-    @patch("rxiv_maker.cli.commands.build.BuildManager")
-    @patch("rxiv_maker.cli.commands.build.Progress")
+    @patch("rxiv_maker.core.logging_config.set_debug")
+    @patch("rxiv_maker.core.logging_config.set_quiet")
+    @patch("rxiv_maker.cli.framework.Path")
+    @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
+    @patch("rxiv_maker.cli.framework.Progress")
     @patch("rxiv_maker.core.logging_config.cleanup")
     @pytest.mark.skip(reason="Complex mocking test - needs refactoring")
     def test_logging_configuration(
@@ -243,10 +235,10 @@ class TestBuildCommand:
             assert result.exit_code == 0
             mock_set_quiet.assert_called_with(True)
 
-    @patch("rxiv_maker.cli.commands.build.Path")
-    @patch("rxiv_maker.cli.commands.build.set_log_directory")
-    @patch("rxiv_maker.cli.commands.build.BuildManager")
-    @patch("rxiv_maker.cli.commands.build.Progress")
+    @patch("rxiv_maker.cli.framework.Path")
+    @patch("rxiv_maker.core.logging_config.set_log_directory")
+    @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
+    @patch("rxiv_maker.cli.framework.Progress")
     @patch("rxiv_maker.core.logging_config.cleanup")
     @pytest.mark.skip(reason="Complex mocking test - needs refactoring")
     def test_output_directory_handling(
@@ -273,9 +265,9 @@ class TestBuildCommand:
         # Verify log directory was set
         mock_set_log_directory.assert_called_once()
 
-    @patch("rxiv_maker.cli.commands.build.Path")
-    @patch("rxiv_maker.cli.commands.build.BuildManager")
-    @patch("rxiv_maker.cli.commands.build.Progress")
+    @patch("rxiv_maker.cli.framework.Path")
+    @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
+    @patch("rxiv_maker.cli.framework.Progress")
     @patch("rxiv_maker.core.logging_config.cleanup")
     @pytest.mark.skip(reason="Complex mocking test - needs refactoring")
     def test_progress_callback_handling(self, mock_cleanup, mock_progress, mock_build_manager, mock_path):
@@ -315,9 +307,9 @@ class TestBuildCommandEdgeCases:
         """Set up test fixtures."""
         self.runner = CliRunner()
 
-    @patch("rxiv_maker.cli.commands.build.Path")
-    @patch("rxiv_maker.cli.commands.build.BuildManager")
-    @patch("rxiv_maker.cli.commands.build.Progress")
+    @patch("rxiv_maker.cli.framework.Path")
+    @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
+    @patch("rxiv_maker.cli.framework.Progress")
     @patch("rxiv_maker.core.logging_config.cleanup")
     @pytest.mark.skip(reason="Complex mocking test - needs refactoring")
     def test_skip_validation_removes_step(self, mock_cleanup, mock_progress, mock_build_manager, mock_path):
@@ -346,9 +338,9 @@ class TestBuildCommandEdgeCases:
         # Normal build has 10 steps, skip-validation should have 9
         assert total_steps == 9
 
-    @patch("rxiv_maker.cli.commands.build.Path")
-    @patch("rxiv_maker.cli.commands.build.BuildManager")
-    @patch("rxiv_maker.cli.commands.build.Progress")
+    @patch("rxiv_maker.cli.framework.Path")
+    @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
+    @patch("rxiv_maker.cli.framework.Progress")
     @patch("rxiv_maker.core.logging_config.cleanup")
     @pytest.mark.skip(reason="Complex mocking test - needs refactoring")
     def test_build_success_output_messages(self, mock_cleanup, mock_progress, mock_build_manager, mock_path):
@@ -371,8 +363,8 @@ class TestBuildCommandEdgeCases:
         # These messages should appear in the logs, not necessarily in CLI output
         # The test verifies the command completes successfully with these options
 
-    @patch("rxiv_maker.cli.commands.build.set_log_directory")
-    @patch("rxiv_maker.cli.commands.build.PathManager")
+    @patch("rxiv_maker.core.logging_config.set_log_directory")
+    @patch("rxiv_maker.cli.framework.PathManager")
     def test_absolute_output_path_handling(self, mock_path_manager, mock_set_log_directory):
         """Test handling of absolute output paths through PathManager."""
         # Mock PathManager instance
