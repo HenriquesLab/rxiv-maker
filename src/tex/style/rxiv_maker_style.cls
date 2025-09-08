@@ -103,14 +103,25 @@
 \crefname{section}{Sup. Note}{notes}
 \crefname{sfigure}{SFig.}{sfigures}
 
-%% Float parameters to eliminate white space and improve text flow
-\renewcommand{\floatpagefraction}{0.7}   % Fill 70% of dedicated float pages (default: 0.2) - conservative improvement
-\renewcommand{\topfraction}{0.8}         % Allow 80% of page top for floats (default: 0.7) - moderate increase
-\renewcommand{\bottomfraction}{0.7}      % Allow 70% of page bottom for floats (default: 0.3) - reasonable increase
-\renewcommand{\textfraction}{0.1}        % Require 10% text per page (default: 0.2) - safe permissive setting
-\setcounter{totalnumber}{10}             % Allow reasonable floats per page (default: 3) - prevents memory issues
-\setcounter{topnumber}{5}                % Allow moderate floats at top (default: 2) - balanced approach
-\setcounter{bottomnumber}{5}             % Allow moderate floats at bottom (default: 1) - balanced approach
+%% Unified float parameters for consistent spacing
+\renewcommand{\topfraction}{0.85}          % Maximum fraction of page for top floats
+\renewcommand{\bottomfraction}{0.70}       % Maximum fraction of page for bottom floats
+\renewcommand{\textfraction}{0.15}         % Minimum fraction of page for text
+\renewcommand{\floatpagefraction}{0.70}    % Minimum fraction for float-only pages
+\setcounter{topnumber}{3}                   % Max floats at top of page
+\setcounter{bottomnumber}{2}               % Max floats at bottom of page
+\setcounter{totalnumber}{5}                % Max floats per page total
+
+%% Consistent spacing around floats
+\setlength{\floatsep}{12pt plus 2pt minus 2pt}        % Between consecutive floats
+\setlength{\textfloatsep}{12pt plus 2pt minus 2pt}    % Between text and float
+\setlength{\intextsep}{12pt plus 2pt minus 2pt}       % For wrapped floats
+\setlength{\dblfloatsep}{12pt plus 2pt minus 2pt}     % Between double-column floats
+\setlength{\dbltextfloatsep}{12pt plus 2pt minus 2pt} % Between text and double-column float
+
+%% Caption spacing - uniform for figures and tables
+\setlength{\abovecaptionskip}{8pt}         % Space above captions
+\setlength{\belowcaptionskip}{8pt}         % Space below captions (positive value)
 
 %% Custom command for supplementary notes that properly increments counter and displays number
 \newcommand{\suppnotesection}[1]{%
@@ -259,11 +270,17 @@
 \parsep             \z@
 \itemsep            \z@
 
-%%
-\abovedisplayskip       0pt plus2pt minus5pt%
-\belowdisplayskip       \abovedisplayskip
-\abovedisplayshortskip  0pt plus3pt%
-\belowdisplayshortskip  0pt plus3pt minus3pt%
+%% Consistent list spacing
+\setlength{\topsep}{0.2ex plus 0.1ex minus 0.1ex}     % Space before/after list
+\setlength{\partopsep}{0.1ex plus 0.05ex minus 0.05ex}  % Extra space for paragraph lists
+\setlength{\itemsep}{0.1ex plus 0.05ex minus 0.05ex}   % Space between items
+\setlength{\parsep}{0.1ex plus 0.05ex}                 % Space between paragraphs in item
+
+%% Display equation spacing
+\abovedisplayskip       8pt plus 2pt minus 4pt
+\belowdisplayskip       8pt plus 2pt minus 4pt
+\abovedisplayshortskip  6pt plus 1pt minus 2pt
+\belowdisplayshortskip  6pt plus 1pt minus 2pt
 
 \arraycolsep     5pt
 \tabcolsep       6pt
@@ -283,29 +300,6 @@
 
 \newdimen\@maxsep
 \newdimen\@dblmaxsep
-%% Definitions for floats
-%%
-%% Normal Floats                      %% Double Column Floats
-\floatsep 12pt plus 2pt minus 2pt     \dblfloatsep 12pt plus 2pt minus 2pt
-\textfloatsep 20pt plus 2pt minus 4pt \dbltextfloatsep 20pt plus 2pt minus 4pt
-\@maxsep 20pt                         \@dblmaxsep 20pt
-\@fptop 0pt plus 1fil                 \@dblfptop 0pt plus 1fil
-\@fpsep 8pt plus 2fil                 \@dblfpsep 8pt plus 2fil
-\@fpbot 0pt plus 1fil                 \@dblfpbot 0pt plus 1fil
-\def\topfraction{1.0}                 \def\dbltopfraction{1.0}
-\def\floatpagefraction{0.8}           \def\dblfloatpagefraction{0.8}
-\setcounter{topnumber}{2}             \setcounter{dbltopnumber}{4}
-\intextsep 12pt plus 2pt minus 2pt
-\setcounter{bottomnumber}{2}
-\def\bottomfraction{.1}
-\setcounter{totalnumber}{4}
-\def\textfraction{.1}
-\setlength{\belowcaptionskip}{-10pt} % reduces spacing between figure legend and text
-
-\renewcommand{\topfraction}{0.99}
-\renewcommand{\floatpagefraction}{0.5}
-\renewcommand{\bottomfraction}{0.99}
-\renewcommand{\textfraction}{0.01}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% %%
 %% Jacquemet and Henriques lab parts adapted from PNAS %%
