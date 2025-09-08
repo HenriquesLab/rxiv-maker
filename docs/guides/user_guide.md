@@ -33,7 +33,7 @@ echo "====================================="
 
 # 1. Health check and current state
 echo "🔍 Checking manuscript quality..."
-rxiv validate --quick && echo "✅ Structure OK" || echo "⚠️ Issues found"
+rxiv validate && echo "✅ Structure OK" || echo "⚠️ Issues found"
 
 # 2. Interactive editing prompt
 echo "📝 Time to edit! Open your files:"
@@ -75,7 +75,7 @@ echo "📁 Project: $(basename $(pwd))"
 
 # Quick manuscript validation
 echo "🔍 Quick health check..."
-rxiv validate --syntax-only
+rxiv validate
 
 if [ $? -eq 0 ]; then
     echo "✅ Manuscript structure OK"
@@ -85,7 +85,7 @@ fi
 
 # Preview current state
 echo "📄 Generating current preview..."
-rxiv pdf --skip-validation --fast
+rxiv pdf --skip-validation
 
 # Figure freshness check
 echo "📊 Checking figures..."
@@ -116,7 +116,7 @@ while true; do
     echo "📝 Make your edits, then press Enter (or Ctrl+C to quit)"
     read
     echo "🚀 Fast build: $(date '+%H:%M:%S')"
-    rxiv pdf --skip-validation --fast --quiet
+    rxiv pdf --skip-validation --quiet
     
     if [ $? -eq 0 ]; then
         echo "✅ Updated successfully"

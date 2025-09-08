@@ -10,7 +10,7 @@
 
 ```bash
 # 🔥 Nuclear option - clean everything and rebuild
-rxiv clean --all && rxiv check-installation --fix && rxiv pdf
+rxiv clean --all && rxiv setup && rxiv pdf
 
 # 🔍 Debug mode - see what's failing  
 rxiv pdf --verbose

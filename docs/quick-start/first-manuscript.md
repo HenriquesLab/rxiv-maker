@@ -25,7 +25,7 @@ rxiv --version && echo "✅ CLI Working" && rxiv check-installation && echo "✅
 
 **Expected Output:**
 ```
-rxiv-maker v1.5.26
+rxiv-maker v1.6.4
 ✅ CLI Working  
 🔍 Checking Python environment... ✅
 🔍 Checking LaTeX installation... ✅
@@ -34,7 +34,7 @@ rxiv-maker v1.5.26
 🎉 Installation Complete!
 ```
 
-**If verification fails:** Run `rxiv check-installation --fix` to auto-install missing dependencies.
+**If verification fails:** Run `rxiv setup` to install missing dependencies, or see the [installation guide](installation.md) for manual dependency installation.
 
 ## Step 2: Create Your First Manuscript (1 minute)
 
@@ -72,7 +72,7 @@ Scientific writing has never been easier. With Rxiv-Maker, you can:
 
 ## Methods
 
-We used Rxiv-Maker version 1.8+ to generate this manuscript.
+We used Rxiv-Maker version 1.6+ to generate this manuscript.
 
 ## Results
 
@@ -153,7 +153,7 @@ Ready to learn more? Continue with:
 1. **[Writing Guide](../guides/user_guide.md)** - Advanced Markdown features
 2. **[Figures Guide](../guides/figures-guide.md)** - Complex figure positioning
 3. **[Publishing Guide](../guides/publishing-guide.md)** - arXiv submission
-4. **[CLI Commands](../reference/cli-commands.md)** - Complete command reference
+4. **[CLI Commands](../reference/cli-reference.md)** - Complete command reference
 
 ## Troubleshooting
 

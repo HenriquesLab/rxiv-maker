@@ -140,7 +140,7 @@ rxiv config set general.engine docker
 # New CLI provides detailed checks
 rxiv check-installation
 rxiv check-installation --detailed
-rxiv check-installation --fix  # Auto-fix issues
+rxiv setup  # Install any missing dependencies
 ```
 
 ### Version Information

@@ -58,12 +58,17 @@ wsl --install -d Ubuntu-22.04
 # 4. Update system
 sudo apt update && sudo apt upgrade -y
 
-# 5. Add APT repository and install rxiv-maker with dependencies
-sudo apt install ca-certificates
-curl -fsSL https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg
-echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/rxiv-maker.gpg] https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo stable main' | sudo tee /etc/apt/sources.list.d/rxiv-maker.list
-sudo apt update
-sudo apt install rxiv-maker
+# 5. Install rxiv-maker (use pip method for reliable installation)
+sudo apt install python3-pip python3-venv
+pip install rxiv-maker
+
+# Alternative: APT repository (if available)
+# Note: APT repository may not always be current - pip is recommended
+# sudo apt install ca-certificates
+# curl -fsSL https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg
+# echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/rxiv-maker.gpg] https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo stable main' | sudo tee /etc/apt/sources.list.d/rxiv-maker.list
+# sudo apt update
+# sudo apt install rxiv-maker
 
 # 6. Verify installation
 rxiv check-installation
@@ -98,6 +103,8 @@ rxiv init my-awesome-paper/
 
 **Package manager installation for macOS with automatic dependency management.**
 
+> **Note**: Homebrew formula availability may vary. If the tap is not available, use the [pip installation method](#-modern-cli-pip) instead.
+
 ### Prerequisites
 - macOS 10.15 or later
 - [Homebrew](https://brew.sh) package manager
@@ -109,6 +116,9 @@ brew tap henriqueslab/rxiv-maker
 
 # Install rxiv-maker and dependencies
 brew install rxiv-maker
+
+# If tap is not available, use pip instead:
+# pip install rxiv-maker
 
 # Verify installation
 rxiv check-installation
@@ -249,7 +259,7 @@ pip install rxiv-maker
 rxiv check-installation
 
 # Install system dependencies (if needed)
-rxiv check-installation --fix
+rxiv setup
 
 # Initialize your first manuscript
 rxiv init MY_PAPER/
@@ -286,7 +296,7 @@ The CLI will automatically detect and help install required system dependencies:
 rxiv check-installation --detailed
 
 # Auto-install missing dependencies (admin rights may be required)
-rxiv check-installation --fix
+rxiv setup
 ```
 
 ---
