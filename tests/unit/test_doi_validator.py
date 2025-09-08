@@ -115,6 +115,11 @@ class TestDOIValidator(unittest.TestCase):
         os.makedirs(self.manuscript_dir)
         os.makedirs(self.cache_dir)
 
+        # Create config file to make this a valid manuscript directory
+        config_path = os.path.join(self.manuscript_dir, "00_CONFIG.yml")
+        with open(config_path, "w") as f:
+            f.write("title: Test Manuscript\nauthor: Test Author\n")
+
     def tearDown(self):
         """Clean up test fixtures."""
         import shutil
@@ -124,33 +129,39 @@ class TestDOIValidator(unittest.TestCase):
     @pytest.mark.fast
     def test_doi_format_validation(self):
         """Test DOI format validation."""
-        validator = DOIValidator(
-            self.manuscript_dir,
-            enable_online_validation=False,
-            cache_dir=self.cache_dir,
-        )
+        # Change to manuscript directory so find_manuscript_directory() works
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(self.manuscript_dir)
+            validator = DOIValidator(
+                self.manuscript_dir,
+                enable_online_validation=False,
+                cache_dir=self.cache_dir,
+            )
 
-        # Test valid DOI formats
-        valid_dois = [
-            "10.1000/test.2023.001",
-            "10.1109/MCSE.2007.55",
-            "10.1093/comjnl/27.2.97",
-            "10.1371/journal.pcbi.1003285",
-        ]
+            # Test valid DOI formats
+            valid_dois = [
+                "10.1000/test.2023.001",
+                "10.1109/MCSE.2007.55",
+                "10.1093/comjnl/27.2.97",
+                "10.1371/journal.pcbi.1003285",
+            ]
 
-        for doi in valid_dois:
-            self.assertTrue(validator.DOI_REGEX.match(doi), f"Valid DOI failed: {doi}")
+            for doi in valid_dois:
+                self.assertTrue(validator.DOI_REGEX.match(doi), f"Valid DOI failed: {doi}")
 
-        # Test invalid DOI formats
-        invalid_dois = [
-            "not-a-doi",
-            "10.test/invalid",
-            "10./invalid",
-            "doi:10.1000/test",
-        ]
+            # Test invalid DOI formats
+            invalid_dois = [
+                "not-a-doi",
+                "10.test/invalid",
+                "10./invalid",
+                "doi:10.1000/test",
+            ]
 
-        for doi in invalid_dois:
-            self.assertFalse(validator.DOI_REGEX.match(doi), f"Invalid DOI passed: {doi}")
+            for doi in invalid_dois:
+                self.assertFalse(validator.DOI_REGEX.match(doi), f"Invalid DOI passed: {doi}")
+        finally:
+            os.chdir(old_cwd)
 
     def test_bib_entry_extraction(self):
         """Test BibTeX entry extraction."""
@@ -181,24 +192,30 @@ class TestDOIValidator(unittest.TestCase):
         with open(os.path.join(self.manuscript_dir, "03_REFERENCES.bib"), "w") as f:
             f.write(bib_content)
 
-        validator = DOIValidator(
-            self.manuscript_dir,
-            enable_online_validation=False,
-            cache_dir=self.cache_dir,
-        )
-        entries = validator._extract_bib_entries(bib_content)
+        # Change to manuscript directory so find_manuscript_directory() works
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(self.manuscript_dir)
+            validator = DOIValidator(
+                self.manuscript_dir,
+                enable_online_validation=False,
+                cache_dir=self.cache_dir,
+            )
+            entries = validator._extract_bib_entries(bib_content)
 
-        # Should extract 3 entries
-        self.assertEqual(len(entries), 3)
+            # Should extract 3 entries
+            self.assertEqual(len(entries), 3)
 
-        # Check entries with DOIs
-        entries_with_doi = [e for e in entries if "doi" in e]
-        self.assertEqual(len(entries_with_doi), 2)
+            # Check entries with DOIs
+            entries_with_doi = [e for e in entries if "doi" in e]
+            self.assertEqual(len(entries_with_doi), 2)
 
-        # Check specific entry
-        test1_entry = next(e for e in entries if e["entry_key"] == "test1")
-        self.assertEqual(test1_entry["title"], "Test Article One")
-        self.assertEqual(test1_entry["doi"], "10.1000/test1.2023.001")
+            # Check specific entry
+            test1_entry = next(e for e in entries if e["entry_key"] == "test1")
+            self.assertEqual(test1_entry["title"], "Test Article One")
+            self.assertEqual(test1_entry["doi"], "10.1000/test1.2023.001")
+        finally:
+            os.chdir(old_cwd)
 
     def test_validation_without_bib_file(self):
         """Test validation when bibliography file doesn't exist."""
@@ -450,21 +467,27 @@ class TestDOIValidator(unittest.TestCase):
         with open(os.path.join(self.manuscript_dir, "03_REFERENCES.bib"), "w") as f:
             f.write(bib_content)
 
-        validator = DOIValidator(
-            self.manuscript_dir,
-            enable_online_validation=True,
-            cache_dir=self.cache_dir,
-            ignore_ci_environment=True,
-            force_validation=True,
-        )
-        result = validator.validate()
+        # Change to manuscript directory so find_manuscript_directory() works
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(self.manuscript_dir)
+            validator = DOIValidator(
+                self.manuscript_dir,
+                enable_online_validation=True,
+                cache_dir=self.cache_dir,
+                ignore_ci_environment=True,
+                force_validation=True,
+            )
+            result = validator.validate()
 
-        # Should have success message for DataCite validation
-        success_messages = [error.message for error in result.errors if error.level.value == "success"]
-        self.assertTrue(any("DataCite" in msg for msg in success_messages))
+            # Should have success message for DataCite validation
+            success_messages = [error.message for error in result.errors if error.level.value == "success"]
+            self.assertTrue(any("DataCite" in msg for msg in success_messages))
 
-        # Should call the metadata validation method
-        mock_validate_metadata.assert_called()
+            # Should call the metadata validation method
+            mock_validate_metadata.assert_called()
+        finally:
+            os.chdir(old_cwd)
 
     def test_title_cleaning(self):
         """Test title cleaning for comparison."""
