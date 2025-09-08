@@ -622,7 +622,7 @@ Invalid: {{py:get nonexistent_variable}}
         result = process_custom_commands(text)
 
         assert "Valid: I exist" in result
-        assert "Error:" in result  # Should contain error message for invalid variable
+        assert "[Error" in result  # Should contain error message for invalid variable
 
     def test_py_exec_security_restrictions(self):
         """Test that security restrictions apply to py:exec."""

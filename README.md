@@ -22,21 +22,133 @@ Rxiv-Maker transforms scientific preprint writing by converting enhanced Markdow
 - **Git-Friendly**: Version control for manuscripts and figures
 - **Reproducible**: All figures generated from code
 - **Collaborative**: Standard tools, no vendor lock-in
-- **Multi-Platform**: Works everywhere with Docker support
+- **Multi-Platform**: Works everywhere with local installation
 
 ### 📈 **For Publishing**
 - **arXiv Ready**: Generate submission packages automatically
 - **Track Changes**: Visual diff between manuscript versions
 - **Quality Assurance**: Built-in validation and error checking
 
+## 🚀 Installation
+
+**Universal Installation (Recommended):**
+
+```bash
+# Using pipx (isolated environment, recommended)
+pipx install rxiv-maker
+
+# Or using pip
+pip install rxiv-maker
+```
+
+<details>
+<summary><strong>🐧 Linux Installation</strong></summary>
+
+**Ubuntu/Debian:**
+```bash
+# 1. Install system dependencies
+sudo apt update
+sudo apt install python3-pip pipx texlive-latex-recommended texlive-fonts-recommended
+
+# 2. Install rxiv-maker
+pipx install rxiv-maker
+
+# 3. Verify installation
+rxiv check-installation
+```
+
+**Red Hat/CentOS/Fedora:**
+```bash
+# 1. Install system dependencies
+sudo dnf install python3-pip texlive-latex texlive-fonts-recommended
+
+# Install pipx
+python3 -m pip install --user pipx
+python3 -m pipx ensurepath
+
+# 2. Install rxiv-maker
+pipx install rxiv-maker
+
+# 3. Verify installation  
+rxiv check-installation
+```
+
+</details>
+
+<details>
+<summary><strong>🍎 macOS Installation</strong></summary>
+
+**Prerequisites:**
+```bash
+# Install Homebrew if you don't have it
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install system dependencies
+brew install pipx
+brew install --cask mactex-no-gui  # Full LaTeX installation
+```
+
+**Installation:**
+```bash
+# Install rxiv-maker
+pipx install rxiv-maker
+
+# Verify installation
+rxiv check-installation
+```
+
+**Alternative (minimal LaTeX):**
+```bash
+# For smaller LaTeX installation
+brew install pipx basictex
+pipx install rxiv-maker
+```
+
+</details>
+
+<details>
+<summary><strong>🪟 Windows Installation</strong></summary>
+
+**Option 1: WSL2 (Recommended)**
+```bash
+# Install WSL2 with Ubuntu (Windows PowerShell as Administrator)
+wsl --install -d Ubuntu-22.04
+
+# Restart computer, then launch Ubuntu and run:
+sudo apt update
+sudo apt install python3-pip pipx texlive-latex-recommended
+pipx install rxiv-maker
+rxiv check-installation
+```
+
+**Option 2: Native Windows**
+```powershell
+# Install Chocolatey (PowerShell as Administrator)
+Set-ExecutionPolicy Bypass -Scope Process -Force
+iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+# Install dependencies
+choco install python pipx miktex
+
+# Install rxiv-maker
+pipx install rxiv-maker
+rxiv check-installation
+```
+
+</details>
+
+**Verify your installation:**
+```bash
+rxiv check-installation  # Verify all dependencies
+rxiv --version           # Check version
+rxiv --help             # View available commands
+```
+
 ## 🔥 Quick Start
 
 **Get your first PDF in under 2 minutes:**
 
 ```bash
-# Install
-pip install rxiv-maker
-
 # Create manuscript 
 rxiv init my-paper
 cd my-paper
@@ -70,7 +182,7 @@ rxiv pdf
 
 ### 🔧 **Developer Experience**
 - Modern CLI with rich output and progress bars
-- Docker support for consistent environments
+- Consistent environments with package management
 - Git-friendly workflow with meaningful diffs
 - Comprehensive validation and error reporting
 
@@ -128,15 +240,13 @@ The correlation coefficient was r = {{py:get correlation:.2f}} (p < 0.001).
 - Collaborative writing with version control
 - Supplementary materials with automated generation
 
-## 🏃‍♀️ Installation Options
+## 🏃‍♀️ Alternative Workflows
 
-**Need different installation methods?** [View all options →](docs/quick-start/installation.md)
+**Need specialized environments?**
 
-- **🔥 pip install**: Universal, works everywhere
-- **🍺 Homebrew**: macOS/Linux package management  
-- **🐳 Docker**: Containerized, zero config
-- **🌐 Google Colab**: Browser-based, no installation
-- **🪟 WSL2**: Best Windows experience
+- **🌐 Google Colab**: Browser-based editing and PDF generation  
+- **⚡ GitHub Actions**: Automated cloud builds for teams
+- **🐳 Docker**: Use [docker-rxiv-maker](https://github.com/HenriquesLab/docker-rxiv-maker) for containerized execution
 
 ## 🚀 Essential Commands
 

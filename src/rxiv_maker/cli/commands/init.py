@@ -15,12 +15,16 @@ console = Console()
 @click.argument("manuscript_path", type=click.Path(), required=False)
 @click.option("--force", "-f", is_flag=True, help="Force overwrite existing files")
 @click.option("--no-interactive", is_flag=True, help="Skip interactive prompts and use defaults")
+@click.option(
+    "--validate", is_flag=True, help="Run validation after initialization to ensure template builds correctly"
+)
 @click.pass_context
 def init(
     ctx: click.Context,
     manuscript_path: str | None,
     force: bool,
     no_interactive: bool,
+    validate: bool,
 ) -> None:
     """Initialize a new manuscript directory with template files and structure.
 
@@ -43,6 +47,10 @@ def init(
     **Force overwrite existing directory:**
 
         $ rxiv init --force
+
+    **Initialize and validate template builds correctly:**
+
+        $ rxiv init --validate
     """
     verbose = ctx.obj.get("verbose", False)
 
@@ -144,7 +152,7 @@ You can use subsections to organize your content effectively.
 
 Present your results here. For example, see @fig:example for an example workflow visualization.
 
-![](FIGURES/Figure__example/Figure__example.svg)
+![](FIGURES/Figure__example.pdf)
 {{#fig:example}} **Example Workflow.** This figure demonstrates a basic research workflow from data to publication. The diagram is generated automatically from a simple Mermaid diagram file (Figure__example.mmd) in the FIGURES directory.
 
 ## Discussion
@@ -261,6 +269,30 @@ Thumbs.db
 
         with open(manuscript_dir / ".gitignore", "w", encoding="utf-8") as f:
             f.write(gitignore_content)
+
+        # Run validation if requested
+        if validate:
+            console.print("\n🔍 Running post-initialization validation...", style="yellow")
+            try:
+                from rxiv_maker.engines.operations.validate import validate_manuscript
+
+                # Run validation on the newly created manuscript
+                result = validate_manuscript(
+                    manuscript_path=str(manuscript_dir),
+                    verbose=verbose,
+                    enable_doi_validation=False,  # Skip DOI validation for templates
+                    detailed=True,
+                )
+
+                if result:
+                    console.print("✅ Validation passed! Template is ready to build.", style="green")
+                else:
+                    console.print("⚠️  Validation found issues, but template should still build.", style="yellow")
+
+            except ImportError:
+                console.print("⚠️  Validation not available (dependencies missing)", style="yellow")
+            except Exception as e:
+                console.print(f"⚠️  Validation failed: {e}", style="yellow")
 
         console.print("✅ Manuscript initialized successfully!", style="green")
         console.print(f"📁 Created in: {manuscript_dir.absolute()}", style="blue")

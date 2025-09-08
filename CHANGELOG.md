@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.7.0] - 2025-01-08
+
+### Added
+- **🚀 Installation Streamlining**: Major architectural overhaul of installation system for simplified user experience
+  - **Universal pip/pipx Installation**: Streamlined to single pip/pipx installation method across all platforms
+  - **README Integration**: Installation instructions now prominently featured in main README with immediate visibility
+  - **Platform-Specific Guidance**: Added collapsible platform sections for Linux, macOS, and Windows
+  - **Repository Deprecation**: Deprecated apt-rxiv-maker and homebrew-rxiv-maker repositories with migration guidance
+  - **Cross-Repository Cleanup**: Removed automation and monitoring for deprecated package repositories
+  - **Documentation Consolidation**: Simplified installation.md from 8+ methods to focused pip/pipx approach
+  - **Migration Support**: Created comprehensive migration paths for existing APT and Homebrew users
+  - **Reduced Maintenance**: Eliminated maintenance overhead of separate packaging repositories
+
+- **📊 Centralized Data Management**: Introduced centralized DATA directories for better data organization
+  - **Project-Level Data**: Global DATA directory for shared datasets across manuscripts
+  - **Manuscript-Specific Data**: Individual DATA directories for manuscript-specific datasets
+  - **Example Datasets**: Added arXiv submission data and PubMed publication trends datasets
+  - **Data Accessibility**: Improved data access patterns for figure generation scripts
+
+### Fixed
+- **🎨 LaTeX Style File Optimization**: Consolidated spacing inconsistencies in LaTeX style file
+  - **Unified Float Parameters**: Removed duplicate float parameter definitions causing conflicts
+  - **Consistent List Spacing**: Added unified list spacing parameters for tighter formatting
+  - **Balanced Equation Spacing**: Fixed display equation spacing with proper balanced values
+  - **Caption Spacing**: Removed problematic negative belowcaptionskip for predictable behavior
+  - **Professional Typography**: Ensured consistent spacing behavior for figures and tables
+
+- **📚 Documentation Updates**: Updated installation and validation commands throughout documentation
+  - **CLI Command Updates**: Corrected outdated command references in user guides
+  - **Installation Instructions**: Updated setup procedures to reflect current CLI structure
+  - **Troubleshooting Guides**: Enhanced troubleshooting documentation with accurate commands
+  - **Migration Guidance**: Updated migration documentation for version compatibility
+
+### Enhanced
+- **🔧 DOI Cache System**: Improved DOI validation caching with better performance
+  - **Enhanced Reliability**: More robust caching mechanisms for DOI validation
+  - **Performance Optimization**: Faster cache access and reduced validation overhead
+  - **Error Resilience**: Better error handling for cache operations
+
+## [v1.6.4] - 2025-09-04
+
 ### Added
 - **🎯 Dynamic Version Injection**: Added dynamic version injection to Rxiv-Maker acknowledgment text
   - **Version Display**: Acknowledgment text now shows "Rxiv-Maker v{version}" instead of just "Rxiv-Maker"
@@ -33,12 +74,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Code Protection**: Prevents command processing inside code blocks and inline code
   - **Future Ready**: Framework prepared for R execution and other custom commands
 
+- **📚 Comprehensive Python Execution Documentation**: Added detailed guide for Python execution features
+  - **Complete API Reference**: Comprehensive documentation for all Python execution capabilities
+  - **Security Guidelines**: Detailed security model and best practices
+  - **Usage Examples**: Extensive examples covering common use cases and workflows
+  - **Integration Patterns**: Best practices for integrating Python execution with scientific workflows
+
+- **🛠️ Manuscript Utilities Framework**: New manuscript utilities for enhanced figure and data handling
+  - **Figure Utilities**: Centralized figure management and processing utilities
+  - **Data Processing**: Comprehensive data processing utilities for scientific manuscripts
+  - **Statistical Analysis**: Built-in statistical analysis tools for manuscript generation
+  - **Plotting Utilities**: Enhanced plotting capabilities with standardized styling
+
 ### Enhanced
 - **📚 Comprehensive Example Manuscript**: Updated figure positioning examples with Python execution demonstrations
   - **Statistical Analysis**: Examples showing data processing and statistical calculations
   - **Variable Persistence**: Demonstrated workflow with variables shared across code blocks  
   - **Security Examples**: Shows security restrictions in action
   - **Documentation**: Complete reference for all new features
+  - **PDF Output**: Updated all example figures to use PDF format for better quality
+  - **Data Integration**: Examples now demonstrate proper data management patterns
+
+- **🧪 Enhanced Testing Infrastructure**: Comprehensive expansion of test coverage
+  - **Python Execution Tests**: Extensive integration tests for Python execution features
+  - **Figure Utilities Tests**: Complete test coverage for new manuscript utilities
+  - **Cache Management Tests**: Enhanced testing for caching systems
+  - **Installation Verification**: Improved installation verification testing
 
 ### Fixed
 - **🐛 ValidationError Test Suite**: Fixed pre-existing test failure in validation test suite
@@ -46,6 +107,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Proper Import**: Updated test to import the correct `ValidationError` exception class from services module
   - **Test Coverage**: All 1542+ unit tests now pass without failures
   - **Architecture Clarity**: Improved distinction between validation dataclasses and service exceptions
+
+- **🧪 GitHub Actions Test Stability**: Resolved CI/CD pipeline test failures
+  - **PyPI Testing**: Added missing 'pypi' pytest marks to resolve warnings
+  - **DOI Integration Tests**: Fixed DOI fallback integration test environment setup
+  - **Performance Tolerance**: Increased CI timeout tolerance for performance tests (20s→30s)
+  - **Code Formatting**: Resolved linting and formatting issues across test suite
+
+- **🔧 Build Process Improvements**: Enhanced build reliability and performance
+  - **Figure Generation**: Improved figure generation pipeline with PDF output support
+  - **Cache Management**: Better cache invalidation and cleanup processes  
+  - **Error Handling**: Enhanced error reporting and graceful failure handling
 
 ## [v1.5.17] - 2025-08-17
 
@@ -64,7 +136,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Fallback Logic**: Checks current directory first, then manuscript_path subdirectory for maximum compatibility
   - **User Impact**: `02_SUPPLEMENTARY_INFO.md` files are now properly detected regardless of working directory
 
-### Technical Notes
+### Changed
 - **ContentProcessor Temporarily Disabled**: Disabled new ContentProcessor to use legacy table conversion pipeline with critical escaping fixes
 - **Future TODO**: Port table escaping fixes to ContentProcessor before re-enabling
 
@@ -110,7 +182,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **User Impact**: Eliminates "Style directory not found" warnings and ensures LaTeX style files are properly copied for all installation methods
   - **Verification**: Comprehensive package installation testing confirms fix works end-to-end in PyPI package scenario
 
-### Added  
+### Added
 - **📋 Style File Resolution Tests**: Added comprehensive test suite for style file detection and error handling
   - **Development Environment Testing**: Verification of style directory detection in development setup
   - **Fallback Behavior Testing**: Tests for graceful handling when no style directory is found
@@ -138,7 +210,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v1.5.5] - 2025-08-15
 
-### Fixed  
+### Fixed
 - **🐛 BibTeX Error Code 1 - Trailing Slash Issue**: Fixed manuscript path handling when paths contain trailing slashes
   - **Root Cause**: When users run `rxiv pdf CCT8_paper/` (with trailing slash), `os.path.basename("CCT8_paper/")` returns empty string, causing filename validation to default to "MANUSCRIPT"
   - **Mismatch Problem**: This created a mismatch where LaTeX expected to compile `CCT8_paper.tex` but only `MANUSCRIPT.tex` was generated, causing "Emergency stop" and subsequent BibTeX error code 1
@@ -488,7 +560,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Verified installation and CLI functionality from PyPI
   - All core features working correctly in production environment
 
-### Performance
+### Enhanced
 
 #### ⚡ Test Execution Speed
 - **43% Faster Validation Tests**: Optimized validation workflow for CI/CD environments
@@ -600,7 +672,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Figure Generation**: Fixed nested directory creation and output paths in figure scripts
 - **Executable Permissions**: Fixed executable permissions for files with shebangs
 
-### Performance
+### Enhanced
 
 #### 🚀 GitHub Actions Optimization
 - **5x Faster Builds**: Pre-compiled Docker images reduce build time from ~10 minutes to ~3-5 minutes
@@ -672,14 +744,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated Makefile validation targets for cleaner output
 - Enhanced error messages with actionable suggestions based on DOI type
 
-### Performance
+### Enhanced
 - Parallel API calls to multiple DOI registrars for faster validation
 - Intelligent caching reduces repeated API calls
 - Improved validation speed for manuscripts with many DOIs
 
 ---
-
-### Previous Changes
 
 ### Added
 - Enhanced Makefile with improved MANUSCRIPT_PATH handling and FIGURES directory setup instructions
@@ -770,7 +840,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Google Colab notebook support
 - arXiv submission package generation
 
-### Technical Features
+### Added
 - Content protection system for complex elements
 - Multi-stage processing pipeline
 - Automatic word count analysis
@@ -778,7 +848,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive testing suite (unit and integration)
 - Docker support (later removed in favor of native execution)
 
-### Documentation
+### Added
 - Complete user guide and API documentation
 - Platform-specific setup guides (Windows/macOS/Linux)
 - Tutorials for Google Colab and GitHub Actions
@@ -824,14 +894,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Testing framework
 - Project renaming from Article-Forge to RXiv-Forge (later Rxiv-Maker)
 
-### Features
+### Added
 - Basic manuscript processing
 - Figure generation from scripts
 - LaTeX template system
 - Word count analysis
 - Flowchart generation with Mermaid
 
-### Documentation
+### Added
 - Initial README and setup instructions
 - Basic user documentation
 - Docker installation guides

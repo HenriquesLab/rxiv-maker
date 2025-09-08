@@ -83,40 +83,54 @@ def setup(
         python_success = True
         system_success = True
 
-        # Handle Python dependencies (unless system-only mode)
+        # Handle Python dependencies (unless system-only mode or check-only outside project)
         if mode != "system-only":
-            try:
-                from ...engines.operations.setup_environment import main as setup_environment_main
+            # For check-only mode, skip Python environment setup if not in a Python project directory
+            skip_python_setup = (
+                check_only
+                and not Path("pyproject.toml").exists()
+                and not Path("setup.py").exists()
+                and not Path("requirements.txt").exists()
+            )
 
-                # Prepare arguments for Python setup
-                args = []
-                if reinstall:
-                    args.append("--reinstall")
-                if check_only:
-                    args.append("--check-deps-only")
+            if skip_python_setup:
                 if verbose:
-                    args.append("--verbose")
-
-                # Save original argv and replace
-                original_argv = sys.argv
-                sys.argv = ["setup_environment"] + args
-
+                    console.print(
+                        "ℹ️  Skipping Python environment check (not in a Python project directory)", style="dim"
+                    )
+            else:
                 try:
-                    setup_environment_main()
-                    if not check_only:
-                        console.print("✅ Python environment setup completed!", style="green")
+                    from ...engines.operations.setup_environment import main as setup_environment_main
 
-                except SystemExit as e:
-                    if e.code != 0:
-                        python_success = False
-                        console.print("❌ Python setup failed!", style="red")
+                    # Prepare arguments for Python setup
+                    args = []
+                    if reinstall:
+                        args.append("--reinstall")
+                    if check_only:
+                        args.append("--check-deps-only")
+                    if verbose:
+                        args.append("--verbose")
 
-                finally:
-                    sys.argv = original_argv
+                    # Save original argv and replace
+                    original_argv = sys.argv
+                    sys.argv = ["setup_environment"] + args
 
-            except Exception as e:
-                python_success = False
-                console.print(f"❌ Python setup error: {e}", style="red")
+                    try:
+                        setup_environment_main()
+                        if not check_only:
+                            console.print("✅ Python environment setup completed!", style="green")
+
+                    except SystemExit as e:
+                        if e.code != 0:
+                            python_success = False
+                            console.print("❌ Python setup failed!", style="red")
+
+                    finally:
+                        sys.argv = original_argv
+
+                except Exception as e:
+                    python_success = False
+                    console.print(f"❌ Python setup error: {e}", style="red")
 
         # Handle system dependencies (unless python-only mode)
         if mode != "python-only":

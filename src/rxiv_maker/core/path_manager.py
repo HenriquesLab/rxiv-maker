@@ -165,6 +165,70 @@ class PathManager:
         """
         return self.get_output_file_path(f"{self.manuscript_name}.pdf")
 
+    def get_style_file_path(self, filename: str) -> Path:
+        """Get path for style file.
+
+        Args:
+            filename: Name of style file (e.g., 'rxiv_maker_style.cls')
+
+        Returns:
+            Absolute path to style file in style directory
+        """
+        return self.style_dir / filename
+
+    def copy_style_files_to_output(self, style_files: list[str] = None) -> list[Path]:
+        """Copy style files to output directory.
+
+        Args:
+            style_files: List of style file names. Defaults to standard rxiv-maker files.
+
+        Returns:
+            List of paths to copied files
+
+        Raises:
+            PathResolutionError: If style files cannot be found or copied
+        """
+        import shutil
+
+        if style_files is None:
+            style_files = ["rxiv_maker_style.cls", "rxiv_maker_style.bst"]
+
+        copied_files = []
+        missing_files = []
+
+        for style_file in style_files:
+            source_path = self.get_style_file_path(style_file)
+            if source_path.exists():
+                dest_path = self.get_output_file_path(style_file)
+                shutil.copy2(source_path, dest_path)
+                copied_files.append(dest_path)
+            else:
+                missing_files.append(source_path)
+
+        if missing_files:
+            missing_list = "\n".join(f"  - {p}" for p in missing_files)
+            raise PathResolutionError(
+                f"Style files not found:\n{missing_list}\nThis may indicate a corrupted installation."
+            )
+
+        return copied_files
+
+    def get_config_file_path(self) -> Path:
+        """Get path to configuration file (00_CONFIG.yml).
+
+        Returns:
+            Absolute path to 00_CONFIG.yml file
+        """
+        return self.manuscript_path / "00_CONFIG.yml"
+
+    def get_supplementary_tex_path(self) -> Path:
+        """Get path for supplementary information .tex file.
+
+        Returns:
+            Absolute path to Supplementary.tex in output directory
+        """
+        return self.get_output_file_path("Supplementary.tex")
+
     def to_container_path(self, host_path: Union[str, Path], workspace_mount: str = "/workspace") -> str:
         """Convert host path to container path for Docker operations.
 

@@ -57,7 +57,7 @@ graph TD
 
         mermaid_code = "invalid mermaid syntax"
 
-        with pytest.raises(Exception):
+        with pytest.raises((ValueError, OSError, RuntimeError)):
             convert_mermaid(mermaid_code, "invalid_diagram")
 
     @patch("subprocess.run")
@@ -253,7 +253,7 @@ class TestBulkFigureConversion:
         mock_glob.return_value = [Path("custom/dir/plot.py")]
         mock_python.return_value = True
 
-        results = convert_figures_bulk(figures_dir="custom/dir")
+        convert_figures_bulk(figures_dir="custom/dir")
 
         # Should search in custom directory
         mock_glob.assert_called()

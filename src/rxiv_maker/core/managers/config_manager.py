@@ -36,13 +36,12 @@ class ConfigManager:
         self.validator = ConfigValidator()
 
         # Configuration search paths (in order of priority)
+        # Only search in manuscript directory, no global home directory configs
         self.config_paths = [
             self.base_dir / "rxiv.yml",
             self.base_dir / "rxiv.yaml",
             self.base_dir / ".rxiv.yml",
             self.base_dir / ".rxiv.yaml",
-            Path.home() / ".config" / "rxiv-maker" / "config.yml",
-            Path.home() / ".rxiv" / "config.yml",
         ]
 
         # Default configuration

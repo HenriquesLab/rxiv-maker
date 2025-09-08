@@ -15,8 +15,8 @@ rxiv clean --all && rxiv setup && rxiv pdf
 # 🔍 Debug mode - see what's failing  
 rxiv pdf --verbose
 
-# 🐳 Container mode - bypass local issues
-RXIV_ENGINE=DOCKER rxiv pdf
+# 📚 For containerized builds, see docker-rxiv-maker repository
+# https://github.com/HenriquesLab/docker-rxiv-maker
 
 # ⚡ Skip validation - quick build to test
 rxiv pdf --skip-validation
@@ -32,7 +32,6 @@ If none of these work, continue reading for detailed solutions.
 - [Environment Setup Problems](#environment-setup-problems)
 - [PDF Generation Failures](#pdf-generation-failures)
 - [Figure Generation Failures](#figure-generation-failures)
-- [Container Engine Issues](#container-engine-issues)
 - [Citation and Bibliography Problems](#citation-and-bibliography-problems)
 - [Performance Issues](#performance-issues)
 - [Platform-Specific Problems](#platform-specific-problems)
@@ -87,40 +86,53 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-### Issue: APT Repository Installation Fails (Ubuntu/Debian)
+### Issue: Installation Problems (Ubuntu/Debian/macOS)
+
+**Note:** As of January 2025, Rxiv-Maker is distributed exclusively via **pip/pipx**. Legacy APT/Homebrew methods have been deprecated.
 
 **Symptoms:**
-- `apt install rxiv-maker` fails with "package not found"
-- GPG key verification errors
-- Repository not accessible
+- `apt install rxiv-maker` fails with "package not found" 
+- `brew install rxiv-maker` fails
+- Package manager installation not working
 
 **Solutions:**
 
-#### 1. Re-add Repository with Fresh Keys
+#### 1. Use pipx Installation (Recommended)
 ```bash
-# Remove existing repository
+# Ubuntu/Debian
+sudo apt update
+sudo apt install python3-pip pipx texlive-latex-recommended texlive-fonts-recommended
+pipx install rxiv-maker
+
+# macOS
+brew install pipx
+brew install --cask mactex-no-gui
+pipx install rxiv-maker
+
+# Verify installation
+rxiv check-installation
+```
+
+#### 2. Alternative: Use pip in virtual environment
+```bash
+# Create virtual environment
+python -m venv rxiv-env
+source rxiv-env/bin/activate  # Linux/macOS
+# or .\rxiv-env\Scripts\activate on Windows
+
+# Install rxiv-maker
+pip install --upgrade pip && pip install rxiv-maker
+```
+
+#### 3. Clean up legacy installations
+```bash
+# Remove old APT repository (if previously used)
 sudo rm -f /etc/apt/sources.list.d/rxiv-maker.list
 sudo rm -f /usr/share/keyrings/rxiv-maker.gpg
 
-# Re-add repository
-sudo apt update && sudo apt install ca-certificates
-curl -fsSL https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo/pubkey.gpg | sudo gpg --dearmor -o /usr/share/keyrings/rxiv-maker.gpg
-echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/rxiv-maker.gpg] https://raw.githubusercontent.com/HenriquesLab/apt-rxiv-maker/apt-repo stable main' | sudo tee /etc/apt/sources.list.d/rxiv-maker.list
-
-# Update and install
-sudo apt update && sudo apt install rxiv-maker
-```
-
-#### 2. Alternative: Use UV or Pip Installation
-```bash
-# Install UV (recommended)
-curl -LsSf https://astral.sh/uv/install.sh | sh
-uv tool install rxiv-maker
-
-# Or virtual environment with pip
-python -m venv rxiv-env
-source rxiv-env/bin/activate
-pip install --upgrade pip && pip install rxiv-maker
+# Remove old Homebrew tap (if previously used)
+brew uninstall rxiv-maker 2>/dev/null || true
+brew untap henriqueslab/rxiv-maker 2>/dev/null || true
 ```
 
 ### Issue: Permission denied errors
@@ -153,11 +165,10 @@ chmod +x ~/.local/bin/rxiv
 
 **Solutions:**
 
-#### 1. Container Mode (Easiest)
+#### 1. Verify Local Installation
 ```bash
-# Skip local setup, use containers
-rxiv config set general.default_engine docker  # or podman
-rxiv pdf  # No local setup required
+# Check installation and dependencies
+rxiv check-installation
 ```
 
 #### 2. Platform-Specific Setup
@@ -256,8 +267,8 @@ initexmf --set-config-value=[MPM]AutoInstall=1
 # Manual package installation (TeX Live)
 sudo tlmgr install missing-package-name
 
-# Use container mode to avoid LaTeX issues
-RXIV_ENGINE=DOCKER rxiv pdf
+# Fix LaTeX PATH issues
+export PATH="/usr/local/texlive/2023/bin/x86_64-linux:$PATH"
 ```
 
 ### Issue: Build failed with exit code 1
@@ -293,8 +304,8 @@ rxiv pdf --skip-validation --verbose
 # Skip figures
 rxiv pdf --skip-validation --no-figures
 
-# Use different engine
-RXIV_ENGINE=docker rxiv pdf
+# For containerized builds, use docker-rxiv-maker:
+# https://github.com/HenriquesLab/docker-rxiv-maker
 ```
 
 ### Issue: Figure positioning and layout problems
@@ -474,68 +485,9 @@ if __name__ == "__main__":
 
 ---
 
-## Container Engine Issues
+## Container Support Deprecated
 
-### Issue: Docker/Podman not available
-
-**Symptoms:**
-- `Docker is not available` or `Podman is not available`
-- Container engine detection failures
-
-**Solutions:**
-
-#### 1. Check Container Engine Status
-```bash
-# Docker
-docker --version
-docker info
-
-# Podman
-podman --version
-podman info
-```
-
-#### 2. Start Container Services
-```bash
-# Docker Desktop (macOS/Windows)
-# Start Docker Desktop application
-
-# Docker service (Linux)
-sudo systemctl start docker
-sudo usermod -aG docker $USER  # Add user to docker group
-
-# Podman (Linux)
-systemctl --user start podman.socket
-```
-
-#### 3. Alternative Solutions
-```bash
-# Use specific engine
-rxiv pdf --engine docker
-rxiv pdf --engine podman
-
-# Fall back to local mode
-rxiv pdf --engine local
-```
-
-### Issue: Container permission problems
-
-**Symptoms:**
-- Files created with wrong ownership
-- Permission denied errors
-- Cannot access output files
-
-**Solutions:**
-```bash
-# Fix ownership after container run (if needed)
-sudo chown -R $(whoami):$(whoami) output/
-
-# Use Podman (rootless by default)
-rxiv pdf --engine podman
-
-# Modern rxiv handles user mapping automatically
-rxiv pdf --engine docker
-```
+**Note:** Docker and Podman engine modes have been deprecated. For containerized execution, use the separate [docker-rxiv-maker](https://github.com/HenriquesLab/docker-rxiv-maker) repository which provides Docker containers specifically designed for rxiv-maker.
 
 ---
 
@@ -656,7 +608,7 @@ time rxiv pdf --skip-validation --no-figures
 docker pull henriqueslab/rxiv-maker-base:latest
 
 # Use local mode after setup
-rxiv config set general.default_engine local
+export RXIV_ENGINE_TYPE=local
 ```
 
 #### 4. Figure Generation Optimization
@@ -989,7 +941,7 @@ chmod +x .git/hooks/pre-commit
 ### Use Container Mode for Consistency
 ```bash
 # Set as default to avoid local dependency issues
-rxiv config set general.default_engine docker
+export RXIV_ENGINE_TYPE=docker
 ```
 
 ### Always Validate Before Building

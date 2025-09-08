@@ -141,7 +141,7 @@ rxiv pdf --debug               # Maximum verbosity
 ### Set Docker as Default
 ```bash
 # One-time setup for consistent environment
-rxiv config set general.default_engine docker
+export RXIV_ENGINE_TYPE=docker
 
 # Now all commands use Docker automatically
 rxiv pdf                       # Runs in container
@@ -158,20 +158,26 @@ rxiv validate --engine docker  # Just this validation
 
 ### View Current Settings
 ```bash
-rxiv config show              # All settings
-rxiv config get cli.default_manuscript_path
+# Use environment variables for configuration
+echo $RXIV_ENGINE_TYPE         # Current engine
+echo $MANUSCRIPT_PATH          # Current manuscript path
 ```
 
 ### Common Configuration
 ```bash
 # Set default manuscript directory
-rxiv config set cli.default_manuscript_path "manuscripts/"
+export MANUSCRIPT_PATH="manuscripts/"
 
 # Set default engine
-rxiv config set general.default_engine docker
+export RXIV_ENGINE_TYPE=docker
 
-# Reset to defaults
-rxiv config reset
+# Use rxiv.yml files for manuscript-specific settings
+cat > rxiv.yml << 'EOF'
+engine:
+  type: docker
+output:
+  directory: "custom-output"
+EOF
 ```
 
 ## Performance Tips
@@ -220,8 +226,7 @@ rxiv pdf --force-figures      # Regenerate figures
 rxiv clean                    # Clean outputs
 rxiv arxiv                    # Prepare submission
 
-# Configuration
-rxiv config show             # View settings
+# Help and Information
 rxiv --help                  # Get help
 rxiv pdf --help              # Command-specific help
 

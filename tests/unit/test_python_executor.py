@@ -488,7 +488,7 @@ sample_std = calculate_std(sample_data, sample_mean)
         """Test error handling in initialization block."""
         code = "undefined_variable_that_causes_error"
 
-        with pytest.raises(Exception):  # Should raise PythonExecutionError or similar
+        with pytest.raises((ValueError, RuntimeError)):  # Should raise PythonExecutionError or similar
             self.executor.execute_initialization_block(code)
 
     def test_get_variable_value_basic(self):
@@ -604,7 +604,7 @@ summary = f"n={sample_size}, μ={mean_value:.2f}, σ={std_dev:.2f}"
 
         try:
             self.executor.execute_initialization_block(code, manuscript_file="error_test.md", line_number=42)
-            assert False, "Should have raised an exception"
+            raise AssertionError("Should have raised an exception")
         except Exception as e:
             # Error should contain useful information
             error_str = str(e)
@@ -640,7 +640,7 @@ scientific = 1.23e-5
         """Test that security restrictions apply to initialization blocks."""
         dangerous_code = "import os; os.system('echo test')"
 
-        with pytest.raises(Exception):  # Should raise PythonExecutionError
+        with pytest.raises((ValueError, RuntimeError)):  # Should raise PythonExecutionError
             self.executor.execute_initialization_block(dangerous_code)
 
     def test_imports_available_across_methods(self):

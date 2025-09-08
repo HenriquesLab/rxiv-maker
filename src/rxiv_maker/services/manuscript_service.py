@@ -228,7 +228,7 @@ class ManuscriptService(BaseService):
             output_file = write_manuscript_output(output_dir, processed_content)
 
             # Generate supplementary materials
-            generate_supplementary_tex(output_dir, metadata.raw)
+            generate_supplementary_tex(output_dir, metadata.raw, str(metadata.manuscript_path))
 
             self.log_operation("preprint_generated", {"output_file": str(output_file)})
 

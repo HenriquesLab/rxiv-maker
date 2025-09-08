@@ -127,10 +127,14 @@ class UnifiedValidator:
                 errors = self._filter_errors(result.errors)
                 self.all_errors.extend(errors)
 
-                if result.has_errors:
+                # Check for actual ERROR level issues in filtered errors
+                has_actual_errors = any(e.level == ValidationLevel.ERROR for e in errors)
+                has_warnings = any(e.level == ValidationLevel.WARNING for e in errors)
+
+                if has_actual_errors:
                     all_passed = False
                     status = "❌ FAILED"
-                elif result.has_warnings:
+                elif has_warnings:
                     status = "⚠️  WARNINGS"
                 else:
                     status = "✅ PASSED"

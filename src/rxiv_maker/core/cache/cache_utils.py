@@ -81,7 +81,7 @@ def get_manuscript_cache_dir(subfolder: str | None = None, manuscript_dir: Path 
     try:
         cache_dir.mkdir(parents=True, exist_ok=True)
     except (OSError, PermissionError) as e:
-        raise RuntimeError(f"Cannot create cache directory {cache_dir}: {e}")
+        raise RuntimeError(f"Cannot create cache directory {cache_dir}: {e}") from e
 
     return cache_dir
 

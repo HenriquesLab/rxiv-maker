@@ -273,13 +273,13 @@ authors:
         assert result.exit_code == 2  # Click parameter validation error
         assert "does not exist" in result.output
 
-        # Test with invalid engine
+        # Test with invalid engine flag (should not be recognized)
         result = self.runner.invoke(
             main,
             ["--engine", "invalid", "pdf"],
-            obj={"verbose": False, "engine": "local"},
         )
         assert result.exit_code != 0
+        assert "no such option" in result.output.lower() or "unrecognized" in result.output.lower()
 
     def test_verbose_flag_integration(self):
         """Test verbose flag integration."""

@@ -63,7 +63,7 @@ class BaseCommand(ABC):
         """
         # Extract common options from context
         self.verbose = ctx.obj.get("verbose", False) or EnvironmentManager.is_verbose()
-        self.engine = ctx.obj.get("engine") or EnvironmentManager.get_rxiv_engine()
+        self.engine = "local"  # Only local engine is supported
 
         # Resolve manuscript path
         try:
@@ -81,37 +81,14 @@ class BaseCommand(ABC):
             self.console.print(f"💡 Run 'rxiv init {manuscript_path}' to create a new manuscript", style="yellow")
             raise CommandExecutionError(f"Path resolution failed: {e}") from e
 
-    def check_docker_readiness(self) -> None:
-        """Check Docker availability when using docker engine.
+    def check_engine_support(self) -> None:
+        """Check if the requested engine is supported.
 
         Raises:
-            CommandExecutionError: If Docker is not available
+            CommandExecutionError: If unsupported engine is requested
         """
-        if self.engine == "docker":
-            try:
-                from rxiv_maker.docker.manager import get_docker_manager
-
-                if self.verbose:
-                    self.console.print("🔧 Checking Docker availability...", style="blue")
-
-                # Use PathManager workspace directory for consistency
-                if self.path_manager is None:
-                    raise CommandExecutionError("Path manager not initialized")
-                docker_manager = get_docker_manager(workspace_dir=self.path_manager._working_dir)
-
-                if not docker_manager.check_docker_available():
-                    self.console.print("❌ Docker is not available. Please ensure Docker is running.", style="red")
-                    raise CommandExecutionError("Docker is not available")
-
-                if self.verbose:
-                    self.console.print("🔧 Docker is ready!", style="green")
-
-            except ImportError as e:
-                self.console.print(f"❌ Docker manager import error: {e}", style="red")
-                raise CommandExecutionError(f"Docker setup error: {e}") from e
-            except Exception as e:
-                self.console.print(f"❌ Docker setup error: {e}", style="red")
-                raise CommandExecutionError(f"Docker setup error: {e}") from e
+        # Engine is always local now, no need to check
+        return
 
     def create_progress(self, transient: bool = True) -> Progress:
         """Create a standardized progress reporter.
@@ -215,9 +192,8 @@ class BaseCommand(ABC):
             # Setup common options and path resolution
             self.setup_common_options(ctx, manuscript_path)
 
-            # Check Docker if needed
-            if self.engine == "docker":
-                self.check_docker_readiness()
+            # Check engine support
+            self.check_engine_support()
 
             # Execute the main operation
             return self.execute_operation(**kwargs)
@@ -312,9 +288,8 @@ class FiguresCommand(BaseCommand):
                 generator = FigureGenerator(
                     figures_dir=figures_dir,
                     output_dir=figures_dir,
-                    output_format="png",
+                    output_format="pdf",
                     r_only=False,
-                    engine=self.engine,
                     enable_content_caching=not force,
                     manuscript_path=str(self.path_manager.manuscript_path),
                 )
@@ -323,7 +298,7 @@ class FiguresCommand(BaseCommand):
                     mode_msg = "force mode - ignoring cache" if force else "normal mode"
                     self.console.print(f"🎨 Starting figure generation ({mode_msg})...", style="blue")
 
-                generator.generate_all_figures()
+                generator.process_figures()
 
                 progress.update(task, description="✅ Figure generation completed")
                 self.success_message("Figures generated successfully!", f"Figures directory: {figures_dir}")

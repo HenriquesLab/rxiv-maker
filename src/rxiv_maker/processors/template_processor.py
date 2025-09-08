@@ -62,27 +62,32 @@ def get_template_path():
     )
 
 
-def find_supplementary_md():
-    """Find supplementary information file in the manuscript directory."""
-    current_dir = Path.cwd()
-    manuscript_path = os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
+def find_supplementary_md(manuscript_path=None):
+    """Find supplementary information file in the manuscript directory.
 
-    # Look for supplementary file: 02_SUPPLEMENTARY_INFO.md
-    # CRITICAL FIX: Handle both directory contexts properly
-    # Issue: When rxiv is called from within manuscript directory, the function
-    # was incorrectly appending manuscript_path again, looking for files like:
-    # /EXAMPLE_MANUSCRIPT/MANUSCRIPT/02_SUPPLEMENTARY_INFO.md (wrong)
-    # instead of /EXAMPLE_MANUSCRIPT/02_SUPPLEMENTARY_INFO.md (correct)
+    Args:
+        manuscript_path: Path to the manuscript directory (if None, uses PathManager logic)
+    """
+    if manuscript_path:
+        # Use provided manuscript path
+        manuscript_dir = Path(manuscript_path)
+        supplementary_md = manuscript_dir / "02_SUPPLEMENTARY_INFO.md"
+        if supplementary_md.exists():
+            return supplementary_md
+    else:
+        # Legacy fallback for when no path is provided
+        current_dir = Path.cwd()
+        manuscript_path = os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
 
-    # First try directly in current directory (when already in manuscript dir)
-    supplementary_md = current_dir / "02_SUPPLEMENTARY_INFO.md"
-    if supplementary_md.exists():
-        return supplementary_md
+        # First try directly in current directory (when already in manuscript dir)
+        supplementary_md = current_dir / "02_SUPPLEMENTARY_INFO.md"
+        if supplementary_md.exists():
+            return supplementary_md
 
-    # Then try in manuscript_path subdirectory (when called from parent dir)
-    supplementary_md = current_dir / manuscript_path / "02_SUPPLEMENTARY_INFO.md"
-    if supplementary_md.exists():
-        return supplementary_md
+        # Then try in manuscript_path subdirectory (when called from parent dir)
+        supplementary_md = current_dir / manuscript_path / "02_SUPPLEMENTARY_INFO.md"
+        if supplementary_md.exists():
+            return supplementary_md
 
     return None
 
@@ -135,11 +140,11 @@ def generate_supplementary_cover_page(yaml_metadata):
     return cover_latex
 
 
-def generate_supplementary_tex(output_dir, yaml_metadata=None):
+def generate_supplementary_tex(output_dir, yaml_metadata=None, manuscript_path=None):
     """Generate Supplementary.tex file from supplementary markdown."""
     from ..converters.md2tex import convert_markdown_to_latex
 
-    supplementary_md = find_supplementary_md()
+    supplementary_md = find_supplementary_md(manuscript_path)
     if not supplementary_md:
         # Create empty supplementary file
         supplementary_tex_path = Path(output_dir) / "Supplementary.tex"

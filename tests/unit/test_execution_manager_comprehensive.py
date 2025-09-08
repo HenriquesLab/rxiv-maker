@@ -21,7 +21,6 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from rxiv_maker.core.managers.execution_manager import (
-    ContainerExecutionManager,
     ExecutionContext,
     ExecutionMode,
     ExecutionStep,
@@ -326,10 +325,10 @@ class TestExecutionManagerFactory:
                 mock_manager.get_container_engine.return_value = mock_engine
                 mock_global_manager.return_value = mock_manager
 
-                manager = create_execution_manager(mode=ExecutionMode.DOCKER, working_dir=temp_path)
+                manager = create_execution_manager(mode=ExecutionMode.LOCAL, working_dir=temp_path)
 
-                assert isinstance(manager, ContainerExecutionManager)
-                assert manager.context.mode == ExecutionMode.DOCKER
+                assert isinstance(manager, LocalExecutionManager)
+                assert manager.context.mode == ExecutionMode.LOCAL
 
 
 class TestExecutionManagerPerformance:

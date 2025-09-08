@@ -26,49 +26,24 @@ class ContainerEngineError(Exception):
 
 
 class ContainerEngineNotFoundError(ContainerEngineError):
-    """Exception raised when container engine binary is not found."""
+    """Exception raised when deprecated container engines are requested."""
 
     def __init__(self, engine_type: str):
-        """Initialize not found error with installation suggestions."""
-        system = platform.system().lower()
+        """Initialize deprecation error."""
+        suggestion = (
+            f"{engine_type.title()} engine has been deprecated. "
+            "For containerized execution, use the docker-rxiv-maker repository: "
+            "https://github.com/HenriquesLab/docker-rxiv-maker"
+        )
 
-        if engine_type == "docker":
-            if system == "darwin":
-                suggestion = (
-                    "Install Docker Desktop from https://docker.com/get-started or use 'brew install --cask docker'"
-                )
-            elif system == "linux":
-                suggestion = (
-                    "Install Docker using your package manager: "
-                    "'sudo apt install docker.io' (Ubuntu/Debian) or "
-                    "'sudo yum install docker' (RHEL/CentOS)"
-                )
-            elif system == "windows":
-                suggestion = "Install Docker Desktop from https://docker.com/get-started"
-            else:
-                suggestion = f"Install Docker for your {system} system"
-        else:  # podman
-            if system == "darwin":
-                suggestion = "Install Podman using 'brew install podman'"
-            elif system == "linux":
-                suggestion = (
-                    "Install Podman using your package manager: "
-                    "'sudo apt install podman' (Ubuntu/Debian) or "
-                    "'sudo yum install podman' (RHEL/CentOS)"
-                )
-            elif system == "windows":
-                suggestion = "Install Podman Desktop from https://podman-desktop.io"
-            else:
-                suggestion = f"Install Podman for your {system} system"
-
-        super().__init__(f"{engine_type.title()} is not installed or not found in PATH", engine_type, suggestion)
+        super().__init__(f"{engine_type.title()} engine is no longer supported", engine_type, suggestion)
 
 
 class ContainerEngineNotRunningError(ContainerEngineError):
     """Exception raised when container engine daemon is not running."""
 
     def __init__(self, engine_type: str):
-        """Initialize not running error with startup suggestions."""
+        """Initialize not running error."""
         system = platform.system().lower()
 
         if engine_type == "docker":

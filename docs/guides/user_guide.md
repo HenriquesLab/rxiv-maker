@@ -214,9 +214,9 @@ echo "Word count: $(wc -w 01_MAIN.md | awk '{print $1}') words"
 cd project1 && rxiv pdf
 cd ../project2 && rxiv pdf
 
-# Global configuration
-rxiv config set author "Dr. Your Name"
-rxiv config set engine docker  # Use across all projects
+# Environment configuration  
+# Use rxiv.yml files in each manuscript for project-specific settings
+# All processing uses local installation
 ```
 
 #### Initialize Projects
@@ -733,15 +733,19 @@ rxiv arxiv --output arxiv-v1.zip
 
 #### User-Wide Settings
 ```bash
-# Set global defaults
-rxiv config set author "Dr. Jane Smith"
-rxiv config set institution "University Name" 
-rxiv config set email "jane@university.edu"
-rxiv config set engine "docker"
-rxiv config set citation-style "nature"
+# Create manuscript-specific config files (rxiv.yml)
+cat > rxiv.yml << 'EOF'
+authors:
+  - name: "Dr. Jane Smith"
+    email: "jane@university.edu"
+    affiliation: "University Name"
+# Engine configuration no longer needed - uses local installation
+bibliography:
+  style: "nature"
+EOF
 
-# View current settings
-rxiv config show
+# View current environment settings
+env | grep RXIV
 ```
 
 ### Performance Optimization

@@ -25,7 +25,7 @@ nox.options.sessions = ["lint", "test(test_type='full')"]
 
 # Configuration constants
 PYTHON_VERSIONS = ["3.11", "3.12", "3.13"]
-ENGINES = ["local", "docker", "podman"]
+ENGINES = ["local"]
 
 # Common dependencies
 TEST_DEPS = [
@@ -49,14 +49,9 @@ def install_project_deps(session):
 
 def check_engine_availability(session, engine):
     """Check if the specified engine is available on the system."""
+    # Only local engine is supported now
     if engine != "local":
-        try:
-            # Check if binary exists
-            session.run(engine, "--version", external=True, silent=True)
-            # Check if daemon/service is running
-            session.run(engine, "ps", external=True, silent=True)
-        except Exception:
-            session.skip(f"{engine.capitalize()} is not available or daemon not running")
+        session.skip(f"Container engine '{engine}' is no longer supported. Only local engine is available.")
 
 
 # Core Development Sessions
@@ -143,7 +138,7 @@ def test(session, test_type):
             "tests/integration/",
             "tests/cli/",
             "-m",
-            "not slow and not docker and not ci_exclude and not system",
+            "not slow and not ci_exclude and not system",
             "--cov=src",
             "--cov-report=term-missing:skip-covered",
             "--cov-fail-under=40",  # Enforce minimum 40% coverage (realistic for complex codebase)
@@ -356,18 +351,18 @@ print('🎉 All style file detection tests passed!')
             """,
             )
 
-            # Test 7: Test CLI with different engines (if available)
-            session.log("✅ Testing different engine support...")
-            # Test with RXIV_ENGINE environment variable instead of CLI option
+            # Test 7: Test CLI with local engine
+            session.log("✅ Testing local engine support...")
+            # Test with RXIV_ENGINE environment variable
             import os
 
             original_engine = os.environ.get("RXIV_ENGINE")
             try:
-                os.environ["RXIV_ENGINE"] = "local"
+                os.environ["RXIV_ENGINE"] = "LOCAL"
                 session.run("rxiv", "clean", str(example_dest))
-                session.log("✅ Engine local working correctly")
+                session.log("✅ Local engine working correctly")
             except Exception as e:
-                session.log(f"⚠️  Engine local test: {e}")
+                session.log(f"⚠️  Local engine test: {e}")
             finally:
                 if original_engine:
                     os.environ["RXIV_ENGINE"] = original_engine
@@ -526,33 +521,21 @@ print('🎉 All style file detection tests passed!')
 
 # Matrix/Specialized Sessions
 @nox.session(python="3.11", reuse_venv=True)
-@nox.parametrize("engine", ENGINES)
-def pdf(session, engine):
-    """Test PDF generation with different rxiv engines with enhanced cleanup."""
-    check_engine_availability(session, engine)
-
-    # Pre-test cleanup for container engines
-    if engine in ["docker", "podman"]:
-        add_cleanup_hooks(session, f"pdf_{engine}")
-
+def pdf(session):
+    """Test PDF generation with local engine."""
     install_project_deps(session)
 
-    try:
-        # Set environment variables for engine
-        env = {"RXIV_ENGINE": engine.upper(), "MANUSCRIPT_PATH": "EXAMPLE_MANUSCRIPT"}
+    # Set environment variables for local engine
+    env = {"RXIV_ENGINE": "LOCAL", "MANUSCRIPT_PATH": "EXAMPLE_MANUSCRIPT"}
 
-        # Test rxiv CLI PDF generation with engine environment variable
-        session.run("rxiv", "pdf", "EXAMPLE_MANUSCRIPT", env=env)
+    # Test rxiv CLI PDF generation with local engine
+    session.run("rxiv", "pdf", "EXAMPLE_MANUSCRIPT", env=env)
 
-        # Test make command PDF generation
-        session.run("make", "pdf", env=env, external=True)
+    # Test make command PDF generation
+    session.run("make", "pdf", env=env, external=True)
 
-        # Validate outputs exist (PDF is generated in EXAMPLE_MANUSCRIPT/output/)
-        session.run("ls", "-la", "EXAMPLE_MANUSCRIPT/output/", external=True)
-    finally:
-        # Post-test cleanup for container engines
-        if engine in ["docker", "podman"]:
-            add_post_cleanup_hooks(session, f"pdf_{engine}")
+    # Validate outputs exist (PDF is generated in EXAMPLE_MANUSCRIPT/output/)
+    session.run("ls", "-la", "EXAMPLE_MANUSCRIPT/output/", external=True)
 
 
 @nox.session(python=PYTHON_VERSIONS, reuse_venv=False)
@@ -565,61 +548,10 @@ def test_cross(session):
         "tests/unit/",
         "tests/integration/",
         "-m",
-        "not docker and not slow",
+        "not slow",
         "--maxfail=3",
         *session.posargs,
     )
-
-
-@nox.session(python="3.11", reuse_venv=True)
-def test_docker(session):
-    """Docker engine testing (manual trigger only) with enhanced cleanup."""
-    check_engine_availability(session, "docker")
-
-    # Pre-test cleanup
-    add_cleanup_hooks(session, "test_docker")
-
-    install_project_deps(session)
-
-    try:
-        # Run Docker-specific tests
-        session.run(
-            "pytest",
-            "tests/unit/test_docker_engine_mode.py",
-            "-m",
-            "docker",
-            "--tb=short",
-            *session.posargs,
-        )
-    finally:
-        # Post-test cleanup
-        add_post_cleanup_hooks(session, "test_docker")
-
-
-@nox.session(python="3.11", reuse_venv=True)
-def test_podman(session):
-    """Podman engine testing (manual trigger only) with enhanced cleanup."""
-    check_engine_availability(session, "podman")
-
-    # Pre-test cleanup
-    add_cleanup_hooks(session, "test_podman")
-
-    install_project_deps(session)
-
-    try:
-        # Run with podman engine using existing integration tests
-        session.run(
-            "pytest",
-            "tests/integration/",
-            "--engine=podman",
-            "-m",
-            "not slow",
-            "--tb=short",
-            *session.posargs,
-        )
-    finally:
-        # Post-test cleanup
-        add_post_cleanup_hooks(session, "test_podman")
 
 
 @nox.session(python="3.11", reuse_venv=True)

@@ -134,16 +134,27 @@ class CitationValidator(BaseValidator):
 
         # Perform DOI validation if enabled
         if self.enable_doi_validation:
-            doi_validator = DOIValidator(
-                self.manuscript_path,
-                enable_online_validation=self.enable_doi_validation,
-                ignore_ci_environment=True,  # Allow validation in CI for consistent test behavior
-            )
-            doi_result = doi_validator.validate()
+            try:
+                doi_validator = DOIValidator(
+                    self.manuscript_path,
+                    enable_online_validation=self.enable_doi_validation,
+                    ignore_ci_environment=True,  # Allow validation in CI for consistent test behavior
+                )
+                doi_result = doi_validator.validate()
 
-            # Merge DOI validation results
-            errors.extend(doi_result.errors)
-            metadata["doi_validation"] = doi_result.metadata
+                # Merge DOI validation results
+                errors.extend(doi_result.errors)
+                metadata["doi_validation"] = doi_result.metadata
+            except Exception as e:
+                # DOI validation failed due to configuration issues, but don't fail entire validation
+                errors.append(
+                    create_validation_error(
+                        ErrorCode.DOI_NOT_RESOLVABLE,
+                        f"DOI validation skipped due to configuration issue: {e}",
+                        suggestion="Check that you're running from the correct directory or disable DOI validation",
+                    )
+                )
+                metadata["doi_validation"] = {"status": "skipped", "reason": str(e)}
 
         return ValidationResult("CitationValidator", errors, metadata)
 

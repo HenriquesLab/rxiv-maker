@@ -337,34 +337,8 @@ coordinate_homebrew() {
     fi
 }
 
-# Coordinate APT repository workflow trigger
-coordinate_apt() {
-    local version="$1"
-    local tag="$2"
-
-    log_info "Coordinating APT repository workflow trigger for v${version}"
-
-    # Pre-flight validation
-    if ! validate_all "$version" "$tag"; then
-        log_error "Release sources not ready for APT workflow"
-        return 1
-    fi
-
-    if [[ "${DRY_RUN}" == "true" ]]; then
-        log_info "[DRY RUN] Would trigger: gh workflow run publish-apt.yml --repo HenriquesLab/apt-rxiv-maker --field version=${version} --field dry-run=false"
-        return 0
-    fi
-
-    # Trigger APT workflow with retry
-    if retry_with_backoff "$RETRIES" "$RETRY_DELAY" "APT workflow trigger" \
-        gh workflow run publish-apt.yml --repo HenriquesLab/apt-rxiv-maker --field version="${version}" --field dry-run="false"; then
-        log_success "APT repository workflow triggered successfully for v${version}"
-        return 0
-    else
-        log_error "Failed to trigger APT repository workflow"
-        return 1
-    fi
-}
+# Note: APT repository workflow coordination removed
+# The rxiv-maker package is now distributed exclusively via pip/pipx
 
 # Monitor cross-repository workflow health
 monitor_workflows() {
@@ -376,8 +350,7 @@ monitor_workflows() {
     # it validates that all the necessary workflows are accessible
 
     local workflows=(
-        "main:homebrew-auto-update.yml"
-        "HenriquesLab/apt-rxiv-maker:publish-apt.yml"
+        # Note: Homebrew and APT workflows removed - using pip/pipx distribution only
     )
 
     local all_accessible=true

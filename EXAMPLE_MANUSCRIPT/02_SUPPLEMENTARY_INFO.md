@@ -12,25 +12,24 @@
 
 | **Tool** | **Type** | **Markdown** | **Primary Use Case** | **Key Strengths** | **Open Source** |
 |----------|----------|--------------|-------------------|-------------------|-----------------|
-| **Rxiv-Maker** | Pipeline | Excellent | Preprint servers | GitHub Actions integration, automated workflows | Yes |
-| **Overleaf** [@Overleaf2024] | Web Editor | Limited | Academic publishing | Real-time collaboration, rich templates | Freemium |
-| **Quarto** [@Quarto2024] | Publisher | Native | Multi-format publishing | Polyglot support, multiple outputs | Yes |
-| **Manubot** [@himmelstein2019] | Collaborative | Native | Version-controlled writing | Automated citations, transparent collaboration | Yes |
-| **Pandoc** [@pandoc2020] | Converter | Excellent | Format conversion | Universal format support, extensible | Yes |
-| **Typst** [@Typst2024] | Typesetter | Good | Modern typesetting | Fast compilation, modern syntax | Yes |
+| **Rxiv-Maker** | Pipeline | Excellent | Reproducible preprints | Local-first execution, intelligent caching, rich CLI | Yes |
+| **Overleaf** [@Overleaf2024] | Web Editor | Limited | Collaborative LaTeX | Real-time collaboration, rich templates, cloud-based | Freemium |
+| **Quarto** [@Quarto2024] | Publisher | Native | Multi-format publishing | Polyglot support, multiple outputs, scientific focus | Yes |
+| **Manubot** [@himmelstein2019] | Collaborative | Native | Version-controlled writing | Automated citations, transparent collaboration, Git-based | Yes |
+| **Pandoc** [@pandoc2020] | Converter | Excellent | Format conversion | Universal format support, extensible filters | Yes |
+| **Typst** [@Typst2024] | Typesetter | Good | Modern typesetting | Fast compilation, modern syntax, growing ecosystem | Yes |
 | **Bookdown** [@Xie2016_bookdown] | Publisher | R Markdown | Academic books | Cross-references, multiple formats | Yes |
-| **Direct LaTeX** | Typesetter | Limited | Traditional publishing | Ultimate control, established workflows | Yes |
+| **Direct LaTeX** | Typesetter | None | Traditional publishing | Ultimate control, established workflows, mature ecosystem | Yes |
 
-{#stable:tool-comparison} **Comprehensive Comparison of Manuscript Preparation Tools.** This comparison provides an exhaustive overview of available tools for scientific manuscript preparation, positioning each within the broader ecosystem of academic publishing workflows. Rxiv-Maker is designed as a specialised solution optimising for preprint server submissions, complementing rather than replacing established tools like Overleaf for general LaTeX collaboration or Quarto for multi-format publishing. The comparison highlights that different tools excel in distinct contexts: Overleaf dominates collaborative LaTeX editing, Quarto excels at multi-format computational publishing, and Rxiv-Maker streamlines the specific workflow of preparing reproducible preprints for submission to arXiv, bioRxiv, and medRxiv.
+{#stable:tool-comparison} **Comprehensive Comparison of Manuscript Preparation Tools.** This comparison positions each tool within the scientific publishing ecosystem based on current capabilities and primary strengths. Rxiv-Maker specialises in reproducible preprint workflows with local-first execution, automated figure generation, and developer-centric features. Overleaf remains the leading collaborative LaTeX platform, whilst Quarto excels at multi-format computational publishing. The comparison reflects that different tools address distinct workflow requirements: collaborative editing (Overleaf), multi-format output (Quarto), version-controlled writing (Manubot), and reproducible preprint generation (Rxiv-Maker).
 
 | **Deployment Method** | **Environment** | **Dependencies** | **Collaboration** | **Ease of Use** | **Reproducibility** |
 |-------------------|-------------|-------------|--------------|-------------|----------------|
-| **GitHub Actions** | Cloud CI/CD | None (cloud) | Automatic | Very High | Perfect |
-| **Google Colab** | Web browser | None (cloud) | Shared notebooks | Very High | High |
-| **Local Python** | Local machine | Python + LaTeX | Git-based | Medium | Good |
+| **Local Installation** | Local machine | Python + LaTeX | Git-based | High | Excellent |
+| **Docker (Separate)** | Container | Docker only | Git-based | Medium | Excellent |
 | **Manual LaTeX** | Local machine | Full LaTeX suite | Git-based | Low | Variable |
 
-{#stable:deployment-options} **Rxiv-Maker Deployment Strategies.** Comparison of available compilation methods, highlighting the flexibility of the framework in accommodating different user preferences and technical environments whilst maintaining consistent output quality.
+{#stable:deployment-options} **Rxiv-Maker Deployment Strategies.** Comparison of available compilation methods, with local installation as the primary recommended approach and containerised execution available through the separate docker-rxiv-maker repository for specialised deployment needs.
 
 | **Markdown Element** | **LaTeX Equivalent** | **Description** |
 |------------------|------------------|-------------|
@@ -103,6 +102,16 @@ Mathematical expressions within figure captions, table entries, and cross-refere
 
 Statistical notation commonly required in manuscripts is supported, including confidence intervals $\mu \pm \sigma$, probability distributions $P(X \leq x)$, and significance levels $p < 0.05$. Complex expressions involving summations $\sum_{i=1}^{n} x_i$, integrals $\int_{-\infty}^{\infty} f(x) dx$, and matrix operations $\mathbf{A}^{-1}\mathbf{b} = \mathbf{x}$ are rendered with appropriate spacing.
 
+{#snote:caching-validation} **Intelligent Caching and Validation Systems**
+
+Rxiv-Maker implements sophisticated caching mechanisms that significantly accelerate manuscript compilation through content-based change detection and selective regeneration. The caching system operates at multiple levels: file-level checksums track modifications to source documents, whilst content-based hashing monitors changes within executable code blocks and figure generation scripts.
+
+The figure caching system maintains checksums for Python, R, and Mermaid source files, comparing current content against cached versions to determine whether regeneration is necessary. This approach eliminates redundant computation whilst ensuring figures remain synchronised with their source code. Cache invalidation occurs automatically when dependencies change, maintaining consistency without manual intervention.
+
+The comprehensive validation framework provides multi-layered quality assurance through LaTeX error parsing with contextual error messages, figure validation that verifies file existence and format compatibility, and citation validation with DOI resolution through CrossRef and DataCite APIs. The system generates detailed diagnostic reports that guide users through error resolution, significantly reducing debugging complexity.
+
+Dependency validation ensures all required components (LaTeX distributions, Python packages, R libraries, Node.js modules) are properly installed and configured before manuscript processing begins. The validation system provides automated installation suggestions for missing dependencies, streamlining setup procedures across different computing environments.
+
 {#snote:latex-injection} **Direct LaTeX Integration and Advanced Typesetting**
 
 While Rxiv-Maker's markdown-to-LaTeX conversion handles the majority of scientific publishing requirements, the framework provides direct LaTeX injection capabilities through `{{tex: ...}}` blocks for sophisticated typesetting scenarios that exceed markdown's capabilities. This approach offers researchers an "escape hatch" to access LaTeX's full typesetting power when needed, while maintaining the simplicity of markdown for routine content.
@@ -122,7 +131,7 @@ Sample A & $373.15 \pm 0.10$ & $0.250 \pm 0.005$ & $92.7 \pm 1.8$ \\
 Sample B & $423.15 \pm 0.15$ & $0.500 \pm 0.010$ & $96.1 \pm 1.4$ \\
 Sample C & $473.15 \pm 0.20$ & $1.000 \pm 0.020$ & $88.9 \pm 2.3$ \\
 \hline
-\multicolumn{3}{|l|}{Mean \pm Standard Deviation} & $90.8 \pm 4.5$ \\
+\multicolumn{3}{|l|}{Mean $\pm$ Standard Deviation} & $90.8 \pm 4.5$ \\
 \hline
 \end{tabular}
 \captionsetup{justification=justified,singlelinecheck=false}
@@ -131,7 +140,7 @@ Sample C & $473.15 \pm 0.20$ & $1.000 \pm 0.020$ & $88.9 \pm 2.3$ \\
 \end{stable}
 }}
 
-This example showcases LaTeX features including professional table borders (`\hline`), custom column alignment specifications (`|l|c|c|r|`), multi-column headers, mathematical expressions with proper spacing, and scientific notation with uncertainties. Such precise formatting control enables researchers to meet the exacting typographical standards required for high-impact scientific publications while maintaining computational reproducibility through the framework's automated build processes.
+This example showcases LaTeX features including professional table borders (`\hline`), custom column alignment specifications (`|l|c|c|r|`), multi-column headers, mathematical expressions with proper spacing, and scientific notation with uncertainties. Such precise formatting control enables researchers to meet the exacting typographical standards required for high-impact scientific publications while maintaining computational reproducibility through the framework's local execution environment.
 
 <newpage>
 
@@ -144,5 +153,5 @@ This example showcases LaTeX features including professional table borders (`\hl
 {#sfig:preprint_trends width="100%"} **Preprint Submission Trends Across Multiple Servers (2018-2025).** The figure displays the annual number of preprints indexed by PubMed from major repositories, including arXiv, bioRxiv, and medRxiv. Data was collected from publicly available sources [@PubMedByYear2025] and visualised using a reproducible R script within the Rxiv-Maker pipeline. This approach ensures that the figure remains synchronised with the latest available data and supports transparent, data-driven scientific reporting.
 
 ![](FIGURES/SFigure__architecture.pdf)
-{#sfig:architecture width="90%"} **Detailed System Architecture and Processing Layers.** Comprehensive technical diagram showing the complete Rxiv-Maker architecture, including input layer organisation, processing engine components (parsers, converters, generators), compilation infrastructure, output generation, and deployment methodology integration with Docker containerisation support. This figure illustrates the modular design that enables independent development and testing of system components across both local and containerised environments.
+{#sfig:architecture width="90%"} **Detailed System Architecture and Processing Layers.** Comprehensive technical diagram showing the complete Rxiv-Maker architecture, including input layer organisation, processing engine components (parsers, converters, generators), compilation infrastructure, output generation, and deployment methodology integration. This figure illustrates the modular design that enables independent development and testing of system components across different deployment environments.
 

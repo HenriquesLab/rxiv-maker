@@ -82,7 +82,7 @@ class TestRxivEngine:
 
     def test_get_rxiv_engine_valid_values(self):
         """Test getting valid engine values."""
-        valid_engines = ["local", "docker", "podman"]
+        valid_engines = ["local"]  # Container engines deprecated
 
         for engine in valid_engines:
             os.environ[EnvironmentManager.RXIV_ENGINE] = engine
@@ -93,8 +93,6 @@ class TestRxivEngine:
         """Test engine value case insensitivity."""
         test_cases = [
             ("LOCAL", "local"),
-            ("Docker", "docker"),
-            ("PODMAN", "podman"),
             ("  local  ", "local"),
         ]
 
@@ -122,7 +120,7 @@ class TestRxivEngine:
 
     def test_set_rxiv_engine_valid(self):
         """Test setting valid engine values."""
-        valid_engines = ["local", "docker", "podman"]
+        valid_engines = ["local"]  # Container engines deprecated
 
         for engine in valid_engines:
             EnvironmentManager.set_rxiv_engine(engine)
@@ -130,8 +128,8 @@ class TestRxivEngine:
 
     def test_set_rxiv_engine_case_normalization(self):
         """Test engine setting normalizes case."""
-        EnvironmentManager.set_rxiv_engine("DOCKER")
-        assert os.environ[EnvironmentManager.RXIV_ENGINE] == "docker"
+        EnvironmentManager.set_rxiv_engine("LOCAL")
+        assert os.environ[EnvironmentManager.RXIV_ENGINE] == "local"
 
     def test_set_rxiv_engine_invalid(self):
         """Test setting invalid engine raises error."""
@@ -434,7 +432,7 @@ class TestEnvironmentManagement:
         """Test getting all rxiv-maker variables."""
         # Set some variables
         os.environ[EnvironmentManager.MANUSCRIPT_PATH] = "/test/manuscript"
-        os.environ[EnvironmentManager.RXIV_ENGINE] = "docker"
+        os.environ[EnvironmentManager.RXIV_ENGINE] = "local"
         os.environ[EnvironmentManager.RXIV_VERBOSE] = "true"
 
         result = EnvironmentManager.get_all_rxiv_vars()
@@ -446,7 +444,7 @@ class TestEnvironmentManagement:
     def test_set_environment_for_subprocess(self):
         """Test setting environment for subprocess."""
         # Set some rxiv variables
-        os.environ[EnvironmentManager.RXIV_ENGINE] = "docker"
+        os.environ[EnvironmentManager.RXIV_ENGINE] = "local"
         os.environ[EnvironmentManager.RXIV_VERBOSE] = "true"
 
         additional_vars = {"CUSTOM_VAR": "custom_value"}
@@ -467,7 +465,7 @@ class TestEnvironmentManagement:
         """Test clearing all rxiv-maker variables."""
         # Set some variables
         os.environ[EnvironmentManager.MANUSCRIPT_PATH] = "/test/manuscript"
-        os.environ[EnvironmentManager.RXIV_ENGINE] = "docker"
+        os.environ[EnvironmentManager.RXIV_ENGINE] = "local"
         os.environ[EnvironmentManager.RXIV_VERBOSE] = "true"
 
         EnvironmentManager.clear_rxiv_vars()
@@ -522,21 +520,9 @@ class TestEnvironmentValidation:
         warnings = EnvironmentManager.validate_environment()
         assert any("not a directory" in warning for warning in warnings)
 
-    def test_validate_environment_docker_unavailable(self):
-        """Test validation with Docker engine but Docker unavailable."""
-        os.environ[EnvironmentManager.RXIV_ENGINE] = "docker"
-        os.environ[EnvironmentManager.DOCKER_AVAILABLE] = "false"
+    # Docker engine validation test removed - container engines deprecated
 
-        warnings = EnvironmentManager.validate_environment()
-        assert any("Docker is not available" in warning for warning in warnings)
-
-    def test_validate_environment_colab_with_wrong_engine(self):
-        """Test validation in Colab with wrong engine."""
-        os.environ[EnvironmentManager.COLAB_GPU] = "0"
-        os.environ[EnvironmentManager.RXIV_ENGINE] = "docker"
-
-        warnings = EnvironmentManager.validate_environment()
-        assert any("Google Colab detected" in warning for warning in warnings)
+    # Colab engine validation test removed - container engines deprecated
 
 
 class TestDebugInfo:
@@ -549,7 +535,7 @@ class TestDebugInfo:
         manuscript_dir.mkdir()
 
         os.environ[EnvironmentManager.MANUSCRIPT_PATH] = str(manuscript_dir)
-        os.environ[EnvironmentManager.RXIV_ENGINE] = "docker"
+        os.environ[EnvironmentManager.RXIV_ENGINE] = "local"
         os.environ[EnvironmentManager.RXIV_VERBOSE] = "true"
         os.environ[EnvironmentManager.DOCKER_AVAILABLE] = "true"
         os.environ[EnvironmentManager.PYTHONPATH] = "/path/one:/path/two"

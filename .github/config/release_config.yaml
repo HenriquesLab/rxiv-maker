@@ -11,8 +11,7 @@ pypi_check_interval: 30  # Check every 30 seconds
 github_timeout: 120  # 2 minutes max wait for GitHub API
 
 # Cross-repository configuration
-homebrew_repo: "homebrew-rxiv-maker"
-apt_repo: "apt-rxiv-maker"
+docker_repo: "docker-rxiv-maker"
 cross_repo_timeout: 600  # 10 minutes max wait for cross-repo workflows
 
 # Retry configuration
@@ -22,8 +21,7 @@ backoff_factor: 2.0
 # Repository URLs (for validation)
 repositories:
   main: "https://github.com/henriqueslab/rxiv-maker"
-  homebrew: "https://github.com/henriqueslab/homebrew-rxiv-maker"
-  apt: "https://github.com/henriqueslab/apt-rxiv-maker"
+  docker: "https://github.com/henriqueslab/docker-rxiv-maker"
 
 # Notification configuration
 notifications:

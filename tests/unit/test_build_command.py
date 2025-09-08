@@ -33,7 +33,7 @@ class TestBuildCommand:
         """Test successful PDF generation."""
         # Mock BuildManager
         mock_manager = MagicMock()
-        mock_manager.run_full_build.return_value = True
+        mock_manager.build.return_value = True
         mock_build_manager.return_value = mock_manager
 
         # Mock Progress
@@ -48,7 +48,7 @@ class TestBuildCommand:
 
         assert result.exit_code == 0
         mock_build_manager.assert_called_once()
-        mock_manager.run_full_build.assert_called_once()
+        mock_manager.build.assert_called_once()
         mock_cleanup.assert_called_once()
 
     @patch("rxiv_maker.cli.commands.build.set_log_directory")
@@ -59,7 +59,7 @@ class TestBuildCommand:
         """Test PDF generation failure."""
         # Mock BuildManager with failure
         mock_manager = MagicMock()
-        mock_manager.run_full_build.return_value = False
+        mock_manager.build.return_value = False
         mock_build_manager.return_value = mock_manager
 
         # Mock Progress
@@ -73,7 +73,7 @@ class TestBuildCommand:
             result = self.runner.invoke(build, ["test_manuscript"], obj={"verbose": False, "engine": "local"})
 
         assert result.exit_code == 1
-        mock_manager.run_full_build.assert_called_once()
+        mock_manager.build.assert_called_once()
         # cleanup gets called multiple times (finally block + error handling)
         assert mock_cleanup.call_count >= 1
 
@@ -85,7 +85,7 @@ class TestBuildCommand:
         """Test keyboard interrupt handling."""
         # Mock BuildManager to raise KeyboardInterrupt
         mock_manager = MagicMock()
-        mock_manager.run_full_build.side_effect = KeyboardInterrupt()
+        mock_manager.build.side_effect = KeyboardInterrupt()
         mock_build_manager.return_value = mock_manager
 
         # Mock Progress
@@ -111,7 +111,7 @@ class TestBuildCommand:
         """Test unexpected error handling."""
         # Mock BuildManager to raise unexpected error
         mock_manager = MagicMock()
-        mock_manager.run_full_build.side_effect = RuntimeError("Unexpected error")
+        mock_manager.build.side_effect = RuntimeError("Unexpected error")
         mock_build_manager.return_value = mock_manager
 
         # Mock Progress
@@ -139,7 +139,7 @@ class TestBuildCommand:
         """Test using MANUSCRIPT_PATH environment variable."""
         # Mock BuildManager
         mock_manager = MagicMock()
-        mock_manager.run_full_build.return_value = True
+        mock_manager.build.return_value = True
         mock_build_manager.return_value = mock_manager
 
         # Mock Progress
@@ -165,7 +165,7 @@ class TestBuildCommand:
         """Test various build options."""
         # Mock BuildManager
         mock_manager = MagicMock()
-        mock_manager.run_full_build.return_value = True
+        mock_manager.build.return_value = True
         mock_build_manager.return_value = mock_manager
 
         # Mock Progress
@@ -201,41 +201,6 @@ class TestBuildCommand:
         assert kwargs["track_changes_tag"] == "v1.0.0"
         assert kwargs["verbose"] is True
 
-    @patch("rxiv_maker.cli.commands.build.set_log_directory")
-    @patch("rxiv_maker.docker.manager.get_docker_manager")
-    def test_docker_engine_availability_check(self, mock_get_docker_manager, mock_set_log_directory):
-        """Test Docker engine availability check."""
-        # Mock Docker manager unavailable
-        mock_docker_manager = MagicMock()
-        mock_docker_manager.check_docker_available.return_value = False
-        mock_get_docker_manager.return_value = mock_docker_manager
-
-        # Create context with docker engine and use real directory
-        with self.runner.isolated_filesystem():
-            os.makedirs("test_manuscript")
-            result = self.runner.invoke(build, ["test_manuscript"], obj={"engine": "docker"})
-
-        assert result.exit_code == 1
-        assert "Docker is not available for build pipeline" in result.output
-        assert "Use --engine local to build without Docker" in result.output
-
-    @patch("rxiv_maker.cli.commands.build.set_log_directory")
-    @patch("rxiv_maker.docker.manager.get_docker_manager")
-    @patch("rxiv_maker.cli.commands.build.logger")
-    def test_docker_engine_setup_error(self, mock_logger, mock_get_docker_manager, mock_set_log_directory):
-        """Test Docker engine setup error."""
-        # Mock Docker manager setup error
-        mock_get_docker_manager.side_effect = Exception("Docker setup failed")
-
-        # Create context with docker engine and use real directory
-        with self.runner.isolated_filesystem():
-            os.makedirs("test_manuscript")
-            result = self.runner.invoke(build, ["test_manuscript"], obj={"engine": "docker"})
-
-        assert result.exit_code == 1
-        # Verify the error was logged correctly
-        mock_logger.error.assert_called_with("Docker setup error: Docker setup failed")
-
     @patch("rxiv_maker.cli.commands.build.set_debug")
     @patch("rxiv_maker.cli.commands.build.set_quiet")
     @patch("rxiv_maker.cli.commands.build.Path")
@@ -251,7 +216,7 @@ class TestBuildCommand:
 
         # Mock BuildManager
         mock_manager = MagicMock()
-        mock_manager.run_full_build.return_value = True
+        mock_manager.build.return_value = True
         mock_build_manager.return_value = mock_manager
 
         # Mock Progress
@@ -295,7 +260,7 @@ class TestBuildCommand:
 
         # Mock BuildManager
         mock_manager = MagicMock()
-        mock_manager.run_full_build.return_value = True
+        mock_manager.build.return_value = True
         mock_build_manager.return_value = mock_manager
 
         # Mock Progress
@@ -319,7 +284,7 @@ class TestBuildCommand:
 
         # Mock BuildManager
         mock_manager = MagicMock()
-        mock_manager.run_full_build.return_value = True
+        mock_manager.build.return_value = True
         mock_build_manager.return_value = mock_manager
 
         # Mock Progress
@@ -332,8 +297,8 @@ class TestBuildCommand:
 
         assert result.exit_code == 0
 
-        # Verify progress callback was passed to run_full_build
-        args, kwargs = mock_manager.run_full_build.call_args
+        # Verify progress callback was passed to build
+        args, kwargs = mock_manager.build.call_args
         assert "progress_callback" in kwargs
         assert callable(kwargs["progress_callback"])
 
@@ -361,7 +326,7 @@ class TestBuildCommandEdgeCases:
 
         # Mock BuildManager
         mock_manager = MagicMock()
-        mock_manager.run_full_build.return_value = True
+        mock_manager.build.return_value = True
         mock_build_manager.return_value = mock_manager
 
         # Mock Progress
@@ -393,7 +358,7 @@ class TestBuildCommandEdgeCases:
 
         # Mock BuildManager
         mock_manager = MagicMock()
-        mock_manager.run_full_build.return_value = True
+        mock_manager.build.return_value = True
         mock_build_manager.return_value = mock_manager
 
         # Mock Progress

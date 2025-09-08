@@ -4,15 +4,18 @@ This package provides both container engines (Docker, Podman) and core operation
 for manuscript processing, creating a unified interface for all execution functionality.
 """
 
-# Container engines - execution infrastructure
+# Container engines - execution infrastructure (deprecated)
 from .core import (
-    AbstractContainerEngine,
     ContainerEngineError,
-    ContainerSession,
-    DockerEngine,
-    PodmanEngine,
     get_container_engine,
 )
+
+# Optional imports for backward compatibility
+try:
+    from .core import AbstractContainerEngine, ContainerSession
+except ImportError:
+    AbstractContainerEngine = None  # type: ignore
+    ContainerSession = None  # type: ignore
 
 # Core operations - manuscript processing functionality
 from .operations import (
@@ -38,11 +41,7 @@ from .operations import (
 )
 
 __all__ = [
-    # Container engines
-    "AbstractContainerEngine",
-    "ContainerSession",
-    "DockerEngine",
-    "PodmanEngine",
+    # Container engines (deprecated)
     "get_container_engine",
     "ContainerEngineError",
     # Core operations

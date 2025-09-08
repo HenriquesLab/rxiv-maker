@@ -85,7 +85,7 @@ repos:
     hooks:
       - id: lazydocs-generate
         name: Generate API documentation
-        entry: python src/rxiv_maker/engine/generate_docs.py
+        entry: python src/rxiv_maker/engines/operations/generate_docs.py
         language: system
         files: ^src/rxiv_maker/.*\.py$
         exclude: ^git_submodules/.*$

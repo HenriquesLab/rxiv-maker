@@ -41,31 +41,51 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None, manuscript_path
     manuscript_name = Path(manuscript_path).name if manuscript_path else "manuscript"
     print(f"Preparing arXiv submission package for '{manuscript_name}' in {arxiv_path}")
 
-    # Copy the unified style file (already arXiv-compatible)
-    # Try multiple possible locations for the style file
-    style_candidates = [
-        Path("src/tex/style/rxiv_maker_style.cls"),  # From repository root
-        (Path(__file__).parent.parent.parent / "tex/style/rxiv_maker_style.cls"),  # Relative to script
-        (Path(__file__).parent.parent.parent.parent / "src/tex/style/rxiv_maker_style.cls"),  # Alternative relative
-        output_path / "rxiv_maker_style.cls",  # Already in output directory
-    ]
-
+    # Copy the unified style file (already arXiv-compatible) using centralized PathManager
     style_source = None
-    for candidate in style_candidates:
-        if candidate.exists():
-            style_source = candidate
-            break
 
+    # Try to use centralized PathManager first
+    try:
+        from ...core.path_manager import PathManager
+
+        if manuscript_path:
+            path_manager = PathManager(manuscript_path=manuscript_path, output_dir=output_dir)
+            style_source = path_manager.get_style_file_path("rxiv_maker_style.cls")
+            if style_source.exists():
+                shutil.copy2(style_source, arxiv_path / "rxiv_maker_style.cls")
+                print(
+                    f"✓ Copied unified arXiv-compatible style file using centralized path manager from {style_source}"
+                )
+            else:
+                style_source = None
+    except (ImportError, Exception) as e:
+        print(f"Warning: Could not use centralized path manager: {e}")
+        style_source = None
+
+    # Fallback to manual search if PathManager approach failed
     if style_source is None:
-        raise FileNotFoundError(
-            "Style file not found. Searched locations:\n"
-            + "\n".join(f"  - {candidate}" for candidate in style_candidates)
-            + "\nEnsure the script is run from the repository root or that "
-            "the style file exists in the output directory."
-        )
+        style_candidates = [
+            Path("src/tex/style/rxiv_maker_style.cls"),  # From repository root
+            (Path(__file__).parent.parent.parent / "tex/style/rxiv_maker_style.cls"),  # Relative to script
+            (Path(__file__).parent.parent.parent.parent / "src/tex/style/rxiv_maker_style.cls"),  # Alternative relative
+            output_path / "rxiv_maker_style.cls",  # Already in output directory
+        ]
 
-    shutil.copy2(style_source, arxiv_path / "rxiv_maker_style.cls")
-    print(f"✓ Copied unified arXiv-compatible style file from {style_source}")
+        for candidate in style_candidates:
+            if candidate.exists():
+                style_source = candidate
+                break
+
+        if style_source is None:
+            raise FileNotFoundError(
+                "Style file not found. Searched locations:\n"
+                + "\n".join(f"  - {candidate}" for candidate in style_candidates)
+                + "\nEnsure the script is run from the repository root or that "
+                "the style file exists in the output directory."
+            )
+
+        shutil.copy2(style_source, arxiv_path / "rxiv_maker_style.cls")
+        print(f"✓ Copied unified arXiv-compatible style file from {style_source}")
 
     # Determine the main manuscript file name by looking for .tex files
     tex_files = list(output_path.glob("*.tex"))
@@ -248,19 +268,19 @@ def verify_package(arxiv_path, manuscript_path=None):
 
                 if png_files:
                     # Use first PNG file found
-                    required_figures.append(f"Figures/{figure_dir.name}/{png_files[0].name}")
+                    required_figures.append(f"FIGURES/{figure_dir.name}/{png_files[0].name}")
                 elif pdf_files:
                     # Fallback to PDF if no PNG
-                    required_figures.append(f"Figures/{figure_dir.name}/{pdf_files[0].name}")
+                    required_figures.append(f"FIGURES/{figure_dir.name}/{pdf_files[0].name}")
                 elif md_files:
                     # Use markdown files for tables (STable directories)
-                    required_figures.append(f"Figures/{figure_dir.name}/{md_files[0].name}")
+                    required_figures.append(f"FIGURES/{figure_dir.name}/{md_files[0].name}")
                 elif figure_dir.name == "DATA":
                     # DATA directory may be empty or contain data files - don't flag as missing
                     pass
                 else:
                     # Directory exists but no suitable figure files
-                    required_figures.append(f"Figures/{figure_dir.name}/<missing figure files>")
+                    required_figures.append(f"FIGURES/{figure_dir.name}/<missing figure files>")
 
     missing_files = []
 

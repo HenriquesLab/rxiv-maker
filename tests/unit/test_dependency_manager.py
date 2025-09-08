@@ -18,6 +18,11 @@ class TestDependencyManager(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.project_dir = Path(self.temp_dir)
 
+        # Create a minimal manuscript structure for cache to work
+        manuscript_dir = self.project_dir / "manuscript"
+        manuscript_dir.mkdir()
+        (manuscript_dir / "00_CONFIG.yml").write_text("title: Test Manuscript")
+
     def tearDown(self):
         """Clean up test environment."""
         import shutil
@@ -27,15 +32,23 @@ class TestDependencyManager(unittest.TestCase):
     def test_dependency_manager_initialization(self):
         """Test DependencyManager initialization."""
         try:
+            import os
             import sys
 
             sys.path.insert(0, "src")
             from rxiv_maker.security.dependency_manager import DependencyManager
 
-            # Test initialization
-            manager = DependencyManager(self.project_dir, cache_enabled=True)
-            self.assertEqual(manager.project_dir, self.project_dir)
-            self.assertIsNotNone(manager.cache)
+            # Change to manuscript directory so cache can find the manuscript
+            old_cwd = os.getcwd()
+            os.chdir(self.project_dir / "manuscript")
+
+            try:
+                # Test initialization
+                manager = DependencyManager(self.project_dir, cache_enabled=True)
+                self.assertEqual(manager.project_dir, self.project_dir)
+                self.assertIsNotNone(manager.cache)
+            finally:
+                os.chdir(old_cwd)
 
             # Test without cache
             manager_no_cache = DependencyManager(self.project_dir, cache_enabled=False)
@@ -156,12 +169,20 @@ pyyaml>=6.0
     def test_dependency_parsing(self):
         """Test parsing of dependency specifications."""
         try:
+            import os
             import sys
 
             sys.path.insert(0, "src")
             from rxiv_maker.security.dependency_manager import DependencyManager
 
-            manager = DependencyManager(self.project_dir)
+            # Change to manuscript directory so cache can find the manuscript
+            old_cwd = os.getcwd()
+            os.chdir(self.project_dir / "manuscript")
+
+            try:
+                manager = DependencyManager(self.project_dir)
+            finally:
+                os.chdir(old_cwd)
 
             # Test dependency string parsing
             test_dependencies = ["requests>=2.28.0", "numpy==1.21.0", "pyyaml~=6.0", "pytest>=7.0,<8.0"]
@@ -201,6 +222,7 @@ pyyaml>=6.0
     def test_dependency_installation(self, mock_run):
         """Test dependency installation functionality."""
         try:
+            import os
             import sys
 
             sys.path.insert(0, "src")
@@ -209,7 +231,14 @@ pyyaml>=6.0
             # Mock successful installation
             mock_run.return_value = Mock(returncode=0, stdout="Successfully installed requests-2.28.0", stderr="")
 
-            manager = DependencyManager(self.project_dir)
+            # Change to manuscript directory so cache can find the manuscript
+            old_cwd = os.getcwd()
+            os.chdir(self.project_dir / "manuscript")
+
+            try:
+                manager = DependencyManager(self.project_dir)
+            finally:
+                os.chdir(old_cwd)
 
             if hasattr(manager, "install_dependency"):
                 result = manager.install_dependency("requests==2.28.0")
@@ -222,12 +251,20 @@ pyyaml>=6.0
     def test_cache_integration(self):
         """Test cache integration for dependency data."""
         try:
+            import os
             import sys
 
             sys.path.insert(0, "src")
             from rxiv_maker.security.dependency_manager import DependencyManager
 
-            manager = DependencyManager(self.project_dir, cache_enabled=True)
+            # Change to manuscript directory so cache can find the manuscript
+            old_cwd = os.getcwd()
+            os.chdir(self.project_dir / "manuscript")
+
+            try:
+                manager = DependencyManager(self.project_dir, cache_enabled=True)
+            finally:
+                os.chdir(old_cwd)
 
             # Test cache operations if available
             if hasattr(manager, "cache_dependency_info"):
@@ -251,6 +288,11 @@ class TestDependencyManagerPerformance(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.project_dir = Path(self.temp_dir)
 
+        # Create a minimal manuscript structure for cache to work
+        manuscript_dir = self.project_dir / "manuscript"
+        manuscript_dir.mkdir()
+        (manuscript_dir / "00_CONFIG.yml").write_text("title: Test Manuscript")
+
     def tearDown(self):
         """Clean up test environment."""
         import shutil
@@ -260,11 +302,11 @@ class TestDependencyManagerPerformance(unittest.TestCase):
     def test_large_dependency_list_processing(self):
         """Test processing of large dependency lists."""
         try:
+            import os
             import sys
-
-            sys.path.insert(0, "src")
             import time
 
+            sys.path.insert(0, "src")
             from rxiv_maker.security.dependency_manager import DependencyManager
 
             # Create large requirements.txt
@@ -275,7 +317,14 @@ class TestDependencyManagerPerformance(unittest.TestCase):
             requirements_file = self.project_dir / "requirements.txt"
             requirements_file.write_text("\n".join(large_requirements))
 
-            manager = DependencyManager(self.project_dir)
+            # Change to manuscript directory so cache can find the manuscript
+            old_cwd = os.getcwd()
+            os.chdir(self.project_dir / "manuscript")
+
+            try:
+                manager = DependencyManager(self.project_dir)
+            finally:
+                os.chdir(old_cwd)
 
             if hasattr(manager, "parse_all_dependencies"):
                 start_time = time.time()

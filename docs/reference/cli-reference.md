@@ -79,9 +79,8 @@ rxiv pdf --validate
 # Force regenerate all figures
 rxiv pdf --force-figures
 
-# Use specific engine
-rxiv pdf --engine docker
-RXIV_ENGINE=DOCKER rxiv pdf
+# All builds use local installation
+rxiv pdf
 ```
 
 **Options**:
@@ -93,12 +92,9 @@ RXIV_ENGINE=DOCKER rxiv pdf
 - `--verbose` - Detailed output for debugging
 - `--quiet` - Minimal output
 - `--debug` - Enable debug output
-- `--container-mode <mode>` - Container behavior (reuse/minimal/isolated)
 
-**Build Engines**:
-- **`local`** - Use local LaTeX installation (fastest)
-- **`docker`** - Use Docker container (consistent, no local deps)
-- **`podman`** - Use Podman container (Docker alternative)
+**Build Engine**:
+- **`local`** - Uses local LaTeX installation (only supported engine)
 
 **Examples**:
 ```bash
@@ -114,8 +110,8 @@ rxiv pdf --verbose --engine local
 # Preprint submission
 rxiv pdf --force-figures --output-dir submission/
 
-# Team consistency
-RXIV_ENGINE=DOCKER rxiv pdf
+# All builds use local installation
+rxiv pdf
 ```
 
 **Output Files**:
@@ -324,33 +320,8 @@ rxiv setup
 **Checks Performed**:
 - Python version and packages
 - LaTeX installation and packages
-- Docker/Podman availability
 - Node.js for figure generation
 - System PATH configuration
-
----
-
-### `rxiv config` - Configuration Management
-
-**Purpose**: Manage configuration files and validation.
-
-```bash
-# Initialize configuration file
-rxiv config init
-
-# Validate configuration
-rxiv config validate
-
-# Validate with specific template
-rxiv config validate --template preprint
-```
-
-**Options**:
-- `init` - Create new configuration file
-- `validate` - Validate configuration file
-- `--template` - Configuration template (default, minimal, journal, preprint)
-- `--force` - Overwrite existing configuration
-- `--output` - Output path for configuration file
 
 ---
 
@@ -424,8 +395,8 @@ rxiv pdf --verbose --engine local
 rxiv clean --all
 rxiv pdf
 
-# Try different engine
-RXIV_ENGINE=DOCKER rxiv pdf
+# All builds use local installation
+rxiv pdf
 ```
 
 ### Validation Problems
@@ -453,9 +424,7 @@ python FIGURES/my_plot.py
 
 ### Engine Selection
 ```bash
-export RXIV_ENGINE=docker    # Use Docker by default
-export RXIV_ENGINE=local     # Use local tools by default
-export RXIV_ENGINE=podman    # Use Podman by default
+# RXIV_ENGINE is no longer configurable - always uses local installation
 ```
 
 ### Build Customization

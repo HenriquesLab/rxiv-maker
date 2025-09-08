@@ -195,7 +195,7 @@ def _convert_single_figure(
             **kwargs,
         )
     except Exception as e:
-        raise FigureGenerationError(f"Failed to initialize figure generator: {e}")
+        raise FigureGenerationError(f"Failed to initialize figure generator: {e}") from e
 
     # Track files before generation
     output_subdir = output_dir / input_path.stem
@@ -214,7 +214,7 @@ def _convert_single_figure(
         else:
             raise FigureGenerationError(f"Unknown figure type: {figure_type}")
     except Exception as e:
-        raise FigureGenerationError(f"Figure generation failed: {e}")
+        raise FigureGenerationError(f"Figure generation failed: {e}") from e
 
     # Find newly generated files
     files_after = set()

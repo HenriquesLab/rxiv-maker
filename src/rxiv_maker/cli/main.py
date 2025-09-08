@@ -1,7 +1,6 @@
 """Main CLI entry point for rxiv-maker."""
 
 import os
-from pathlib import Path
 
 import rich_click as click
 from rich.console import Console
@@ -10,7 +9,6 @@ from .. import __version__
 from ..utils.update_checker import check_for_updates_async, show_update_notification
 from . import commands
 from .commands.check_installation import check_installation
-from .config import config_cmd
 
 # Configure rich-click for better help formatting
 click.rich_click.USE_RICH_MARKUP = True
@@ -46,11 +44,7 @@ click.rich_click.COMMAND_GROUPS = {
         },
         {
             "name": "Configuration",
-            "commands": ["config", "cache", "check-installation", "completion"],
-        },
-        {
-            "name": "Container Management",
-            "commands": ["containers"],
+            "commands": ["cache", "check-installation", "completion"],
         },
         {
             "name": "Information",
@@ -63,7 +57,7 @@ click.rich_click.OPTION_GROUPS = {
     "rxiv": [
         {
             "name": "Processing Options",
-            "options": ["-v", "--verbose", "--engine"],
+            "options": ["-v", "--verbose"],
         },
         {
             "name": "Setup Options",
@@ -111,10 +105,10 @@ console = Console()
 
 
 class UpdateCheckGroup(click.Group):
-    """Custom Click group that handles update checking and Docker cleanup."""
+    """Custom Click group that handles update checking."""
 
     def invoke(self, ctx):
-        """Invoke command and handle update checking and Docker cleanup."""
+        """Invoke command and handle update checking."""
         try:
             # Start update check in background (non-blocking)
             check_for_updates_async()
@@ -131,58 +125,22 @@ class UpdateCheckGroup(click.Group):
         except Exception:
             # Always re-raise exceptions from commands
             raise
-        finally:
-            # Clean up container sessions if container engine was used
-            engine = ctx.obj.get("engine") if ctx.obj else None
-            verbose = ctx.obj.get("verbose", False) if ctx.obj else False
-
-            if engine in ["docker", "podman"]:
-                try:
-                    # Use the global container manager for cleanup
-                    import logging
-
-                    from ..core.global_container_manager import cleanup_global_containers
-
-                    if verbose:
-                        console.print("🧹 Cleaning up container sessions...", style="dim")
-
-                    cleanup_count = cleanup_global_containers()
-
-                    if verbose and cleanup_count > 0:
-                        console.print(f"✅ Cleaned up {cleanup_count} container engine(s)", style="dim green")
-                    elif verbose:
-                        console.print("ℹ️  No active container sessions to clean up", style="dim")
-
-                except Exception as e:
-                    # Log cleanup errors but don't mask original exceptions
-                    logger = logging.getLogger(__name__)
-                    logger.debug(f"Container cleanup failed: {e}")
-
-                    if verbose:
-                        console.print(f"⚠️  Container cleanup failed: {e}", style="dim yellow")
 
 
 @click.group(cls=UpdateCheckGroup, context_settings={"help_option_names": ["-h", "--help"]})
 @click.version_option(version=__version__, prog_name="rxiv")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
-@click.option(
-    "--engine",
-    type=click.Choice(["local", "docker", "podman"]),
-    default=lambda: os.environ.get("RXIV_ENGINE", "local").lower(),
-    help="Engine to use for processing (local, docker, or podman). Can be set with RXIV_ENGINE environment variable.",
-)
 @click.option("--no-update-check", is_flag=True, help="Skip update check for this command")
 @click.pass_context
 def main(
     ctx: click.Context,
     verbose: bool,
-    engine: str,
     no_update_check: bool,
 ) -> None:
     """**rxiv-maker** converts Markdown manuscripts into publication-ready PDFs.
 
     Automated figure generation, professional LaTeX typesetting, and bibliography
-    management.
+    management using local execution only.
 
     ## Examples
 
@@ -223,45 +181,19 @@ def main(
         $ rxiv completion zsh           # Install for zsh
 
         $ rxiv completion bash          # Install for bash
+
+    ## Note
+
+    Rxiv-maker now uses local-only execution for better simplicity and reliability.
+    For containerized execution, run rxiv-maker from within a Docker container.
     """
     # Initialize context
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
-    ctx.obj["engine"] = engine
     ctx.obj["no_update_check"] = no_update_check
 
-    # Container engine optimization: check availability early for container engines
-    if engine in ["docker", "podman"]:
-        from ..engines.core.factory import get_container_engine
-
-        try:
-            if verbose:
-                console.print(f"🐳 Creating {engine} engine...", style="blue")
-            # Use current working directory as workspace for consistency
-            workspace_dir = Path.cwd().resolve()
-            container_engine = get_container_engine(engine_type=engine, workspace_dir=workspace_dir)
-            if verbose:
-                console.print(f"🐳 Checking {engine} availability...", style="blue")
-            if not container_engine.check_available():
-                console.print(
-                    f"❌ {engine.title()} is not available or not running. Please start {engine} and try again.",
-                    style="red",
-                )
-                console.print(
-                    "💡 Alternatively, use --engine local for local execution",
-                    style="yellow",
-                )
-                ctx.exit(1)
-
-            if verbose:
-                console.print(f"🐳 {engine.title()} is ready!", style="green")
-
-        except Exception as e:
-            if verbose:
-                console.print(f"⚠️ {engine.title()} setup warning: {e}", style="yellow")
-
-    # Set environment variables
-    os.environ["RXIV_ENGINE"] = engine.upper()
+    # Set environment variables for local execution
+    os.environ["RXIV_ENGINE"] = "LOCAL"  # Set to LOCAL for backward compatibility
     if verbose:
         os.environ["RXIV_VERBOSE"] = "1"
     if no_update_check:
@@ -278,13 +210,11 @@ main.add_command(commands.init)
 main.add_command(commands.bibliography)
 main.add_command(commands.track_changes)
 main.add_command(commands.setup)
-# Deprecated: install-deps command removed (use 'rxiv setup' instead)
 main.add_command(commands.version)
-main.add_command(config_cmd, name="config")
 main.add_command(commands.cache, name="cache")
 main.add_command(check_installation, name="check-installation")
 main.add_command(commands.completion_cmd, name="completion")
-main.add_command(commands.containers_cmd, name="containers")
+# Removed: containers command (deprecated with container engine support)
 
 if __name__ == "__main__":
     main()

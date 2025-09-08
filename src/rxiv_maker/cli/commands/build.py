@@ -133,29 +133,15 @@ def build(
         cleanup()
         sys.exit(1)
 
-    # Docker engine optimization: verify Docker readiness for build pipeline
-    if engine == "docker":
-        from ...docker.manager import get_docker_manager
+    # Docker engine deprecated - only local engine supported
+    if engine != "local":
+        logger.error(f"Engine '{engine}' is not supported. Docker/Podman engines have been deprecated.")
+        logger.tip("Use --engine local or remove --engine option for local builds")
+        logger.tip("For containerized builds, use docker-rxiv-maker repository")
+        from ...core.logging_config import cleanup
 
-        try:
-            docker_manager = get_docker_manager()
-            if not docker_manager.check_docker_available():
-                logger.error("Docker is not available for build pipeline. Please ensure Docker is running.")
-                logger.tip("Use --engine local to build without Docker")
-                from ...core.logging_config import cleanup
-
-                cleanup()
-                sys.exit(1)
-
-            if verbose:
-                logger.docker_info("Build pipeline will use Docker containers")
-
-        except Exception as e:
-            logger.error(f"Docker setup error: {e}")
-            from ...core.logging_config import cleanup
-
-            cleanup()
-            sys.exit(1)
+        cleanup()
+        sys.exit(1)
 
     try:
         from rich.progress import BarColumn, MofNCompleteColumn, TaskProgressColumn, TimeElapsedColumn
@@ -180,7 +166,6 @@ def build(
                 track_changes_tag=track_changes,
                 clear_output=not keep_output,  # Clear output by default unless --keep-output is specified
                 verbose=verbose,
-                engine=engine,
             )
             progress.update(initialization_task, description="✅ Build manager initialized")
 
@@ -208,8 +193,8 @@ def build(
             def progress_callback(step_name, completed_steps, total_steps):
                 progress.update(main_task, completed=completed_steps, description=f"📄 {step_name}")
 
-            # Build the PDF with progress tracking
-            success = build_manager.run_full_build(progress_callback=progress_callback)
+            # Build the PDF
+            success = build_manager.build()
 
             if success:
                 progress.update(main_task, completed=len(build_steps), description="✅ PDF generated successfully!")

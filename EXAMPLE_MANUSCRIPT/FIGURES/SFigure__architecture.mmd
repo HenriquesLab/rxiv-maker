@@ -55,17 +55,21 @@ flowchart TD
         D3["📋 Build Artifacts<br>• Auxiliary files<br>• Build logs<br>• Debug information"]
   end
 
- subgraph DEPLOY["🚀 Deployment Env."]
+ subgraph DEPLOY["🚀 Deployment Architecture"]
     direction TB
-    subgraph LOCAL["💻 Local Execution"]
+    subgraph PRIMARY["💻 Primary: Local-First Execution"]
       direction TB
-      L1["🔧 Native Installation<br>• Direct system access<br>• Optimal performance<br>• Development debugging"]
-      L2["🐳 Docker Engine Mode<br>• Pre-configured LaTeX<br>• Containerised dependencies<br>• Reproducible environment"]
+      L1["🔧 Local Installation<br>• Direct system access<br>• Optimal performance<br>• Native development environment<br>• Intelligent caching system"]
+      L1_FEATURES["🎯 Modern CLI Experience<br>• Rich formatting & progress bars<br>• Shell completion (bash/zsh)<br>• Automated validation<br>• Content-based change detection"]
     end
-    subgraph CLOUD["☁️ Cloud Execution"]
+    subgraph ALTERNATIVE["🐳 Alternative: Containerised"]
       direction TB
-      C1_CLOUD["⚙️ GitHub Actions CI/CD<br>• Automated triggers<br>• Cloud compute resources<br>• Artifact storage"]
-      C2_CLOUD["📓 Google Colab Interactive<br>• Web-based interface<br>• Real-time feedback<br>• Interactive development"]
+      L2["🐳 Docker (Separate Repo)<br>• docker-rxiv-maker repository<br>• Pre-configured environment<br>• Specialised deployment needs"]
+    end
+    subgraph SYSTEMS["⚙️ Intelligent Systems"]
+      direction TB
+      SYS1["📊 Caching Engine<br>• Content-based change detection<br>• File checksum tracking<br>• Selective regeneration"]
+      SYS2["✅ Validation Framework<br>• LaTeX error parsing<br>• Figure validation<br>• Citation checking with DOI"]
     end
   end
 
@@ -91,6 +95,11 @@ flowchart TD
     A -.-> |"Input to"| DEPLOY
     DEPLOY -.-> |"Produces"| D
 
+    %% Show intelligent systems integration
+    SYS1 -.-> |"Optimizes"| CORE
+    SYS2 -.-> |"Validates"| CORE
+    L1_FEATURES -.-> |"Enhances"| L1
+
     A1:::componentBox
     A2:::componentBox
     A3:::componentBox
@@ -111,15 +120,17 @@ flowchart TD
     D2:::componentBox
     D3:::componentBox
     L1:::envBox
+    L1_FEATURES:::envBox
     L2:::envBox
-    C1_CLOUD:::envBox
-    C2_CLOUD:::envBox
+    SYS1:::systemBox
+    SYS2:::systemBox
     A:::inputBox
     CORE:::processBox
     D:::outputBox
     DEPLOY:::deployBox
-    LOCAL:::localBox
-    CLOUD:::cloudBox
+    PRIMARY:::primaryBox
+    ALTERNATIVE:::alternativeBox
+    SYSTEMS:::systemsBox
     B1:::stageBox
     B2:::stageBox
     B3:::stageBox
@@ -128,8 +139,10 @@ flowchart TD
     classDef processBox fill:#fff8e1,stroke:#f57c00,stroke-width:3px,color:#333
     classDef outputBox fill:#fce4ec,stroke:#c2185b,stroke-width:3px,color:#333
     classDef deployBox fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#333
-    classDef localBox fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#333
-    classDef cloudBox fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#333
+    classDef primaryBox fill:#e8f5e8,stroke:#388e3c,stroke-width:3px,color:#333
+    classDef alternativeBox fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#333
+    classDef systemsBox fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px,color:#333
+    classDef systemBox fill:#ffffff,stroke:#3f51b5,stroke-width:2px,color:#333
     classDef envBox fill:#ffffff,stroke:#666666,stroke-width:2px,color:#333
     classDef stageBox fill:#f5f5f5,stroke:#999999,stroke-width:2px,color:#333
     classDef componentBox fill:#ffffff,stroke:#666666,stroke-width:2px,color:#333

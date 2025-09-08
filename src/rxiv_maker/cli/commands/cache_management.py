@@ -23,7 +23,7 @@ from rxiv_maker.core.cache.cache_utils import (
     get_manuscript_name,
 )
 
-from ...docker.optimization import DockerBuildOptimizer
+# Docker optimization removed - engines deprecated
 from ...utils.platform import safe_console_print
 
 try:
@@ -78,18 +78,9 @@ def stats(output_format: str, manuscript: Optional[str] = None):
                 "recommendation": "Navigate to a manuscript directory or use 'rxiv cache set-strategy global'",
             }
 
-        # Docker build cache
-        docker_optimizer = DockerBuildOptimizer()
-        docker_stats = {}
-        try:
-            build_cache_stats = docker_optimizer.cache.get_stats()
-            context_cache_stats = docker_optimizer.build_context_cache.get_stats()
-            docker_stats = {"build_cache": build_cache_stats, "context_cache": context_cache_stats}
-        except Exception as e:
-            logger.debug(f"Could not get Docker cache stats: {e}")
-
-        if docker_stats:
-            all_stats["docker_cache"] = docker_stats
+        # Docker build cache (deprecated)
+        docker_stats = {"note": "Docker engine deprecated - use docker-rxiv-maker for containers"}
+        all_stats["docker_cache"] = docker_stats
 
         if output_format == "json":
             safe_console_print(console, json.dumps(all_stats, indent=2))
@@ -141,9 +132,8 @@ def clear(cache_type: str, manuscript: Optional[str] = None, confirm: bool = Fal
                 )
 
         if cache_type in ["all", "docker"]:
-            docker_optimizer = DockerBuildOptimizer()
-            docker_cleanup = docker_optimizer.cleanup_build_cache()
-            cleared_counts["docker"] = docker_cleanup
+            # Docker cache cleanup deprecated
+            cleared_counts["docker"] = {"note": "Docker engine deprecated"}
 
         safe_console_print(console, f"✅ Cache clear completed: {cleared_counts}")
 
@@ -178,11 +168,9 @@ def cleanup(max_age_hours: int, dry_run: bool):
                 "⚠️  Note: Bibliography cache is using global fallback due to manuscript-local strategy without manuscript directory",
             )
 
-        # Docker cache cleanup
-        docker_optimizer = DockerBuildOptimizer()
+        # Docker cache cleanup (deprecated)
         if not dry_run:
-            docker_cleanup = docker_optimizer.cleanup_build_cache(max_age_hours)
-            cleanup_results["docker"] = docker_cleanup
+            cleanup_results["docker"] = {"note": "Docker engine deprecated"}
         else:
             cleanup_results["docker"] = {"estimated_cleanup": 0}
 
@@ -201,7 +189,8 @@ def cleanup(max_age_hours: int, dry_run: bool):
 def optimize(dockerfile: Optional[Path] = None):
     """Analyze and suggest cache optimization opportunities."""
     try:
-        docker_optimizer = DockerBuildOptimizer()
+        # Docker optimization deprecated
+        # For containerized builds, use docker-rxiv-maker repository
 
         # Get current cache statistics for analysis
         all_stats = {}
@@ -211,9 +200,9 @@ def optimize(dockerfile: Optional[Path] = None):
         bib_stats = bib_cache.get_cache_statistics()
         all_stats["bibliography"] = bib_stats
 
-        # Docker optimization analysis
+        # Docker optimization analysis (deprecated)
         if dockerfile:
-            docker_analysis = docker_optimizer.optimize_multi_stage_build(dockerfile)
+            docker_analysis = {"note": "Docker optimization deprecated - use docker-rxiv-maker for containers"}
             all_stats["docker_build_analysis"] = docker_analysis
 
         # Generate optimization recommendations

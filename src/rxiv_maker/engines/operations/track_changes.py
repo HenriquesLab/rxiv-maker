@@ -84,6 +84,15 @@ class TrackChangesManager:
         self.git_tag = git_tag
         self.verbose = verbose
 
+        # Initialize centralized path manager
+        try:
+            from ...core.path_manager import PathManager
+
+            self.path_manager = PathManager(manuscript_path=manuscript_path, output_dir=output_dir)
+        except ImportError:
+            # Fallback if PathManager is not available
+            self.path_manager = None
+
         # Ensure output directory exists
         self.output_dir.mkdir(exist_ok=True)
 
@@ -485,8 +494,22 @@ class TrackChangesManager:
             return True
 
     def copy_compilation_files(self):
-        """Copy necessary files for LaTeX compilation."""
-        # Copy style files from source
+        """Copy necessary files for LaTeX compilation using centralized PathManager."""
+        # Use centralized PathManager for style file copying if available
+        if self.path_manager:
+            try:
+                copied_files = self.path_manager.copy_style_files_to_output()
+                for copied_file in copied_files:
+                    self.log(f"Copied {copied_file.name} using centralized path manager")
+            except Exception as e:
+                self.log(f"Warning: Failed to copy style files using PathManager: {e}")
+                self._fallback_copy_style_files()
+        else:
+            # Fallback to manual copying
+            self._fallback_copy_style_files()
+
+    def _fallback_copy_style_files(self):
+        """Fallback method for copying style files when PathManager is not available."""
         style_files = [
             ("src/tex/style/rxiv_maker_style.cls", "rxiv_maker_style.cls"),
             ("src/tex/style/rxiv_maker_style.bst", "rxiv_maker_style.bst"),

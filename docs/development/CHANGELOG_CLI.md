@@ -60,7 +60,6 @@ The CLI modernization initiative brings Rxiv-Maker into the modern Python ecosys
 
 ### New Commands
 - `rxiv check-installation`: System dependency checker
-- `rxiv config`: Configuration management
 - `rxiv version --detailed`: System information
 
 ### Enhanced Commands
