@@ -28,6 +28,7 @@ def validate_pdf_output(
     pdf_path: str | None = None,
     verbose: bool = False,
     detailed: bool = False,
+    quiet: bool = False,
 ) -> int:
     """Validate PDF output quality.
 
@@ -36,6 +37,7 @@ def validate_pdf_output(
         pdf_path: Path to PDF file (optional)
         verbose: Enable verbose output
         detailed: Enable detailed output with statistics
+        quiet: Suppress non-critical warnings
 
     Returns:
         0 if successful, 1 if errors found
@@ -63,7 +65,13 @@ def validate_pdf_output(
                 if error.level == ValidationLevel.ERROR:
                     print_error(f"ERROR: {error.message}")
                 elif error.level == ValidationLevel.WARNING:
-                    print_warning(f"WARNING: {error.message}")
+                    # Suppress PDF equation warnings by default (known false positives) - only show in verbose mode
+                    if "malformed equations in PDF" in error.message:
+                        if verbose:
+                            print_warning(f"WARNING: {error.message}")
+                    elif not quiet:
+                        # Other warnings show by default unless in quiet mode
+                        print_warning(f"WARNING: {error.message}")
                 elif error.level == ValidationLevel.SUCCESS:
                     print_success(f"SUCCESS: {error.message}")
                 elif error.level == ValidationLevel.INFO:

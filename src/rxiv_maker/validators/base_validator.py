@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
+from ..core.managers.file_manager import get_file_manager
+
 
 class ValidationLevel(Enum):
     """Validation result severity levels."""
@@ -145,16 +147,10 @@ class BaseValidator(ABC):
     def _read_file_safely(self, file_path: str) -> str | None:
         """Safely read a file, returning None if it fails."""
         try:
-            with open(file_path, encoding="utf-8") as f:
-                return f.read()
-        except UnicodeDecodeError:
-            # LaTeX log files may be in latin-1 encoding, try fallback
-            try:
-                with open(file_path, encoding="latin-1") as f:
-                    return f.read()
-            except OSError:
-                return None
-        except OSError:
+            file_manager = get_file_manager()
+            return file_manager.read_text_file(file_path)
+        except Exception:
+            # Return None on any error for compatibility with existing behavior
             return None
 
     def _get_line_context(self, content: str, line_number: int, context_lines: int = 2) -> str:

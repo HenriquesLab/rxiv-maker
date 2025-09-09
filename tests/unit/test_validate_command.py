@@ -14,7 +14,7 @@ class TestValidateCommand:
         """Set up test fixtures before each test."""
         self.runner = CliRunner()
 
-    @patch("rxiv_maker.cli.commands.validate.ValidationCommand")
+    @patch("rxiv_maker.cli.framework.ValidationCommand")
     def test_successful_validation(self, mock_validation_command):
         """Test successful manuscript validation."""
         # Mock ValidationCommand instance
@@ -34,7 +34,7 @@ class TestValidateCommand:
             mock_validation_command.assert_called_once()
             mock_command_instance.run.assert_called_once()
 
-    @patch("rxiv_maker.cli.commands.validate.ValidationCommand")
+    @patch("rxiv_maker.cli.framework.ValidationCommand")
     def test_validation_failure(self, mock_validation_command):
         """Test manuscript validation failure."""
         # Mock ValidationCommand instance to simulate failure
@@ -58,7 +58,7 @@ class TestValidateCommand:
             mock_validation_command.assert_called_once()
             mock_command_instance.run.assert_called_once()
 
-    @patch("rxiv_maker.cli.commands.validate.ValidationCommand")
+    @patch("rxiv_maker.cli.framework.ValidationCommand")
     def test_validation_success_exit_zero(self, mock_validation_command):
         """Test validation with success return value - should be treated as success."""
         # Mock ValidationCommand instance for success
@@ -78,7 +78,7 @@ class TestValidateCommand:
             mock_validation_command.assert_called_once()
             mock_command_instance.run.assert_called_once()
 
-    @patch("rxiv_maker.cli.commands.validate.ValidationCommand")
+    @patch("rxiv_maker.cli.framework.ValidationCommand")
     def test_keyboard_interrupt_handling(self, mock_validation_command):
         """Test keyboard interrupt handling."""
         # Mock ValidationCommand instance to raise KeyboardInterrupt
@@ -98,7 +98,7 @@ class TestValidateCommand:
             mock_validation_command.assert_called_once()
             mock_command_instance.run.assert_called_once()
 
-    @patch("rxiv_maker.cli.commands.validate.ValidationCommand")
+    @patch("rxiv_maker.cli.framework.ValidationCommand")
     def test_unexpected_error_handling(self, mock_validation_command):
         """Test unexpected error handling."""
         # Mock ValidationCommand instance to raise an unexpected error

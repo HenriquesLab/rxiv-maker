@@ -7,6 +7,7 @@ from .cache_management import cache_group as cache
 from .check_installation import check_installation
 from .clean import clean
 from .completion import completion_cmd
+from .config import config_group as config
 
 # Removed: from .containers import containers_cmd (deprecated with container engine support)
 from .figures import figures
@@ -21,6 +22,7 @@ __all__ = [
     "arxiv",
     "bibliography",
     "cache",
+    "config",
     "pdf",
     "check_installation",
     "clean",

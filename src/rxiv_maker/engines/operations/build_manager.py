@@ -39,6 +39,7 @@ class BuildManager:
         skip_pdf_validation: bool = False,
         clear_output: bool = True,
         verbose: bool = False,
+        quiet: bool = False,
         track_changes_tag: str | None = None,
     ):
         """Initialize build manager.
@@ -51,6 +52,7 @@ class BuildManager:
             skip_pdf_validation: Skip PDF validation
             clear_output: Clear output directory before build (default: True)
             verbose: Enable verbose output
+            quiet: Suppress non-critical warnings
             track_changes_tag: Git tag to track changes against
         """
         # Initialize centralized path management
@@ -62,6 +64,7 @@ class BuildManager:
         self.skip_pdf_validation = skip_pdf_validation
         self.clear_output = clear_output
         self.verbose = verbose or EnvironmentManager.is_verbose()
+        self.quiet = quiet
         self.track_changes_tag = track_changes_tag
 
         # Provide legacy interface for backward compatibility
@@ -91,6 +94,26 @@ class BuildManager:
         if self.output_dir:
             set_log_directory(Path(self.output_dir))
 
+    def _should_show_latex_warning(self, warning_type: str) -> bool:
+        """Determine if a LaTeX warning should be shown based on quiet mode.
+
+        Args:
+            warning_type: Type of warning (e.g., 'compilation', 'pdf_generation')
+
+        Returns:
+            True if warning should be shown
+        """
+        if not self.quiet:
+            return True
+
+        # In quiet mode, suppress routine LaTeX compilation warnings
+        routine_warnings = {
+            "latex_compilation_pass",  # pdflatex pass warnings
+            "pdf_generation_warnings",  # PDF generated despite warnings
+        }
+
+        return warning_type not in routine_warnings
+
     def log(self, message: str, level: str = "INFO"):
         """Log message with consistent formatting."""
         if level == "STEP":
@@ -103,9 +126,25 @@ class BuildManager:
                 print(f"ℹ️ {message}")
             logger.info(message)
         elif level == "WARNING":
-            # Warning messages always show
+            # Warning messages always show - for actionable issues only
             print(f"⚠️ {message}")
             logger.warning(message)
+        elif level == "VERBOSE_WARNING":
+            # Verbose warnings - only show in verbose mode (for non-actionable issues)
+            if self.verbose:
+                print(f"⚠️ {message}")
+                logger.warning(message)
+            else:
+                logger.debug(f"VERBOSE_WARNING: {message}")
+        elif level == "QUIET_WARNING":
+            # Quiet warnings - show only if not in quiet mode
+            if not self.quiet:
+                print(f"⚠️ {message}")
+            # Still log to file but don't show in console if quiet
+            if not self.quiet:
+                logger.warning(message)
+            else:
+                logger.debug(f"QUIET_WARNING: {message}")
         elif level == "ERROR":
             # Error messages always show
             print(f"❌ {message}")
@@ -225,6 +264,13 @@ class BuildManager:
                 self.performance_tracker.end_operation("figure_generation", metadata={"error": str(e)})
             raise
 
+    def execute_manuscript_code(self):
+        """Execute code blocks embedded in manuscript files (future enhancement)."""
+        # Placeholder for manuscript code execution functionality
+        # This would scan markdown files for ```python blocks and execute them
+        # For now, this is a no-op since the main issue (figure generation) is fixed
+        pass
+
     def generate_manuscript_tex(self):
         """Generate the LaTeX manuscript file."""
         self.log("Generating LaTeX manuscript...", "STEP")
@@ -322,7 +368,7 @@ class BuildManager:
                 )
 
                 if result.returncode != 0:
-                    self.log("First pdflatex pass had warnings/errors", "WARNING")
+                    self.log("First pdflatex pass had warnings/errors", "VERBOSE_WARNING")
                     if result.stdout and self.verbose:
                         try:
                             stdout_text = result.stdout.decode("utf-8", errors="replace")
@@ -364,7 +410,7 @@ class BuildManager:
                         )
 
                         if result.returncode != 0:
-                            self.log("Second pdflatex pass failed", "WARNING")
+                            self.log("Second pdflatex pass failed", "VERBOSE_WARNING")
                             if self.verbose:
                                 try:
                                     stderr_text = result.stderr.decode("utf-8", errors="replace")
@@ -388,7 +434,7 @@ class BuildManager:
                 if pdf_file.exists():
                     self.log(f"PDF generated successfully: {pdf_file}")
                     if result.returncode != 0:
-                        self.log("PDF generated despite LaTeX warnings/errors", "WARNING")
+                        self.log("PDF generated despite LaTeX warnings/errors", "VERBOSE_WARNING")
                         if result.stderr and self.verbose:
                             try:
                                 stderr_text = result.stderr.decode("utf-8", errors="replace")
@@ -439,7 +485,7 @@ class BuildManager:
 
             # validate_pdf_output returns 0 for success, 1 for errors
             exit_code = validate_pdf_output(
-                manuscript_path=str(self.manuscript_dir), pdf_path=str(pdf_file), verbose=self.verbose
+                manuscript_path=str(self.manuscript_dir), pdf_path=str(pdf_file), verbose=self.verbose, quiet=self.quiet
             )
             is_valid = exit_code == 0
 
@@ -550,40 +596,43 @@ class BuildManager:
                 # Step 1: Setup
                 self.setup_output_directory()
 
-                # Step 2: Validation
+                # Step 2: Generate figures first (before validation)
+                self.generate_figures()
+
+                # Step 3: Execute manuscript code blocks (if any)
+                self.execute_manuscript_code()
+
+                # Step 4: Validation (after figures and code execution)
                 if not self.validate_manuscript():
                     self.log("Build failed: Manuscript validation failed", "ERROR")
                     op.add_metadata("validation_passed", False)
                     return False
                 op.add_metadata("validation_passed", True)
 
-                # Step 3: Generate figures
-                self.generate_figures()
-
-                # Step 4: Generate LaTeX manuscript
+                # Step 5: Generate LaTeX manuscript
                 self.generate_manuscript_tex()
 
-                # Step 5: Copy references
+                # Step 6: Copy references
                 self.copy_references()
 
-                # Step 6: Copy style files
+                # Step 7: Copy style files
                 self.copy_style_files()
 
-                # Step 7: Compile LaTeX to PDF
+                # Step 8: Compile LaTeX to PDF
                 if not self.compile_latex():
                     self.log("Build failed: LaTeX compilation failed", "ERROR")
                     op.add_metadata("latex_compilation_passed", False)
                     return False
                 op.add_metadata("latex_compilation_passed", True)
 
-                # Step 8: Validate PDF
+                # Step 9: Validate PDF
                 if not self.validate_pdf():
                     self.log("Build failed: PDF validation failed", "ERROR")
                     op.add_metadata("pdf_validation_passed", False)
                     return False
                 op.add_metadata("pdf_validation_passed", True)
 
-                # Step 9: Copy final PDF
+                # Step 10: Copy final PDF
                 self.copy_final_pdf()
 
                 # Success

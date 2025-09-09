@@ -232,8 +232,15 @@ class TestSecurityScanner(unittest.TestCase):
 
     def test_cache_integration(self):
         """Test cache integration for security scan results."""
+        import os
+        import sys
+
+        # Change to EXAMPLE_MANUSCRIPT directory which has the required config
+        original_cwd = os.getcwd()
         try:
-            import sys
+            example_path = os.path.join(os.getcwd(), "EXAMPLE_MANUSCRIPT")
+            if os.path.exists(example_path):
+                os.chdir(example_path)
 
             sys.path.insert(0, "src")
             from rxiv_maker.security.scanner import SecurityScanner
@@ -257,6 +264,9 @@ class TestSecurityScanner(unittest.TestCase):
 
         except ImportError:
             self.skipTest("Security scanner module not available")
+        finally:
+            # Restore original working directory
+            os.chdir(original_cwd)
 
 
 @pytest.mark.unit
