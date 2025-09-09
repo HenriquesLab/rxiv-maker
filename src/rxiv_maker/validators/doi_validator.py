@@ -139,7 +139,7 @@ class DOIValidator(BaseValidator):
         self.checksum_manager = get_bibliography_checksum_manager(self.manuscript_path)
 
         # Initialize advanced bibliography cache
-        self.bib_cache = get_bibliography_cache(Path(manuscript_path).name)
+        self.bib_cache = get_bibliography_cache(Path(manuscript_path).name, Path(manuscript_path))
 
     def _is_ci_environment(self) -> bool:
         """Check if running in CI environment."""

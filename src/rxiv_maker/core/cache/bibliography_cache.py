@@ -23,14 +23,15 @@ logger = logging.getLogger(__name__)
 class BibliographyCache:
     """Advanced caching system for bibliography processing operations."""
 
-    def __init__(self, manuscript_name: Optional[str] = None):
+    def __init__(self, manuscript_name: Optional[str] = None, manuscript_dir: Optional[Path] = None):
         """Initialize bibliography cache.
 
         Args:
             manuscript_name: Optional manuscript name (kept for API compatibility)
+            manuscript_dir: Optional manuscript directory path
         """
         # Use manuscript-local cache directory
-        cache_base_dir = get_manuscript_cache_dir()
+        cache_base_dir = get_manuscript_cache_dir(manuscript_dir=manuscript_dir)
 
         # Specialized caches for different operations
         self.doi_metadata_cache = AdvancedCache(
@@ -402,12 +403,14 @@ class BibliographyCache:
 _global_bibliography_cache: Optional[BibliographyCache] = None
 
 
-def get_bibliography_cache(manuscript_name: Optional[str] = None) -> BibliographyCache:
+def get_bibliography_cache(
+    manuscript_name: Optional[str] = None, manuscript_dir: Optional[Path] = None
+) -> BibliographyCache:
     """Get or create global bibliography cache instance."""
     global _global_bibliography_cache
 
     if _global_bibliography_cache is None or manuscript_name:
-        _global_bibliography_cache = BibliographyCache(manuscript_name)
+        _global_bibliography_cache = BibliographyCache(manuscript_name, manuscript_dir)
 
     return _global_bibliography_cache
 

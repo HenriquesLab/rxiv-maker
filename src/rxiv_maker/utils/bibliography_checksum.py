@@ -32,7 +32,7 @@ class BibliographyChecksumManager:
 
         # Use manuscript cache directory if not specified
         if cache_dir is None:
-            self.cache_dir = get_manuscript_cache_dir("bibliography")
+            self.cache_dir = get_manuscript_cache_dir("bibliography", self.manuscript_path)
         else:
             self.cache_dir = Path(cache_dir)
 

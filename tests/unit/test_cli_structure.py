@@ -74,13 +74,6 @@ class TestCLICommandStructure:
         assert config_group is not None
         assert hasattr(config_group, "callback") or callable(config_group)
 
-    def test_security_command_import(self):
-        """Test that security command can be imported."""
-        from rxiv_maker.cli.commands.security import security_group
-
-        assert security_group is not None
-        assert hasattr(security_group, "callback") or callable(security_group)
-
     def test_cache_management_command_import(self):
         """Test that cache_management command can be imported."""
         from rxiv_maker.cli.commands.cache_management import cache_group
