@@ -177,7 +177,7 @@ class TestBuildCommand:
         assert kwargs["output_dir"] == "custom_output"
         assert kwargs["force_figures"] is True
         assert kwargs["skip_validation"] is True
-        assert kwargs["track_changes"] == "v1.0.0"
+        assert kwargs["track_changes_tag"] == "v1.0.0"
         assert kwargs["verbose"] is True
 
     @patch("rxiv_maker.core.logging_config.set_debug")

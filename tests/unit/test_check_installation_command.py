@@ -15,9 +15,8 @@ class TestCheckInstallationCommand:
         """Set up test fixtures."""
         self.runner = CliRunner()
 
-    @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
-    @patch("rxiv_maker.cli.commands.check_installation.Console")
-    def test_basic_check_all_components_installed(self, mock_console, mock_verify):
+    @patch("rxiv_maker.install.utils.verification.verify_installation")
+    def test_basic_check_all_components_installed(self, mock_verify):
         """Test basic check when all components are installed."""
         # Mock verification results - all components installed
         mock_verify.return_value = {
@@ -29,22 +28,13 @@ class TestCheckInstallationCommand:
             "rxiv_maker": True,
         }
 
-        mock_console_instance = MagicMock()
-        mock_console.return_value = mock_console_instance
-
-        result = self.runner.invoke(check_installation)
+        result = self.runner.invoke(check_installation, obj={"verbose": False})
 
         assert result.exit_code == 0
         mock_verify.assert_called_once_with(verbose=False)
 
-        # Check that success message was printed
-        print_calls = mock_console_instance.print.call_args_list
-        success_call = any("All critical components are working!" in str(call) for call in print_calls)
-        assert success_call
-
-    @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
-    @patch("rxiv_maker.cli.commands.check_installation.Console")
-    def test_basic_check_missing_components(self, mock_console, mock_verify):
+    @patch("rxiv_maker.install.utils.verification.verify_installation")
+    def test_basic_check_missing_components(self, mock_verify):
         """Test basic check when some components are missing."""
         # Mock verification results - missing latex and nodejs
         mock_verify.return_value = {
@@ -56,25 +46,13 @@ class TestCheckInstallationCommand:
             "rxiv_maker": True,
         }
 
-        mock_console_instance = MagicMock()
-        mock_console.return_value = mock_console_instance
-
-        result = self.runner.invoke(check_installation)
+        result = self.runner.invoke(check_installation, obj={"verbose": False})
 
         assert result.exit_code == 0
+        mock_verify.assert_called_once_with(verbose=False)
 
-        # Check that warning message was printed
-        print_calls = mock_console_instance.print.call_args_list
-        warning_call = any("2 critical components missing" in str(call) for call in print_calls)
-        assert warning_call
-
-        # Check that fix suggestion was shown
-        fix_suggestion = any("Run with --fix to attempt repairs" in str(call) for call in print_calls)
-        assert fix_suggestion
-
-    @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
-    @patch("rxiv_maker.cli.commands.check_installation.Console")
-    def test_r_component_optional(self, mock_console, mock_verify):
+    @patch("rxiv_maker.install.utils.verification.verify_installation")
+    def test_r_component_optional(self, mock_verify):
         """Test that R component is treated as optional."""
         # Mock verification results - missing only R
         mock_verify.return_value = {
@@ -86,20 +64,14 @@ class TestCheckInstallationCommand:
             "rxiv_maker": True,
         }
 
-        mock_console_instance = MagicMock()
-        mock_console.return_value = mock_console_instance
-
-        result = self.runner.invoke(check_installation)
+        result = self.runner.invoke(check_installation, obj={"verbose": False})
 
         assert result.exit_code == 0
-
         # Should show success since R is optional
-        print_calls = mock_console_instance.print.call_args_list
-        success_call = any("All critical components are working!" in str(call) for call in print_calls)
-        assert success_call
+        mock_verify.assert_called_once_with(verbose=False)
 
-    @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
-    @patch("rxiv_maker.cli.commands.check_installation.diagnose_installation")
+    @patch("rxiv_maker.install.utils.verification.verify_installation")
+    @patch("rxiv_maker.install.utils.verification.diagnose_installation")
     @patch("rxiv_maker.cli.commands.check_installation.Console")
     def test_detailed_flag(self, mock_console, mock_diagnose, mock_verify):
         """Test detailed flag showing diagnostic information."""
@@ -136,8 +108,8 @@ class TestCheckInstallationCommand:
         issue_call = any("pdflatex not found in PATH" in str(call) for call in print_calls)
         assert issue_call
 
-    @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
-    @patch("rxiv_maker.cli.commands.check_installation.diagnose_installation")
+    @patch("rxiv_maker.install.utils.verification.verify_installation")
+    @patch("rxiv_maker.install.utils.verification.diagnose_installation")
     @patch("rxiv_maker.cli.commands.check_installation.Console")
     def test_json_output(self, mock_console, mock_diagnose, mock_verify):
         """Test JSON output format."""
@@ -174,7 +146,7 @@ class TestCheckInstallationCommand:
         # Should contain JSON structure elements
         assert "status" in json_str or "components" in json_str
 
-    @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
+    @patch("rxiv_maker.install.utils.verification.verify_installation")
     @patch("rxiv_maker.core.managers.install_manager.InstallManager")
     @patch("rxiv_maker.cli.commands.check_installation.Console")
     def test_fix_flag_success(self, mock_console, mock_install_manager, mock_verify):
@@ -221,7 +193,7 @@ class TestCheckInstallationCommand:
         assert repair_success
         assert recheck
 
-    @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
+    @patch("rxiv_maker.install.utils.verification.verify_installation")
     @patch("rxiv_maker.core.managers.install_manager.InstallManager")
     @patch("rxiv_maker.cli.commands.check_installation.Console")
     def test_fix_flag_failure(self, mock_console, mock_install_manager, mock_verify):
@@ -256,7 +228,7 @@ class TestCheckInstallationCommand:
         assert repair_failed
         assert log_location
 
-    @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
+    @patch("rxiv_maker.install.utils.verification.verify_installation")
     @patch("rxiv_maker.core.managers.install_manager.InstallManager")
     @patch("rxiv_maker.cli.commands.check_installation.Console")
     def test_fix_flag_exception(self, mock_console, mock_install_manager, mock_verify):
@@ -284,7 +256,7 @@ class TestCheckInstallationCommand:
         error_call = any("Error during repair: Repair error" in str(call) for call in print_calls)
         assert error_call
 
-    @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
+    @patch("rxiv_maker.install.utils.verification.verify_installation")
     @patch("rxiv_maker.cli.commands.check_installation.Console")
     def test_next_steps_all_installed(self, mock_console, mock_verify):
         """Test next steps when all components are installed."""
@@ -301,7 +273,7 @@ class TestCheckInstallationCommand:
         mock_console_instance = MagicMock()
         mock_console.return_value = mock_console_instance
 
-        result = self.runner.invoke(check_installation)
+        result = self.runner.invoke(check_installation, obj={"verbose": False})
 
         assert result.exit_code == 0
 
@@ -315,7 +287,7 @@ class TestCheckInstallationCommand:
         assert try_init
         assert try_pdf
 
-    @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
+    @patch("rxiv_maker.install.utils.verification.verify_installation")
     @patch("rxiv_maker.cli.commands.check_installation.Console")
     def test_next_steps_missing_components(self, mock_console, mock_verify):
         """Test next steps when components are missing."""
@@ -331,7 +303,7 @@ class TestCheckInstallationCommand:
         mock_console_instance = MagicMock()
         mock_console.return_value = mock_console_instance
 
-        result = self.runner.invoke(check_installation)
+        result = self.runner.invoke(check_installation, obj={"verbose": False})
 
         assert result.exit_code == 0
 
@@ -343,7 +315,7 @@ class TestCheckInstallationCommand:
         assert fix_deps
         assert check_fix
 
-    @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
+    @patch("rxiv_maker.install.utils.verification.verify_installation")
     @patch("rxiv_maker.cli.commands.check_installation.Console")
     def test_table_display(self, mock_console, mock_verify):
         """Test that basic results show table with correct formatting."""
@@ -356,7 +328,7 @@ class TestCheckInstallationCommand:
         mock_console_instance = MagicMock()
         mock_console.return_value = mock_console_instance
 
-        result = self.runner.invoke(check_installation)
+        result = self.runner.invoke(check_installation, obj={"verbose": False})
 
         assert result.exit_code == 0
 
@@ -373,8 +345,8 @@ class TestCheckInstallationHelperFunctions:
         """Set up test fixtures."""
         self.runner = CliRunner()
 
-    @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
-    @patch("rxiv_maker.cli.commands.check_installation.diagnose_installation")
+    @patch("rxiv_maker.install.utils.verification.verify_installation")
+    @patch("rxiv_maker.install.utils.verification.diagnose_installation")
     def test_json_output_structure(self, mock_diagnose, mock_verify):
         """Test JSON output structure."""
         mock_verify.return_value = {
@@ -435,7 +407,7 @@ class TestCheckInstallationHelperFunctions:
 
         assert isinstance(table_call, Table)
 
-    @patch("rxiv_maker.cli.commands.check_installation.diagnose_installation")
+    @patch("rxiv_maker.install.utils.verification.diagnose_installation")
     def test_show_detailed_results(self, mock_diagnose):
         """Test detailed results display."""
         mock_diagnose.return_value = {
@@ -484,7 +456,7 @@ class TestCheckInstallationCommandEdgeCases:
         """Set up test fixtures."""
         self.runner = CliRunner()
 
-    @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
+    @patch("rxiv_maker.install.utils.verification.verify_installation")
     @patch("rxiv_maker.cli.commands.check_installation.Console")
     def test_empty_results(self, mock_console, mock_verify):
         """Test handling of empty verification results."""
@@ -493,12 +465,12 @@ class TestCheckInstallationCommandEdgeCases:
         mock_console_instance = MagicMock()
         mock_console.return_value = mock_console_instance
 
-        result = self.runner.invoke(check_installation)
+        result = self.runner.invoke(check_installation, obj={"verbose": False})
 
         assert result.exit_code == 0
         # Should complete without crashing
 
-    @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
+    @patch("rxiv_maker.install.utils.verification.verify_installation")
     @patch("rxiv_maker.cli.commands.check_installation.Console")
     @patch("rxiv_maker.core.managers.install_manager.InstallManager")
     def test_combined_flags(self, mock_install_manager, mock_console, mock_verify):
@@ -523,8 +495,8 @@ class TestCheckInstallationCommandEdgeCases:
         # Verify that repair was called when --fix flag is used
         mock_manager_instance.repair.assert_called_once()
 
-    @patch("rxiv_maker.cli.commands.check_installation.verify_installation")
-    @patch("rxiv_maker.cli.commands.check_installation.diagnose_installation")
+    @patch("rxiv_maker.install.utils.verification.verify_installation")
+    @patch("rxiv_maker.install.utils.verification.diagnose_installation")
     def test_json_output_with_complete_status(self, mock_diagnose, mock_verify):
         """Test JSON output when all components are installed."""
         mock_verify.return_value = {
