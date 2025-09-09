@@ -273,7 +273,6 @@ class EnvironmentSetup:
                 print(
                     "  • Skip dependency checking with 'python src/rxiv_maker/commands/setup_environment.py --no-check-system-deps'"
                 )
-                print("  • Use Docker mode instead: 'make pdf RXIV_ENGINE=DOCKER'")
                 return False
 
         # Step 2: Remove existing environment if reinstalling

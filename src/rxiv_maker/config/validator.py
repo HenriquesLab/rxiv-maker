@@ -200,7 +200,6 @@ class ConfigValidator:
         # Check required environment variables
         required_env_vars = {
             "MANUSCRIPT_PATH": {"required": False, "type": "path"},
-            "RXIV_ENGINE": {"required": False, "type": "choice", "choices": ["LOCAL", "DOCKER", "PODMAN"]},
             "DOCKER_AVAILABLE": {"required": False, "type": "boolean"},
         }
 

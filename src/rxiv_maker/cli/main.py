@@ -193,7 +193,6 @@ def main(
     ctx.obj["no_update_check"] = no_update_check
 
     # Set environment variables for local execution
-    os.environ["RXIV_ENGINE"] = "LOCAL"  # Set to LOCAL for backward compatibility
     if verbose:
         os.environ["RXIV_VERBOSE"] = "1"
     if no_update_check:

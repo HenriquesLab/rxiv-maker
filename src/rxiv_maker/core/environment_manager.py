@@ -18,7 +18,6 @@ class EnvironmentManager:
 
     # Environment variable names
     MANUSCRIPT_PATH = "MANUSCRIPT_PATH"
-    RXIV_ENGINE = "RXIV_ENGINE"
     RXIV_VERBOSE = "RXIV_VERBOSE"
     RXIV_NO_UPDATE_CHECK = "RXIV_NO_UPDATE_CHECK"
     FORCE_FIGURES = "FORCE_FIGURES"
@@ -59,33 +58,6 @@ class EnvironmentManager:
         """
         normalized_path = str(Path(path).resolve())
         os.environ[cls.MANUSCRIPT_PATH] = normalized_path
-
-    @classmethod
-    def get_rxiv_engine(cls) -> str:
-        """Get execution engine with default fallback.
-
-        Returns:
-            Engine type: "local", "docker", or "podman"
-        """
-        engine = os.getenv(cls.RXIV_ENGINE, "local").lower().strip()
-        if engine in ("docker", "podman", "local"):
-            return engine
-        return "local"
-
-    @classmethod
-    def set_rxiv_engine(cls, engine: str) -> None:
-        """Set execution engine.
-
-        Args:
-            engine: Engine type ("local", "docker", "podman")
-
-        Raises:
-            ValueError: If engine type is invalid
-        """
-        engine = engine.lower().strip()
-        if engine not in ("local", "docker", "podman"):
-            raise ValueError(f"Invalid engine type: {engine}")
-        os.environ[cls.RXIV_ENGINE] = engine
 
     @classmethod
     def is_verbose(cls) -> bool:
@@ -266,7 +238,6 @@ class EnvironmentManager:
         """
         rxiv_vars = [
             cls.MANUSCRIPT_PATH,
-            cls.RXIV_ENGINE,
             cls.RXIV_VERBOSE,
             cls.RXIV_NO_UPDATE_CHECK,
             cls.FORCE_FIGURES,
@@ -304,7 +275,6 @@ class EnvironmentManager:
         """Clear all rxiv-maker environment variables."""
         rxiv_vars = [
             cls.MANUSCRIPT_PATH,
-            cls.RXIV_ENGINE,
             cls.RXIV_VERBOSE,
             cls.RXIV_NO_UPDATE_CHECK,
             cls.FORCE_FIGURES,
@@ -358,15 +328,7 @@ class EnvironmentManager:
             elif not Path(manuscript_path).is_dir():
                 warnings.append(f"MANUSCRIPT_PATH is not a directory: {manuscript_path}")
 
-        # Check engine compatibility
-        engine = cls.get_rxiv_engine()
-        if engine in ("docker", "podman") and not cls.is_docker_available():
-            warnings.append(f"Engine set to {engine} but Docker is not available")
-
-        # Check Colab environment
-        if cls.is_google_colab():
-            if engine != "local":
-                warnings.append("Google Colab detected but engine is not set to 'local'")
+        # All execution is now local - no engine compatibility checks needed
 
         return warnings
 
@@ -379,7 +341,6 @@ class EnvironmentManager:
         """
         return {
             "rxiv_vars": cls.get_all_rxiv_vars(),
-            "engine": cls.get_rxiv_engine(),
             "verbose": cls.is_verbose(),
             "docker_available": cls.is_docker_available(),
             "google_colab": cls.is_google_colab(),

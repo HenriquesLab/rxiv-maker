@@ -417,7 +417,6 @@ class ConfigManager:
     def _apply_environment_overrides(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """Apply environment variable overrides."""
         env_overrides = {
-            "RXIV_ENGINE_TYPE": ("engine", "type"),
             "RXIV_OUTPUT_DIR": ("output", "directory"),
             "RXIV_CACHE_ENABLED": ("cache", "enabled"),
             "RXIV_CACHE_DIR": ("cache", "directory"),

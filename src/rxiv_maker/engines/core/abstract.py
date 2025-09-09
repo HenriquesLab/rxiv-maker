@@ -604,7 +604,6 @@ class AbstractContainerEngine(ABC):
 
         # Pass through Rxiv-specific environment variables
         rxiv_vars = [
-            "RXIV_ENGINE",
             "RXIV_VERBOSE",
             "RXIV_NO_UPDATE_CHECK",
             "MANUSCRIPT_PATH",
