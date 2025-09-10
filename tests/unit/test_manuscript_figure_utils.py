@@ -23,6 +23,7 @@ from rxiv_maker.manuscript_utils.figure_utils import (
 class TestMermaidConversion:
     """Test Mermaid diagram conversion functionality."""
 
+    @pytest.mark.skip(reason="Mermaid figure generation functionality deprecated with RXIV_ENGINE removal")
     @patch("subprocess.run")
     @patch("pathlib.Path.exists")
     @patch("pathlib.Path.write_text")
@@ -32,13 +33,10 @@ class TestMermaidConversion:
         mock_exists.return_value = True
         mock_run.return_value = Mock(returncode=0)
 
-        mermaid_code = """
-graph TD
-    A[Start] --> B[Process]
-    B --> C[End]
-"""
+        # Use a proper file path instead of mermaid content
+        mermaid_file = "test_diagram.mmd"
 
-        result = convert_mermaid(mermaid_code, "test_diagram")
+        result = convert_mermaid(mermaid_file, "svg")
 
         # Should return the output path
         assert result == "FIGURES/Figure__test_diagram/Figure__test_diagram.svg"

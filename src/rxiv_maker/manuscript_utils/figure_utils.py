@@ -186,12 +186,10 @@ def _convert_single_figure(
 
     # Initialize figure generator
     try:
-        engine = EnvironmentManager.get_rxiv_engine() if EnvironmentManager else "local"
         generator = FigureGenerator(
             figures_dir=str(input_path.parent),
             output_dir=str(output_dir),
             output_format=output_format,
-            engine=engine,
             **kwargs,
         )
     except Exception as e:
