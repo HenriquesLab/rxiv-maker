@@ -264,6 +264,7 @@ class TestBulkFigureConversion:
         assert any("custom/dir" in str(pattern) for pattern in call_patterns)
 
 
+@pytest.mark.skip(reason="Figure utility functions deprecated with RXIV_ENGINE removal")
 class TestFigureUtilityFunctions:
     """Test figure utility and helper functions."""
 
