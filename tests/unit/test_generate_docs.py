@@ -20,6 +20,7 @@ class TestGenerateDocs:
         self.temp_dir = tempfile.mkdtemp()
         self.docs_dir = Path(self.temp_dir) / "docs"
         self.module_path = Path(self.temp_dir) / "test_module.py"
+        self.project_root = Path(self.temp_dir)
 
     def teardown_method(self):
         """Clean up after each test method."""
@@ -33,7 +34,7 @@ class TestGenerateDocs:
         """Test generate_module_docs when lazydocs is not available."""
         mock_which.return_value = None
 
-        result = generate_docs.generate_module_docs(self.docs_dir, self.module_path)
+        result = generate_docs.generate_module_docs(self.docs_dir, self.module_path, self.project_root)
 
         assert result is None
         mock_print.assert_called_once()
@@ -47,7 +48,7 @@ class TestGenerateDocs:
         mock_which.return_value = "/usr/local/bin/lazydocs"
         mock_subprocess.return_value.returncode = 0
 
-        result = generate_docs.generate_module_docs(self.docs_dir, self.module_path)
+        result = generate_docs.generate_module_docs(self.docs_dir, self.module_path, self.project_root)
 
         assert result is True
         mock_subprocess.assert_called_once()
@@ -60,7 +61,7 @@ class TestGenerateDocs:
         mock_which.return_value = "/usr/local/bin/lazydocs"
         mock_subprocess.side_effect = subprocess.CalledProcessError(1, "lazydocs")
 
-        result = generate_docs.generate_module_docs(self.docs_dir, self.module_path)
+        result = generate_docs.generate_module_docs(self.docs_dir, self.module_path, self.project_root)
 
         assert result is False
         mock_print.assert_called()
