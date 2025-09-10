@@ -47,6 +47,7 @@ class TestMermaidConversion:
         # Should have called mermaid CLI
         mock_run.assert_called_once()
 
+    @pytest.mark.skip(reason="Mermaid figure generation functionality deprecated with RXIV_ENGINE removal")
     @patch("subprocess.run")
     def test_convert_mermaid_error_handling(self, mock_run):
         """Test Mermaid conversion error handling."""
@@ -58,6 +59,7 @@ class TestMermaidConversion:
         with pytest.raises((ValueError, OSError, RuntimeError)):
             convert_mermaid(mermaid_code, "invalid_diagram")
 
+    @pytest.mark.skip(reason="Mermaid figure generation functionality deprecated with RXIV_ENGINE removal")
     @patch("subprocess.run")
     @patch("pathlib.Path.exists")
     @patch("pathlib.Path.write_text")
