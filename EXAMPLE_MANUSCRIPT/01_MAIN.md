@@ -34,7 +34,7 @@ Manuscript preparation becomes a transparent, efficient process that provides re
 <!-- For comprehensive figure positioning guidance, see docs/guides/figures-guide.md -->
 <!-- This covers positioning attributes, width control, panel references, and troubleshooting -->
 
-The framework enables programmatic generation of figures and tables using Python and R scripting with visualisation libraries including Matplotlib [@Hunter2007_matplotlib] and Seaborn [@Waskom2021_seaborn]. 
+The framework enables programmatic generation of figures and tables using Python and R scripting with visualisation libraries including Matplotlib [@Hunter2007_matplotlib] and Seaborn [@Waskom2021_seaborn].
 
 {{py:exec
 import pandas as pd
@@ -64,7 +64,7 @@ Both data can be analysed and figures generated directly from source datasets du
 
 The framework also allows for manuscripts to include executable python code that is run during compilation. For example, python code within this manuscript automatically fetches the latest data from web sources including arXiv monthly submissions and preprint server statistics. For example, @sfig:arxiv_growth showcases {{py:get total_submissions}} arXiv submissions spanning {{py:get years_span}} years starting from {{py:get data_start_year}}. These statistics were computed live during manuscript compilation on {{py:get compilation_date}} with data last updated {{py:get last_updated}}. This numerical data is inserted automatically and dynamically by python code into manuscript through commands such as `{{py:get last_updated}}`
 
-This executable manuscript approach eliminates the manual copy-and-paste workflow that traditionally introduces errors when transferring results between analysis and documentation [@perkel2022]. When datasets are updated or algorithms refined, affected figures are automatically regenerated, ensuring consistency and eliminating outdated visualisations. The system integrates Mermaid.js [@Mermaid2023_documentation] for generating technical diagrams from text-based syntax, with the complete range of supported methods detailed in @stable:figure-formats.
+This executable manuscript approach eliminates the manual copy-and-paste workflow that traditionally introduces errors when transferring results between analysis and documentation [@perkel2022]. When datasets are updated or algorithms refined, affected figures are automatically regenerated, ensuring consistency and eliminating outdated visualisations. The system integrates Mermaid.js [@Mermaid2023_documentation] for generating technical diagrams from text-based syntax, with the complete range of supported methods detailed in @stable:figure-formats. The comprehensive markdown syntax capabilities are documented in @stable:markdown-syntax.
 
 This approach reframes manuscripts as executable outputs of the research process rather than static documentation. Built upon the HenriquesLab bioRxiv template [@HenriquesLab2015_template], Rxiv-Maker extends capabilities through automated processing pipelines. The architecture, detailed in @fig:system_diagram and @fig:workflow, provides automated build processes through local execution with virtual environment isolation (technical details described in @snote:figure-generation).
 

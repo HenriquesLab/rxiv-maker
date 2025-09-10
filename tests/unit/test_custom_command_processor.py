@@ -225,7 +225,7 @@ E = mc^2
         assert result == expected
 
     def test_tex_with_comments(self):
-        """Test TeX commands containing LaTeX comments."""
+        """Test TeX commands containing LaTeX comments - comments should be filtered out."""
         input_text = """{{tex:
 % This is a LaTeX comment
 \\textbf{Bold Text} % Another comment
@@ -233,8 +233,14 @@ E = mc^2
 \\textit{Italic Text}
 }}"""
         result = _process_tex_commands(input_text)
-        assert "% This is a LaTeX comment" in result
-        assert "\\textbf{Bold Text} % Another comment" in result
+        # Comments should be filtered out for security
+        assert "% This is a LaTeX comment" not in result
+        assert "% Another comment" not in result
+        assert "% Line break" not in result
+
+        # But the actual LaTeX commands should remain
+        assert "\\textbf{Bold Text}" in result
+        assert "\\\\" in result  # Line break command
         assert "\\textit{Italic Text}" in result
 
 

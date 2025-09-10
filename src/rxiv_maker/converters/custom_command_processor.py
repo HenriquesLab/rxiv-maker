@@ -89,6 +89,76 @@ def _process_blindtext_commands(text: MarkdownContent) -> LatexContent:
     return text
 
 
+def _filter_latex_comments(tex_code: str) -> str:
+    """Filter LaTeX comments from TeX code before processing.
+
+    Removes both full-line comments and inline comments while preserving
+    the structure for proper LaTeX processing.
+
+    Args:
+        tex_code: LaTeX code that may contain comments
+
+    Returns:
+        LaTeX code with comments filtered out
+    """
+    lines = tex_code.split("\n")
+    filtered_lines = []
+
+    for line in lines:
+        # In LaTeX, everything after % is a comment (unless % is escaped as \%)
+        comment_pos = _find_latex_comment_start(line)
+
+        if comment_pos == 0:
+            # Entire line is a comment, replace with empty line
+            filtered_lines.append("")
+        elif comment_pos > 0:
+            # Inline comment, keep content before %
+            filtered_lines.append(line[:comment_pos].rstrip())
+        else:
+            # No comment found, keep entire line
+            filtered_lines.append(line)
+
+    return "\n".join(filtered_lines)
+
+
+def _find_latex_comment_start(line: str) -> int:
+    r"""Find the position where a LaTeX comment starts.
+
+    Handles escaped % (\\%) correctly.
+
+    Args:
+        line: Line of LaTeX code
+
+    Returns:
+        Position of % comment start, -1 if no comment, 0 if entire line is comment
+    """
+    # Skip lines that are entirely whitespace
+    if not line.strip():
+        return -1
+
+    # Check if line starts with % (full line comment)
+    if line.lstrip().startswith("%"):
+        return 0
+
+    # Look for unescaped %
+    i = 0
+    while i < len(line):
+        if line[i] == "%":
+            # Check if it's escaped (preceded by odd number of backslashes)
+            backslash_count = 0
+            j = i - 1
+            while j >= 0 and line[j] == "\\":
+                backslash_count += 1
+                j -= 1
+
+            # If even number of backslashes (including 0), % is not escaped
+            if backslash_count % 2 == 0:
+                return i
+        i += 1
+
+    return -1
+
+
 def _process_tex_commands(text: MarkdownContent) -> LatexContent:
     r"""Process TeX injection commands converting {{tex: LaTeX code}} → LaTeX code.
 
@@ -121,6 +191,10 @@ def _process_tex_commands(text: MarkdownContent) -> LatexContent:
             if brace_count == 0:
                 # Found matching braces, extract and process the TeX code
                 tex_code = text[start : j - 2].strip()  # Exclude the }}
+
+                # CRITICAL: Filter out LaTeX comments before processing
+                # Comments should never be processed as active TeX content
+                tex_code = _filter_latex_comments(tex_code)
 
                 # Fix encoding issues for common Unicode characters in TeX code
                 # Replace degree symbol with LaTeX command for better compatibility

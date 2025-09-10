@@ -12,6 +12,7 @@ from .code_processor import (
     protect_code_content,
     restore_protected_code,
 )
+from .comment_processor import preprocess_comments
 from .custom_command_processor import process_custom_commands
 from .figure_processor import (
     convert_equation_references_to_latex,
@@ -99,7 +100,12 @@ def convert_markdown_to_latex(content: MarkdownContent, is_supplementary: bool =
                 pass  # Continue silently if logging also fails
 
     # Legacy conversion logic (original implementation)
-    # FIRST: Convert fenced code blocks BEFORE protecting backticks
+    # CRITICAL FIRST STEP: Remove HTML comments to prevent any commented content
+    # from being processed by subsequent steps (tables, citations, executable blocks, etc.)
+    # This is essential for security - commented content should NEVER be processed
+    content = preprocess_comments(content)
+
+    # SECOND: Convert fenced code blocks BEFORE protecting backticks
     content = convert_code_blocks_to_latex(content)
 
     # Process enhanced math blocks ($$...$$ {#eq:id})

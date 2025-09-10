@@ -96,6 +96,80 @@ class PythonExecutor:
 
         return paths
 
+    def _filter_python_comments(self, code: str) -> str:
+        """Filter Python comments from code before execution.
+
+        Removes both full-line comments and inline comments while preserving
+        line numbers for accurate error reporting. Comments should never be executed.
+
+        Args:
+            code: Python code that may contain comments
+
+        Returns:
+            Python code with comments filtered out
+        """
+        lines = code.split("\n")
+        filtered_lines = []
+
+        for line in lines:
+            # Handle inline comments - everything after # is a comment
+            # But we need to be careful about # inside strings
+            comment_pos = self._find_python_comment_start(line)
+
+            if comment_pos == 0:
+                # Entire line is a comment, replace with empty line to preserve line numbers
+                filtered_lines.append("")
+            elif comment_pos > 0:
+                # Inline comment, keep code before #
+                filtered_lines.append(line[:comment_pos].rstrip())
+            else:
+                # No comment found, keep entire line
+                filtered_lines.append(line)
+
+        return "\n".join(filtered_lines)
+
+    def _find_python_comment_start(self, line: str) -> int:
+        """Find the position where a Python comment starts.
+
+        Handles # inside strings correctly by parsing string literals.
+
+        Args:
+            line: Line of Python code
+
+        Returns:
+            Position of # comment start, -1 if no comment, 0 if entire line is comment
+        """
+        # Skip lines that are entirely whitespace
+        if not line.strip():
+            return -1
+
+        # Check if line starts with # (full line comment)
+        if line.lstrip().startswith("#"):
+            return 0
+
+        # Look for # outside of strings
+        in_single_quote = False
+        in_double_quote = False
+        escaped = False
+
+        for i, char in enumerate(line):
+            if escaped:
+                escaped = False
+                continue
+
+            if char == "\\":
+                escaped = True
+                continue
+
+            if char == "'" and not in_double_quote:
+                in_single_quote = not in_single_quote
+            elif char == '"' and not in_single_quote:
+                in_double_quote = not in_double_quote
+            elif char == "#" and not in_single_quote and not in_double_quote:
+                return i
+
+        return -1
+
     def execute_code_safely(
         self, code: str, context: Optional[Dict[str, Any]] = None, manuscript_context: Optional[Dict[str, Any]] = None
     ) -> Tuple[str, bool]:
@@ -112,6 +186,10 @@ class PythonExecutor:
         Raises:
             PythonExecutionError: If execution fails
         """
+        # CRITICAL: Filter out Python comments before execution
+        # Comments should never be executed, this is essential for security
+        code = self._filter_python_comments(code)
+
         # Normalize LaTeX-escaped paths in string literals
         code = code.replace("\\_", "_")  # Handle escaped underscores
 

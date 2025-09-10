@@ -237,7 +237,7 @@ class TestPrintVerificationResults:
 
         # Verify warning message is shown
         print_calls = [call[0][0] for call in mock_print.call_args_list]
-        warning_lines = [line for line in print_calls if "⚠️  2 components missing" in line]
+        warning_lines = [line for line in print_calls if "⚠️  3 components missing" in line]
         assert len(warning_lines) == 1
 
     @patch("builtins.print")
