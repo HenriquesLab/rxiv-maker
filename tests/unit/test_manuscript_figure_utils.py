@@ -267,6 +267,7 @@ class TestBulkFigureConversion:
 class TestFigureUtilityFunctions:
     """Test figure utility and helper functions."""
 
+    @pytest.mark.skip(reason="Figure listing functionality deprecated with RXIV_ENGINE removal")
     @patch("pathlib.Path.glob")
     def test_list_available_figures(self, mock_glob):
         """Test listing available figure files."""
