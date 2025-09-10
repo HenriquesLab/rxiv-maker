@@ -212,9 +212,9 @@ class TestPythonCommandIntegration:
         """Test inline Python command processing."""
         from rxiv_maker.converters.custom_command_processor import process_custom_commands
 
-        text = "The result is {py: 3 + 4} and that's it."
+        text = "{{py:exec\nresult = 3 + 4\n}}\nThe result is {{py:get result}} and that's it."
         result = process_custom_commands(text)
-        assert result == "The result is 7 and that's it."
+        assert "The result is 7 and that's it." in result
 
     def test_block_command_processing(self):
         """Test block Python command processing."""
