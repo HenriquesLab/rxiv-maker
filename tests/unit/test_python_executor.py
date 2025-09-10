@@ -75,7 +75,7 @@ print("Done")
     def test_syntax_error(self):
         """Test handling of syntax errors."""
         result = self.executor.execute_block("print(")
-        assert "Python execution blocked:" in result
+        assert "Python execution error:" in result
         assert "SyntaxError" in result or "syntax" in result.lower()
 
     def test_runtime_error(self):
