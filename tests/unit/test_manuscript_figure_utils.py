@@ -76,6 +76,7 @@ class TestMermaidConversion:
         assert result == custom_path
 
 
+@pytest.mark.skip(reason="Python figure generation functionality deprecated with RXIV_ENGINE removal")
 class TestPythonFigureConversion:
     """Test Python figure conversion functionality."""
 
@@ -138,6 +139,7 @@ class TestPythonFigureConversion:
         assert "300" in args
 
 
+@pytest.mark.skip(reason="R figure generation functionality deprecated with RXIV_ENGINE removal")
 class TestRFigureConversion:
     """Test R figure conversion functionality."""
 
@@ -180,6 +182,7 @@ class TestRFigureConversion:
         assert result is False
 
 
+@pytest.mark.skip(reason="Bulk figure generation functionality deprecated with RXIV_ENGINE removal")
 class TestBulkFigureConversion:
     """Test bulk figure conversion functionality."""
 
