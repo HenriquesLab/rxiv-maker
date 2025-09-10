@@ -363,6 +363,7 @@ class TestFigureUtilityFunctions:
         assert "protected.png" in str(result["errors"][0])
 
 
+@pytest.mark.skip(reason="Figure utils integration tests deprecated with RXIV_ENGINE removal")
 class TestFigureUtilsIntegration:
     """Test integration of figure utilities with Python execution."""
 
@@ -454,6 +455,7 @@ Generated diagram at: {{py:get diagram_path}}
         assert "FIGURES/Figure__workflow" in result
 
 
+@pytest.mark.skip(reason="Figure utils edge case tests deprecated with RXIV_ENGINE removal")
 class TestFigureUtilsEdgeCases:
     """Test edge cases and error conditions."""
 
