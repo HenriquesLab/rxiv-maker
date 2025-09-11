@@ -244,7 +244,7 @@ class EnvironmentSetup:
             else:
                 print("✅ All system dependencies are available!")
         else:
-            print("💡 Note: System dependencies (LaTeX, Node.js, R) may be required")
+            print("💡 Note: System dependencies (LaTeX, R) may be required")
             print("   Run 'make check-deps' to verify your system is ready")
 
         print()

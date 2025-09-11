@@ -1,7 +1,7 @@
 """Universal system dependency installer for rxiv-maker.
 
 This module provides cross-platform installation and management of system dependencies
-required by rxiv-maker, including LaTeX, Node.js, R, and system libraries.
+required by rxiv-maker, including LaTeX, R, and system libraries.
 """
 
 from .utils.verification import verify_installation

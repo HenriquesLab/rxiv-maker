@@ -38,14 +38,6 @@ class BaseInstaller(ABC):
         pass
 
     @abstractmethod
-    def install_nodejs(self) -> bool:
-        """Install Node.js and npm packages.
-
-        Returns:
-            True if installation succeeded, False otherwise
-        """
-        pass
-
     @abstractmethod
     def install_r(self) -> bool:
         """Install R language and packages.

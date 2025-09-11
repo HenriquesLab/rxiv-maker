@@ -32,6 +32,7 @@ from .pdf_utils import (
     get_custom_pdf_filename,
 )
 from .platform import safe_console_print, safe_print
+from .tips import get_build_success_tip, get_general_tip
 
 __all__ = [
     "decode_email",
@@ -47,4 +48,6 @@ __all__ = [
     "create_output_dir",
     "write_manuscript_output",
     "inject_rxiv_citation",
+    "get_build_success_tip",
+    "get_general_tip",
 ]

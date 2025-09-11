@@ -1,21 +1,11 @@
 """Unified engines package for rxiv-maker.
 
-This package provides both container engines (Docker, Podman) and core operations
-for manuscript processing, creating a unified interface for all execution functionality.
+This package provides operations for manuscript processing,
+focusing on local execution for simplicity and reliability.
 """
 
-# Container engines - execution infrastructure (deprecated)
-from .core import (
-    ContainerEngineError,
-    get_container_engine,
-)
-
-# Optional imports for backward compatibility
-try:
-    from .core import AbstractContainerEngine, ContainerSession
-except ImportError:
-    AbstractContainerEngine = None  # type: ignore
-    ContainerSession = None  # type: ignore
+# Note: Container engines (Docker/Podman) have been deprecated.
+# For containerized execution, use the docker-rxiv-maker repository.
 
 # Core operations - manuscript processing functionality
 from .operations import (
@@ -41,9 +31,6 @@ from .operations import (
 )
 
 __all__ = [
-    # Container engines (deprecated)
-    "get_container_engine",
-    "ContainerEngineError",
     # Core operations
     "FigureGenerator",
     "generate_preprint",

@@ -168,11 +168,8 @@ cd my-paper/
 ### 3. Generate PDF
 
 ```bash
-# Standard build
+# Generate PDF
 rxiv pdf
-
-# With Docker engine (if needed)
-rxiv pdf --engine docker
 ```
 
 ## Troubleshooting Conda Issues
@@ -254,8 +251,8 @@ choco install miktex          # Windows
 conda activate rxiv-maker
 rxiv pdf
 
-# Option 2: Docker mode (no local LaTeX needed)
-rxiv pdf --engine docker
+# Option 2: Use containerized version (no local LaTeX needed)
+# See docker-rxiv-maker repository
 ```
 
 ### Problem: "Figure generation fails"

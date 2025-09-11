@@ -11,7 +11,7 @@ Centralized error codes for rxiv-maker.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/core/error_codes.py#L300"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/core/error_codes.py#L299"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_validation_error`
 

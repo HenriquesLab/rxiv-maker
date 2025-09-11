@@ -23,11 +23,11 @@ class DependencyType(Enum):
 
     SYSTEM_BINARY = "system_binary"  # System executables (pdflatex, docker, etc.)
     PYTHON_PACKAGE = "python_package"  # Python modules/packages
-    NODE_PACKAGE = "node_package"  # Node.js packages (mermaid-cli, etc.)
     R_PACKAGE = "r_package"  # R packages
     FONT = "font"  # System fonts
     DOCKER_IMAGE = "docker_image"  # Docker images
     ENVIRONMENT_VAR = "environment_var"  # Environment variables
+    UBUNTU_PACKAGE = "ubuntu_package"  # Ubuntu/Debian packages via apt
 
 
 class DependencyStatus(Enum):
@@ -223,6 +223,37 @@ class EnvironmentVarChecker(DependencyChecker):
             )
 
 
+class UbuntuPackageChecker(DependencyChecker):
+    """Checker for Ubuntu/Debian packages."""
+
+    def check(self, spec: DependencySpec) -> DependencyResult:
+        """Check Ubuntu package availability."""
+        try:
+            # Use dpkg-query to check if package is installed
+            result = subprocess.run(
+                ["dpkg-query", "-W", "-f=${Status}", spec.name], capture_output=True, text=True, timeout=10
+            )
+
+            if result.returncode == 0 and "install ok installed" in result.stdout:
+                # Get version if possible
+                version_result = subprocess.run(
+                    ["dpkg-query", "-W", "-f=${Version}", spec.name], capture_output=True, text=True, timeout=10
+                )
+                version = version_result.stdout.strip() if version_result.returncode == 0 else None
+
+                return DependencyResult(spec=spec, status=DependencyStatus.AVAILABLE, version=version)
+            else:
+                return DependencyResult(
+                    spec=spec, status=DependencyStatus.MISSING, resolution_hint=f"sudo apt install {spec.name}"
+                )
+        except subprocess.TimeoutExpired:
+            return DependencyResult(
+                spec=spec, status=DependencyStatus.ERROR, error_message="Timeout checking package status"
+            )
+        except Exception as e:
+            return DependencyResult(spec=spec, status=DependencyStatus.ERROR, error_message=str(e))
+
+
 class DependencyManager:
     """Centralized dependency management for rxiv-maker.
 
@@ -245,6 +276,7 @@ class DependencyManager:
             DependencyType.PYTHON_PACKAGE: PythonPackageChecker(),
             DependencyType.DOCKER_IMAGE: DockerImageChecker(),
             DependencyType.ENVIRONMENT_VAR: EnvironmentVarChecker(),
+            DependencyType.UBUNTU_PACKAGE: UbuntuPackageChecker(),
         }
 
         # Dependency registry
@@ -324,17 +356,6 @@ class DependencyManager:
             )
         )
 
-        self.register_dependency(
-            DependencySpec(
-                name="node",
-                type=DependencyType.SYSTEM_BINARY,
-                required=False,
-                alternatives=["nodejs"],
-                contexts={"figures"},
-                install_hint="Install Node.js for Mermaid diagram support",
-            )
-        )
-
         # Python packages
         for pkg in ["click", "rich", "jinja2", "pyyaml", "pathlib"]:
             self.register_dependency(
@@ -356,6 +377,166 @@ class DependencyManager:
                     required=False,
                     contexts={"figures"},
                     install_hint=f"pip install {pkg}",
+                )
+            )
+
+        # Ubuntu packages (from docker-rxiv-maker Dockerfile)
+        # Core system utilities
+        for pkg in ["curl", "wget", "unzip", "ca-certificates", "software-properties-common", "gnupg", "lsb-release"]:
+            self.register_dependency(
+                DependencySpec(
+                    name=pkg,
+                    type=DependencyType.UBUNTU_PACKAGE,
+                    required=False,
+                    contexts={"system"},
+                    platforms={"Linux"},
+                    install_hint=f"sudo apt install {pkg}",
+                )
+            )
+
+        # Build toolchain (only needed for building from source, not for using rxiv-maker)
+        for pkg in ["build-essential", "make", "cmake", "pkg-config", "gcc", "g++", "gfortran"]:
+            self.register_dependency(
+                DependencySpec(
+                    name=pkg,
+                    type=DependencyType.UBUNTU_PACKAGE,
+                    required=False,
+                    contexts={"development", "build-from-source"},  # Not needed for basic PDF generation
+                    platforms={"Linux"},
+                    install_hint=f"sudo apt install {pkg}",
+                )
+            )
+
+        # Development libraries (only needed for building from source, not for using rxiv-maker)
+        dev_libs = [
+            "libjpeg-dev",
+            "libpng-dev",
+            "libtiff5-dev",
+            "python3-dev",
+            "libffi-dev",
+            "libcurl4-openssl-dev",
+            "libssl-dev",
+            "libxml2-dev",
+            "libfontconfig1-dev",
+            "libfreetype6-dev",
+            "libharfbuzz-dev",
+            "libfribidi-dev",
+        ]
+        for pkg in dev_libs:
+            self.register_dependency(
+                DependencySpec(
+                    name=pkg,
+                    type=DependencyType.UBUNTU_PACKAGE,
+                    required=False,
+                    contexts={"development", "build-from-source"},  # Not needed for basic PDF generation
+                    platforms={"Linux"},
+                    install_hint=f"sudo apt install {pkg}",
+                )
+            )
+
+        # Essential fonts for LaTeX compilation
+        font_packages = [
+            "fonts-liberation",
+            "fonts-dejavu-core",
+            "fonts-lmodern",
+            "fonts-texgyre",
+            "fonts-dejavu",
+            "fonts-liberation2",
+            "fonts-noto-core",
+            "fontconfig",
+            "fontconfig-config",
+        ]
+        for pkg in font_packages:
+            self.register_dependency(
+                DependencySpec(
+                    name=pkg,
+                    type=DependencyType.UBUNTU_PACKAGE,
+                    required=True,
+                    contexts={"pdf", "build"},
+                    platforms={"Linux"},
+                    install_hint=f"sudo apt install {pkg}",
+                )
+            )
+
+        # Essential LaTeX packages (required for basic PDF generation)
+        essential_latex = [
+            "texlive-latex-base",
+            "texlive-latex-recommended",
+            "texlive-fonts-recommended",
+            "texlive-fonts-extra",
+            "texlive-latex-extra",
+            "texlive-science",
+        ]
+        for pkg in essential_latex:
+            self.register_dependency(
+                DependencySpec(
+                    name=pkg,
+                    type=DependencyType.UBUNTU_PACKAGE,
+                    required=True,
+                    contexts={"pdf", "build"},
+                    platforms={"Linux"},
+                    install_hint=f"sudo apt install {pkg}",
+                )
+            )
+
+        # Additional LaTeX packages (useful but not strictly required)
+        additional_latex = [
+            "texlive-pictures",
+            "texlive-bibtex-extra",
+            "biber",
+            "texlive-lang-english",
+            "texlive-plain-generic",
+            "texlive-xetex",
+            "texlive-luatex",
+            "texlive-extra-utils",
+            "latexdiff",
+        ]
+        for pkg in additional_latex:
+            self.register_dependency(
+                DependencySpec(
+                    name=pkg,
+                    type=DependencyType.UBUNTU_PACKAGE,
+                    required=False,  # Useful but not absolutely required for basic PDF
+                    contexts={"pdf", "build", "advanced-latex"},
+                    platforms={"Linux"},
+                    install_hint=f"sudo apt install {pkg}",
+                )
+            )
+
+        # R and essential R packages (optional - only needed for R figures)
+        r_packages = [
+            "r-base",
+            "r-base-dev",
+            "r-cran-ggplot2",
+            "r-cran-dplyr",
+            "r-cran-scales",
+            "r-cran-readr",
+            "r-cran-tidyr",
+            "r-cran-svglite",
+            "r-cran-cli",
+            "r-cran-rlang",
+            "r-cran-lifecycle",
+            "r-cran-vctrs",
+            "r-cran-magrittr",
+            "r-cran-stringi",
+            "r-cran-stringr",
+            "r-cran-httr",
+            "r-cran-jsonlite",
+            "r-cran-xml2",
+            "r-cran-lubridate",
+            "r-cran-rvest",
+            "r-cran-systemfonts",
+            "r-cran-ragg",
+        ]
+        for pkg in r_packages:
+            self.register_dependency(
+                DependencySpec(
+                    name=pkg,
+                    type=DependencyType.UBUNTU_PACKAGE,
+                    required=False,  # R is optional
+                    contexts={"r-figures", "r"},  # Only needed for R-based figure generation
+                    platforms={"Linux"},
+                    install_hint=f"sudo apt install {pkg}",
                 )
             )
 
@@ -544,7 +725,7 @@ class DependencyManager:
         install_manager = InstallManager(
             mode=mode,
             interactive=interactive,
-            verbose=logger.level <= 10,  # DEBUG level
+            verbose=logger.logger.getEffectiveLevel() <= 10,  # DEBUG level
         )
 
         return install_manager.install()

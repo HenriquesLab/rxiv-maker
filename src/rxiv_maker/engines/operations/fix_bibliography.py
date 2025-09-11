@@ -46,7 +46,10 @@ class BibliographyFixer:
         """
         self.manuscript_path = Path(manuscript_path)
         self.backup = backup
-        self.cache = DOICache()
+
+        # Initialize DOI cache with manuscript-specific cache directory
+        manuscript_cache_dir = self.manuscript_path / ".rxiv_cache" / "doi"
+        self.cache = DOICache(cache_dir=str(manuscript_cache_dir))
         self.similarity_threshold = 0.8
 
     def fix_bibliography(self, dry_run: bool = False) -> dict[str, Any]:

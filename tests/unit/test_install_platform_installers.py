@@ -245,11 +245,10 @@ class TestMacOSInstaller:
             installer.logger.success.assert_called_with("LaTeX installed using direct download")
 
     def test_install_npm_packages_no_longer_required(self, installer):
-        """Test _install_npm_packages returns True (no longer required)."""
-        result = installer._install_npm_packages()
-
-        assert result is True
-        installer.logger.info.assert_called_with("No npm packages required - mermaid-cli dependency removed")
+        """Test that npm packages are no longer required."""
+        # _install_npm_packages method has been removed as it's no longer needed
+        # This test verifies the functionality has been removed
+        assert not hasattr(installer, "_install_npm_packages")
 
     @pytest.mark.parametrize(
         "latex_installed,methods_called",
@@ -339,23 +338,7 @@ class TestWindowsInstaller:
 
         assert result is False
 
-    @pytest.mark.parametrize(
-        "exception_type",
-        [
-            subprocess.TimeoutExpired("node", 10),
-            subprocess.CalledProcessError(1, "node"),
-            FileNotFoundError("Command not found"),
-            OSError("System error"),
-        ],
-    )
-    @patch("subprocess.run")
-    def test_is_nodejs_installed_exception_handling(self, mock_run, installer, exception_type):
-        """Test _is_nodejs_installed exception handling for various error types."""
-        mock_run.side_effect = exception_type
-
-        result = installer._is_nodejs_installed()
-
-        assert result is False
+    # test_is_nodejs_installed_exception_handling removed - _is_nodejs_installed method doesn't exist
 
     @patch("subprocess.run")
     def test_install_latex_winget_success(self, mock_run, installer):
@@ -529,11 +512,10 @@ class TestWindowsInstaller:
         assert result is False  # Should return False if any package fails
 
     def test_install_npm_packages_no_longer_required(self, installer):
-        """Test _install_npm_packages returns True (no longer required)."""
-        result = installer._install_npm_packages()
-
-        assert result is True
-        installer.logger.info.assert_called_with("No npm packages required - mermaid-cli dependency removed")
+        """Test that npm packages are no longer required."""
+        # _install_npm_packages method has been removed as it's no longer needed
+        # This test verifies the functionality has been removed
+        assert not hasattr(installer, "_install_npm_packages")
 
     @pytest.mark.parametrize(
         "component,installer_methods",

@@ -85,29 +85,6 @@ class MacOSInstaller:
         self.logger.error("Failed to install LaTeX using any method")
         return False
 
-    def install_nodejs(self) -> bool:
-        """Install Node.js and npm packages on macOS."""
-        self.logger.info("Installing Node.js on macOS...")
-
-        # Check if Node.js is already installed
-        if self._is_nodejs_installed():
-            self.logger.success("Node.js already installed")
-            return self._install_npm_packages()
-
-        # Try different installation methods
-        methods = [self._install_nodejs_homebrew, self._install_nodejs_direct]
-
-        for method in methods:
-            try:
-                if method():
-                    return self._install_npm_packages()
-            except Exception as e:
-                self.logger.debug(f"Node.js installation method failed: {e}")
-                continue
-
-        self.logger.error("Failed to install Node.js using any method")
-        return False
-
     def install_r(self) -> bool:
         """Install R language on macOS."""
         self.logger.info("Installing R on macOS...")
@@ -142,27 +119,6 @@ class MacOSInstaller:
                 timeout=10,
             )
             return result.returncode == 0
-        except Exception:
-            return False
-
-    def _is_nodejs_installed(self) -> bool:
-        """Check if Node.js is installed."""
-        try:
-            node_result = subprocess.run(
-                ["node", "--version"],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                timeout=10,
-            )
-            npm_result = subprocess.run(
-                ["npm", "--version"],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                timeout=10,
-            )
-            return node_result.returncode == 0 and npm_result.returncode == 0
         except Exception:
             return False
 
@@ -357,68 +313,6 @@ class MacOSInstaller:
                 except Exception as e:
                     self.logger.debug(f"Error updating {profile}: {e}")
 
-    def _install_nodejs_homebrew(self) -> bool:
-        """Install Node.js using Homebrew."""
-        self.logger.info("Trying to install Node.js using Homebrew...")
-
-        # Install Homebrew if not available
-        if not self._is_homebrew_installed() and not self._install_homebrew():
-            return False
-
-        try:
-            # Install Node.js
-            result = subprocess.run(
-                ["brew", "install", "node@18"],
-                capture_output=True,
-                text=True,
-                timeout=600,
-            )
-
-            if result.returncode == 0:
-                self.logger.success("Node.js installed using Homebrew")
-                return True
-            else:
-                self.logger.debug(f"Homebrew install failed: {result.stderr}")
-                return False
-        except Exception as e:
-            self.logger.debug(f"Error installing Node.js with Homebrew: {e}")
-            return False
-
-    def _install_nodejs_direct(self) -> bool:
-        """Install Node.js using direct download."""
-        self.logger.info("Trying to install Node.js using direct download...")
-
-        try:
-            # Download Node.js installer
-            if self.is_apple_silicon:
-                pkg_url = "https://nodejs.org/dist/v18.17.0/node-v18.17.0.pkg"
-            else:
-                pkg_url = "https://nodejs.org/dist/v18.17.0/node-v18.17.0.pkg"
-
-            pkg_path = self.temp_dir / "nodejs.pkg"
-
-            self.logger.info("Downloading Node.js...")
-            urllib.request.urlretrieve(pkg_url, pkg_path)
-
-            # Install package
-            self.logger.info("Installing Node.js...")
-            result = subprocess.run(
-                ["sudo", "installer", "-pkg", str(pkg_path), "-target", "/"],
-                capture_output=True,
-                text=True,
-                timeout=600,
-            )
-
-            if result.returncode == 0:
-                self.logger.success("Node.js installed using direct download")
-                return True
-            else:
-                self.logger.debug(f"Direct install failed: {result.stderr}")
-                return False
-        except Exception as e:
-            self.logger.debug(f"Direct download failed: {e}")
-            return False
-
     def _install_r_homebrew(self) -> bool:
         """Install R using Homebrew."""
         self.logger.info("Trying to install R using Homebrew...")
@@ -508,11 +402,3 @@ class MacOSInstaller:
                 success = False
 
         return success
-
-    def _install_npm_packages(self) -> bool:
-        """Install required npm packages."""
-        self.logger.info("No npm packages required - mermaid-cli dependency removed")
-
-        # Mermaid diagrams are now handled via mermaid.ink API
-        # No need for local mermaid-cli installation
-        return True

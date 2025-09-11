@@ -4,6 +4,8 @@ This module tests the custom markdown command processing functionality,
 including blindtext commands and the extensible framework for future commands.
 """
 
+import pytest
+
 from rxiv_maker.converters.custom_command_processor import (
     COMMAND_PROCESSORS,
     _process_blindtext_commands,
@@ -768,8 +770,9 @@ Value: {{py:get nested_command}}
         assert "{{py:get nonexistent}}" in result
 
     def test_py_exec_error_recovery(self):
-        """Test that errors in py:exec don't break subsequent processing."""
+        """Test that errors in py:exec raise PythonExecutionError as expected."""
         from rxiv_maker.converters.custom_command_processor import process_custom_commands
+        from rxiv_maker.converters.python_executor import PythonExecutionError
 
         text = """
 {{py:exec
@@ -788,14 +791,12 @@ First: {{py:get good_var}}
 Second: {{py:get bad_var}}
 Third: {{py:get another_good_var}}
 """
-        result = process_custom_commands(text)
+        # Python execution errors should halt processing by raising an exception
+        with pytest.raises(PythonExecutionError) as exc_info:
+            process_custom_commands(text)
 
-        # Good variables should work
-        assert "First: success" in result
-        assert "Third: also success" in result
-
-        # Bad variable should show error
-        assert "Python execution error in exec block:" in result
+        # Error message should indicate the problem
+        assert "undefined_function" in str(exc_info.value)
 
     def test_py_exec_with_data_structures(self):
         """Test py:exec with complex data structures."""

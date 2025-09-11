@@ -30,10 +30,10 @@ class TestCoreImports(unittest.TestCase):
 
     def test_engine_modules_import(self):
         """Test engine modules import."""
-        from rxiv_maker.engines import BuildManager, get_container_engine
+        from rxiv_maker.engines import BuildManager, validate_manuscript
 
         self.assertTrue(callable(BuildManager))
-        self.assertTrue(callable(get_container_engine))
+        self.assertTrue(callable(validate_manuscript))
 
     def test_utils_modules_import(self):
         """Test utility modules import."""

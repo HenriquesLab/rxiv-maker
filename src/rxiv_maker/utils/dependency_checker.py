@@ -1,7 +1,7 @@
 """System dependency checker for Rxiv-Maker.
 
 This module provides comprehensive checking of system dependencies required
-for Rxiv-Maker functionality, including LaTeX, Make, Node.js, and R.
+for Rxiv-Maker functionality, including LaTeX, Make, and R.
 """
 
 import shutil

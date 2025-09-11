@@ -414,7 +414,7 @@ class InitCommand(BaseCommand):
                     author_affiliation = Prompt.ask("Author affiliation", default=author_affiliation)
 
                 # Use centralized file manager for consistent operations
-                from ...core.managers.file_manager import get_file_manager
+                from ..core.managers.file_manager import get_file_manager
 
                 file_manager = get_file_manager()
 
@@ -715,7 +715,7 @@ class CheckInstallationCommand(BaseCommand):
     """Check installation command implementation using the framework."""
 
     def execute_operation(self, detailed: bool = False, fix: bool = False, json_output: bool = False) -> None:
-        """Execute installation check.
+        """Execute installation check using the new dependency manager.
 
         Args:
             detailed: Show detailed diagnostic information
@@ -723,72 +723,182 @@ class CheckInstallationCommand(BaseCommand):
             json_output: Output results in JSON format
         """
         import json
+        import platform
 
         from rich.panel import Panel
 
-        from rxiv_maker.install.utils.verification import diagnose_installation, verify_installation
+        from ..core.managers.dependency_manager import get_dependency_manager
+
+        dm = get_dependency_manager()
+        current_platform = platform.system()
 
         if json_output:
-            # Output JSON results without progress bar
-            results = verify_installation(verbose=False)
-            diagnosis = diagnose_installation()
+            # Check all dependencies and format as JSON
+            all_missing = dm.get_missing_dependencies()
+            pdf_missing = dm.get_missing_dependencies("pdf", required_only=True)
+
+            components = {}
+            ubuntu_packages = []
+
+            for result in all_missing:
+                components[result.spec.name] = {
+                    "type": result.spec.type.value,
+                    "status": result.status.value,
+                    "required": result.spec.required,
+                    "contexts": list(result.spec.contexts),
+                    "resolution_hint": result.resolution_hint,
+                }
+
+                if result.spec.type.value == "ubuntu_package" and result.spec.required:
+                    ubuntu_packages.append(result.spec.name)
 
             output = {
-                "status": "complete" if all(results.values()) else "incomplete",
-                "components": results,
-                "diagnosis": diagnosis,
+                "status": "complete" if not pdf_missing else "incomplete",
+                "platform": current_platform,
+                "total_dependencies": len(dm.dependencies),
+                "missing_required_for_pdf": len(pdf_missing),
+                "missing_components": components,
+                "ubuntu_install_command": f"sudo apt install -y {' '.join(ubuntu_packages)}"
+                if ubuntu_packages and current_platform == "Linux"
+                else None,
                 "summary": {
-                    "total": len(results),
-                    "installed": sum(results.values()),
-                    "missing": len(results) - sum(results.values()),
+                    "total_missing": len(all_missing),
+                    "critical_missing": len(pdf_missing),
+                    "ubuntu_packages_missing": len(ubuntu_packages),
                 },
             }
 
             self.console.print(json.dumps(output, indent=2))
             return
 
-        self.console.print(Panel.fit("🔍 Checking rxiv-maker Installation", style="blue"))
+        self.console.print(Panel.fit("🔍 Checking rxiv-maker Dependencies", style="blue"))
 
         with self.create_progress() as progress:
-            task = progress.add_task("Checking installation...", total=None)
+            task = progress.add_task("Checking dependencies...", total=None)
 
             try:
-                # Run verification
-                results = verify_installation(verbose=False)
+                # Check PDF dependencies (most critical)
+                pdf_missing = dm.get_missing_dependencies("pdf", required_only=True)
+                all_missing = dm.get_missing_dependencies() if detailed else pdf_missing
 
-                progress.update(task, description="✅ Installation check completed")
+                progress.update(task, description="✅ Dependency check completed")
 
                 if detailed:
-                    self._show_detailed_results(results)
+                    self._show_detailed_dependency_results(dm, all_missing)
                 else:
-                    self._show_basic_results(results)
+                    self._show_basic_dependency_results(pdf_missing)
 
-                # Check if fixes are needed
-                missing_critical = []
-                for component, installed in results.items():
-                    if not installed and component != "r":  # R is optional
-                        missing_critical.append(component)
+                # Show platform-specific installation instructions
+                if pdf_missing and current_platform == "Linux":
+                    ubuntu_packages = [r.spec.name for r in pdf_missing if r.spec.type.value == "ubuntu_package"]
+                    if ubuntu_packages:
+                        self.console.print("\n📦 Ubuntu installation command:", style="blue")
+                        self.console.print(f"sudo apt install -y {' '.join(ubuntu_packages)}", style="green")
 
-                if missing_critical:
-                    self.console.print(f"\n⚠️  {len(missing_critical)} critical components missing", style="yellow")
-
-                    if fix:
-                        self.console.print("\n🔧 Attempting to fix missing dependencies...")
-                        self._fix_missing_dependencies(missing_critical)
+                if pdf_missing:
+                    if fix and current_platform == "Linux":
+                        self.console.print("\n🔧 Attempting to install missing dependencies...")
+                        success = dm.install_missing_dependencies("pdf", interactive=False)
+                        if success:
+                            self.success_message("Dependencies installed successfully!")
+                        else:
+                            self.error_message("Some dependencies could not be installed automatically")
                     else:
-                        self.console.print("\n💡 Run with --fix to attempt repairs", style="blue")
-                        # Show helpful installation instructions
-                        self._show_manual_install_instructions(missing_critical)
+                        self.console.print(
+                            f"\n⚠️  {len(pdf_missing)} required dependencies missing for PDF generation", style="yellow"
+                        )
+                        if current_platform == "Linux":
+                            self.console.print("💡 Run with --fix to attempt automatic installation", style="blue")
                 else:
-                    self.success_message("All critical components are working!")
+                    self.success_message("All required dependencies for PDF generation are available!")
 
                 # Show next steps
-                self._show_next_steps(results)
+                self._show_dependency_next_steps(pdf_missing)
 
             except Exception as e:
-                progress.update(task, description="❌ Installation check failed")
-                self.error_message(f"Installation check failed: {e}")
-                raise CommandExecutionError(f"Installation check failed: {e}") from e
+                progress.update(task, description="❌ Dependency check failed")
+                self.error_message(f"Dependency check failed: {e}")
+                raise CommandExecutionError(f"Dependency check failed: {e}") from e
+
+    def _show_basic_dependency_results(self, missing_results: list) -> None:
+        """Show basic dependency results using the new dependency manager."""
+        from rich.table import Table
+
+        if not missing_results:
+            self.console.print("✅ All required dependencies are available!", style="green")
+            return
+
+        table = Table(title="Missing Required Dependencies", show_header=True, header_style="bold red")
+        table.add_column("Component", style="cyan", width=25)
+        table.add_column("Type", style="yellow", width=15)
+        table.add_column("Installation", style="green")
+
+        for result in missing_results:
+            table.add_row(
+                result.spec.name,
+                result.spec.type.value.replace("_", " ").title(),
+                result.resolution_hint or "Manual installation required",
+            )
+
+        self.console.print(table)
+
+    def _show_detailed_dependency_results(self, dm, all_missing: list) -> None:
+        """Show detailed dependency results."""
+        from rich.table import Table
+
+        # Show summary first
+        total_deps = len(dm.dependencies)
+        missing_count = len(all_missing)
+
+        self.console.print(
+            f"\n📊 Summary: {missing_count} missing out of {total_deps} total dependencies", style="blue"
+        )
+
+        if not all_missing:
+            self.console.print("✅ All dependencies are available!", style="green")
+            return
+
+        # Group by type
+        by_type = {}
+        for result in all_missing:
+            dep_type = result.spec.type.value
+            if dep_type not in by_type:
+                by_type[dep_type] = []
+            by_type[dep_type].append(result)
+
+        for dep_type, results in by_type.items():
+            table = Table(
+                title=f"Missing {dep_type.replace('_', ' ').title()} Dependencies",
+                show_header=True,
+                header_style="bold yellow",
+            )
+            table.add_column("Name", style="cyan", width=25)
+            table.add_column("Required", width=10)
+            table.add_column("Contexts", width=20)
+            table.add_column("Installation", style="green")
+
+            for result in results:
+                table.add_row(
+                    result.spec.name,
+                    "✅ Yes" if result.spec.required else "⚠️ Optional",
+                    ", ".join(result.spec.contexts) if result.spec.contexts else "all",
+                    result.resolution_hint or "Manual installation required",
+                )
+
+            self.console.print(table)
+            self.console.print()
+
+    def _show_dependency_next_steps(self, missing_results: list) -> None:
+        """Show next steps after dependency check."""
+        if not missing_results:
+            self.console.print("\n🚀 Next steps:", style="blue")
+            self.console.print("  • Test PDF generation: rxiv pdf EXAMPLE_MANUSCRIPT")
+            return
+
+        self.console.print("\n🔧 Next steps:", style="blue")
+        self.console.print("  • Install missing dependencies shown above")
+        self.console.print("  • Re-run: rxiv check-installation")
+        self.console.print("  • Test PDF generation: rxiv pdf EXAMPLE_MANUSCRIPT")
 
     def _show_basic_results(self, results: dict) -> None:
         """Show basic installation results."""
@@ -805,7 +915,6 @@ class CheckInstallationCommand(BaseCommand):
             "latex": "LaTeX",
             "pandoc": "Pandoc",
             "r": "R (Optional)",
-            "nodejs": "Node.js",
         }
 
         for component, installed in results.items():
@@ -1069,6 +1178,9 @@ class BuildCommand(BaseCommand):
                     if hasattr(build_manager, "get_build_stats"):
                         stats = build_manager.get_build_stats()
                         self.console.print(f"📊 Build time: {stats.get('duration', 'N/A')}", style="dim")
+
+                    # Show helpful tips after successful build
+                    self._show_build_tips()
                 else:
                     self.error_message("PDF build failed", "Check the logs above for detailed error information")
                     raise CommandExecutionError("Build failed")
@@ -1087,6 +1199,22 @@ class BuildCommand(BaseCommand):
                 else:
                     self.error_message(f"Build failed: {e}")
                 raise CommandExecutionError(f"Build failed: {e}") from e
+
+    def _show_build_tips(self) -> None:
+        """Show helpful tips after successful PDF build."""
+        try:
+            from ..utils import get_build_success_tip
+
+            # Always show tips - no configuration needed
+            tip = get_build_success_tip(frequency="always")
+
+            if tip:
+                self.console.print(tip)
+
+        except Exception as e:
+            # Tips are non-critical - don't fail if there are issues
+            if self.verbose:
+                self.console.print(f"Debug: Could not load tips: {e}", style="dim")
 
 
 class VersionCommand(BaseCommand):

@@ -45,7 +45,10 @@ class BibliographyAdder:
         """
         self.manuscript_path = Path(manuscript_path)
         self.bib_file = self.manuscript_path / "03_REFERENCES.bib"
-        self.cache = DOICache()
+
+        # Initialize DOI cache with manuscript-specific cache directory
+        manuscript_cache_dir = self.manuscript_path / ".rxiv_cache" / "doi"
+        self.cache = DOICache(cache_dir=str(manuscript_cache_dir))
 
     def add_entries(self, doi_inputs: list[str], overwrite: bool = False) -> bool:
         """Add bibliography entries for the given DOIs or URLs.

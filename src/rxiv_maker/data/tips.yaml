@@ -1,0 +1,124 @@
+# Tips and tricks for rxiv-maker users
+# This file contains helpful tips displayed after successful operations
+
+tips:
+  # VSCode Extension - Primary recommendation
+  - id: "vscode_extension"
+    title: "VSCode Extension Available"
+    message: "Install the rxiv-maker VSCode extension for enhanced productivity with syntax highlighting, snippets, and integrated commands!"
+    category: "tools"
+    priority: 8
+
+  - id: "vscode_features"
+    title: "VSCode Extension Features"
+    message: "The rxiv-maker VSCode extension includes live preview, figure management, citation helpers, and one-click PDF generation."
+    category: "tools"
+    priority: 7
+
+  # Productivity Tips
+  - id: "force_figures"
+    title: "Regenerate All Figures"
+    message: "Use 'rxiv pdf --force-figures' to regenerate all figures when you've made changes to figure scripts."
+    category: "build_success"
+    priority: 6
+
+  - id: "keep_output"
+    title: "Preserve Output Directory"
+    message: "Use 'rxiv pdf --keep-output' to preserve existing files in the output directory for incremental builds."
+    category: "build_success"
+    priority: 5
+
+  - id: "track_changes"
+    title: "Track Document Changes"
+    message: "Use 'rxiv pdf --track-changes v1.0.0' to generate a PDF highlighting changes since a specific git tag."
+    category: "workflow"
+    priority: 6
+
+  - id: "verbose_output"
+    title: "Debug Build Issues"
+    message: "Use 'rxiv pdf --verbose' or 'rxiv pdf --debug' to get detailed output when troubleshooting build problems."
+    category: "troubleshooting"
+    priority: 4
+
+  # Best Practices
+  - id: "manuscript_structure"
+    title: "Organize Your Manuscript"
+    message: "Use numbered markdown files (01_MAIN.md, 02_METHODS.md) for better organization and automatic ordering."
+    category: "best_practices"
+    priority: 5
+
+  - id: "figure_scripts"
+    title: "Script Your Figures"
+    message: "Create Python/R scripts in the figures/ directory for reproducible, version-controlled figure generation."
+    category: "best_practices"
+    priority: 5
+
+  - id: "bibliography_management"
+    title: "Automatic Bibliography"
+    message: "Use 'rxiv bibliography add DOI1 DOI2' to automatically add references to your bibliography from DOIs."
+    category: "workflow"
+    priority: 6
+
+  # Workflow Tips
+  - id: "check_installation"
+    title: "Verify Your Setup"
+    message: "Run 'rxiv check-installation' to verify all dependencies are correctly installed and configured."
+    category: "setup"
+    priority: 3
+
+  - id: "validate_manuscript"
+    title: "Validate Before Building"
+    message: "Use 'rxiv validate' to check your manuscript structure and catch issues before PDF generation."
+    category: "workflow"
+    priority: 4
+
+  - id: "clean_build"
+    title: "Clean Builds"
+    message: "By default, rxiv clears the output directory before building to ensure clean, reproducible builds."
+    category: "build_success"
+    priority: 3
+
+  # Advanced Features
+  - id: "config_file"
+    title: "Use Configuration Files"
+    message: "Create a 00_CONFIG.yml file in your manuscript directory to customize build settings and metadata."
+    category: "advanced"
+    priority: 4
+
+  - id: "figure_positioning"
+    title: "Control Figure Placement"
+    message: "Use LaTeX positioning hints like ![Figure caption](figure.png){#fig:label .here} for precise figure control."
+    category: "advanced"
+    priority: 3
+
+  - id: "custom_templates"
+    title: "Custom Templates"
+    message: "Customize the LaTeX template in your configuration to match journal requirements or personal preferences."
+    category: "advanced"
+    priority: 2
+
+  # Troubleshooting
+  - id: "missing_figures"
+    title: "Missing Figures"
+    message: "If figures aren't showing, check that figure files exist and paths in markdown match actual filenames."
+    category: "troubleshooting"
+    priority: 4
+
+  - id: "bibliography_issues"
+    title: "Bibliography Problems"
+    message: "Use 'rxiv bibliography fix' to automatically resolve common citation and reference formatting issues."
+    category: "troubleshooting"
+    priority: 5
+
+  # Community & Learning
+  - id: "example_manuscript"
+    title: "Learn from Examples"
+    message: "Check the EXAMPLE_MANUSCRIPT/ directory to see a complete working example with figures, citations, and formatting."
+    category: "learning"
+    priority: 3
+
+  - id: "documentation"
+    title: "Comprehensive Documentation"
+    message: "Visit the documentation for detailed guides on figures, citations, templates, and advanced workflows."
+    category: "learning"
+    priority: 2

@@ -18,7 +18,7 @@ class InstallMode(Enum):
 
     FULL = "full"  # Install all dependencies
     MINIMAL = "minimal"  # Python packages + essential LaTeX
-    CORE = "core"  # Python packages + LaTeX (skip Node.js, R)
+    CORE = "core"  # Python packages + LaTeX (skip R)
     SKIP_SYSTEM = "skip-system"  # Python packages only
 
 
@@ -162,14 +162,11 @@ class InstallManager:
             InstallMode.MINIMAL,
             InstallMode.CORE,
         ]
-        install_nodejs = self.mode in [InstallMode.FULL, InstallMode.CORE]
         install_r = self.mode == InstallMode.FULL
 
         # Add packages available in conda-forge
         if install_r:
             conda_packages.append("r-base")
-        if install_nodejs:
-            conda_packages.append("nodejs")
 
         # Install conda packages if any
         if conda_packages:
@@ -277,7 +274,6 @@ class InstallManager:
             InstallMode.MINIMAL,
             InstallMode.CORE,
         ]
-        install_nodejs = self.mode in [InstallMode.FULL, InstallMode.CORE]
         install_r = self.mode == InstallMode.FULL
         install_system_libs = self.mode in [
             InstallMode.FULL,
@@ -305,16 +301,6 @@ class InstallManager:
             if not result:
                 success = False
                 self.errors.append("Failed to install LaTeX")
-            self.progress.complete_task()
-
-        # Install Node.js
-        if install_nodejs:
-            self.progress.start_task("Installing Node.js and npm packages")
-            result = self.platform_installer.install_nodejs()
-            self.installation_results["nodejs"] = result
-            if not result:
-                success = False
-                self.errors.append("Failed to install Node.js")
             self.progress.complete_task()
 
         # Install R
@@ -394,8 +380,6 @@ class InstallManager:
         for component in broken_components:
             if component == "latex":
                 result = self.platform_installer.install_latex()
-            elif component == "nodejs":
-                result = self.platform_installer.install_nodejs()
             elif component == "r":
                 result = self.platform_installer.install_r()
             else:

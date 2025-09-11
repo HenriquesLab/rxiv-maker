@@ -63,9 +63,9 @@ def setup(
 
     - full: Complete setup (Python + all system dependencies)
     - python-only: Only Python packages and virtual environment
-    - system-only: Only system dependencies (LaTeX, Node.js, R, etc.)
+    - system-only: Only system dependencies (LaTeX, R, etc.)
     - minimal: Python + essential LaTeX only
-    - core: Python + LaTeX (skip Node.js, R)
+    - core: Python + LaTeX (skip R)
 
     Examples:
         rxiv setup                    # Full setup

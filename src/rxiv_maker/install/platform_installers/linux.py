@@ -193,36 +193,6 @@ class LinuxInstaller:
 
         return success
 
-    def install_nodejs(self) -> bool:
-        """Install Node.js and npm packages on Linux."""
-        self.logger.info("Installing Node.js on Linux...")
-
-        # Check if Node.js is already installed
-        if self._is_nodejs_installed():
-            self.logger.success("Node.js already installed")
-            return self._install_npm_packages()
-
-        # Define Node.js packages for different package managers
-        nodejs_packages = {
-            "apt": ["nodejs", "npm"],
-            "apt-get": ["nodejs", "npm"],
-            "dnf": ["nodejs", "npm"],
-            "yum": ["nodejs", "npm"],
-            "pacman": ["nodejs", "npm"],
-            "apk": ["nodejs", "npm"],
-        }
-
-        if self.package_manager not in nodejs_packages:
-            self.logger.warning(f"Node.js packages not defined for {self.package_manager}")
-            return False
-
-        success = self._install_packages(nodejs_packages[self.package_manager])
-
-        if success:
-            return self._install_npm_packages()
-
-        return success
-
     def install_r(self) -> bool:
         """Install R language on Linux."""
         self.logger.info("Installing R on Linux...")
@@ -259,32 +229,6 @@ class LinuxInstaller:
                 timeout=10,
             )
             return result.returncode == 0
-        except (
-            subprocess.TimeoutExpired,
-            subprocess.CalledProcessError,
-            FileNotFoundError,
-            OSError,
-        ):
-            return False
-
-    def _is_nodejs_installed(self) -> bool:
-        """Check if Node.js is installed."""
-        try:
-            node_result = subprocess.run(
-                ["node", "--version"],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                timeout=10,
-            )
-            npm_result = subprocess.run(
-                ["npm", "--version"],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                timeout=10,
-            )
-            return node_result.returncode == 0 and npm_result.returncode == 0
         except (
             subprocess.TimeoutExpired,
             subprocess.CalledProcessError,
@@ -411,11 +355,3 @@ class LinuxInstaller:
                 success = False
 
         return success
-
-    def _install_npm_packages(self) -> bool:
-        """Install required npm packages."""
-        self.logger.info("No npm packages required - mermaid-cli dependency removed")
-
-        # Mermaid diagrams are now handled via mermaid.ink API
-        # No need for local mermaid-cli installation
-        return True
