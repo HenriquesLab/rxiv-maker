@@ -354,6 +354,24 @@ class CleanCommand(BaseCommand):
 class InitCommand(BaseCommand):
     """Initialize command implementation using the framework."""
 
+    def setup_common_options(self, ctx: click.Context, manuscript_path: Optional[str] = None) -> None:
+        """Setup common options without path validation for init command.
+
+        Args:
+            ctx: Click context containing command options
+            manuscript_path: Optional manuscript path override
+        """
+        # Extract common options from context
+        self.verbose = ctx.obj.get("verbose", False) or EnvironmentManager.is_verbose()
+        self.engine = "local"  # Only local engine is supported
+
+        # For init command, don't create PathManager as directory may not exist yet
+        # Store the manuscript path for use in execute_operation
+        self._manuscript_path = manuscript_path or EnvironmentManager.get_manuscript_path() or "MANUSCRIPT"
+
+        if self.verbose:
+            self.console.print(f"📁 Will create manuscript at: {self._manuscript_path}", style="blue")
+
     def execute_operation(
         self,
         manuscript_path: Optional[str] = None,
@@ -373,9 +391,9 @@ class InitCommand(BaseCommand):
 
         from rich.prompt import Prompt
 
-        # Use default manuscript path if not provided
+        # Use the manuscript path from setup_common_options if not provided
         if manuscript_path is None:
-            manuscript_path = "MANUSCRIPT"
+            manuscript_path = getattr(self, "_manuscript_path", "MANUSCRIPT")
 
         manuscript_dir = Path(manuscript_path)
 
@@ -613,9 +631,9 @@ Create tables using standard markdown syntax:
 # References
 
 Citations will be automatically formatted. Add entries to 03_REFERENCES.bib and
-reference them using @citation_key syntax.
+reference them using the `@key` syntax.
 
-Example: This is an important finding [@smith2023].
+Example: This is an important finding [@smith2023; @johnson2022].
 """
 
     def _get_supplementary_template(self) -> str:
