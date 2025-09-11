@@ -74,6 +74,9 @@ class BaseCommand(ABC):
             # Use PathManager for path validation and resolution
             self.path_manager = PathManager(manuscript_path=manuscript_path, output_dir="output")
 
+            # Set the resolved manuscript path in environment for PythonExecutor
+            EnvironmentManager.set_manuscript_path(self.path_manager.manuscript_path)
+
             if self.verbose:
                 self.console.print(f"📁 Using manuscript path: {self.path_manager.manuscript_path}", style="blue")
 

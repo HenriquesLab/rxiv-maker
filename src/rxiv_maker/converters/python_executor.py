@@ -593,15 +593,21 @@ print(json.dumps(result))
             Tuple of (output, success_flag)
         """
         import io
+        import os
         import sys
 
         # Add manuscript src/py directories to sys.path
         src_py_paths = self._get_src_py_paths()
         original_sys_path = sys.path.copy()  # Save original to restore later
+        original_cwd = os.getcwd()  # Save original working directory
 
         for path in src_py_paths:
             if path not in sys.path:
                 sys.path.insert(0, path)
+
+        # Change to manuscript directory for relative path resolution
+        if self.manuscript_dir:
+            os.chdir(self.manuscript_dir)
 
         try:
             # Filter comments for security
@@ -677,8 +683,9 @@ print(json.dumps(result))
                 sys.stderr = old_stderr
 
         finally:
-            # Restore original sys.path
+            # Restore original sys.path and working directory
             sys.path[:] = original_sys_path
+            os.chdir(original_cwd)
 
     def get_variable_value(self, variable_name: str) -> Any:
         """Get the value of a variable from the execution context ({{py:get}}).
