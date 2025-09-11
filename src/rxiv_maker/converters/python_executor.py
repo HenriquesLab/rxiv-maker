@@ -33,6 +33,7 @@ class PythonExecutor:
         self.max_output_length = max_output_length
         self.execution_context: Dict[str, Any] = {}
         self.manuscript_dir: Optional[Path] = None
+        self.initialization_imports = []  # Track imports from initialization blocks
         self._detect_manuscript_directory()
 
     def _detect_manuscript_directory(self) -> None:
@@ -73,6 +74,42 @@ class PythonExecutor:
         except Exception:
             # If detection fails, use current directory
             self.manuscript_dir = Path.cwd()
+
+    def _extract_imports(self, code: str) -> list[str]:
+        """Extract import statements from Python code.
+
+        Args:
+            code: Python code to analyze
+
+        Returns:
+            List of import statement lines
+        """
+        import ast
+
+        try:
+            tree = ast.parse(code)
+            imports = []
+
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    import_line = "import " + ", ".join(alias.name for alias in node.names)
+                    imports.append(import_line)
+                elif isinstance(node, ast.ImportFrom):
+                    module = node.module or ""
+                    names = ", ".join(alias.name for alias in node.names)
+                    import_line = f"from {module} import {names}"
+                    imports.append(import_line)
+
+            return imports
+        except SyntaxError:
+            # If parsing fails, fall back to simple text search
+            lines = code.strip().split("\n")
+            imports = []
+            for line in lines:
+                stripped = line.strip()
+                if stripped.startswith("import ") or stripped.startswith("from "):
+                    imports.append(stripped)
+            return imports
 
     def _get_src_py_paths(self) -> list[str]:
         """Get the src/py paths to add to PYTHONPATH."""
@@ -263,7 +300,12 @@ class PythonExecutor:
 
         # Prepare manuscript context for error reporting
         manuscript_context = manuscript_context or {}
-        manuscript_context_json = json.dumps(manuscript_context)
+        # Convert None values to strings to avoid JSON null -> Python parsing issues
+        safe_manuscript_context = {k: v if v is not None else "None" for k, v in manuscript_context.items()}
+        manuscript_context_json = json.dumps(safe_manuscript_context)
+
+        # Prepare initialization imports
+        init_imports = "\n".join(self.initialization_imports)
 
         script_content = f"""
 import sys
@@ -283,6 +325,10 @@ initial_context = {context_json}
 
 # Manuscript context for error reporting
 manuscript_context = {manuscript_context_json}
+# Convert string "None" back to Python None
+for key, value in manuscript_context.items():
+    if value == "None":
+        manuscript_context[key] = None
 
 # Capture output
 output_buffer = io.StringIO()
@@ -319,6 +365,10 @@ try:
     except ImportError:
         # Figure utilities not available, continue without them
         pass
+
+    # Execute initialization imports first
+    if '''{init_imports}''':
+        exec('''{init_imports}''', exec_globals)
 
     # Execute user code in the context
     exec('''\\
@@ -497,15 +547,15 @@ print(json.dumps(result))
     def execute_initialization_block(
         self, code: str, manuscript_file: Optional[str] = None, line_number: Optional[int] = None
     ) -> None:
-        """Execute Python code block for initialization ({{py:exec}}).
+        """Execute Python code as an initialization block ({{py:exec}}).
 
-        This method executes code and stores results in the persistent context
-        but doesn't return any output for insertion into the document.
+        This method executes code and stores any variables in the persistent
+        execution context for later use by {{py:get}} blocks.
 
         Args:
-            code: Python code to execute for initialization
-            manuscript_file: Name of the manuscript file containing this code
-            line_number: Line number in the manuscript where this code appears
+            code: Python code to execute
+            manuscript_file: Optional filename for error context
+            line_number: Optional line number for error context
 
         Raises:
             PythonExecutionError: If execution fails
@@ -513,9 +563,8 @@ print(json.dumps(result))
         """
         # Execute the code and update persistent context
         try:
-            output, success = self.execute_code_safely(
-                code, manuscript_context={"file": manuscript_file, "line": line_number}
-            )
+            # For initialization blocks, execute directly to preserve functions
+            output, success = self._execute_initialization_directly(code, manuscript_file, line_number)
 
             if not success:
                 error_context = ""
@@ -529,6 +578,94 @@ print(json.dumps(result))
             if manuscript_file or line_number:
                 error_context = f" (in {manuscript_file or 'manuscript'}:{line_number or 'unknown'})"
             raise PythonExecutionError(f"Unexpected error in initialization block{error_context}: {str(e)}") from e
+
+    def _execute_initialization_directly(
+        self, code: str, manuscript_file: Optional[str] = None, line_number: Optional[int] = None
+    ) -> Tuple[str, bool]:
+        """Execute initialization code directly in main process to preserve functions.
+
+        Args:
+            code: Python code to execute
+            manuscript_file: Optional filename for error context
+            line_number: Optional line number for error context
+
+        Returns:
+            Tuple of (output, success_flag)
+        """
+        import io
+        import sys
+
+        # Filter comments for security
+        code = self._filter_python_comments(code)
+
+        # Normalize LaTeX-escaped paths
+        code = code.replace("\\_", "_")
+
+        # Extract and track imports from this initialization block
+        imports = self._extract_imports(code)
+        self.initialization_imports.extend(imports)
+
+        # Prepare execution context
+        exec_context = {"__builtins__": __builtins__}
+        exec_context.update(self.execution_context)
+
+        # Add figure utilities if available
+        try:
+            from rxiv_maker.manuscript_utils.figure_utils import (
+                clean_figure_outputs,
+                convert_figures_bulk,
+                convert_mermaid,
+                convert_python_figure,
+                convert_r_figure,
+                get_figure_info,
+                list_available_figures,
+            )
+
+            exec_context.update(
+                {
+                    "convert_mermaid": convert_mermaid,
+                    "convert_python_figure": convert_python_figure,
+                    "convert_r_figure": convert_r_figure,
+                    "convert_figures_bulk": convert_figures_bulk,
+                    "list_available_figures": list_available_figures,
+                    "get_figure_info": get_figure_info,
+                    "clean_figure_outputs": clean_figure_outputs,
+                }
+            )
+        except ImportError:
+            pass
+
+        # Capture output
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        captured_output = io.StringIO()
+        captured_errors = io.StringIO()
+
+        try:
+            sys.stdout = captured_output
+            sys.stderr = captured_errors
+
+            # Execute code directly
+            exec(code, exec_context)
+
+            # Update persistent context with all new variables (including functions)
+            for key, value in exec_context.items():
+                if not key.startswith("_") and key != "__builtins__":
+                    self.execution_context[key] = value
+
+            output = captured_output.getvalue()
+            if captured_errors.getvalue():
+                output += "\n" + captured_errors.getvalue()
+
+            return output, True
+
+        except Exception as e:
+            error_output = captured_errors.getvalue() or str(e)
+            return error_output, False
+
+        finally:
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
 
     def get_variable_value(self, variable_name: str) -> Any:
         """Get the value of a variable from the execution context ({{py:get}}).

@@ -32,7 +32,7 @@ except ImportError:
     BUILD_MANAGER_AVAILABLE = False
 
 
-@pytest.mark.skip(reason="Logging functionality has been refactored - these tests are for deprecated features")
+@unittest.skip("Logging functionality has been refactored - these tests are for deprecated features")
 @pytest.mark.build_manager
 @unittest.skipUnless(BUILD_MANAGER_AVAILABLE, "Build manager not available")
 class TestBuildManagerLogging(unittest.TestCase):
@@ -447,7 +447,7 @@ Warning--new warning in test_ref
         self.assertIn("new warning in test_ref", content)
 
 
-@pytest.mark.skip(reason="BuildManager API has been refactored - tests need updating for new interface")
+@unittest.skip("BuildManager API has been refactored - tests need updating for new interface")
 @pytest.mark.build_manager
 @unittest.skipUnless(BUILD_MANAGER_AVAILABLE, "Build manager not available")
 class TestBuildManagerIntegration(unittest.TestCase):

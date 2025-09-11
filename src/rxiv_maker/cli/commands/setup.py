@@ -3,8 +3,12 @@
 from pathlib import Path
 
 import click
+from rich.console import Console
 
 from ..framework import SetupCommand
+
+# Console instance for testing and utility access
+console = Console()
 
 
 @click.command()

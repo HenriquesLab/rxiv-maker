@@ -67,5 +67,4 @@ def install_deps(
         non_interactive=non_interactive,
         repair=repair,
         log_file=str(log_file) if log_file else None,
-        ctx=ctx,
     )

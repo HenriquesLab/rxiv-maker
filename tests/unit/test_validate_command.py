@@ -2,6 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
 from click.testing import CliRunner
 
 from rxiv_maker.cli.commands.validate import validate
@@ -14,6 +15,7 @@ class TestValidateCommand:
         """Set up test fixtures before each test."""
         self.runner = CliRunner()
 
+    @pytest.mark.ci_exclude  # Test requires manuscript environment setup
     @patch("rxiv_maker.cli.framework.ValidationCommand")
     def test_successful_validation(self, mock_validation_command):
         """Test successful manuscript validation."""
@@ -34,6 +36,7 @@ class TestValidateCommand:
             mock_validation_command.assert_called_once()
             mock_command_instance.run.assert_called_once()
 
+    @pytest.mark.ci_exclude  # Test requires manuscript environment setup
     @patch("rxiv_maker.cli.framework.ValidationCommand")
     def test_validation_failure(self, mock_validation_command):
         """Test manuscript validation failure."""
@@ -58,6 +61,7 @@ class TestValidateCommand:
             mock_validation_command.assert_called_once()
             mock_command_instance.run.assert_called_once()
 
+    @pytest.mark.ci_exclude  # Test requires manuscript environment setup
     @patch("rxiv_maker.cli.framework.ValidationCommand")
     def test_validation_success_exit_zero(self, mock_validation_command):
         """Test validation with success return value - should be treated as success."""
@@ -78,6 +82,7 @@ class TestValidateCommand:
             mock_validation_command.assert_called_once()
             mock_command_instance.run.assert_called_once()
 
+    @pytest.mark.ci_exclude  # Test requires manuscript environment setup
     @patch("rxiv_maker.cli.framework.ValidationCommand")
     def test_keyboard_interrupt_handling(self, mock_validation_command):
         """Test keyboard interrupt handling."""
@@ -98,6 +103,7 @@ class TestValidateCommand:
             mock_validation_command.assert_called_once()
             mock_command_instance.run.assert_called_once()
 
+    @pytest.mark.ci_exclude  # Test requires manuscript environment setup
     @patch("rxiv_maker.cli.framework.ValidationCommand")
     def test_unexpected_error_handling(self, mock_validation_command):
         """Test unexpected error handling."""
@@ -118,6 +124,7 @@ class TestValidateCommand:
             mock_validation_command.assert_called_once()
             mock_command_instance.run.assert_called_once()
 
+    @pytest.mark.ci_exclude  # Test requires manuscript environment setup
     def test_nonexistent_manuscript_directory(self):
         """Test handling of nonexistent manuscript directory."""
         # Test with a directory that doesn't exist

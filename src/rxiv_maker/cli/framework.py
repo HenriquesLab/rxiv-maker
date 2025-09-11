@@ -844,16 +844,119 @@ class CheckInstallationCommand(BaseCommand):
 
     def _fix_missing_dependencies(self, missing_components: list) -> None:
         """Attempt to fix missing dependencies."""
-        self.console.print("🚧 Automatic fixing not yet implemented", style="yellow")
-        self.console.print("Please install missing components manually:", style="blue")
+        import platform
 
+        # Check if we're on a supported platform for automatic fixing
+        system = platform.system().lower()
+        if system != "linux":
+            self.console.print("🚧 Automatic fixing only supported on Linux", style="yellow")
+            self._show_manual_install_instructions(missing_components)
+            return
+
+        # Check if we can detect Ubuntu/Debian
+        try:
+            with open("/etc/os-release", "r") as f:
+                os_info = f.read()
+            is_ubuntu = any(distro in os_info.lower() for distro in ["ubuntu", "debian", "mint"])
+        except (FileNotFoundError, IOError, OSError):
+            is_ubuntu = False
+
+        if not is_ubuntu:
+            self.console.print("🚧 Automatic fixing only supported on Ubuntu/Debian", style="yellow")
+            self._show_manual_install_instructions(missing_components)
+            return
+
+        # Install critical missing components
+        success_count = 0
         for component in missing_components:
             if component == "latex":
-                self.console.print("  • LaTeX: Install TeX Live or MiKTeX")
-            elif component == "pandoc":
-                self.console.print("  • Pandoc: Install from https://pandoc.org/installing.html")
-            elif component == "nodejs":
-                self.console.print("  • Node.js: Install from https://nodejs.org/")
+                if self._install_latex_ubuntu():
+                    success_count += 1
+            # Add other critical components here if needed in the future
+
+        # Ask about optional R installation if not already installed
+        try:
+            from rxiv_maker.install.utils.verification import verify_installation
+
+            current_status = verify_installation(verbose=False)
+            if not current_status.get("r", False):
+                install_r = click.confirm("\n🤔 Would you like to install R? (optional for R figure scripts)")
+                if install_r and self._install_r_ubuntu():
+                    success_count += 1
+        except Exception:
+            pass  # Skip R installation prompt if verification fails
+
+        if success_count > 0:
+            self.console.print(f"\n✅ Successfully installed {success_count} components!", style="green")
+            self.console.print("💡 Run 'rxiv check-installation' again to verify", style="blue")
+        else:
+            self.console.print("\n⚠️ Could not install components automatically", style="yellow")
+            self._show_manual_install_instructions(missing_components)
+
+    def _install_latex_ubuntu(self) -> bool:
+        """Install LaTeX on Ubuntu/Debian."""
+        import subprocess
+
+        try:
+            self.console.print("🔧 Installing LaTeX (this may take several minutes)...", style="blue")
+
+            cmd = (
+                "apt update && "
+                "apt install -y texlive-latex-base texlive-latex-recommended "
+                "texlive-latex-extra texlive-fonts-recommended texlive-fonts-extra "
+                "texlive-bibtex-extra biber"
+            )
+
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=1200)
+
+            if result.returncode == 0:
+                self.console.print("✅ Successfully installed LaTeX", style="green")
+                return True
+            else:
+                self.console.print(f"❌ Failed to install LaTeX: {result.stderr[:500]}", style="red")
+                return False
+
+        except subprocess.TimeoutExpired:
+            self.console.print("⏰ LaTeX installation timed out (try manually)", style="yellow")
+            return False
+        except Exception as e:
+            self.console.print(f"❌ Error installing LaTeX: {e}", style="red")
+            return False
+
+    def _install_r_ubuntu(self) -> bool:
+        """Install R on Ubuntu/Debian."""
+        import subprocess
+
+        try:
+            self.console.print("🔧 Installing R...", style="blue")
+
+            cmd = "apt update && apt install -y r-base"
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=300)
+
+            if result.returncode == 0:
+                self.console.print("✅ Successfully installed R", style="green")
+                return True
+            else:
+                self.console.print(f"❌ Failed to install R: {result.stderr[:500]}", style="red")
+                return False
+
+        except subprocess.TimeoutExpired:
+            self.console.print("⏰ R installation timed out", style="yellow")
+            return False
+        except Exception as e:
+            self.console.print(f"❌ Error installing R: {e}", style="red")
+            return False
+
+    def _show_manual_install_instructions(self, missing_components: list) -> None:
+        """Show manual installation instructions for missing components."""
+        self.console.print("Please install missing components manually:", style="blue")
+        for component in missing_components:
+            if component == "latex":
+                self.console.print(
+                    "  • LaTeX: sudo apt install texlive-latex-base texlive-latex-recommended texlive-latex-extra"
+                )
+            elif component == "system_libs":
+                self.console.print("  • System Libraries: pip install matplotlib numpy pillow pandas")
             else:
                 self.console.print(f"  • {component.title()}: Check documentation for installation instructions")
 

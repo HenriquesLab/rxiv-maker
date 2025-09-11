@@ -795,7 +795,7 @@ Third: {{py:get another_good_var}}
         assert "Third: also success" in result
 
         # Bad variable should show error
-        assert "Error:" in result
+        assert "Python execution error in exec block:" in result
 
     def test_py_exec_with_data_structures(self):
         """Test py:exec with complex data structures."""
