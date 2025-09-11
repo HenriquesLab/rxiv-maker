@@ -5,14 +5,14 @@ tips:
   # VSCode Extension - Primary recommendation
   - id: "vscode_extension"
     title: "VSCode Extension Available"
-    message: "Install the rxiv-maker VSCode extension for enhanced productivity with syntax highlighting, snippets, and integrated commands!"
-    category: "tools"
+    message: "Install the rxiv-maker VSCode extension to supercharge your manuscript writing with syntax highlighting, snippets, and integrated commands!"
+    category: "build_success"
     priority: 8
 
   - id: "vscode_features"
     title: "VSCode Extension Features"
-    message: "The rxiv-maker VSCode extension includes live preview, figure management, citation helpers, and one-click PDF generation."
-    category: "tools"
+    message: "The rxiv-maker VSCode extension includes syntax highlighting, citation helpers, cross-reference completion, validation, and one-click PDF generation through integrated build commands."
+    category: "build_success"
     priority: 7
 
   # Productivity Tips
