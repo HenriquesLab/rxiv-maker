@@ -215,8 +215,9 @@ def _process_tex_commands(text: MarkdownContent) -> LatexContent:
 
 
 def _process_python_commands_three_step(text: MarkdownContent) -> LatexContent:
-    """Process Python execution commands using 3-step execution model.
+    """Process Python execution commands using enhanced 3-step execution model.
 
+    Step 0: Process {{py:}} blocks - execute and display output
     Step 1: Execute all {{py:exec code}} blocks in order to initialize context
     Step 2: Process all {{py:get variable}} blocks using initialized context
     Step 3: Continue with LaTeX conversion (Python code already resolved)
@@ -234,6 +235,12 @@ def _process_python_commands_three_step(text: MarkdownContent) -> LatexContent:
     except ImportError:
         # If python_executor is not available, return text unchanged
         return text
+
+    # STEP 0: Process simple {{py:}} blocks that execute and display output
+    text = _process_python_block_commands(text, executor)
+
+    # STEP 0.5: Process inline {py: expression} commands
+    text = _process_python_inline_commands(text, executor)
 
     # STEP 1: Find and execute all {{py:exec}} blocks in order
     exec_blocks = _find_python_exec_blocks(text)
@@ -340,6 +347,75 @@ def _remove_python_exec_blocks(text: MarkdownContent) -> LatexContent:
             i += 1
 
     return "".join(result)
+
+
+def _process_python_block_commands(text: MarkdownContent, executor) -> LatexContent:
+    """Process simple {{py:}} blocks that execute code and display output."""
+    result = []
+    i = 0
+    while i < len(text):
+        # Look for {{py: but not {{py:exec or {{py:get
+        if text[i : i + 5] == "{{py:":
+            # Check if it's not followed by "exec" or "get"
+            remaining = text[i + 5 :]
+            if not (remaining.startswith("exec") or remaining.startswith("get")):
+                # Find the matching closing }}
+                brace_count = 2  # Start with {{
+                start = i + 5  # After "{{py:"
+                j = start
+                while j < len(text) and brace_count > 0:
+                    if text[j] == "{":
+                        brace_count += 1
+                    elif text[j] == "}":
+                        brace_count -= 1
+                    j += 1
+
+                if brace_count == 0:
+                    # Found matching braces, extract and execute the code
+                    code = text[start : j - 2].strip()  # Exclude the }}
+
+                    try:
+                        # Execute the code and get formatted output
+                        output = executor.execute_block(code)
+                        result.append(output)
+                        i = j
+                    except Exception as e:
+                        # Handle execution errors
+                        error_msg = f"```\nPython execution error: {str(e)}\n```"
+                        result.append(error_msg)
+                        i = j
+                else:
+                    # No matching braces found, keep the original text
+                    result.append(text[i])
+                    i += 1
+            else:
+                # This is {{py:exec or {{py:get, skip it for now
+                result.append(text[i])
+                i += 1
+        else:
+            result.append(text[i])
+            i += 1
+
+    return "".join(result)
+
+
+def _process_python_inline_commands(text: MarkdownContent, executor) -> LatexContent:
+    """Process inline {py: expression} commands."""
+
+    def process_inline_command(match: re.Match[str]) -> str:
+        expression = match.group(1).strip()
+        try:
+            # Execute the expression as inline code
+            result = executor.execute_inline(expression)
+            return result
+        except Exception as e:
+            return f"[Error: {str(e)}]"
+
+    # Process {py: expression} patterns (single braces, not double braces)
+    # Use negative lookbehind to avoid matching {{py: patterns
+    text = re.sub(r"(?<!\{)\{py:\s*([^}]+)\}(?!\})", process_inline_command, text)
+
+    return text
 
 
 def _process_python_get_blocks(text: MarkdownContent, executor) -> LatexContent:
