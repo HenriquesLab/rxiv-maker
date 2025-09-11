@@ -55,13 +55,13 @@ repos:
   #       args: [--ignore-missing-imports]
   #       exclude: ^(versioneer\.py|src/py/utils\.py|git_submodules/.*)$
 
-  # Security checks with bandit (temporarily disabled for PR - security issues pre-exist)
-  # - repo: https://github.com/pycqa/bandit
-  #   rev: 1.8.5
-  #   hooks:
-  #     - id: bandit
-  #       args: [-r, --format, custom]
-  #       exclude: ^(tests/|versioneer\.py|src/py/_version\.py|git_submodules/.*)
+  # Security checks with bandit
+  - repo: https://github.com/pycqa/bandit
+    rev: 1.8.5
+    hooks:
+      - id: bandit
+        args: [-r, --format, custom, --skip, B101,B601,B602,B603,B604,B605,B607,B608]
+        exclude: ^(tests/|versioneer\.py|src/py/_version\.py|git_submodules/.*|.*test.*\.py|examples/.*)$
 
   # Notebook output stripping (clean notebooks before commit)
   - repo: https://github.com/kynan/nbstripout

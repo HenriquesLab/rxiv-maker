@@ -777,7 +777,8 @@ class CheckInstallationCommand(BaseCommand):
                         self._fix_missing_dependencies(missing_critical)
                     else:
                         self.console.print("\n💡 Run with --fix to attempt repairs", style="blue")
-                        self.console.print("   Or run: rxiv check-installation --fix", style="blue")
+                        # Show helpful installation instructions
+                        self._show_manual_install_instructions(missing_critical)
                 else:
                     self.success_message("All critical components are working!")
 
@@ -904,7 +905,7 @@ class CheckInstallationCommand(BaseCommand):
                 "apt update && "
                 "apt install -y texlive-latex-base texlive-latex-recommended "
                 "texlive-latex-extra texlive-fonts-recommended texlive-fonts-extra "
-                "texlive-bibtex-extra biber"
+                "texlive-bibtex-extra texlive-science biber"
             )
 
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=1200)
@@ -949,16 +950,46 @@ class CheckInstallationCommand(BaseCommand):
 
     def _show_manual_install_instructions(self, missing_components: list) -> None:
         """Show manual installation instructions for missing components."""
-        self.console.print("Please install missing components manually:", style="blue")
+        import platform
+
+        system = platform.system().lower()
+        self.console.print("\n📦 Manual Installation Instructions:", style="bold blue")
+
         for component in missing_components:
             if component == "latex":
-                self.console.print(
-                    "  • LaTeX: sudo apt install texlive-latex-base texlive-latex-recommended texlive-latex-extra"
-                )
+                if system == "linux":
+                    self.console.print("  • LaTeX (Ubuntu/Debian):")
+                    self.console.print(
+                        "    sudo apt update && sudo apt install -y texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-science"
+                    )
+                elif system == "darwin":
+                    self.console.print("  • LaTeX (macOS):")
+                    self.console.print("    brew install --cask mactex")
+                    self.console.print("    # OR install BasicTeX: brew install --cask basictex")
+                else:
+                    self.console.print("  • LaTeX: Install TeX Live distribution for your platform")
+
             elif component == "system_libs":
-                self.console.print("  • System Libraries: pip install matplotlib numpy pillow pandas")
+                self.console.print("  • Python Libraries:")
+                self.console.print("    pip install matplotlib numpy pillow pandas scipy")
+
+            elif component == "r":
+                if system == "linux":
+                    self.console.print("  • R (Ubuntu/Debian, optional):")
+                    self.console.print("    sudo apt install -y r-base")
+                elif system == "darwin":
+                    self.console.print("  • R (macOS, optional):")
+                    self.console.print("    brew install r")
+                else:
+                    self.console.print("  • R (optional): Install from https://www.r-project.org/")
+
             else:
                 self.console.print(f"  • {component.title()}: Check documentation for installation instructions")
+
+        self.console.print("\n🔧 Development Tools (Recommended):")
+        self.console.print("  • VSCode Extension: Install 'rxiv-maker' extension from VS Code marketplace")
+        self.console.print("    - Provides syntax highlighting, LaTeX preview, and manuscript management")
+        self.console.print("  • For automatic fixing on Ubuntu/Debian: rxiv check-installation --fix")
 
     def _show_next_steps(self, results: dict) -> None:
         """Show next steps based on installation status."""

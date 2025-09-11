@@ -254,9 +254,24 @@ def _process_python_commands_three_step(text: MarkdownContent) -> LatexContent:
                 line_number=exec_block["line_number"],
             )
         except Exception as e:
-            # Replace the exec block with error message
-            error_msg = f"```\nPython execution error in exec block: {str(e)}\n```"
-            text = text.replace(exec_block["full_match"], error_msg)
+            # Python execution errors should halt the entire build process
+            from ..core.logging_config import get_logger
+
+            logger = get_logger()
+
+            error_msg = f"Python execution error in exec block (line {exec_block['line_number']}): {str(e)}"
+            logger.error(error_msg)
+
+            # Import here to avoid circular imports
+            from .python_executor import PythonExecutionError
+
+            # Re-raise as PythonExecutionError to halt the build process
+            if isinstance(e, PythonExecutionError):
+                # Preserve the original exception but ensure it halts the build
+                raise PythonExecutionError(error_msg) from e
+            else:
+                # Convert other exceptions to PythonExecutionError
+                raise PythonExecutionError(error_msg) from e
 
     # Remove all {{py:exec}} blocks from text (they were initialization only)
     text = _remove_python_exec_blocks(text)

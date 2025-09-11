@@ -595,77 +595,90 @@ print(json.dumps(result))
         import io
         import sys
 
-        # Filter comments for security
-        code = self._filter_python_comments(code)
+        # Add manuscript src/py directories to sys.path
+        src_py_paths = self._get_src_py_paths()
+        original_sys_path = sys.path.copy()  # Save original to restore later
 
-        # Normalize LaTeX-escaped paths
-        code = code.replace("\\_", "_")
-
-        # Extract and track imports from this initialization block
-        imports = self._extract_imports(code)
-        self.initialization_imports.extend(imports)
-
-        # Prepare execution context
-        exec_context = {"__builtins__": __builtins__}
-        exec_context.update(self.execution_context)
-
-        # Add figure utilities if available
-        try:
-            from rxiv_maker.manuscript_utils.figure_utils import (
-                clean_figure_outputs,
-                convert_figures_bulk,
-                convert_mermaid,
-                convert_python_figure,
-                convert_r_figure,
-                get_figure_info,
-                list_available_figures,
-            )
-
-            exec_context.update(
-                {
-                    "convert_mermaid": convert_mermaid,
-                    "convert_python_figure": convert_python_figure,
-                    "convert_r_figure": convert_r_figure,
-                    "convert_figures_bulk": convert_figures_bulk,
-                    "list_available_figures": list_available_figures,
-                    "get_figure_info": get_figure_info,
-                    "clean_figure_outputs": clean_figure_outputs,
-                }
-            )
-        except ImportError:
-            pass
-
-        # Capture output
-        old_stdout = sys.stdout
-        old_stderr = sys.stderr
-        captured_output = io.StringIO()
-        captured_errors = io.StringIO()
+        for path in src_py_paths:
+            if path not in sys.path:
+                sys.path.insert(0, path)
 
         try:
-            sys.stdout = captured_output
-            sys.stderr = captured_errors
+            # Filter comments for security
+            code = self._filter_python_comments(code)
 
-            # Execute code directly
-            exec(code, exec_context)
+            # Normalize LaTeX-escaped paths
+            code = code.replace("\\_", "_")
 
-            # Update persistent context with all new variables (including functions)
-            for key, value in exec_context.items():
-                if not key.startswith("_") and key != "__builtins__":
-                    self.execution_context[key] = value
+            # Extract and track imports from this initialization block
+            imports = self._extract_imports(code)
+            self.initialization_imports.extend(imports)
 
-            output = captured_output.getvalue()
-            if captured_errors.getvalue():
-                output += "\n" + captured_errors.getvalue()
+            # Prepare execution context
+            exec_context = {"__builtins__": __builtins__}
+            exec_context.update(self.execution_context)
 
-            return output, True
+            # Add figure utilities if available
+            try:
+                from rxiv_maker.manuscript_utils.figure_utils import (
+                    clean_figure_outputs,
+                    convert_figures_bulk,
+                    convert_mermaid,
+                    convert_python_figure,
+                    convert_r_figure,
+                    get_figure_info,
+                    list_available_figures,
+                )
 
-        except Exception as e:
-            error_output = captured_errors.getvalue() or str(e)
-            return error_output, False
+                exec_context.update(
+                    {
+                        "convert_mermaid": convert_mermaid,
+                        "convert_python_figure": convert_python_figure,
+                        "convert_r_figure": convert_r_figure,
+                        "convert_figures_bulk": convert_figures_bulk,
+                        "list_available_figures": list_available_figures,
+                        "get_figure_info": get_figure_info,
+                        "clean_figure_outputs": clean_figure_outputs,
+                    }
+                )
+            except ImportError:
+                pass
+
+            # Capture output
+            old_stdout = sys.stdout
+            old_stderr = sys.stderr
+            captured_output = io.StringIO()
+            captured_errors = io.StringIO()
+
+            try:
+                sys.stdout = captured_output
+                sys.stderr = captured_errors
+
+                # Execute code directly
+                exec(code, exec_context)
+
+                # Update persistent context with all new variables (including functions)
+                for key, value in exec_context.items():
+                    if not key.startswith("_") and key != "__builtins__":
+                        self.execution_context[key] = value
+
+                output = captured_output.getvalue()
+                if captured_errors.getvalue():
+                    output += "\n" + captured_errors.getvalue()
+
+                return output, True
+
+            except Exception as e:
+                error_output = captured_errors.getvalue() or str(e)
+                return error_output, False
+
+            finally:
+                sys.stdout = old_stdout
+                sys.stderr = old_stderr
 
         finally:
-            sys.stdout = old_stdout
-            sys.stderr = old_stderr
+            # Restore original sys.path
+            sys.path[:] = original_sys_path
 
     def get_variable_value(self, variable_name: str) -> Any:
         """Get the value of a variable from the execution context ({{py:get}}).

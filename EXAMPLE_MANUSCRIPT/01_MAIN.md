@@ -42,27 +42,25 @@ from datetime import datetime
 from pathlib import Path
 from data_updater import update_all_data_files
 
-print("Checking data file freshness...")
-update_results = update_all_data_files()
-print("Data update completed")
-
-data_path = Path("DATA/arxiv_monthly_submissions.csv")
-df = pd.read_csv(data_path)
+# Update data files and load arXiv statistics
+update_all_data_files()
+df = pd.read_csv("DATA/arxiv_monthly_submissions.csv")
 df['year_month'] = pd.to_datetime(df['year_month'])
 
+# Calculate key statistics for the manuscript
 data_start_year = int(df['year_month'].dt.year.min())
 total_submissions = int(df['submissions'].sum())
+total_submissions_millions = round(total_submissions / 1_000_000, 2)
 years_span = int(df['year_month'].dt.year.max() - df['year_month'].dt.year.min() + 1)
 compilation_date = datetime.now().strftime("%B %d, %Y")
-last_updated = datetime.fromtimestamp(data_path.stat().st_mtime).strftime("%B %Y")
+last_updated = datetime.fromtimestamp(Path("DATA/arxiv_monthly_submissions.csv").stat().st_mtime).strftime("%B %Y")
 
-print(f"Successfully loaded {len(df)} months of arXiv data")
-print(f"Total submissions: {total_submissions:,}")
+print(f"Loaded {len(df)} months of arXiv data spanning {years_span} years")
 }}
 
 Both data can be analysed and figures generated directly from source datasets during compilation, establishing transparent connections between raw data, processing pipelines, and final visualisations. The framework's intelligent caching system tracks content changes in data files and analysis scripts through checksum comparisons, regenerating figures only when source materials have been modified. This approach significantly reduces compilation time whilst ensuring visualisations remain synchronised with underlying data.
 
-The framework also allows for manuscripts to include executable python code that is run during compilation. For example, python code within this manuscript automatically fetches the latest data from web sources including arXiv monthly submissions and preprint server statistics. For example, @sfig:arxiv_growth showcases {{py:get total_submissions}} arXiv submissions spanning {{py:get years_span}} years starting from {{py:get data_start_year}}. These statistics were computed live during manuscript compilation on {{py:get compilation_date}} with data last updated {{py:get last_updated}}. This numerical data is inserted automatically and dynamically by python code into manuscript through commands such as `{{py:get last_updated}}`
+The framework also allows for manuscripts to include executable python code that is run during compilation. For example, python code within this manuscript automatically fetches the latest data from web sources including arXiv monthly submissions and preprint server statistics. For example, @sfig:arxiv_growth showcases {{py:get total_submissions_millions}} million arXiv submissions spanning {{py:get years_span}} years starting from {{py:get data_start_year}}. These statistics were computed live during manuscript compilation on {{py:get compilation_date}} with data last updated {{py:get last_updated}}. This numerical data is inserted automatically and dynamically by python code into manuscript through special py:get commands.
 
 This executable manuscript approach eliminates the manual copy-and-paste workflow that traditionally introduces errors when transferring results between analysis and documentation [@perkel2022]. When datasets are updated or algorithms refined, affected figures are automatically regenerated, ensuring consistency and eliminating outdated visualisations. The system integrates Mermaid.js [@Mermaid2023_documentation] for generating technical diagrams from text-based syntax, with the complete range of supported methods detailed in @stable:figure-formats. The comprehensive markdown syntax capabilities are documented in @stable:markdown-syntax.
 
