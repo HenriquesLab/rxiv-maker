@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.7.4] - 2025-01-12
+
+### Added
+- **📊 Word Count Analysis**: Restored comprehensive word count analysis functionality during PDF generation
+  - **Main Content Calculation**: Properly combines Introduction, Results, Discussion, and Conclusion sections
+  - **Section-Specific Guidelines**: Provides ideal and maximum word count recommendations per section
+  - **Visual Indicators**: Shows ✓ for acceptable lengths, ⚠️ for sections exceeding typical limits
+  - **Publication Guidance**: Offers journal-specific advice based on total article length
+  - **Real-time Display**: Integrated into PDF build process for immediate feedback
+
+### Fixed
+- **📊 Word Count Display Issues**: Resolved "Main content: 0 words" problem in manuscripts with section-based structure
+  - **Section Mapping**: Fixed content section extraction to properly recognize Introduction/Results/Discussion sections
+  - **Duplicate Prevention**: Eliminated confusing duplicate "Main: 0 words" entries
+  - **Structure Compatibility**: Works with both traditional "main" section and modern section-based manuscripts
+- **🖼️ Figure Validation Improvements**: Enhanced figure caption detection for extended markdown formats
+  - **Caption Recognition**: Fixed regex pattern to properly detect captions in `![](path)\n{attrs} caption` format
+  - **Format Flexibility**: Removed requirement for bold markers (**) around captions
+  - **Validation Accuracy**: Reduced false "empty caption" warnings for properly formatted figures
+
 ## [v1.7.0] - 2025-01-08
 
 ### Added

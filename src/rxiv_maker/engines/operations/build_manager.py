@@ -534,6 +534,133 @@ class BuildManager:
         except Exception as e:
             self.log(f"Failed to copy final PDF: {e}", "WARNING")
 
+    def run_word_count_analysis(self):
+        """Analyze word counts from manuscript markdown and display results."""
+        self.log("Analyzing word counts...", "STEP")
+
+        try:
+            # Import word count analysis functions from the deprecated module
+            from ...converters.md2tex import extract_content_sections
+            from ...utils.file_helpers import find_manuscript_md
+
+            # Find the manuscript markdown file
+            manuscript_md = find_manuscript_md(str(self.path_manager.manuscript_path))
+            if not manuscript_md:
+                self.log("Could not find manuscript markdown file", "WARNING")
+                return
+
+            # Extract content sections from markdown
+            content_sections = extract_content_sections(str(manuscript_md))
+
+            # Analyze word counts with improved section mapping
+            self._analyze_improved_section_word_counts(content_sections)
+
+            self.log("Word count analysis completed")
+
+        except Exception as e:
+            self.log(f"Word count analysis failed: {e}", "WARNING")
+            logger.error(f"Word count analysis error: {e}")
+            import traceback
+
+            logger.debug(f"Word count analysis traceback: {traceback.format_exc()}")
+
+    def _analyze_improved_section_word_counts(self, content_sections):
+        """Analyze word counts for each section with improved main content detection."""
+        from .analyze_word_count import count_words_in_text
+
+        # Define section guidelines with main content calculation
+        section_guidelines = {
+            "abstract": {"ideal": 150, "max_warning": 250, "description": "Abstract"},
+            "introduction": {"ideal": 500, "max_warning": 1000, "description": "Introduction"},
+            "methods": {"ideal": 1000, "max_warning": 3000, "description": "Methods"},
+            "results": {"ideal": 800, "max_warning": 2000, "description": "Results"},
+            "discussion": {"ideal": 600, "max_warning": 1500, "description": "Discussion"},
+            "results_and_discussion": {"ideal": 1400, "max_warning": 3500, "description": "Results and Discussion"},
+            "conclusion": {"ideal": 200, "max_warning": 500, "description": "Conclusion"},
+            "funding": {"ideal": 50, "max_warning": 150, "description": "Funding"},
+            "acknowledgements": {"ideal": 100, "max_warning": 300, "description": "Acknowledgements"},
+            "data_availability": {"ideal": 30, "max_warning": 100, "description": "Data Availability"},
+            "code_availability": {"ideal": 30, "max_warning": 100, "description": "Code Availability"},
+            "author_contributions": {"ideal": 50, "max_warning": 200, "description": "Author Contributions"},
+        }
+
+        print("\n📊 WORD COUNT ANALYSIS:")
+        print("=" * 50)
+
+        # Calculate main content by combining introduction, results, discussion, conclusion, and any "main" section
+        main_content_sections = [
+            "main",
+            "introduction",
+            "results",
+            "discussion",
+            "conclusion",
+            "results_and_discussion",
+        ]
+        main_content_words = 0
+        total_words = 0
+
+        # First pass: calculate main content and total words
+        section_word_counts = {}
+        for section_key, content in content_sections.items():
+            if content and content.strip():
+                word_count = count_words_in_text(content)
+                section_word_counts[section_key] = word_count
+                total_words += word_count
+
+                if section_key in main_content_sections:
+                    main_content_words += word_count
+
+        # Display main content first if we have main content sections
+        if main_content_words > 0:
+            status = "✓"
+            warning = ""
+            if main_content_words > 3000:
+                status = "⚠️"
+                warning = " (exceeds typical 3000 word limit)"
+            elif main_content_words > 2000:
+                status = "⚠️"
+                warning = " (consider typical ~1500 words)"
+
+            print(f"{status} {'Main content':<16}: {main_content_words:>4} words{warning}")
+
+        # Display individual sections
+        for section_key, word_count in section_word_counts.items():
+            # Skip main content sections since we've already shown the combined count
+            # Also skip any "main" section as it's included in the main content calculation
+            if section_key in main_content_sections or section_key == "main":
+                continue
+
+            guidelines = section_guidelines.get(section_key, {})
+            section_name = guidelines.get("description", section_key.replace("_", " ").title())
+            ideal = guidelines.get("ideal")
+            max_warning = guidelines.get("max_warning")
+
+            # Format output
+            status = "✓"
+            warning = ""
+
+            if max_warning and word_count > max_warning:
+                status = "⚠️"
+                warning = f" (exceeds typical {max_warning} word limit)"
+            elif ideal is not None and isinstance(ideal, (int, float)) and word_count > (ideal * 1.5):
+                status = "⚠️"
+                warning = f" (consider typical ~{ideal} words)"
+
+            print(f"{status} {section_name:<16}: {word_count:>4} words{warning}")
+
+        print("-" * 50)
+        print(f"📝 Total article words: {total_words}")
+
+        # Overall article length guidance
+        if total_words > 8000:
+            print("⚠️  Article is quite long (>8000 words) - consider condensing for most journals")
+        elif total_words > 5000:
+            print("ℹ️  Article length is substantial - check target journal word limits")
+        elif total_words < 2000:
+            print("ℹ️  Article is relatively short - ensure adequate detail for publication")
+
+        print("=" * 50)
+
     def copy_references(self):
         """Copy references bibliography file to output directory."""
         self.log("Copying references...", "STEP")
@@ -634,6 +761,9 @@ class BuildManager:
 
                 # Step 10: Copy final PDF
                 self.copy_final_pdf()
+
+                # Step 11: Word count analysis
+                self.run_word_count_analysis()
 
                 # Success
                 self.log("PDF build completed successfully!", "SUCCESS")
