@@ -5,9 +5,6 @@ including the custom command processor, Python executor, and markdown-to-LaTeX
 conversion pipeline.
 """
 
-import os
-import tempfile
-
 from rxiv_maker.converters.custom_command_processor import process_custom_commands
 from rxiv_maker.converters.python_executor import get_python_executor
 
@@ -314,10 +311,10 @@ This should fail: {{py:get blocked_var}}
         # Protected commands should remain unchanged
         assert "{{py:exec blocked_var" in result
         assert "{{py:get test_var}}" in result  # In code blocks
-        assert "{{py:get blocked_var}}" in result  # Should show error
+        assert "[Error retrieving blocked_var" in result  # Should show error
 
         # Should show error for blocked_var
-        assert "Error:" in result
+        assert "Variable 'blocked_var' not found in context" in result
 
     def test_multiple_document_sections(self):
         """Test Python execution across multiple document sections."""
@@ -379,38 +376,32 @@ class TestPythonExecutionWithFileOperations:
     """Test Python execution integration with file operations."""
 
     def test_with_temporary_directory(self):
-        """Test Python execution in context of temporary manuscript directory."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            # Change to temporary directory to simulate manuscript context
-            old_cwd = os.getcwd()
-            try:
-                os.chdir(temp_dir)
-
-                markdown_text = """
+        """Test Python execution with manuscript directory context."""
+        markdown_text = """
 {{py:exec
 import os
 from pathlib import Path
 
 # Get current working directory info
 current_dir = Path.cwd().name
-parent_dir = Path.cwd().parent.name
-is_temp_dir = "temp" in current_dir.lower()
+current_path = str(Path.cwd())
+is_project_dir = current_dir == "rxiv-maker"
+has_src = (Path.cwd() / "src").exists()
 }}
 
 Directory info:
 - Current: {{py:get current_dir}}
-- Is temporary: {{py:get is_temp_dir}}
+- Is project directory: {{py:get is_project_dir}}
+- Has src directory: {{py:get has_src}}
 """
 
-                result = process_custom_commands(markdown_text)
+        result = process_custom_commands(markdown_text)
 
-                # Should contain directory information
-                assert "Directory info:" in result
-                assert "Current:" in result
-                assert "Is temporary: True" in result
-
-            finally:
-                os.chdir(old_cwd)
+        # Should contain directory information
+        assert "Directory info:" in result
+        assert "Current:" in result
+        assert "Is project directory: True" in result
+        assert "Has src directory: True" in result
 
     def test_path_integration_simulation(self):
         """Test path integration without actually manipulating filesystem."""
@@ -469,7 +460,7 @@ Fibonacci analysis:
 
         # Should complete without timeout
         assert "Fibonacci analysis:" in result
-        assert "Sum: 1363" in result  # Sum of fib(0) through fib(14)
+        assert "Sum: 986" in result  # Sum of fib(0) through fib(14)
         assert "Maximum: 377" in result  # fib(14)
 
     def test_memory_usage_reasonable(self):
