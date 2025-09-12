@@ -188,8 +188,9 @@ class TipsManager:
         title = tip.get("title", "Tip")
         message = tip.get("message", "")
 
-        # Create formatted tip with consistent styling
-        formatted = f"\n💡 [bold blue]{title}[/bold blue]\n"
+        # Create formatted tip with "Tips and Tricks" header and consistent styling
+        formatted = "\n[bold cyan]Tips and Tricks[/bold cyan]\n"
+        formatted += f"💡 [bold blue]{title}[/bold blue]\n"
         formatted += f"   [dim]{message}[/dim]"
 
         return formatted
