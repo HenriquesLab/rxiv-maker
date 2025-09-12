@@ -29,11 +29,11 @@
 # Basic usage
 rxiv init my-paper
 
-# Initialize with custom template
-rxiv init my-paper --template journal-article
-
 # Initialize in existing directory
 rxiv init . --force
+
+# Skip interactive prompts
+rxiv init my-paper --no-interactive
 ```
 
 **Options**:
@@ -79,9 +79,8 @@ rxiv pdf --validate
 # Force regenerate all figures
 rxiv pdf --force-figures
 
-# Use specific engine
-rxiv pdf --engine docker
-RXIV_ENGINE=DOCKER rxiv pdf
+# All builds use local installation
+rxiv pdf
 ```
 
 **Options**:
@@ -93,12 +92,9 @@ RXIV_ENGINE=DOCKER rxiv pdf
 - `--verbose` - Detailed output for debugging
 - `--quiet` - Minimal output
 - `--debug` - Enable debug output
-- `--container-mode <mode>` - Container behavior (reuse/minimal/isolated)
 
-**Build Engines**:
-- **`local`** - Use local LaTeX installation (fastest)
-- **`docker`** - Use Docker container (consistent, no local deps)
-- **`podman`** - Use Podman container (Docker alternative)
+**Build Engine**:
+- **`local`** - Uses local LaTeX installation (only supported engine)
 
 **Examples**:
 ```bash
@@ -114,8 +110,8 @@ rxiv pdf --verbose --engine local
 # Preprint submission
 rxiv pdf --force-figures --output-dir submission/
 
-# Team consistency
-RXIV_ENGINE=DOCKER rxiv pdf
+# All builds use local installation
+rxiv pdf
 ```
 
 **Output Files**:
@@ -274,41 +270,32 @@ rxiv clean --arxiv-only
 **Purpose**: Generate visual diff between manuscript versions for revision tracking.
 
 ```bash
-# Compare two versions
-rxiv track-changes v1.0.0 v2.0.0
+# Track changes against a git tag
+rxiv track-changes v1.0.0
 
-# Compare with current state
-rxiv track-changes v1.0.0 HEAD
+# Track changes with custom output
+rxiv track-changes v1.0.0 --output-dir revisions/
 
-# Custom output location
-rxiv track-changes v1.0.0 v2.0.0 --output revisions/
+# Force regenerate figures
+rxiv track-changes v1.0.0 --force-figures
 ```
 
 **Options**:
-- `<old_version>` - Git tag/commit of old version
-- `<new_version>` - Git tag/commit of new version
-- `--output <dir>` - Output directory (default: `output/track_changes/`)
-- `--format <type>` - Diff format (`pdf`, `html`, `text`)
-- `--highlight-style <style>` - Diff highlighting style
-- `--no-figures` - Skip figure comparison
-- `--words-only` - Word-level diff (more precise)
-
-**Output**:
-- `changes.pdf` - Visual diff with highlights
-- `old_version.pdf` - Original version
-- `new_version.pdf` - New version
-- `summary.txt` - Change statistics
+- `<tag>` - Git tag to track changes against
+- `--output-dir <dir>` - Output directory (default: `output/`)
+- `--force-figures` - Force regeneration of all figures
+- `--skip-validation` - Skip validation step
 
 **Examples**:
 ```bash
 # Journal revision tracking
-rxiv track-changes submitted-v1 revision-v1 --format pdf
+rxiv track-changes submitted-v1
 
-# Detailed word-level changes
-rxiv track-changes v1.0 v1.1 --words-only
+# Quick changes tracking without validation
+rxiv track-changes v1.0 --skip-validation
 
-# HTML diff for web review
-rxiv track-changes draft final --format html --output web-diff/
+# Changes with forced figure regeneration
+rxiv track-changes draft --force-figures
 ```
 
 ---
@@ -323,44 +310,18 @@ rxiv track-changes draft final --format html --output web-diff/
 # Check installation
 rxiv check-installation
 
-# Auto-fix issues
-rxiv check-installation --fix
-
 # Detailed diagnostics
 rxiv check-installation --verbose
+
+# Use setup to install missing dependencies
+rxiv setup
 ```
 
 **Checks Performed**:
 - Python version and packages
 - LaTeX installation and packages
-- Docker/Podman availability
 - Node.js for figure generation
 - System PATH configuration
-
----
-
-### `rxiv config` - Configuration Management
-
-**Purpose**: Manage global and project-specific settings.
-
-```bash
-# Show current config
-rxiv config show
-
-# Set global default
-rxiv config set author "Dr. Jane Smith"
-rxiv config set engine docker
-
-# Project-specific config
-rxiv config set --local citation-style nature
-```
-
-**Common Settings**:
-- `author` - Default author name
-- `engine` - Default build engine
-- `citation-style` - Default citation format
-- `figure-dpi` - Default figure resolution
-- `latex-engine` - LaTeX compiler choice
 
 ---
 
@@ -434,8 +395,8 @@ rxiv pdf --verbose --engine local
 rxiv clean --all
 rxiv pdf
 
-# Try different engine
-RXIV_ENGINE=DOCKER rxiv pdf
+# All builds use local installation
+rxiv pdf
 ```
 
 ### Validation Problems
@@ -463,9 +424,7 @@ python FIGURES/my_plot.py
 
 ### Engine Selection
 ```bash
-export RXIV_ENGINE=docker    # Use Docker by default
-export RXIV_ENGINE=local     # Use local tools by default
-export RXIV_ENGINE=podman    # Use Podman by default
+# RXIV_ENGINE is no longer configurable - always uses local installation
 ```
 
 ### Build Customization
@@ -513,7 +472,7 @@ export RXIV_PARALLEL_FIGURES=8  # Use 8 cores for figure generation
 ### CI/CD Integration
 ```bash
 # Automated validation in CI
-rxiv validate --output json --strict
+rxiv validate --detailed
 
 # Generate artifacts
 rxiv pdf --force-figures

@@ -32,8 +32,7 @@ def verify_installation(verbose: bool = False) -> dict[str, bool]:
     # Check LaTeX
     results["latex"] = _check_latex()
 
-    # Check Node.js
-    results["nodejs"] = _check_nodejs()
+    # Node.js no longer needed - using mermaid.ink API instead of local mermaid CLI
 
     # Check R (optional)
     results["r"] = _check_r()
@@ -60,7 +59,7 @@ def check_system_dependencies() -> list[str]:
     missing = []
 
     for component, installed in verification_results.items():
-        if not installed and component != "r":  # R is optional
+        if not installed and component not in ["r"]:  # R is optional
             missing.append(component)
 
     return missing
@@ -85,24 +84,10 @@ def _check_latex() -> bool:
         return False
 
 
-def _check_nodejs() -> bool:
-    """Check if Node.js and npm are available."""
-    try:
-        # Check Node.js
-        node_result = subprocess.run(["node", "--version"], capture_output=True, text=True, timeout=10)
-
-        # Check npm
-        npm_result = subprocess.run(["npm", "--version"], capture_output=True, text=True, timeout=10)
-
-        return node_result.returncode == 0 and npm_result.returncode == 0
-    except Exception:
-        return False
-
-
 def _check_r() -> bool:
-    """Check if R is available."""
+    """Check if Rscript is available."""
     try:
-        result = subprocess.run(["R", "--version"], capture_output=True, text=True, timeout=10)
+        result = subprocess.run(["Rscript", "--version"], capture_output=True, text=True, timeout=10)
         return result.returncode == 0
     except Exception:
         return False
@@ -178,8 +163,7 @@ def diagnose_installation() -> dict[str, dict[str, Any]]:
     # LaTeX diagnosis
     diagnosis["latex"] = _diagnose_latex()
 
-    # Node.js diagnosis
-    diagnosis["nodejs"] = _diagnose_nodejs()
+    # Node.js no longer needed - using mermaid.ink API
 
     # R diagnosis
     diagnosis["r"] = _diagnose_r()
@@ -237,69 +221,31 @@ def _diagnose_latex() -> dict[str, Any]:
     return info
 
 
-def _diagnose_nodejs() -> dict[str, Any]:
-    """Diagnose Node.js installation."""
-    info: dict[str, Any] = {
-        "installed": False,
-        "version": None,
-        "path": None,
-        "npm_version": None,
-        "issues": [],
-    }
-
-    try:
-        # Check Node.js
-        node_path = shutil.which("node")
-        if node_path:
-            info["path"] = node_path
-            result = subprocess.run(["node", "--version"], capture_output=True, text=True, timeout=10)
-
-            if result.returncode == 0:
-                info["version"] = result.stdout.strip()
-
-                # Check npm
-                npm_result = subprocess.run(["npm", "--version"], capture_output=True, text=True, timeout=10)
-
-                if npm_result.returncode == 0:
-                    info["npm_version"] = npm_result.stdout.strip()
-                    info["installed"] = True
-                else:
-                    info["issues"].append("npm not working")
-            else:
-                info["issues"].append("node found but not working")
-        else:
-            info["issues"].append("node not found in PATH")
-    except Exception as e:
-        info["issues"].append(f"Error checking Node.js: {e}")
-
-    return info
-
-
 def _diagnose_r() -> dict[str, Any]:
-    """Diagnose R installation."""
+    """Diagnose Rscript installation."""
     info: dict[str, Any] = {"installed": False, "version": None, "path": None, "issues": []}
 
     try:
-        # Check R
-        r_path = shutil.which("R")
+        # Check Rscript (the actual executable used for R scripts)
+        r_path = shutil.which("Rscript")
         if r_path:
             info["path"] = r_path
-            result = subprocess.run(["R", "--version"], capture_output=True, text=True, timeout=10)
+            result = subprocess.run(["Rscript", "--version"], capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 info["installed"] = True
                 # Extract version from output
                 lines = result.stdout.split("\n")
                 for line in lines:
-                    if "R version" in line:
+                    if "R scripting front-end" in line or "version" in line.lower():
                         info["version"] = line.strip()
                         break
             else:
-                info["issues"].append("R found but not working")
+                info["issues"].append("Rscript found but not working")
         else:
-            info["issues"].append("R not found in PATH (optional)")
+            info["issues"].append("Rscript not found in PATH (optional)")
     except Exception as e:
-        info["issues"].append(f"Error checking R: {e}")
+        info["issues"].append(f"Error checking Rscript: {e}")
 
     return info
 

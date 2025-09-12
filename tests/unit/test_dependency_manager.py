@@ -18,6 +18,11 @@ class TestDependencyManager(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.project_dir = Path(self.temp_dir)
 
+        # Create a minimal manuscript structure for cache to work
+        manuscript_dir = self.project_dir / "manuscript"
+        manuscript_dir.mkdir()
+        (manuscript_dir / "00_CONFIG.yml").write_text("title: Test Manuscript")
+
     def tearDown(self):
         """Clean up test environment."""
         import shutil
@@ -27,15 +32,23 @@ class TestDependencyManager(unittest.TestCase):
     def test_dependency_manager_initialization(self):
         """Test DependencyManager initialization."""
         try:
+            import os
             import sys
 
             sys.path.insert(0, "src")
             from rxiv_maker.security.dependency_manager import DependencyManager
 
-            # Test initialization
-            manager = DependencyManager(self.project_dir, cache_enabled=True)
-            self.assertEqual(manager.project_dir, self.project_dir)
-            self.assertIsNotNone(manager.cache)
+            # Change to manuscript directory so cache can find the manuscript
+            old_cwd = os.getcwd()
+            os.chdir(self.project_dir / "manuscript")
+
+            try:
+                # Test initialization
+                manager = DependencyManager(self.project_dir, cache_enabled=True)
+                self.assertEqual(manager.project_dir, self.project_dir)
+                self.assertIsNotNone(manager.cache)
+            finally:
+                os.chdir(old_cwd)
 
             # Test without cache
             manager_no_cache = DependencyManager(self.project_dir, cache_enabled=False)
@@ -47,6 +60,7 @@ class TestDependencyManager(unittest.TestCase):
     def test_pyproject_file_detection(self):
         """Test detection of pyproject.toml files."""
         try:
+            import os
             import sys
 
             sys.path.insert(0, "src")
@@ -65,8 +79,16 @@ requests = "^2.28.0"
             pyproject_file = self.project_dir / "pyproject.toml"
             pyproject_file.write_text(pyproject_content)
 
-            manager = DependencyManager(self.project_dir)
-            self.assertTrue(manager.pyproject_file.exists())
+            # Change to manuscript directory so dependency manager can find the manuscript
+            old_cwd = os.getcwd()
+            os.chdir(self.project_dir / "manuscript")
+
+            try:
+                manager = DependencyManager(self.project_dir)
+                self.assertTrue(manager.pyproject_file.exists())
+
+            finally:
+                os.chdir(old_cwd)
 
         except ImportError:
             self.skipTest("Dependency manager module not available")
@@ -74,6 +96,7 @@ requests = "^2.28.0"
     def test_requirements_file_detection(self):
         """Test detection of requirements.txt files."""
         try:
+            import os
             import sys
 
             sys.path.insert(0, "src")
@@ -88,8 +111,16 @@ pyyaml>=6.0
             requirements_file = self.project_dir / "requirements.txt"
             requirements_file.write_text(requirements_content)
 
-            manager = DependencyManager(self.project_dir)
-            self.assertTrue(manager.requirements_file.exists())
+            # Change to manuscript directory so dependency manager can find the manuscript
+            old_cwd = os.getcwd()
+            os.chdir(self.project_dir / "manuscript")
+
+            try:
+                manager = DependencyManager(self.project_dir)
+                self.assertTrue(manager.requirements_file.exists())
+
+            finally:
+                os.chdir(old_cwd)
 
         except ImportError:
             self.skipTest("Dependency manager module not available")
@@ -98,24 +129,33 @@ pyyaml>=6.0
     def test_dependency_scanning(self, mock_run):
         """Test dependency vulnerability scanning."""
         try:
+            import os
             import sys
 
             sys.path.insert(0, "src")
             from rxiv_maker.security.dependency_manager import DependencyManager
 
-            # Mock subprocess response for dependency scan
-            mock_run.return_value = Mock(
-                returncode=0,
-                stdout=json.dumps({"vulnerabilities": [], "packages": ["requests==2.28.0", "numpy==1.21.0"]}),
-                stderr="",
-            )
+            # Change to manuscript directory so dependency manager can find the manuscript
+            old_cwd = os.getcwd()
+            os.chdir(self.project_dir / "manuscript")
 
-            manager = DependencyManager(self.project_dir)
+            try:
+                # Mock subprocess response for dependency scan
+                mock_run.return_value = Mock(
+                    returncode=0,
+                    stdout=json.dumps({"vulnerabilities": [], "packages": ["requests==2.28.0", "numpy==1.21.0"]}),
+                    stderr="",
+                )
 
-            if hasattr(manager, "scan_vulnerabilities"):
-                result = manager.scan_vulnerabilities()
-                self.assertIsNotNone(result)
-                mock_run.assert_called()
+                manager = DependencyManager(self.project_dir)
+
+                if hasattr(manager, "scan_vulnerabilities"):
+                    result = manager.scan_vulnerabilities()
+                    self.assertIsNotNone(result)
+                    mock_run.assert_called()
+
+            finally:
+                os.chdir(old_cwd)
 
         except ImportError:
             self.skipTest("Dependency manager module not available")
@@ -124,6 +164,7 @@ pyyaml>=6.0
     def test_security_advisory_checking(self, mock_get):
         """Test checking for security advisories."""
         try:
+            import os
             import sys
 
             sys.path.insert(0, "src")
@@ -144,11 +185,19 @@ pyyaml>=6.0
             mock_response.status_code = 200
             mock_get.return_value = mock_response
 
-            manager = DependencyManager(self.project_dir)
+            # Change to manuscript directory so dependency manager can find the manuscript
+            old_cwd = os.getcwd()
+            os.chdir(self.project_dir / "manuscript")
 
-            if hasattr(manager, "check_security_advisories"):
-                advisories = manager.check_security_advisories("requests")
-                self.assertIsInstance(advisories, (list, dict))
+            try:
+                manager = DependencyManager(self.project_dir)
+
+                if hasattr(manager, "check_security_advisories"):
+                    advisories = manager.check_security_advisories("requests")
+                    self.assertIsInstance(advisories, (list, dict))
+
+            finally:
+                os.chdir(old_cwd)
 
         except ImportError:
             self.skipTest("Dependency manager module not available")
@@ -156,12 +205,20 @@ pyyaml>=6.0
     def test_dependency_parsing(self):
         """Test parsing of dependency specifications."""
         try:
+            import os
             import sys
 
             sys.path.insert(0, "src")
             from rxiv_maker.security.dependency_manager import DependencyManager
 
-            manager = DependencyManager(self.project_dir)
+            # Change to manuscript directory so cache can find the manuscript
+            old_cwd = os.getcwd()
+            os.chdir(self.project_dir / "manuscript")
+
+            try:
+                manager = DependencyManager(self.project_dir)
+            finally:
+                os.chdir(old_cwd)
 
             # Test dependency string parsing
             test_dependencies = ["requests>=2.28.0", "numpy==1.21.0", "pyyaml~=6.0", "pytest>=7.0,<8.0"]
@@ -179,20 +236,29 @@ pyyaml>=6.0
     def test_update_impact_assessment(self):
         """Test assessment of update impacts."""
         try:
+            import os
             import sys
 
             sys.path.insert(0, "src")
             from rxiv_maker.security.dependency_manager import DependencyManager
 
-            manager = DependencyManager(self.project_dir)
+            # Change to manuscript directory so dependency manager can find the manuscript
+            old_cwd = os.getcwd()
+            os.chdir(self.project_dir / "manuscript")
 
-            # Test update impact calculation
-            new_version = "2.29.0"
+            try:
+                manager = DependencyManager(self.project_dir)
 
-            if hasattr(manager, "assess_update_impact"):
-                impact = manager.assess_update_impact("requests", new_version)
-                self.assertIsInstance(impact, dict)
-                self.assertIn("risk_level", impact)
+                # Test update impact calculation
+                new_version = "2.29.0"
+
+                if hasattr(manager, "assess_update_impact"):
+                    impact = manager.assess_update_impact("requests", new_version)
+                    self.assertIsInstance(impact, dict)
+                    self.assertIn("risk_level", impact)
+
+            finally:
+                os.chdir(old_cwd)
 
         except ImportError:
             self.skipTest("Dependency manager module not available")
@@ -201,6 +267,7 @@ pyyaml>=6.0
     def test_dependency_installation(self, mock_run):
         """Test dependency installation functionality."""
         try:
+            import os
             import sys
 
             sys.path.insert(0, "src")
@@ -209,7 +276,14 @@ pyyaml>=6.0
             # Mock successful installation
             mock_run.return_value = Mock(returncode=0, stdout="Successfully installed requests-2.28.0", stderr="")
 
-            manager = DependencyManager(self.project_dir)
+            # Change to manuscript directory so cache can find the manuscript
+            old_cwd = os.getcwd()
+            os.chdir(self.project_dir / "manuscript")
+
+            try:
+                manager = DependencyManager(self.project_dir)
+            finally:
+                os.chdir(old_cwd)
 
             if hasattr(manager, "install_dependency"):
                 result = manager.install_dependency("requests==2.28.0")
@@ -222,12 +296,20 @@ pyyaml>=6.0
     def test_cache_integration(self):
         """Test cache integration for dependency data."""
         try:
+            import os
             import sys
 
             sys.path.insert(0, "src")
             from rxiv_maker.security.dependency_manager import DependencyManager
 
-            manager = DependencyManager(self.project_dir, cache_enabled=True)
+            # Change to manuscript directory so cache can find the manuscript
+            old_cwd = os.getcwd()
+            os.chdir(self.project_dir / "manuscript")
+
+            try:
+                manager = DependencyManager(self.project_dir, cache_enabled=True)
+            finally:
+                os.chdir(old_cwd)
 
             # Test cache operations if available
             if hasattr(manager, "cache_dependency_info"):
@@ -251,6 +333,11 @@ class TestDependencyManagerPerformance(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.project_dir = Path(self.temp_dir)
 
+        # Create a minimal manuscript structure for cache to work
+        manuscript_dir = self.project_dir / "manuscript"
+        manuscript_dir.mkdir()
+        (manuscript_dir / "00_CONFIG.yml").write_text("title: Test Manuscript")
+
     def tearDown(self):
         """Clean up test environment."""
         import shutil
@@ -260,11 +347,11 @@ class TestDependencyManagerPerformance(unittest.TestCase):
     def test_large_dependency_list_processing(self):
         """Test processing of large dependency lists."""
         try:
+            import os
             import sys
-
-            sys.path.insert(0, "src")
             import time
 
+            sys.path.insert(0, "src")
             from rxiv_maker.security.dependency_manager import DependencyManager
 
             # Create large requirements.txt
@@ -275,7 +362,14 @@ class TestDependencyManagerPerformance(unittest.TestCase):
             requirements_file = self.project_dir / "requirements.txt"
             requirements_file.write_text("\n".join(large_requirements))
 
-            manager = DependencyManager(self.project_dir)
+            # Change to manuscript directory so cache can find the manuscript
+            old_cwd = os.getcwd()
+            os.chdir(self.project_dir / "manuscript")
+
+            try:
+                manager = DependencyManager(self.project_dir)
+            finally:
+                os.chdir(old_cwd)
 
             if hasattr(manager, "parse_all_dependencies"):
                 start_time = time.time()
@@ -293,6 +387,7 @@ class TestDependencyManagerPerformance(unittest.TestCase):
     def test_concurrent_vulnerability_checking(self, mock_get):
         """Test concurrent vulnerability checking for multiple packages."""
         try:
+            import os
             import sys
 
             sys.path.insert(0, "src")
@@ -306,18 +401,26 @@ class TestDependencyManagerPerformance(unittest.TestCase):
             mock_response.status_code = 200
             mock_get.return_value = mock_response
 
-            manager = DependencyManager(self.project_dir)
+            # Change to manuscript directory so dependency manager can find the manuscript
+            old_cwd = os.getcwd()
+            os.chdir(self.project_dir / "manuscript")
 
-            packages = ["requests", "numpy", "pyyaml", "pytest", "setuptools"]
+            try:
+                manager = DependencyManager(self.project_dir)
 
-            if hasattr(manager, "check_multiple_packages"):
-                start_time = time.time()
-                results = manager.check_multiple_packages(packages)
-                end_time = time.time()
+                packages = ["requests", "numpy", "pyyaml", "pytest", "setuptools"]
 
-                # Should be faster than sequential processing
-                self.assertLess(end_time - start_time, 10.0)
-                self.assertIsInstance(results, (list, dict))
+                if hasattr(manager, "check_multiple_packages"):
+                    start_time = time.time()
+                    results = manager.check_multiple_packages(packages)
+                    end_time = time.time()
+
+                    # Should be faster than sequential processing
+                    self.assertLess(end_time - start_time, 10.0)
+                    self.assertIsInstance(results, (list, dict))
+
+            finally:
+                os.chdir(old_cwd)
 
         except ImportError:
             self.skipTest("Dependency manager module not available")

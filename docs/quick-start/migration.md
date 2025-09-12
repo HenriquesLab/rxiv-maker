@@ -122,17 +122,20 @@ rxiv pdf --force-figures --verbose
 2. **Start gradually** - Try one or two CLI commands first
 3. **Use help frequently** - `rxiv --help` and `rxiv COMMAND --help` provide detailed information
 4. **Enable auto-completion** - Makes discovering commands easier
-5. **Check configuration** - `rxiv config show` displays current settings
+5. **Use rxiv.yml files** - Configure each manuscript using YAML config files
 
 ## Common Patterns
 
 ### Setting Default Engine
 ```bash
-# Old way (session only)
-export RXIV_ENGINE=DOCKER
+# Environment variable (session only)
+export RXIV_ENGINE_TYPE=docker
 
-# New way (persistent)
-rxiv config set general.engine docker
+# Persistent via rxiv.yml files
+cat > rxiv.yml << 'EOF'
+engine:
+  type: docker
+EOF
 ```
 
 ### Checking Installation
@@ -140,7 +143,7 @@ rxiv config set general.engine docker
 # New CLI provides detailed checks
 rxiv check-installation
 rxiv check-installation --detailed
-rxiv check-installation --fix  # Auto-fix issues
+rxiv setup  # Install any missing dependencies
 ```
 
 ### Version Information

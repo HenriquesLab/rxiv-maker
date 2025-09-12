@@ -1,5 +1,7 @@
 """Unit tests for text_formatters module."""
 
+import pytest
+
 from rxiv_maker.converters.md2tex import convert_markdown_to_latex
 from rxiv_maker.converters.text_formatters import process_code_spans
 
@@ -226,3 +228,131 @@ class TestRegressionTests:
         result = process_code_spans(input_text)
 
         assert "XUNDERSCOREX" in result
+
+
+@pytest.mark.ci_exclude  # Test for function that doesn't exist yet
+class TestLongTechnicalIdentifiers:
+    """Test the new long technical identifier wrapping functionality."""
+
+    def test_identify_long_gene_names_with_underscores(self):
+        """Test that long gene names with underscores are wrapped with seqsplit."""
+        from rxiv_maker.converters.text_formatters import identify_long_technical_identifiers
+
+        input_text = "The gene VERY_LONG_GENE_NAME_123 was analyzed along with SHORT_NAME."
+        result = identify_long_technical_identifiers(input_text)
+
+        # Long gene name should be wrapped
+        assert "\\seqsplit{VERY_LONG_GENE_NAME_123}" in result
+        # Short name should not be wrapped
+        assert "SHORT_NAME" in result
+        assert "\\seqsplit{SHORT_NAME}" not in result
+
+    def test_identify_long_protein_names(self):
+        """Test that long protein names are wrapped with seqsplit."""
+        from rxiv_maker.converters.text_formatters import identify_long_technical_identifiers
+
+        input_text = "The protein SuperLongProteinNameForTesting123 is important."
+        result = identify_long_technical_identifiers(input_text)
+
+        assert "\\seqsplit{SuperLongProteinNameForTesting123}" in result
+
+    def test_identify_mixed_alphanumeric_identifiers(self):
+        """Test that very long alphanumeric strings are wrapped."""
+        from rxiv_maker.converters.text_formatters import identify_long_technical_identifiers
+
+        input_text = "The identifier ABCDEFGHIJKLMNOPQRSTUVWXYZ123 is too long."
+        result = identify_long_technical_identifiers(input_text)
+
+        assert "\\seqsplit{ABCDEFGHIJKLMNOPQRSTUVWXYZ123}" in result
+
+    def test_preserve_existing_latex_commands(self):
+        """Test that existing LaTeX commands are not modified."""
+        from rxiv_maker.converters.text_formatters import identify_long_technical_identifiers
+
+        input_text = "See \\cite{VeryLongCitationKeyThatShouldNotBeModified} for details."
+        result = identify_long_technical_identifiers(input_text)
+
+        # Citation should remain unchanged
+        assert "\\cite{VeryLongCitationKeyThatShouldNotBeModified}" in result
+        assert "seqsplit" not in result
+
+    def test_wrap_identifiers_in_parentheses(self):
+        """Test that long identifiers in parentheses are wrapped correctly."""
+        from rxiv_maker.converters.text_formatters import identify_long_technical_identifiers
+
+        input_text = "The method (SuperLongMethodNameForTesting) was used."
+        result = identify_long_technical_identifiers(input_text)
+
+        assert "(\\seqsplit{SuperLongMethodNameForTesting})" in result
+
+    def test_scientific_identifiers_with_dots(self):
+        """Test that scientific identifiers with dots are wrapped."""
+        from rxiv_maker.converters.text_formatters import identify_long_technical_identifiers
+
+        input_text = "The domain protein.complex.subunit.123.alpha is analyzed."
+        result = identify_long_technical_identifiers(input_text)
+
+        assert "\\seqsplit{protein.complex.subunit.123.alpha}" in result
+
+    def test_preserve_math_expressions(self):
+        """Test that math expressions are not modified."""
+        from rxiv_maker.converters.text_formatters import identify_long_technical_identifiers
+
+        input_text = "The equation $VeryLongMathematicalExpressionHere$ should not change."
+        result = identify_long_technical_identifiers(input_text)
+
+        # Math should remain unchanged
+        assert "$VeryLongMathematicalExpressionHere$" in result
+        assert "seqsplit" not in result
+
+    def test_contextual_long_strings(self):
+        """Test the contextual long string wrapping function."""
+        from rxiv_maker.converters.text_formatters import wrap_long_strings_in_context
+
+        input_text = "We used the algorithm SuperLongAlgorithmNameForTesting in our analysis."
+        result = wrap_long_strings_in_context(input_text)
+
+        assert "algorithm \\seqsplit{SuperLongAlgorithmNameForTesting}" in result
+
+    def test_contextual_with_short_strings(self):
+        """Test that short strings after keywords are not wrapped."""
+        from rxiv_maker.converters.text_formatters import wrap_long_strings_in_context
+
+        input_text = "We used the method ABC for testing."
+        result = wrap_long_strings_in_context(input_text)
+
+        # Short string should not be wrapped
+        assert "method ABC" in result
+        assert "seqsplit" not in result
+
+    def test_multiple_identifiers_in_text(self):
+        """Test handling multiple long identifiers in the same text."""
+        from rxiv_maker.converters.text_formatters import identify_long_technical_identifiers
+
+        input_text = "Compare VERY_LONG_GENE_NAME_A with VERY_LONG_GENE_NAME_B for differences."
+        result = identify_long_technical_identifiers(input_text)
+
+        assert "\\seqsplit{VERY_LONG_GENE_NAME_A}" in result
+        assert "\\seqsplit{VERY_LONG_GENE_NAME_B}" in result
+
+    def test_edge_case_minimum_lengths(self):
+        """Test that strings at minimum length thresholds are handled correctly."""
+        from rxiv_maker.converters.text_formatters import identify_long_technical_identifiers
+
+        # 15 characters exactly (should be wrapped)
+        input_text = "Gene GENE_NAME_12345 is analyzed."
+        result = identify_long_technical_identifiers(input_text)
+
+        assert "\\seqsplit{GENE_NAME_12345}" in result
+
+    def test_no_modification_of_existing_seqsplit(self):
+        """Test that existing seqsplit commands are not double-wrapped."""
+        from rxiv_maker.converters.text_formatters import identify_long_technical_identifiers
+
+        input_text = "Already wrapped \\seqsplit{VERY_LONG_IDENTIFIER_ALREADY_WRAPPED} text."
+        result = identify_long_technical_identifiers(input_text)
+
+        # Should remain as single seqsplit
+        assert "\\seqsplit{VERY_LONG_IDENTIFIER_ALREADY_WRAPPED}" in result
+        # Should not be double-wrapped
+        assert "\\seqsplit{\\seqsplit{" not in result

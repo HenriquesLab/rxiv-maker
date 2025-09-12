@@ -13,7 +13,7 @@ from .advanced_cache import AdvancedCache
 
 # Domain-specific caches
 from .bibliography_cache import BibliographyCache
-from .cache_utils import get_cache_dir
+from .cache_utils import get_manuscript_cache_dir
 from .doi_cache import DOICache
 
 # Security utilities
@@ -26,7 +26,7 @@ from .secure_cache_utils import (
 
 __all__ = [
     # Core utilities
-    "get_cache_dir",
+    "get_manuscript_cache_dir",
     # Advanced caching
     "AdvancedCache",
     # Domain-specific

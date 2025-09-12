@@ -20,9 +20,9 @@ class FigureValidator(BaseValidator):
     FIGURE_PATTERNS = {
         "traditional": re.compile(r"!\[([^\]]*)\]\(([^)]+)\)(\{[^}]*\})?"),  # ![caption](path){attrs}
         "new_format": re.compile(
-            r"!\[\]\(([^)]+)\)\s*\n\s*(\{[^}]*\})\s*\*\*([^*]+)\*\*.*?(?=\n\n|\Z)",
+            r"!\[\]\(([^)]+)\)\s*\n\s*(\{[^}]*\})\s*(.+?)(?=\n\n|\Z)",
             re.MULTILINE | re.DOTALL,
-        ),  # ![](path)\n{attrs} **caption**
+        ),  # ![](path)\n{attrs} caption text
     }
 
     # Attribute patterns

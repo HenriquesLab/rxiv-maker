@@ -8,7 +8,6 @@ import json
 import os
 import threading
 from datetime import datetime, timedelta
-from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
@@ -21,7 +20,7 @@ from rich.console import Console
 
 from rxiv_maker.utils.unicode_safe import get_safe_icon, safe_print
 
-from ..core.cache.cache_utils import get_cache_dir, migrate_cache_file
+from ..core.cache.cache_utils import get_manuscript_cache_dir
 
 console = Console()
 
@@ -40,35 +39,20 @@ class UpdateChecker:
         self.current_version = current_version or self._get_current_version()
         self.pypi_url = f"https://pypi.org/pypi/{package_name}/json"
 
-        # Use standardized cache directory
-        self.cache_dir = get_cache_dir("updates")
-        self.cache_file = self.cache_dir / "update_cache.json"
+        # Use manuscript cache directory if available, otherwise disable update checking
+        try:
+            self.cache_dir = get_manuscript_cache_dir("updates")
+        except RuntimeError:
+            # No manuscript directory found, disable update checking
+            self.cache_dir = None
 
-        # Handle migration from legacy location
-        self._migrate_legacy_cache()
+        self.cache_file = self.cache_dir / "update_cache.json" if self.cache_dir else None
 
         self.check_interval = timedelta(hours=24)  # Check once per day
 
-        # Ensure cache directory exists
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
-
-    def _migrate_legacy_cache(self) -> None:
-        """Migrate cache file from legacy location if it exists."""
-        legacy_cache_dir = Path.home() / ".rxiv"
-        legacy_cache_file = legacy_cache_dir / "update_cache.json"
-
-        if legacy_cache_file.exists():
-            try:
-                migrate_cache_file(legacy_cache_file, self.cache_file)
-                # Try to remove empty legacy directory
-                try:
-                    legacy_cache_dir.rmdir()
-                except OSError:
-                    # Directory not empty, leave it alone
-                    pass
-            except Exception:
-                # Migration failed, continue with new location
-                pass
+        # Ensure cache directory exists (only if caching is enabled)
+        if self.cache_dir:
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def _get_current_version(self) -> str:
         """Get the current version of the package."""
@@ -90,6 +74,10 @@ class UpdateChecker:
             return False
 
         if os.getenv("NO_UPDATE_NOTIFIER", ""):
+            return False
+
+        # If no cache directory available, disable update checking
+        if not self.cache_dir:
             return False
 
         # Check configuration (will be implemented when config integration is added)
@@ -117,6 +105,9 @@ class UpdateChecker:
         Returns:
             Dict or None: Cached data if available and valid
         """
+        if not self.cache_file:
+            return None
+
         try:
             if self.cache_file.exists():
                 with open(self.cache_file, encoding="utf-8") as f:
@@ -131,6 +122,9 @@ class UpdateChecker:
         Args:
             data: Data to cache
         """
+        if not self.cache_file:
+            return  # Caching disabled
+
         try:
             with open(self.cache_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)

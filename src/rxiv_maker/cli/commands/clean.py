@@ -1,18 +1,11 @@
 """Clean command for rxiv-maker CLI."""
 
-import sys
-
 import click
-from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from ...core.environment_manager import EnvironmentManager
-from ...core.path_manager import PathManager, PathResolutionError
-
-console = Console()
+from ..framework import CleanCommand
 
 
-@click.command()
+@click.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.argument("manuscript_path", type=click.Path(exists=True, file_okay=False), required=False)
 @click.option("--output-dir", "-o", default="output", help="Output directory to clean")
 @click.option("--figures-only", "-f", is_flag=True, help="Clean only generated figures")
@@ -35,7 +28,7 @@ def clean(
 ) -> None:
     """Clean generated files and directories.
 
-    MANUSCRIPT_PATH: Path to manuscript directory (default: MANUSCRIPT)
+    **MANUSCRIPT_PATH**: Path to manuscript directory (default: MANUSCRIPT)
 
     This command removes:
     - Generated PDF files
@@ -43,91 +36,31 @@ def clean(
     - Generated figures
     - Cache files
     - arXiv submission packages
+
+    ## Examples
+
+    **Clean all generated files:**
+
+        $ rxiv clean
+
+    **Clean only figures:**
+
+        $ rxiv clean --figures-only
+
+    **Clean specific manuscript:**
+
+        $ rxiv clean MY_PAPER/
     """
-    verbose = ctx.obj.get("verbose", False) or EnvironmentManager.is_verbose()
-
-    # Use PathManager for path resolution and validation
-    try:
-        # Default to environment variable or fallback if not specified
-        if manuscript_path is None:
-            manuscript_path = EnvironmentManager.get_manuscript_path() or "MANUSCRIPT"
-
-        # Use PathManager for path validation and resolution
-        path_manager = PathManager(manuscript_path=manuscript_path, output_dir=output_dir)
-
-    except PathResolutionError as e:
-        console.print(f"❌ Path resolution error: {e}", style="red")
-        console.print(f"💡 Run 'rxiv init {manuscript_path}' to create a new manuscript", style="yellow")
-        sys.exit(1)
-
-    try:
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-            transient=True,
-        ) as progress:
-            task = progress.add_task("Cleaning files...", total=None)
-
-            # Import cleanup command
-            from ...engines.operations.cleanup import main as cleanup_main
-
-            # Prepare arguments
-            args = []
-            if figures_only:
-                args.append("--figures-only")
-            if output_only:
-                args.append("--output-only")
-            if arxiv_only:
-                args.append("--arxiv-only")
-            if temp_only:
-                args.append("--temp-only")
-            if cache_only:
-                args.append("--cache-only")
-            if verbose:
-                args.append("--verbose")
-
-            # Add paths using PathManager
-            args.extend(["--manuscript-path", str(path_manager.manuscript_path)])
-            args.extend(["--output-dir", str(path_manager.output_dir)])
-
-            # Save original argv and replace
-            original_argv = sys.argv
-            sys.argv = ["cleanup"] + args
-
-            try:
-                cleanup_main()
-                progress.update(task, description="✅ Cleanup completed")
-                console.print("✅ Cleanup completed!", style="green")
-
-                # Show what was cleaned
-                if figures_only:
-                    console.print("🎨 Generated figures cleaned", style="blue")
-                elif output_only:
-                    console.print("📁 Output directory cleaned", style="blue")
-                elif arxiv_only:
-                    console.print("📦 arXiv files cleaned", style="blue")
-                elif temp_only:
-                    console.print("🧹 Temporary files cleaned", style="blue")
-                elif cache_only:
-                    console.print("💾 Cache files cleaned", style="blue")
-                else:
-                    console.print("🧹 All generated files cleaned", style="blue")
-
-            except SystemExit as e:
-                progress.update(task, description="❌ Cleanup failed")
-                if e.code != 0:
-                    console.print("❌ Cleanup failed. See details above.", style="red")
-                    sys.exit(1)
-
-            finally:
-                sys.argv = original_argv
-
-    except KeyboardInterrupt:
-        console.print("\n⏹️  Cleanup interrupted by user", style="yellow")
-        sys.exit(1)
-    except Exception as e:
-        console.print(f"❌ Unexpected error during cleanup: {e}", style="red")
-        if verbose:
-            console.print_exception()
-        sys.exit(1)
+    # Use centralized CleanCommand framework - eliminates 100+ lines of boilerplate!
+    command = CleanCommand()
+    command.run(
+        ctx,
+        manuscript_path,
+        output_dir=output_dir,
+        figures_only=figures_only,
+        output_only=output_only,
+        arxiv_only=arxiv_only,
+        temp_only=temp_only,
+        cache_only=cache_only,
+        all_files=all,
+    )

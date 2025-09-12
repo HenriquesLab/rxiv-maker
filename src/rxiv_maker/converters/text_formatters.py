@@ -119,6 +119,17 @@ def process_code_spans(text: MarkdownContent) -> LatexContent:
     def process_code_blocks(match: re.Match[str]) -> str:
         code_content = match.group(1)
 
+        # Check if this is a URL - if so, handle it specially
+        is_url = (
+            code_content.startswith("http://")
+            or code_content.startswith("https://")
+            or code_content.startswith("ftp://")
+        )
+
+        if is_url:
+            # For URLs, use the \url command which handles underscores automatically
+            return f"\\url{{{code_content}}}"
+
         # Check if this code span contains mathematical expressions
         # Mathematical expressions should be protected from seqsplit processing
         has_math_delimiters = "$" in code_content
@@ -155,7 +166,7 @@ def process_code_spans(text: MarkdownContent) -> LatexContent:
             # to avoid table parsing issues
             escaped_content = code_content
             # Replace backslashes with a safe LaTeX representation
-            escaped_content = escaped_content.replace("\\", "\\textbackslash{}")
+            escaped_content = escaped_content.replace("\\", "\\textbackslash ")
             # Handle other special characters that might need escaping
             escaped_content = escaped_content.replace("{", "\\{")
             escaped_content = escaped_content.replace("}", "\\}")
@@ -176,10 +187,36 @@ def process_code_spans(text: MarkdownContent) -> LatexContent:
             # In texttt, underscores need escaping - use placeholder for safety
             escaped_content = escaped_content.replace("_", "XUNDERSCOREX")
 
-            # For long code spans (>20 characters), use seqsplit inside texttt
+            # For Python inline commands containing mathematical operators, handle quotes first
+            if (code_content.startswith("{py:") or "py:" in code_content) and any(
+                op in code_content for op in ["*", "//", "^", "+", "-", "%"]
+            ):
+                # Replace single quotes with double quotes for LaTeX compatibility BEFORE escaping braces
+                escaped_content = escaped_content.replace("'", '"')
+
+            # For ALL Python inline commands, use consistent handling
+            if code_content.startswith("{py:") or "py:" in code_content:
+                # For Python commands, keep braces as-is and only escape other special characters
+                py_escaped_content = code_content
+                py_escaped_content = py_escaped_content.replace("#", "\\#")
+                py_escaped_content = py_escaped_content.replace("_", "XUNDERSCOREX")
+                # For Python commands with math operators, also replace quotes
+                if any(op in code_content for op in ["*", "//", "^", "+", "-", "%"]):
+                    py_escaped_content = py_escaped_content.replace("'", '"')
+                # Don't escape braces - let them be literal in texttt
+                # Use a protected placeholder to avoid further processing
+                return f"PROTECTED_PYTHON_COLOR_START{{{py_escaped_content}}}PROTECTED_PYTHON_COLOR_END"
+
+            # For non-Python commands, handle braces normally
+            escaped_content = escaped_content.replace("{", "\\{")
+            escaped_content = escaped_content.replace("}", "\\}")
+
+            # For very long code spans (>60 characters), use seqsplit inside texttt
             # to allow line breaks while maintaining monospace formatting
             # BUT only if no LaTeX commands (indicated by backslashes)
-            if len(code_content) > 20 and "\\" not in code_content:
+            # AND not for Python inline commands which should stay readable
+            is_python_command = code_content.startswith("{py:") or code_content.startswith("py:")
+            if len(code_content) > 60 and "\\" not in code_content and not is_python_command:
                 # Use protected placeholder to prevent escaping of \seqsplit command
                 return f"PROTECTED_TEXTTT_SEQSPLIT_START{{{escaped_content}}}PROTECTED_TEXTTT_SEQSPLIT_END"
             else:
@@ -238,6 +275,9 @@ def process_code_spans(text: MarkdownContent) -> LatexContent:
         return "".join(result)
 
     text = find_and_replace_detokenize(text)
+
+    # Convert protected Python color placeholders to actual LaTeX
+    text = find_and_replace_python_color(text)
 
     return text
 
@@ -430,6 +470,17 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
     # Then apply the general function for other cases
     # Escape special characters in texttt commands
     def escape_specials_in_texttt_content(content: str) -> str:
+        # Special handling for URL commands - they should not be wrapped in texttt
+        if content.startswith("\\url{") and content.endswith("}"):
+            # This is already a URL command, return it as-is
+            return content
+
+        # Special handling for content that contains URL commands
+        if "\\url{" in content:
+            # Don't wrap content containing URL commands in texttt to avoid nesting
+            # Just return the content as-is since URLs are already properly formatted
+            return content
+
         # Special handling for listings environments - they interfere with texttt
         if "\\begin{lstlisting}" in content or "\\end{lstlisting}" in content:
             # Use verb instead of texttt for listings content
@@ -461,7 +512,7 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
             # For other backslashes, use textbackslash
             # Skip processing if text already contains any form of textbackslash (already escaped)
             if "textbackslash" not in content:
-                content = content.replace("\\", "\\textbackslash{}")
+                content = content.replace("\\", "\\textbackslash ")
 
         # Escape # characters only if not already escaped
         if "\\#" not in content:
@@ -594,11 +645,11 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
     text = escape_carets_outside_protected_contexts(text)
 
     # Handle Unicode arrows that can cause LaTeX math mode issues
-    # These need to be converted to proper LaTeX math commands
-    text = text.replace("→", "$\\rightarrow$")
-    text = text.replace("←", "$\\leftarrow$")
-    text = text.replace("↑", "$\\uparrow$")
-    text = text.replace("↓", "$\\downarrow$")
+    # Use safe text replacements that work in all contexts
+    text = text.replace("→", " to ")  # Simple text replacement
+    text = text.replace("←", " from ")
+    text = text.replace("↑", " up ")
+    text = text.replace("↓", " down ")
 
     # Clean up double escaping that may have occurred during table processing
     text = _cleanup_double_escaping_textformatters(text)
@@ -614,11 +665,11 @@ def _cleanup_double_escaping_textformatters(text: str) -> str:
     import re
 
     # Fix the specific pattern of double-escaped backslashes
-    # Replace \\textbackslash{}textbackslash (with space) with just \\textbackslash{}
-    text = re.sub(r"\\textbackslash\{\}textbackslash\s+", r"\\textbackslash{}", text)
+    # Replace \\textbackslash textbackslash (with space) with just \\textbackslash
+    text = re.sub(r"\\textbackslash textbackslash\s+", r"\\textbackslash ", text)
 
     # Also try without requiring space after
-    text = re.sub(r"\\textbackslash\{\}textbackslash", r"\\textbackslash{}", text)
+    text = re.sub(r"\\textbackslash textbackslash", r"\\textbackslash ", text)
 
     return text
 
@@ -680,3 +731,44 @@ def restore_protected_seqsplit(text: LatexContent) -> LatexContent:
                 break
 
     return text
+
+
+def find_and_replace_python_color(text: str) -> str:
+    """Convert protected Python color placeholders to actual LaTeX."""
+    result = []
+    i = 0
+    while i < len(text):
+        # Look for PROTECTED_PYTHON_COLOR_START{
+        start_marker = "PROTECTED_PYTHON_COLOR_START{"
+        if text[i : i + len(start_marker)] == start_marker:
+            # Find the matching closing brace
+            brace_count = 0
+            start = i + len(start_marker)
+            j = start
+            while j < len(text):
+                if text[j] == "{":
+                    brace_count += 1
+                elif text[j] == "}":
+                    if brace_count == 0:
+                        # Found the matching closing brace
+                        content = text[start:j]
+                        # Look for the end marker
+                        end_marker = "}PROTECTED_PYTHON_COLOR_END"
+                        if text[j : j + len(end_marker)] == end_marker:
+                            # Replace XUNDERSCOREX back to actual underscores
+                            content = content.replace("XUNDERSCOREX", "\\_")
+                            # Create Python code with literal braces (no color for now)
+                            result.append(f"\\texttt{{{content}}}")
+                            i = j + len(end_marker)
+                            break
+                    else:
+                        brace_count -= 1
+                j += 1
+            else:
+                # No matching end found, append character and continue
+                result.append(text[i])
+                i += 1
+        else:
+            result.append(text[i])
+            i += 1
+    return "".join(result)

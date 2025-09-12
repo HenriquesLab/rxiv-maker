@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, Generic, List, Optional, TypeVar
 
-from ..core.cache import get_cache_dir
+from ..core.cache import get_manuscript_cache_dir
 from ..core.managers.config_manager import ConfigManager
 from ..utils.platform import safe_console_print, safe_print
 
@@ -101,7 +101,7 @@ class BaseService(ABC):
     def cache_dir(self) -> Path:
         """Get the cache directory."""
         if self._cache_dir is None:
-            self._cache_dir = get_cache_dir()
+            self._cache_dir = get_manuscript_cache_dir()
         return self._cache_dir
 
     def safe_print(self, message: str, **kwargs):

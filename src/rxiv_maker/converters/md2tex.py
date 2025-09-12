@@ -12,6 +12,7 @@ from .code_processor import (
     protect_code_content,
     restore_protected_code,
 )
+from .comment_processor import preprocess_comments
 from .custom_command_processor import process_custom_commands
 from .figure_processor import (
     convert_equation_references_to_latex,
@@ -35,6 +36,7 @@ from .table_processor import convert_table_references_to_latex, convert_tables_t
 from .text_formatters import (
     convert_subscript_superscript_to_latex,
     escape_special_characters,
+    find_and_replace_python_color,
     process_code_spans,
     protect_bold_outside_texttt,
     protect_italic_outside_texttt,
@@ -60,12 +62,12 @@ def convert_markdown_to_latex(content: MarkdownContent, is_supplementary: bool =
     """
     # Use the new centralized ContentProcessor for enhanced processing
     # ContentProcessor is now complete with all processors from legacy logic
-    # TEMPORARY DISABLE: ContentProcessor bypasses table_processor.py fixes for % escaping
-    # Issue: LaTeX comment "% comment" in markdown tables wasn't being escaped properly
-    # The ContentProcessor doesn't use the same table conversion pipeline that has
-    # the critical fix for detecting LaTeX syntax starting with "%"
-    # TODO: Port table escaping fixes to ContentProcessor, then re-enable
-    use_content_processor = False  # Disabled due to table escaping issues
+    # TEMPORARY: Re-disable ContentProcessor due to hanging issues with Python execution
+    # Two critical issues discovered:
+    # 1. Python execution errors not being displayed and halting PDF generation
+    # 2. Protected content placeholders not being restored in final output
+    # TODO: Fix ContentProcessor execution flow and protected content restoration
+    use_content_processor = False  # Disabled due to execution and restoration issues
 
     if use_content_processor:
         try:
@@ -98,7 +100,12 @@ def convert_markdown_to_latex(content: MarkdownContent, is_supplementary: bool =
                 pass  # Continue silently if logging also fails
 
     # Legacy conversion logic (original implementation)
-    # FIRST: Convert fenced code blocks BEFORE protecting backticks
+    # CRITICAL FIRST STEP: Remove HTML comments to prevent any commented content
+    # from being processed by subsequent steps (tables, citations, executable blocks, etc.)
+    # This is essential for security - commented content should NEVER be processed
+    content = preprocess_comments(content)
+
+    # SECOND: Convert fenced code blocks BEFORE protecting backticks
     content = convert_code_blocks_to_latex(content)
 
     # Process enhanced math blocks ($$...$$ {#eq:id})
@@ -373,6 +380,9 @@ def _process_text_formatting(content: LatexContent, protected_backtick_content: 
 
     # Then convert backticks to texttt with proper underscore handling
     content = process_code_spans(content)
+
+    # Process protected Python color placeholders
+    content = find_and_replace_python_color(content)
 
     # Convert bold and italic AFTER processing backticks
     content = protect_bold_outside_texttt(content)

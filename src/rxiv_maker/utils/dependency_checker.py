@@ -1,7 +1,7 @@
 """System dependency checker for Rxiv-Maker.
 
 This module provides comprehensive checking of system dependencies required
-for Rxiv-Maker functionality, including LaTeX, Make, Node.js, and R.
+for Rxiv-Maker functionality, including LaTeX, Make, and R.
 """
 
 import shutil
@@ -106,7 +106,7 @@ class DependencyChecker:
         }
 
         description = "LaTeX distribution for PDF compilation"
-        alternative = "Use Docker mode: make pdf RXIV_ENGINE=DOCKER"
+        alternative = "Install missing dependencies locally"
 
         return DependencyInfo(
             name="LaTeX",
@@ -363,11 +363,11 @@ class DependencyChecker:
         if missing_optional:
             print(f"\n💡 Optional: Install {len(missing_optional)} additional dependencies for full functionality.")
 
-        # Docker recommendation
+        # Installation recommendation
         if missing_required or len(missing_optional) > 1:
-            print("\n🐳 Alternative: Use Docker mode to avoid local dependency installation:")
-            print("   make pdf RXIV_ENGINE=DOCKER")
-            print("   (Only requires Docker and Make to be installed)")
+            print("\n📦 Next steps: Install missing dependencies locally:")
+            print("   Follow the installation commands shown above")
+            print("   Or check the project documentation for detailed setup instructions")
 
 
 def check_system_dependencies(verbose: bool = False) -> DependencyChecker:

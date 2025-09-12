@@ -122,6 +122,10 @@ plt.close()
                 from rxiv_maker.engines.operations.generate_figures import main as fig_main
 
                 fig_main()  # This function doesn't return a value
+            except SystemExit as e:
+                # SystemExit with code 0 is success, anything else is failure
+                if e.code != 0:
+                    raise
             except Exception as e:
                 # Figure generation might fail in CI due to missing dependencies
                 if "matplotlib" in str(e).lower() or "importerror" in str(e).lower():

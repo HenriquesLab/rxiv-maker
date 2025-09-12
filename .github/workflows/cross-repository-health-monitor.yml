@@ -31,9 +31,8 @@ permissions:
 
 env:
   MAIN_REPO: ${{ github.repository }}
-  HOMEBREW_REPO: HenriquesLab/homebrew-rxiv-maker
-  APT_REPO: HenriquesLab/apt-rxiv-maker
   DOCKER_REPO: HenriquesLab/docker-rxiv-maker
+  VSCODE_REPO: HenriquesLab/vscode-rxiv-maker
   ALERT_THRESHOLD_HOURS: ${{ github.event.inputs.alert_threshold || '24' }}
 
 jobs:
@@ -44,9 +43,8 @@ jobs:
     timeout-minutes: 15
     outputs:
       main_status: ${{ steps.main.outputs.status }}
-      homebrew_status: ${{ steps.homebrew.outputs.status }}
-      apt_status: ${{ steps.apt.outputs.status }}
       docker_status: ${{ steps.docker.outputs.status }}
+      vscode_status: ${{ steps.vscode.outputs.status }}
       overall_health: ${{ steps.assessment.outputs.health }}
       alerts_required: ${{ steps.assessment.outputs.alerts_required }}
 
@@ -66,7 +64,7 @@ jobs:
             --json workflowName,status,createdAt,conclusion)
 
           FAILED_COUNT=$(echo "$FAILED_RUNS" | jq length)
-          CRITICAL_FAILURES=$(echo "$FAILED_RUNS" | jq '[.[] | select(.workflowName | test("release|homebrew|docker"))] | length')
+          CRITICAL_FAILURES=$(echo "$FAILED_RUNS" | jq '[.[] | select(.workflowName | test("release|docker"))] | length')
 
           echo "Recent failed runs: $FAILED_COUNT"
           echo "Critical workflow failures: $CRITICAL_FAILURES"
@@ -87,106 +85,6 @@ jobs:
           echo "critical_failures=$CRITICAL_FAILURES" >> $GITHUB_OUTPUT
 
           echo "✅ Main repository status: $HEALTH_STATUS"
-
-      - name: 🍺 Check Homebrew repository workflows
-        id: homebrew
-        env:
-          GH_TOKEN: ${{ secrets.DISPATCH_PAT || secrets.GITHUB_TOKEN }}
-        run: |
-          echo "🔍 Checking Homebrew repository workflow health..."
-
-          # Check if we can access the repository
-          if ! gh repo view "$HOMEBREW_REPO" >/dev/null 2>&1; then
-            echo "❌ Cannot access Homebrew repository"
-            echo "status=inaccessible" >> $GITHUB_OUTPUT
-            echo "error=Repository not accessible" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          # Get recent workflow runs
-          FAILED_RUNS=$(gh run list --repo "$HOMEBREW_REPO" \
-            --status failure \
-            --created "$(date -d '24 hours ago' -I)" \
-            --limit 10 \
-            --json workflowName,status,createdAt,conclusion 2>/dev/null || echo "[]")
-
-          FAILED_COUNT=$(echo "$FAILED_RUNS" | jq length)
-
-          echo "Recent failed runs: $FAILED_COUNT"
-
-          # Check for recent successful releases
-          RECENT_RELEASES=$(gh run list --repo "$HOMEBREW_REPO" \
-            --workflow "validate-homebrew-installation.yml" \
-            --status success \
-            --created "$(date -d '7 days ago' -I)" \
-            --limit 5 2>/dev/null | wc -l || echo 0)
-
-          # Assess health status
-          if [ "$FAILED_COUNT" -gt 2 ]; then
-            HEALTH_STATUS="degraded"
-          elif [ "$FAILED_COUNT" -gt 0 ]; then
-            HEALTH_STATUS="warning"
-          elif [ "$RECENT_RELEASES" -gt 0 ]; then
-            HEALTH_STATUS="healthy"
-          else
-            HEALTH_STATUS="stale"
-          fi
-
-          echo "status=$HEALTH_STATUS" >> $GITHUB_OUTPUT
-          echo "failed_count=$FAILED_COUNT" >> $GITHUB_OUTPUT
-          echo "recent_releases=$RECENT_RELEASES" >> $GITHUB_OUTPUT
-
-          echo "✅ Homebrew repository status: $HEALTH_STATUS"
-
-      - name: 📦 Check APT repository workflows
-        id: apt
-        env:
-          GH_TOKEN: ${{ secrets.DISPATCH_PAT || secrets.GITHUB_TOKEN }}
-        run: |
-          echo "🔍 Checking APT repository workflow health..."
-
-          # Check if we can access the repository
-          if ! gh repo view "$APT_REPO" >/dev/null 2>&1; then
-            echo "❌ Cannot access APT repository"
-            echo "status=inaccessible" >> $GITHUB_OUTPUT
-            echo "error=Repository not accessible" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          # Get recent workflow runs
-          FAILED_RUNS=$(gh run list --repo "$APT_REPO" \
-            --status failure \
-            --created "$(date -d '24 hours ago' -I)" \
-            --limit 10 \
-            --json workflowName,status,createdAt,conclusion 2>/dev/null || echo "[]")
-
-          FAILED_COUNT=$(echo "$FAILED_RUNS" | jq length)
-
-          echo "Recent failed runs: $FAILED_COUNT"
-
-          # Check for recent successful builds
-          RECENT_BUILDS=$(gh run list --repo "$APT_REPO" \
-            --workflow "test-apt-containers.yml" \
-            --status success \
-            --created "$(date -d '7 days ago' -I)" \
-            --limit 5 2>/dev/null | wc -l || echo 0)
-
-          # Assess health status
-          if [ "$FAILED_COUNT" -gt 2 ]; then
-            HEALTH_STATUS="degraded"
-          elif [ "$FAILED_COUNT" -gt 0 ]; then
-            HEALTH_STATUS="warning"
-          elif [ "$RECENT_BUILDS" -gt 0 ]; then
-            HEALTH_STATUS="healthy"
-          else
-            HEALTH_STATUS="stale"
-          fi
-
-          echo "status=$HEALTH_STATUS" >> $GITHUB_OUTPUT
-          echo "failed_count=$FAILED_COUNT" >> $GITHUB_OUTPUT
-          echo "recent_builds=$RECENT_BUILDS" >> $GITHUB_OUTPUT
-
-          echo "✅ APT repository status: $HEALTH_STATUS"
 
       - name: 🐳 Check Docker repository workflows
         id: docker
@@ -237,27 +135,74 @@ jobs:
 
           echo "✅ Docker repository status: $HEALTH_STATUS"
 
+      - name: 💻 Check VSCode extension repository workflows
+        id: vscode
+        env:
+          GH_TOKEN: ${{ secrets.DISPATCH_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🔍 Checking VSCode extension repository workflow health..."
+
+          # Check if we can access the repository
+          if ! gh repo view "$VSCODE_REPO" >/dev/null 2>&1; then
+            echo "❌ Cannot access VSCode extension repository"
+            echo "status=inaccessible" >> $GITHUB_OUTPUT
+            echo "error=Repository not accessible" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Get recent workflow runs
+          FAILED_RUNS=$(gh run list --repo "$VSCODE_REPO" \
+            --status failure \
+            --created "$(date -d '24 hours ago' -I)" \
+            --limit 10 \
+            --json workflowName,status,createdAt,conclusion 2>/dev/null || echo "[]")
+
+          FAILED_COUNT=$(echo "$FAILED_RUNS" | jq length)
+
+          echo "Recent failed runs: $FAILED_COUNT"
+
+          # Check for recent successful builds
+          RECENT_BUILDS=$(gh run list --repo "$VSCODE_REPO" \
+            --status success \
+            --created "$(date -d '7 days ago' -I)" \
+            --limit 5 2>/dev/null | wc -l || echo 0)
+
+          # Assess health status
+          if [ "$FAILED_COUNT" -gt 2 ]; then
+            HEALTH_STATUS="degraded"
+          elif [ "$FAILED_COUNT" -gt 0 ]; then
+            HEALTH_STATUS="warning"
+          elif [ "$RECENT_BUILDS" -gt 0 ]; then
+            HEALTH_STATUS="healthy"
+          else
+            HEALTH_STATUS="stale"
+          fi
+
+          echo "status=$HEALTH_STATUS" >> $GITHUB_OUTPUT
+          echo "failed_count=$FAILED_COUNT" >> $GITHUB_OUTPUT
+          echo "recent_builds=$RECENT_BUILDS" >> $GITHUB_OUTPUT
+
+          echo "✅ VSCode extension repository status: $HEALTH_STATUS"
+
       - name: 🎯 Overall health assessment
         id: assessment
         run: |
           echo "📊 Performing overall health assessment..."
 
           MAIN_STATUS="${{ steps.main.outputs.status }}"
-          HOMEBREW_STATUS="${{ steps.homebrew.outputs.status }}"
-          APT_STATUS="${{ steps.apt.outputs.status }}"
           DOCKER_STATUS="${{ steps.docker.outputs.status }}"
+          VSCODE_STATUS="${{ steps.vscode.outputs.status }}"
 
           echo "Main: $MAIN_STATUS"
-          echo "Homebrew: $HOMEBREW_STATUS"
-          echo "APT: $APT_STATUS"
           echo "Docker: $DOCKER_STATUS"
+          echo "VSCode: $VSCODE_STATUS"
 
           # Determine overall health
           CRITICAL_COUNT=0
           DEGRADED_COUNT=0
           WARNING_COUNT=0
 
-          for status in "$MAIN_STATUS" "$HOMEBREW_STATUS" "$APT_STATUS" "$DOCKER_STATUS"; do
+          for status in "$MAIN_STATUS" "$DOCKER_STATUS" "$VSCODE_STATUS"; do
             case "$status" in
               "critical"|"inaccessible")
                 CRITICAL_COUNT=$((CRITICAL_COUNT + 1))
@@ -317,40 +262,40 @@ jobs:
           MAIN_VERSION=$(python -c "exec(open('src/rxiv_maker/__version__.py').read()); print(__version__)")
           echo "Main repository version: $MAIN_VERSION"
 
-          # Check Homebrew formula version
-          HOMEBREW_VERSION="unknown"
-          if HOMEBREW_FORMULA=$(gh api repos/$HOMEBREW_REPO/contents/Formula/rxiv-maker.rb 2>/dev/null); then
-            HOMEBREW_VERSION=$(echo "$HOMEBREW_FORMULA" | jq -r '.content' | base64 -d | grep -o 'version "[^"]*"' | cut -d'"' -f2 || echo "unknown")
-            echo "Homebrew formula version: $HOMEBREW_VERSION"
+          # Check Docker repository version (from recent releases)
+          DOCKER_VERSION="unknown"
+          if DOCKER_RELEASES=$(gh release list --repo "$DOCKER_REPO" --limit 5 2>/dev/null); then
+            DOCKER_VERSION=$(echo "$DOCKER_RELEASES" | head -1 | awk '{print $3}' | sed 's/v//' || echo "unknown")
+            echo "Docker repository version: $DOCKER_VERSION"
           else
-            echo "⚠️ Cannot access Homebrew formula"
+            echo "⚠️ Cannot access Docker repository releases"
           fi
 
-          # Check APT package version (from recent releases)
-          APT_VERSION="unknown"
-          if APT_RELEASES=$(gh release list --repo "$APT_REPO" --limit 5 2>/dev/null); then
-            APT_VERSION=$(echo "$APT_RELEASES" | head -1 | awk '{print $3}' | sed 's/v//' || echo "unknown")
-            echo "APT repository version: $APT_VERSION"
+          # Check VSCode extension repository version (from recent releases)
+          VSCODE_VERSION="unknown"
+          if VSCODE_RELEASES=$(gh release list --repo "$VSCODE_REPO" --limit 5 2>/dev/null); then
+            VSCODE_VERSION=$(echo "$VSCODE_RELEASES" | head -1 | awk '{print $3}' | sed 's/v//' || echo "unknown")
+            echo "VSCode extension version: $VSCODE_VERSION"
           else
-            echo "⚠️ Cannot access APT repository releases"
+            echo "⚠️ Cannot access VSCode extension repository releases"
           fi
 
           # Assess version alignment
           ALIGNED_COUNT=0
           TOTAL_COUNT=3
 
-          if [ "$HOMEBREW_VERSION" == "$MAIN_VERSION" ]; then
+          if [ "$DOCKER_VERSION" == "$MAIN_VERSION" ]; then
             ALIGNED_COUNT=$((ALIGNED_COUNT + 1))
-            echo "✅ Homebrew version aligned"
+            echo "✅ Docker version aligned"
           else
-            echo "⚠️ Homebrew version misaligned: $HOMEBREW_VERSION vs $MAIN_VERSION"
+            echo "⚠️ Docker version misaligned: $DOCKER_VERSION vs $MAIN_VERSION"
           fi
 
-          if [ "$APT_VERSION" == "$MAIN_VERSION" ]; then
+          if [ "$VSCODE_VERSION" == "$MAIN_VERSION" ]; then
             ALIGNED_COUNT=$((ALIGNED_COUNT + 1))
-            echo "✅ APT version aligned"
+            echo "✅ VSCode extension version aligned"
           else
-            echo "⚠️ APT version misaligned: $APT_VERSION vs $MAIN_VERSION"
+            echo "⚠️ VSCode extension version misaligned: $VSCODE_VERSION vs $MAIN_VERSION"
           fi
 
           # Determine sync status
@@ -369,8 +314,8 @@ jobs:
           echo "status=$SYNC_STATUS" >> $GITHUB_OUTPUT
           echo "version_alignment=$ALIGNMENT_RATIO" >> $GITHUB_OUTPUT
           echo "main_version=$MAIN_VERSION" >> $GITHUB_OUTPUT
-          echo "homebrew_version=$HOMEBREW_VERSION" >> $GITHUB_OUTPUT
-          echo "apt_version=$APT_VERSION" >> $GITHUB_OUTPUT
+          echo "docker_version=$DOCKER_VERSION" >> $GITHUB_OUTPUT
+          echo "vscode_version=$VSCODE_VERSION" >> $GITHUB_OUTPUT
 
           echo "🔄 Repository synchronization: $SYNC_STATUS ($ALIGNMENT_RATIO% aligned)"
 
@@ -518,29 +463,29 @@ jobs:
           esac
           echo "| [rxiv-maker](${{ github.server_url }}/${{ env.MAIN_REPO }}) | $MAIN_ICON $MAIN_STATUS | Failed workflows in 24h: ${{ needs.workflow-health-check.outputs.main_status == 'healthy' && '0' || 'Multiple' }} |" >> $GITHUB_STEP_SUMMARY
 
-          # Homebrew repository
-          HOMEBREW_STATUS="${{ needs.workflow-health-check.outputs.homebrew_status }}"
-          case "$HOMEBREW_STATUS" in
-            "healthy") HOMEBREW_ICON="🟢" ;;
-            "warning") HOMEBREW_ICON="🟡" ;;
-            "degraded") HOMEBREW_ICON="🟠" ;;
-            "critical"|"inaccessible") HOMEBREW_ICON="🔴" ;;
-            "stale") HOMEBREW_ICON="🟤" ;;
-            *) HOMEBREW_ICON="⚪" ;;
+          # Docker repository
+          DOCKER_STATUS="${{ needs.workflow-health-check.outputs.docker_status }}"
+          case "$DOCKER_STATUS" in
+            "healthy") DOCKER_ICON="🟢" ;;
+            "warning") DOCKER_ICON="🟡" ;;
+            "degraded") DOCKER_ICON="🟠" ;;
+            "critical"|"inaccessible") DOCKER_ICON="🔴" ;;
+            "stale") DOCKER_ICON="🟤" ;;
+            *) DOCKER_ICON="⚪" ;;
           esac
-          echo "| [homebrew-rxiv-maker](https://github.com/${{ env.HOMEBREW_REPO }}) | $HOMEBREW_ICON $HOMEBREW_STATUS | Formula validation status |" >> $GITHUB_STEP_SUMMARY
+          echo "| [docker-rxiv-maker](https://github.com/${{ env.DOCKER_REPO }}) | $DOCKER_ICON $DOCKER_STATUS | Container image build status |" >> $GITHUB_STEP_SUMMARY
 
-          # APT repository
-          APT_STATUS="${{ needs.workflow-health-check.outputs.apt_status }}"
-          case "$APT_STATUS" in
-            "healthy") APT_ICON="🟢" ;;
-            "warning") APT_ICON="🟡" ;;
-            "degraded") APT_ICON="🟠" ;;
-            "critical"|"inaccessible") APT_ICON="🔴" ;;
-            "stale") APT_ICON="🟤" ;;
-            *) APT_ICON="⚪" ;;
+          # VSCode extension repository
+          VSCODE_STATUS="${{ needs.workflow-health-check.outputs.vscode_status }}"
+          case "$VSCODE_STATUS" in
+            "healthy") VSCODE_ICON="🟢" ;;
+            "warning") VSCODE_ICON="🟡" ;;
+            "degraded") VSCODE_ICON="🟠" ;;
+            "critical"|"inaccessible") VSCODE_ICON="🔴" ;;
+            "stale") VSCODE_ICON="🟤" ;;
+            *) VSCODE_ICON="⚪" ;;
           esac
-          echo "| [apt-rxiv-maker](https://github.com/${{ env.APT_REPO }}) | $APT_ICON $APT_STATUS | Package build status |" >> $GITHUB_STEP_SUMMARY
+          echo "| [vscode-rxiv-maker](https://github.com/${{ env.VSCODE_REPO }}) | $VSCODE_ICON $VSCODE_STATUS | VS Code extension workflows |" >> $GITHUB_STEP_SUMMARY
 
           echo "" >> $GITHUB_STEP_SUMMARY
 
@@ -602,12 +547,12 @@ jobs:
               echo "- 🔥 **Main repository workflows are failing** - Check [workflow runs](${{ github.server_url }}/${{ env.MAIN_REPO }}/actions)" >> $GITHUB_STEP_SUMMARY
             fi
 
-            if [ "$HOMEBREW_STATUS" == "critical" ] || [ "$HOMEBREW_STATUS" == "inaccessible" ]; then
-              echo "- 🍺 **Homebrew repository issues detected** - Verify [homebrew-rxiv-maker](https://github.com/${{ env.HOMEBREW_REPO }})" >> $GITHUB_STEP_SUMMARY
+            if [ "$DOCKER_STATUS" == "critical" ] || [ "$DOCKER_STATUS" == "inaccessible" ]; then
+              echo "- 🐳 **Docker repository issues detected** - Verify [docker-rxiv-maker](https://github.com/${{ env.DOCKER_REPO }})" >> $GITHUB_STEP_SUMMARY
             fi
 
-            if [ "$APT_STATUS" == "critical" ] || [ "$APT_STATUS" == "inaccessible" ]; then
-              echo "- 📦 **APT repository issues detected** - Verify [apt-rxiv-maker](https://github.com/${{ env.APT_REPO }})" >> $GITHUB_STEP_SUMMARY
+            if [ "$VSCODE_STATUS" == "critical" ] || [ "$VSCODE_STATUS" == "inaccessible" ]; then
+              echo "- 💻 **VSCode extension repository issues detected** - Verify [vscode-rxiv-maker](https://github.com/${{ env.VSCODE_REPO }})" >> $GITHUB_STEP_SUMMARY
             fi
 
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -639,8 +584,8 @@ jobs:
 
           - **Overall Health:** ${{ needs.workflow-health-check.outputs.overall_health }}
           - **Main Repository:** ${{ needs.workflow-health-check.outputs.main_status }}
-          - **Homebrew Repository:** ${{ needs.workflow-health-check.outputs.homebrew_status }}
-          - **APT Repository:** ${{ needs.workflow-health-check.outputs.apt_status }}
+          - **Docker Repository:** ${{ needs.workflow-health-check.outputs.docker_status }}
+          - **VSCode Extension:** ${{ needs.workflow-health-check.outputs.vscode_status }}
 
           ### 🎯 Recommended Actions
 
@@ -671,7 +616,7 @@ jobs:
               --repo "${{ env.MAIN_REPO }}" \
               --title "$ISSUE_TITLE" \
               --body "$ISSUE_BODY" \
-              --label "health-alert,priority:high,automated"
+              --label "health-alert,bug,help wanted"
             echo "✅ Alert issue created successfully"
           else
             echo "ℹ️ Recent alert issue already exists, skipping creation"

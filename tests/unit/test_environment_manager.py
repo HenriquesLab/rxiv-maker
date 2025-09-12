@@ -77,68 +77,6 @@ class TestManuscriptPath:
         assert result == str(test_path.resolve())
 
 
-class TestRxivEngine:
-    """Test rxiv engine environment variable handling."""
-
-    def test_get_rxiv_engine_valid_values(self):
-        """Test getting valid engine values."""
-        valid_engines = ["local", "docker", "podman"]
-
-        for engine in valid_engines:
-            os.environ[EnvironmentManager.RXIV_ENGINE] = engine
-            result = EnvironmentManager.get_rxiv_engine()
-            assert result == engine
-
-    def test_get_rxiv_engine_case_insensitive(self):
-        """Test engine value case insensitivity."""
-        test_cases = [
-            ("LOCAL", "local"),
-            ("Docker", "docker"),
-            ("PODMAN", "podman"),
-            ("  local  ", "local"),
-        ]
-
-        for input_value, expected in test_cases:
-            os.environ[EnvironmentManager.RXIV_ENGINE] = input_value
-            result = EnvironmentManager.get_rxiv_engine()
-            assert result == expected
-
-    def test_get_rxiv_engine_invalid_values(self):
-        """Test invalid engine values default to local."""
-        invalid_values = ["invalid", "kubernetes", "", "   "]
-
-        for invalid_value in invalid_values:
-            os.environ[EnvironmentManager.RXIV_ENGINE] = invalid_value
-            result = EnvironmentManager.get_rxiv_engine()
-            assert result == "local"
-
-    def test_get_rxiv_engine_default(self):
-        """Test default engine when not set."""
-        if EnvironmentManager.RXIV_ENGINE in os.environ:
-            del os.environ[EnvironmentManager.RXIV_ENGINE]
-
-        result = EnvironmentManager.get_rxiv_engine()
-        assert result == "local"
-
-    def test_set_rxiv_engine_valid(self):
-        """Test setting valid engine values."""
-        valid_engines = ["local", "docker", "podman"]
-
-        for engine in valid_engines:
-            EnvironmentManager.set_rxiv_engine(engine)
-            assert os.environ[EnvironmentManager.RXIV_ENGINE] == engine
-
-    def test_set_rxiv_engine_case_normalization(self):
-        """Test engine setting normalizes case."""
-        EnvironmentManager.set_rxiv_engine("DOCKER")
-        assert os.environ[EnvironmentManager.RXIV_ENGINE] == "docker"
-
-    def test_set_rxiv_engine_invalid(self):
-        """Test setting invalid engine raises error."""
-        with pytest.raises(ValueError, match="Invalid engine type"):
-            EnvironmentManager.set_rxiv_engine("invalid")
-
-
 class TestBooleanVariables:
     """Test boolean environment variable handling."""
 
@@ -434,19 +372,16 @@ class TestEnvironmentManagement:
         """Test getting all rxiv-maker variables."""
         # Set some variables
         os.environ[EnvironmentManager.MANUSCRIPT_PATH] = "/test/manuscript"
-        os.environ[EnvironmentManager.RXIV_ENGINE] = "docker"
         os.environ[EnvironmentManager.RXIV_VERBOSE] = "true"
 
         result = EnvironmentManager.get_all_rxiv_vars()
 
         assert result[EnvironmentManager.MANUSCRIPT_PATH] == "/test/manuscript"
-        assert result[EnvironmentManager.RXIV_ENGINE] == "docker"
         assert result[EnvironmentManager.RXIV_VERBOSE] == "true"
 
     def test_set_environment_for_subprocess(self):
         """Test setting environment for subprocess."""
         # Set some rxiv variables
-        os.environ[EnvironmentManager.RXIV_ENGINE] = "docker"
         os.environ[EnvironmentManager.RXIV_VERBOSE] = "true"
 
         additional_vars = {"CUSTOM_VAR": "custom_value"}
@@ -457,7 +392,6 @@ class TestEnvironmentManagement:
         assert "PATH" in result  # Standard env var
 
         # Should include rxiv variables
-        assert result[EnvironmentManager.RXIV_ENGINE] == "docker"
         assert result[EnvironmentManager.RXIV_VERBOSE] == "true"
 
         # Should include additional variables
@@ -467,14 +401,12 @@ class TestEnvironmentManagement:
         """Test clearing all rxiv-maker variables."""
         # Set some variables
         os.environ[EnvironmentManager.MANUSCRIPT_PATH] = "/test/manuscript"
-        os.environ[EnvironmentManager.RXIV_ENGINE] = "docker"
         os.environ[EnvironmentManager.RXIV_VERBOSE] = "true"
 
         EnvironmentManager.clear_rxiv_vars()
 
         # Variables should be removed
         assert EnvironmentManager.MANUSCRIPT_PATH not in os.environ
-        assert EnvironmentManager.RXIV_ENGINE not in os.environ
         assert EnvironmentManager.RXIV_VERBOSE not in os.environ
 
 
@@ -522,21 +454,9 @@ class TestEnvironmentValidation:
         warnings = EnvironmentManager.validate_environment()
         assert any("not a directory" in warning for warning in warnings)
 
-    def test_validate_environment_docker_unavailable(self):
-        """Test validation with Docker engine but Docker unavailable."""
-        os.environ[EnvironmentManager.RXIV_ENGINE] = "docker"
-        os.environ[EnvironmentManager.DOCKER_AVAILABLE] = "false"
+    # Docker engine validation test removed - container engines deprecated
 
-        warnings = EnvironmentManager.validate_environment()
-        assert any("Docker is not available" in warning for warning in warnings)
-
-    def test_validate_environment_colab_with_wrong_engine(self):
-        """Test validation in Colab with wrong engine."""
-        os.environ[EnvironmentManager.COLAB_GPU] = "0"
-        os.environ[EnvironmentManager.RXIV_ENGINE] = "docker"
-
-        warnings = EnvironmentManager.validate_environment()
-        assert any("Google Colab detected" in warning for warning in warnings)
+    # Colab engine validation test removed - container engines deprecated
 
 
 class TestDebugInfo:
@@ -549,7 +469,6 @@ class TestDebugInfo:
         manuscript_dir.mkdir()
 
         os.environ[EnvironmentManager.MANUSCRIPT_PATH] = str(manuscript_dir)
-        os.environ[EnvironmentManager.RXIV_ENGINE] = "docker"
         os.environ[EnvironmentManager.RXIV_VERBOSE] = "true"
         os.environ[EnvironmentManager.DOCKER_AVAILABLE] = "true"
         os.environ[EnvironmentManager.PYTHONPATH] = "/path/one:/path/two"
@@ -558,7 +477,6 @@ class TestDebugInfo:
 
         # Check structure
         assert "rxiv_vars" in debug_info
-        assert "engine" in debug_info
         assert "verbose" in debug_info
         assert "docker_available" in debug_info
         assert "google_colab" in debug_info
@@ -567,7 +485,6 @@ class TestDebugInfo:
         assert "validation_warnings" in debug_info
 
         # Check values
-        assert debug_info["engine"] == "docker"
         assert debug_info["verbose"] is True
         assert debug_info["docker_available"] is True
         assert debug_info["pythonpath_entries"] == 2

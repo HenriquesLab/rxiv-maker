@@ -30,11 +30,10 @@ class TestCoreImports(unittest.TestCase):
 
     def test_engine_modules_import(self):
         """Test engine modules import."""
-        from rxiv_maker.engine import build_manager
-        from rxiv_maker.engines import factory
+        from rxiv_maker.engines import BuildManager, validate_manuscript
 
-        self.assertTrue(hasattr(factory, "ContainerEngineFactory"))
-        self.assertTrue(hasattr(build_manager, "BuildManager"))
+        self.assertTrue(callable(BuildManager))
+        self.assertTrue(callable(validate_manuscript))
 
     def test_utils_modules_import(self):
         """Test utility modules import."""
@@ -98,35 +97,7 @@ class TestFileHelpers(unittest.TestCase):
             find_manuscript_md(empty_dir)
 
 
-class TestContainerEngineFactory(unittest.TestCase):
-    """Smoke tests for container engine factory."""
-
-    def test_factory_initialization(self):
-        """Test factory can be initialized."""
-        from rxiv_maker.engines.factory import ContainerEngineFactory
-
-        factory = ContainerEngineFactory()
-        self.assertIsNotNone(factory)
-
-    def test_list_supported_engines(self):
-        """Test listing supported engines."""
-        from rxiv_maker.engines.factory import ContainerEngineFactory
-
-        engines = ContainerEngineFactory.get_supported_engines()
-        self.assertIsInstance(engines, list)
-        self.assertIn("docker", engines)
-        self.assertIn("podman", engines)
-
-    def test_engine_availability_check(self):
-        """Test engine availability checking doesn't crash."""
-        from rxiv_maker.engines.factory import ContainerEngineFactory
-
-        # This should not raise an exception even if engines aren't available
-        availability = ContainerEngineFactory.list_available_engines()
-        self.assertIsInstance(availability, dict)
-        self.assertIn("docker", availability)
-        self.assertIn("podman", availability)
-        # Don't assert True/False since availability depends on system
+# TestContainerEngineFactory removed - container engines are no longer supported
 
 
 class TestBuildManager(unittest.TestCase):
@@ -144,7 +115,7 @@ class TestBuildManager(unittest.TestCase):
 
     def test_build_manager_initialization(self):
         """Test build manager can be initialized."""
-        from rxiv_maker.engines.build_manager import BuildManager
+        from rxiv_maker.engines.operations.build_manager import BuildManager
 
         manager = BuildManager(self.test_dir)
         self.assertIsNotNone(manager)
@@ -153,7 +124,7 @@ class TestBuildManager(unittest.TestCase):
 
     def test_style_directory_detection(self):
         """Test style directory detection."""
-        from rxiv_maker.engines.build_manager import BuildManager
+        from rxiv_maker.engines.operations.build_manager import BuildManager
 
         manager = BuildManager(self.test_dir)
         style_dir = manager.style_dir

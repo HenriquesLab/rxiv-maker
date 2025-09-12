@@ -6,6 +6,7 @@ including figure attributes, captions, and references.
 
 import os
 import re
+from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 from .types import (
@@ -147,7 +148,14 @@ def create_latex_figure_environment(
         return None if v is None else str(v)
 
     # ---------- path ----------
-    latex_path = path.replace("FIGURES/", "Figures/")
+    # LaTeX compiles from output/ directory, so use relative path to parent FIGURES/
+    path_obj = Path(path)
+    if path_obj.parts[0] == "FIGURES":
+        # Convert FIGURES/filename.pdf to ../FIGURES/filename.pdf for LaTeX
+        latex_path = str(Path("..") / path_obj)
+    else:
+        latex_path = path
+
     if latex_path.lower().endswith(".svg"):
         latex_path = latex_path[:-4] + ".png"
     tex_path = f'"{latex_path}"' if " " in latex_path else latex_path

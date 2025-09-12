@@ -112,29 +112,6 @@ class TestMacOSInstaller:
         assert result is False
 
     @patch("subprocess.run")
-    def test_is_nodejs_installed_both_available(self, mock_run, installer):
-        """Test _is_nodejs_installed when both node and npm are available."""
-        mock_run.return_value = MagicMock(returncode=0)
-
-        result = installer._is_nodejs_installed()
-
-        assert result is True
-        expected_calls = [
-            call(["node", "--version"], capture_output=True, text=True, encoding="utf-8", timeout=10),
-            call(["npm", "--version"], capture_output=True, text=True, encoding="utf-8", timeout=10),
-        ]
-        mock_run.assert_has_calls(expected_calls)
-
-    @patch("subprocess.run")
-    def test_is_nodejs_installed_node_missing(self, mock_run, installer):
-        """Test _is_nodejs_installed when node is missing."""
-        mock_run.side_effect = [MagicMock(returncode=1), MagicMock(returncode=0)]
-
-        result = installer._is_nodejs_installed()
-
-        assert result is False
-
-    @patch("subprocess.run")
     def test_install_xcode_tools_already_installed(self, mock_run, installer):
         """Test _install_xcode_tools when already installed."""
         mock_run.return_value = MagicMock(returncode=0)
@@ -245,11 +222,10 @@ class TestMacOSInstaller:
             installer.logger.success.assert_called_with("LaTeX installed using direct download")
 
     def test_install_npm_packages_no_longer_required(self, installer):
-        """Test _install_npm_packages returns True (no longer required)."""
-        result = installer._install_npm_packages()
-
-        assert result is True
-        installer.logger.info.assert_called_with("No npm packages required - mermaid-cli dependency removed")
+        """Test that npm packages are no longer required."""
+        # _install_npm_packages method has been removed as it's no longer needed
+        # This test verifies the functionality has been removed
+        assert not hasattr(installer, "_install_npm_packages")
 
     @pytest.mark.parametrize(
         "latex_installed,methods_called",
@@ -339,24 +315,6 @@ class TestWindowsInstaller:
 
         assert result is False
 
-    @pytest.mark.parametrize(
-        "exception_type",
-        [
-            subprocess.TimeoutExpired("node", 10),
-            subprocess.CalledProcessError(1, "node"),
-            FileNotFoundError("Command not found"),
-            OSError("System error"),
-        ],
-    )
-    @patch("subprocess.run")
-    def test_is_nodejs_installed_exception_handling(self, mock_run, installer, exception_type):
-        """Test _is_nodejs_installed exception handling for various error types."""
-        mock_run.side_effect = exception_type
-
-        result = installer._is_nodejs_installed()
-
-        assert result is False
-
     @patch("subprocess.run")
     def test_install_latex_winget_success(self, mock_run, installer):
         """Test _install_latex_winget success path."""
@@ -423,7 +381,6 @@ class TestWindowsInstaller:
     @pytest.mark.parametrize(
         "method_name,command_args",
         [
-            ("_install_nodejs_winget", ["winget", "install", "--id", "OpenJS.NodeJS", "--silent"]),
             ("_install_r_winget", ["winget", "install", "--id", "RProject.R", "--silent"]),
         ],
     )
@@ -446,7 +403,6 @@ class TestWindowsInstaller:
     @pytest.mark.parametrize(
         "method_name,choco_package",
         [
-            ("_install_nodejs_chocolatey", "nodejs"),
             ("_install_r_chocolatey", "r.project"),
         ],
     )
@@ -473,10 +429,6 @@ class TestWindowsInstaller:
         "url,installer_args",
         [
             (
-                "https://nodejs.org/dist/v18.17.0/node-v18.17.0-x64.msi",
-                ["msiexec", "/i", "nodejs-installer.msi", "/quiet", "/norestart"],
-            ),
-            (
                 "https://cran.r-project.org/bin/windows/base/R-4.3.1-win.exe",
                 ["r-installer.exe", "/SILENT", "/NORESTART"],
             ),
@@ -488,11 +440,8 @@ class TestWindowsInstaller:
         """Test direct download install methods."""
         mock_run.return_value = MagicMock(returncode=0)
 
-        # Test Node.js direct install
-        if "nodejs" in url:
-            result = installer._install_nodejs_direct()
-        else:  # R direct install
-            result = installer._install_r_direct()
+        # Test R direct install
+        result = installer._install_r_direct()
 
         assert result is True
         mock_urlretrieve.assert_called_once()
@@ -529,17 +478,15 @@ class TestWindowsInstaller:
         assert result is False  # Should return False if any package fails
 
     def test_install_npm_packages_no_longer_required(self, installer):
-        """Test _install_npm_packages returns True (no longer required)."""
-        result = installer._install_npm_packages()
-
-        assert result is True
-        installer.logger.info.assert_called_with("No npm packages required - mermaid-cli dependency removed")
+        """Test that npm packages are no longer required."""
+        # _install_npm_packages method has been removed as it's no longer needed
+        # This test verifies the functionality has been removed
+        assert not hasattr(installer, "_install_npm_packages")
 
     @pytest.mark.parametrize(
         "component,installer_methods",
         [
             ("latex", ["_install_latex_winget", "_install_latex_chocolatey", "_install_latex_direct"]),
-            ("nodejs", ["_install_nodejs_winget", "_install_nodejs_chocolatey", "_install_nodejs_direct"]),
             ("r", ["_install_r_winget", "_install_r_chocolatey", "_install_r_direct"]),
         ],
     )
@@ -561,9 +508,6 @@ class TestWindowsInstaller:
                 if component == "latex":
                     with patch.object(installer, "_install_latex_packages", return_value=True):
                         result = installer.install_latex()
-                elif component == "nodejs":
-                    with patch.object(installer, "_install_npm_packages", return_value=True):
-                        result = installer.install_nodejs()
                 else:  # r
                     result = installer.install_r()
 
@@ -657,6 +601,3 @@ class TestCrossPlatformInstallerCompatibility:
             # Both platforms should handle exceptions gracefully
             assert macos_installer._is_latex_installed() is False
             assert windows_installer._is_latex_installed() is False
-
-            assert macos_installer._is_nodejs_installed() is False
-            assert windows_installer._is_nodejs_installed() is False

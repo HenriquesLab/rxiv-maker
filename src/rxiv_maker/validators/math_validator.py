@@ -685,6 +685,14 @@ class MathValidator(BaseValidator):
             protected,
         )
 
+        # Protect LaTeX code blocks {{tex: ...}}
+        protected = re.sub(
+            r"\{\{tex:.*?\}\}",
+            lambda m: f"XXPROTECTEDCODEXX{len(m.group(0))}XXPROTECTEDCODEXX",
+            protected,
+            flags=re.DOTALL,
+        )
+
         # Protect Python code blocks {{py: ...}}
         protected = re.sub(
             r"\{\{py:.*?\}\}",

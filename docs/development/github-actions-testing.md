@@ -80,7 +80,6 @@ pip show rxiv-maker
 
 # CLI functionality tests
 rxiv check-installation --json
-rxiv config show
 rxiv setup --check-deps-only
 
 # Manuscript operations

@@ -13,7 +13,6 @@ import sys
 import tempfile
 import time
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -21,7 +20,6 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from rxiv_maker.core.managers.execution_manager import (
-    ContainerExecutionManager,
     ExecutionContext,
     ExecutionMode,
     ExecutionStep,
@@ -319,17 +317,11 @@ class TestExecutionManagerFactory:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
 
-            # Mock the global container manager to avoid actual container engine initialization
-            with patch("rxiv_maker.core.global_container_manager.get_global_container_manager") as mock_global_manager:
-                mock_manager = MagicMock()
-                mock_engine = MagicMock()
-                mock_manager.get_container_engine.return_value = mock_engine
-                mock_global_manager.return_value = mock_manager
+            # Create local execution manager (no container manager needed for LOCAL mode)
+            manager = create_execution_manager(mode=ExecutionMode.LOCAL, working_dir=temp_path)
 
-                manager = create_execution_manager(mode=ExecutionMode.DOCKER, working_dir=temp_path)
-
-                assert isinstance(manager, ContainerExecutionManager)
-                assert manager.context.mode == ExecutionMode.DOCKER
+            assert isinstance(manager, LocalExecutionManager)
+            assert manager.context.mode == ExecutionMode.LOCAL
 
 
 class TestExecutionManagerPerformance:

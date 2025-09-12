@@ -44,17 +44,12 @@ class TestMainCLI:
         # Environment variable should be set
         # Note: This tests the flag parsing, actual env var testing requires integration
 
-    def test_cli_engine_flag(self):
-        """Test engine flag is properly parsed."""
+    def test_cli_no_engine_flag(self):
+        """Test that engine flag is no longer supported."""
+        # Engine flag should not be recognized
         result = self.runner.invoke(main, ["--engine", "docker", "--help"])
-        assert result.exit_code == 0
-
-        result = self.runner.invoke(main, ["--engine", "local", "--help"])
-        assert result.exit_code == 0
-
-        # Invalid engine should fail
-        result = self.runner.invoke(main, ["--engine", "invalid", "version"])
         assert result.exit_code != 0
+        assert "no such option" in result.output.lower() or "unrecognized" in result.output.lower()
 
     def test_install_completion_bash(self):
         """Test bash completion installation."""
@@ -133,7 +128,8 @@ class TestMainCLI:
             "track-changes",
             "setup",
             "version",
-            "config",
+            "cache",
+            "check-installation",
             "completion",
         ]
 
@@ -144,6 +140,6 @@ class TestMainCLI:
         """Test that context is properly passed to commands."""
         # This would need to be tested with actual command invocation
         # For now, we test that the context object is created properly
-        result = self.runner.invoke(main, ["--verbose", "--engine", "docker", "version"])
+        result = self.runner.invoke(main, ["--verbose", "version"])
         assert result.exit_code == 0
         # The actual context testing would require mocking the command handlers

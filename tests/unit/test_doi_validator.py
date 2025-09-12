@@ -115,42 +115,66 @@ class TestDOIValidator(unittest.TestCase):
         os.makedirs(self.manuscript_dir)
         os.makedirs(self.cache_dir)
 
+        # Create config file to make this a valid manuscript directory
+        config_path = os.path.join(self.manuscript_dir, "00_CONFIG.yml")
+        with open(config_path, "w") as f:
+            f.write("title: Test Manuscript\nauthor: Test Author\n")
+
+        # Store original working directory
+        self.original_cwd = os.getcwd()
+
+    def create_validator(self, **kwargs):
+        """Helper method to create validator in correct directory context."""
+        # Change to manuscript directory for DOIValidator creation
+        os.chdir(self.manuscript_dir)
+        default_kwargs = {"enable_online_validation": False, "cache_dir": self.cache_dir}
+        default_kwargs.update(kwargs)
+        return DOIValidator(self.manuscript_dir, **default_kwargs)
+
     def tearDown(self):
         """Clean up test fixtures."""
         import shutil
 
+        # Restore original working directory
+        os.chdir(self.original_cwd)
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     @pytest.mark.fast
     def test_doi_format_validation(self):
         """Test DOI format validation."""
-        validator = DOIValidator(
-            self.manuscript_dir,
-            enable_online_validation=False,
-            cache_dir=self.cache_dir,
-        )
+        # Change to manuscript directory so find_manuscript_directory() works
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(self.manuscript_dir)
+            validator = DOIValidator(
+                self.manuscript_dir,
+                enable_online_validation=False,
+                cache_dir=self.cache_dir,
+            )
 
-        # Test valid DOI formats
-        valid_dois = [
-            "10.1000/test.2023.001",
-            "10.1109/MCSE.2007.55",
-            "10.1093/comjnl/27.2.97",
-            "10.1371/journal.pcbi.1003285",
-        ]
+            # Test valid DOI formats
+            valid_dois = [
+                "10.1000/test.2023.001",
+                "10.1109/MCSE.2007.55",
+                "10.1093/comjnl/27.2.97",
+                "10.1371/journal.pcbi.1003285",
+            ]
 
-        for doi in valid_dois:
-            self.assertTrue(validator.DOI_REGEX.match(doi), f"Valid DOI failed: {doi}")
+            for doi in valid_dois:
+                self.assertTrue(validator.DOI_REGEX.match(doi), f"Valid DOI failed: {doi}")
 
-        # Test invalid DOI formats
-        invalid_dois = [
-            "not-a-doi",
-            "10.test/invalid",
-            "10./invalid",
-            "doi:10.1000/test",
-        ]
+            # Test invalid DOI formats
+            invalid_dois = [
+                "not-a-doi",
+                "10.test/invalid",
+                "10./invalid",
+                "doi:10.1000/test",
+            ]
 
-        for doi in invalid_dois:
-            self.assertFalse(validator.DOI_REGEX.match(doi), f"Invalid DOI passed: {doi}")
+            for doi in invalid_dois:
+                self.assertFalse(validator.DOI_REGEX.match(doi), f"Invalid DOI passed: {doi}")
+        finally:
+            os.chdir(old_cwd)
 
     def test_bib_entry_extraction(self):
         """Test BibTeX entry extraction."""
@@ -181,24 +205,30 @@ class TestDOIValidator(unittest.TestCase):
         with open(os.path.join(self.manuscript_dir, "03_REFERENCES.bib"), "w") as f:
             f.write(bib_content)
 
-        validator = DOIValidator(
-            self.manuscript_dir,
-            enable_online_validation=False,
-            cache_dir=self.cache_dir,
-        )
-        entries = validator._extract_bib_entries(bib_content)
+        # Change to manuscript directory so find_manuscript_directory() works
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(self.manuscript_dir)
+            validator = DOIValidator(
+                self.manuscript_dir,
+                enable_online_validation=False,
+                cache_dir=self.cache_dir,
+            )
+            entries = validator._extract_bib_entries(bib_content)
 
-        # Should extract 3 entries
-        self.assertEqual(len(entries), 3)
+            # Should extract 3 entries
+            self.assertEqual(len(entries), 3)
 
-        # Check entries with DOIs
-        entries_with_doi = [e for e in entries if "doi" in e]
-        self.assertEqual(len(entries_with_doi), 2)
+            # Check entries with DOIs
+            entries_with_doi = [e for e in entries if "doi" in e]
+            self.assertEqual(len(entries_with_doi), 2)
 
-        # Check specific entry
-        test1_entry = next(e for e in entries if e["entry_key"] == "test1")
-        self.assertEqual(test1_entry["title"], "Test Article One")
-        self.assertEqual(test1_entry["doi"], "10.1000/test1.2023.001")
+            # Check specific entry
+            test1_entry = next(e for e in entries if e["entry_key"] == "test1")
+            self.assertEqual(test1_entry["title"], "Test Article One")
+            self.assertEqual(test1_entry["doi"], "10.1000/test1.2023.001")
+        finally:
+            os.chdir(old_cwd)
 
     def test_validation_without_bib_file(self):
         """Test validation when bibliography file doesn't exist."""
@@ -450,29 +480,31 @@ class TestDOIValidator(unittest.TestCase):
         with open(os.path.join(self.manuscript_dir, "03_REFERENCES.bib"), "w") as f:
             f.write(bib_content)
 
-        validator = DOIValidator(
-            self.manuscript_dir,
-            enable_online_validation=True,
-            cache_dir=self.cache_dir,
-            ignore_ci_environment=True,
-            force_validation=True,
-        )
-        result = validator.validate()
+        # Change to manuscript directory so find_manuscript_directory() works
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(self.manuscript_dir)
+            validator = DOIValidator(
+                self.manuscript_dir,
+                enable_online_validation=True,
+                cache_dir=self.cache_dir,
+                ignore_ci_environment=True,
+                force_validation=True,
+            )
+            result = validator.validate()
 
-        # Should have success message for DataCite validation
-        success_messages = [error.message for error in result.errors if error.level.value == "success"]
-        self.assertTrue(any("DataCite" in msg for msg in success_messages))
+            # Should have success message for DataCite validation
+            success_messages = [error.message for error in result.errors if error.level.value == "success"]
+            self.assertTrue(any("DataCite" in msg for msg in success_messages))
 
-        # Should call the metadata validation method
-        mock_validate_metadata.assert_called()
+            # Should call the metadata validation method
+            mock_validate_metadata.assert_called()
+        finally:
+            os.chdir(old_cwd)
 
     def test_title_cleaning(self):
         """Test title cleaning for comparison."""
-        validator = DOIValidator(
-            self.manuscript_dir,
-            enable_online_validation=False,
-            cache_dir=self.cache_dir,
-        )
+        validator = self.create_validator()
 
         # Test LaTeX command removal
         latex_title = "Test \\textbf{bold} and \\textit{italic} text"
@@ -491,11 +523,7 @@ class TestDOIValidator(unittest.TestCase):
 
     def test_journal_cleaning(self):
         """Test journal name cleaning for comparison."""
-        validator = DOIValidator(
-            self.manuscript_dir,
-            enable_online_validation=False,
-            cache_dir=self.cache_dir,
-        )
+        validator = self.create_validator()
 
         # Test ampersand removal
         journal_name = "Science \\& Engineering"
@@ -520,6 +548,15 @@ class TestDOIValidator(unittest.TestCase):
         os.makedirs(unique_cache)
 
         try:
+            # Create required config file for manuscript directory detection
+            config_content = """
+title: "Test Manuscript"
+authors:
+  - name: "Test Author"
+"""
+            with open(os.path.join(unique_manuscript, "00_CONFIG.yml"), "w") as f:
+                f.write(config_content)
+
             # Create a simple bib file with valid DOI format
             bib_content = """
 @article{cached_test,
@@ -533,6 +570,10 @@ class TestDOIValidator(unittest.TestCase):
 
             with open(os.path.join(unique_manuscript, "03_REFERENCES.bib"), "w") as f:
                 f.write(bib_content)
+
+            # Change to manuscript directory for auto-detection to work
+            original_cwd = os.getcwd()
+            os.chdir(unique_manuscript)
 
             # Test with offline validation to avoid network issues in parallel tests
             validator1 = DOIValidator(
@@ -558,16 +599,14 @@ class TestDOIValidator(unittest.TestCase):
             self.assertEqual(result1.metadata["total_dois"], result2.metadata["total_dois"])
 
         finally:
+            # Restore original working directory
+            os.chdir(original_cwd)
             # Clean up temporary directory
             shutil.rmtree(unique_temp, ignore_errors=True)
 
     def test_similarity_threshold(self):
         """Test title similarity threshold."""
-        validator = DOIValidator(
-            self.manuscript_dir,
-            enable_online_validation=False,
-            cache_dir=self.cache_dir,
-        )
+        validator = self.create_validator()
 
         # Test similar titles (should pass)
         title1 = "A Study of Machine Learning Applications"

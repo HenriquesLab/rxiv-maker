@@ -36,13 +36,12 @@ class ConfigManager:
         self.validator = ConfigValidator()
 
         # Configuration search paths (in order of priority)
+        # Only search in manuscript directory, no global home directory configs
         self.config_paths = [
             self.base_dir / "rxiv.yml",
             self.base_dir / "rxiv.yaml",
             self.base_dir / ".rxiv.yml",
             self.base_dir / ".rxiv.yaml",
-            Path.home() / ".config" / "rxiv-maker" / "config.yml",
-            Path.home() / ".rxiv" / "config.yml",
         ]
 
         # Default configuration
@@ -418,7 +417,6 @@ class ConfigManager:
     def _apply_environment_overrides(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """Apply environment variable overrides."""
         env_overrides = {
-            "RXIV_ENGINE_TYPE": ("engine", "type"),
             "RXIV_OUTPUT_DIR": ("output", "directory"),
             "RXIV_CACHE_ENABLED": ("cache", "enabled"),
             "RXIV_CACHE_DIR": ("cache", "directory"),

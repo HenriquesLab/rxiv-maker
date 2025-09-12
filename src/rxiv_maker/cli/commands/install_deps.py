@@ -3,13 +3,11 @@
 This command is deprecated. Use 'rxiv setup --mode system-only' instead.
 """
 
-import sys
 from pathlib import Path
 
 import click
-from rich.console import Console
 
-console = Console()
+from ..framework import DeprecatedInstallDepsCommand
 
 
 @click.command()
@@ -60,36 +58,13 @@ def install_deps(
 
     See 'rxiv setup --help' for more options.
     """
-    verbose = ctx.obj.get("verbose", False)
-
-    # Show deprecation warning
-    console.print("⚠️  WARNING: 'rxiv install-deps' is deprecated!", style="bold yellow")
-    console.print("Use 'rxiv setup --mode system-only' instead.", style="yellow")
-    console.print("Redirecting to the new command...", style="dim")
-    console.print()
-
-    try:
-        # Import the new setup command
-        from .setup import setup
-
-        # Map parameters to the new setup command format
-        setup_kwargs = {
-            "mode": "system-only" if mode == "full" else mode,
-            "reinstall": False,
-            "force": force,
-            "non_interactive": non_interactive,
-            "check_only": False,
-            "log_file": log_file,
-        }
-
-        # Call the new setup command
-        setup(ctx, **setup_kwargs)
-
-    except KeyboardInterrupt:
-        console.print("\n⏹️  Installation interrupted by user", style="yellow")
-        sys.exit(1)
-    except Exception as e:
-        console.print(f"❌ Unexpected error during installation: {e}", style="red")
-        if verbose:
-            console.print_exception()
-        sys.exit(1)
+    command = DeprecatedInstallDepsCommand()
+    return command.run(
+        ctx,
+        manuscript_path=None,
+        mode=mode,
+        force=force,
+        non_interactive=non_interactive,
+        repair=repair,
+        log_file=str(log_file) if log_file else None,
+    )

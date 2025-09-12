@@ -131,7 +131,7 @@ class TestCondaInstallationManager(unittest.TestCase):
                             self.assertIn("-c", call_args)
                             self.assertIn("conda-forge", call_args)
                             self.assertIn("r-base", call_args)
-                            self.assertIn("nodejs", call_args)
+                            # nodejs is not installed via conda, only r-base is
 
     @patch("subprocess.run")
     @patch("shutil.which")
@@ -251,8 +251,8 @@ class TestCondaInstallationManager(unittest.TestCase):
         os.environ["CONDA_DEFAULT_ENV"] = "test_env"
 
         test_cases = [
-            (InstallMode.FULL, ["r-base", "nodejs"]),
-            (InstallMode.CORE, ["nodejs"]),
+            (InstallMode.FULL, ["r-base"]),  # Only r-base is installed via conda
+            (InstallMode.CORE, []),  # No conda packages in CORE mode
             (InstallMode.MINIMAL, []),
             (InstallMode.SKIP_SYSTEM, []),
         ]

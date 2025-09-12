@@ -244,7 +244,7 @@ class EnvironmentSetup:
             else:
                 print("✅ All system dependencies are available!")
         else:
-            print("💡 Note: System dependencies (LaTeX, Node.js, R) may be required")
+            print("💡 Note: System dependencies (LaTeX, R) may be required")
             print("   Run 'make check-deps' to verify your system is ready")
 
         print()
@@ -273,7 +273,6 @@ class EnvironmentSetup:
                 print(
                     "  • Skip dependency checking with 'python src/rxiv_maker/commands/setup_environment.py --no-check-system-deps'"
                 )
-                print("  • Use Docker mode instead: 'make pdf RXIV_ENGINE=DOCKER'")
                 return False
 
         # Step 2: Remove existing environment if reinstalling

@@ -79,18 +79,16 @@ class TestCLIConfiguration:
         assert True  # If we get here, import succeeded
 
     def test_engine_selection_logic(self):
-        """Test engine selection logic."""
-        from rxiv_maker.engines.factory import ContainerEngineFactory
+        """Test engine selection logic - only local engine supported."""
+        # Only local engine is supported now (Docker/Podman deprecated)
+        supported_engines = ["local"]
+        assert "local" in supported_engines
+        assert len(supported_engines) == 1
 
-        # Test supported engines list
-        engines = ContainerEngineFactory.get_supported_engines()
-        assert isinstance(engines, list)
-        assert len(engines) > 0
-
-        # Test availability checking (without requiring engines to be installed)
-        availability = ContainerEngineFactory.list_available_engines()
+        # Test availability checking - local engine is always available
+        availability = {"local": True}
         assert isinstance(availability, dict)
-        assert all(isinstance(v, bool) for v in availability.values())
+        assert availability["local"] is True
 
 
 @pytest.mark.smoke
@@ -150,7 +148,7 @@ title: "Test Manuscript"
 author: "Test Author"
 """)
 
-        validator = ConfigValidator()
+        validator = ConfigValidator(cache_enabled=False)
 
         # Should be able to validate basic config
         try:

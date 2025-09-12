@@ -44,15 +44,11 @@ else ifeq ($(OS),Windows_NT)
     DETECTED_OS := Windows
     SHELL_NULL := nul
     VENV_PYTHON := .venv\Scripts\python.exe
-    DOCKER_PLATFORM := linux/amd64
 else
     UNAME_S := $(shell uname -s)
     DETECTED_OS := $(if $(findstring Linux,$(UNAME_S)),Linux,$(if $(findstring Darwin,$(UNAME_S)),macOS,Unix))
     SHELL_NULL := /dev/null
     VENV_PYTHON := .venv/bin/python
-    # Auto-detect Docker platform
-    UNAME_M := $(shell uname -m)
-    DOCKER_PLATFORM := $(if $(filter arm64 aarch64,$(UNAME_M)),linux/arm64,linux/amd64)
 endif
 
 # Simplified cross-platform Python command selection
@@ -63,43 +59,16 @@ else
 endif
 
 # ======================================================================
-# 🐳 ENGINE MODE CONFIGURATION (DOCKER vs LOCAL)
+# 💻 LOCAL ENGINE CONFIGURATION
 # ======================================================================
 
-# Engine mode: LOCAL (default) or DOCKER
-# Override with: make pdf RXIV_ENGINE=DOCKER
-RXIV_ENGINE ?= LOCAL
+# Engine mode: LOCAL only (Docker/Podman engines deprecated)
+# For containerized execution, use docker-rxiv-maker repository
+RXIV_ENGINE := LOCAL
 
-# Docker configuration
-# Get rxiv-maker version for Docker image tagging with fallback mechanism
-RXIV_VERSION := $(shell python3 -c "import sys; sys.path.insert(0, 'src'); from rxiv_maker.__version__ import __version__; print(__version__)" 2>/dev/null || echo "latest")
-
-# Docker image with fallback: try versioned, then latest, then main
-DOCKER_IMAGE_VERSIONED := henriqueslab/rxiv-maker-base:v$(RXIV_VERSION)
-DOCKER_IMAGE_FALLBACK := $(shell \
-	if docker manifest inspect $(DOCKER_IMAGE_VERSIONED) >/dev/null 2>&1; then \
-		echo $(DOCKER_IMAGE_VERSIONED); \
-	elif docker manifest inspect henriqueslab/rxiv-maker-base:latest >/dev/null 2>&1; then \
-		echo henriqueslab/rxiv-maker-base:latest; \
-	else \
-		echo henriqueslab/rxiv-maker-base:main; \
-	fi)
-DOCKER_IMAGE ?= $(DOCKER_IMAGE_FALLBACK)
-DOCKER_HUB_REPO ?= henriqueslab/rxiv-maker-base
-
-# Platform detection moved to OS detection section above for consolidation
-
-# Docker base command for reuse
-DOCKER_BASE = docker run --rm --platform $(DOCKER_PLATFORM) -v $(PWD):/workspace -w /workspace $(DOCKER_IMAGE)
-
-# Engine-specific command configuration
-ifeq ($(RXIV_ENGINE),DOCKER)
-    PYTHON_CMD = $(DOCKER_BASE) sh -c "pip install -e . >/dev/null 2>&1 && python"
-    ENGINE_STATUS = 🐳 Docker ($(DOCKER_PLATFORM))
-else
-    PYTHON_CMD = $(PYTHON_EXEC)
-    ENGINE_STATUS = 💻 Local
-endif
+# Always use local Python execution
+PYTHON_CMD = $(PYTHON_EXEC)
+ENGINE_STATUS = 💻 Local
 
 # Simplified rxiv CLI helper - no more complex fallback logic
 # The unified rxiv CLI handles all path resolution and environment variables
@@ -367,11 +336,12 @@ clean-cache:
 	$(RXIV_CLI) clean --cache-only
 
 # ======================================================================
-# 🐳 DOCKER ENGINE MODE
+# 🚫 DOCKER ENGINE MODE DEPRECATED
 # ======================================================================
 
-# Note: Docker image management is now handled in the separate docker-rxiv-maker repository.
-# End users can use RXIV_ENGINE=DOCKER with any command for containerized execution using pre-built images.
+# Note: Docker and Podman engine modes have been deprecated.
+# For containerized execution, use the separate docker-rxiv-maker repository:
+# https://github.com/HenriquesLab/docker-rxiv-maker
 
 # ======================================================================
 # 📖 HELP AND DOCUMENTATION
@@ -391,9 +361,9 @@ help:
 	echo "  make clean        - Remove output files"; \
 	echo "  make arxiv        - Prepare arXiv submission"; \
 	echo ""; \
-	echo "🐳 Engine Modes:"; \
-	echo "  RXIV_ENGINE=LOCAL  (default) - Use local installations"; \
-	echo "  RXIV_ENGINE=DOCKER          - Use containerized execution"; \
+	echo "💻 Engine Mode:"; \
+	echo "  LOCAL only - Uses local installations"; \
+	echo "  For containers: use docker-rxiv-maker repository"; \
 	echo ""; \
 	echo "⚙️  Common Options:"; \
 	echo "  FORCE_FIGURES=true           - Force figure regeneration"; \

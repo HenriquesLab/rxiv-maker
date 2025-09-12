@@ -19,11 +19,9 @@ logger = get_logger()
 
 
 class ExecutionMode(Enum):
-    """Execution mode options."""
+    """Execution mode options (local execution only)."""
 
     LOCAL = "local"
-    DOCKER = "docker"
-    PODMAN = "podman"
 
 
 class StepStatus(Enum):
@@ -455,59 +453,7 @@ class LocalExecutionManager(ExecutionManager):
             )
 
 
-class ContainerExecutionManager(ExecutionManager):
-    """Container-based execution manager using Docker/Podman."""
-
-    def __init__(self, context: ExecutionContext, engine_type: str = "docker", **kwargs):
-        """Initialize container execution manager.
-
-        Args:
-            context: Execution context
-            engine_type: Container engine ("docker" or "podman")
-            **kwargs: Additional arguments
-        """
-        super().__init__(context, **kwargs)
-        self.engine_type = engine_type
-
-        # Import container engine and global manager
-        from ..global_container_manager import get_global_container_manager
-
-        # Use global container manager for shared engine instances
-        global_manager = get_global_container_manager()
-        self.engine = global_manager.get_container_engine(engine_type=engine_type)
-
-        logger.debug(f"ContainerExecutionManager initialized with {engine_type}")
-
-    def setup_pipeline(self) -> "ContainerExecutionManager":
-        """Setup the container execution pipeline.
-
-        Returns:
-            Self for method chaining
-        """
-        logger.debug(f"Setting up {self.engine_type} execution pipeline")
-
-        # Verify container engine is available
-        if not self.engine.is_available():
-            raise RuntimeError(f"{self.engine_type} is not available")
-
-        # Additional container setup can go here
-        return self
-
-    def execute(self) -> ExecutionResult:
-        """Execute the pipeline in containers.
-
-        Returns:
-            ExecutionResult with execution statistics
-        """
-        logger.info(f"ℹ️ Starting {self.engine_type} execution pipeline")
-
-        # For now, delegate to local execution
-        # Container-specific execution logic would be implemented here
-        local_manager = LocalExecutionManager(self.context, self.path_manager, self.progress.callback)
-        local_manager.steps = self.steps
-        local_manager.step_index = self.step_index
-
-        return local_manager.execute()
+# ContainerExecutionManager removed - container engines are no longer supported
 
 
 class AsyncLocalExecutionManager(LocalExecutionManager):
@@ -817,20 +763,36 @@ class AsyncLocalExecutionManager(LocalExecutionManager):
 def create_execution_manager(
     mode: Union[ExecutionMode, str], working_dir: Optional[Path] = None, output_dir: Optional[Path] = None, **kwargs
 ) -> ExecutionManager:
-    """Factory function to create appropriate execution manager.
+    """Factory function to create appropriate execution manager (local execution only).
 
     Args:
-        mode: Execution mode (LOCAL, DOCKER, PODMAN or string)
+        mode: Execution mode (LOCAL only - container engines deprecated)
         working_dir: Working directory for execution
         output_dir: Output directory for results
         **kwargs: Additional arguments for manager initialization
 
     Returns:
         Configured ExecutionManager instance
+
+    Raises:
+        ValueError: If container engine mode is requested (deprecated)
     """
-    # Convert string mode to enum
+    # Handle deprecated container engine requests
     if isinstance(mode, str):
-        mode = ExecutionMode(mode.lower())
+        mode_str = mode.lower()
+        if mode_str in ["docker", "podman"]:
+            raise ValueError(
+                f"Container engine '{mode_str}' is no longer supported. "
+                "Docker and Podman engines have been deprecated. "
+                "For containerized execution, please run rxiv-maker from within a Docker container. "
+                "See the documentation for migration instructions."
+            )
+
+        # Convert to enum for local mode
+        if mode_str == "local":
+            mode = ExecutionMode.LOCAL
+        else:
+            raise ValueError(f"Unsupported execution mode: {mode_str}")
 
     # Set default directories
     if working_dir is None:
@@ -846,8 +808,8 @@ def create_execution_manager(
         **{k: v for k, v in kwargs.items() if k in ExecutionContext.__dataclass_fields__},
     )
 
+    # Only LOCAL mode is supported
     if mode == ExecutionMode.LOCAL:
         return LocalExecutionManager(context, **kwargs)
     else:
-        engine_type = "docker" if mode == ExecutionMode.DOCKER else "podman"
-        return ContainerExecutionManager(context, engine_type=engine_type, **kwargs)
+        raise ValueError(f"Execution mode {mode} is not supported. Only LOCAL execution is available.")

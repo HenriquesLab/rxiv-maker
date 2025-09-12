@@ -139,7 +139,7 @@ class DOIValidator(BaseValidator):
         self.checksum_manager = get_bibliography_checksum_manager(self.manuscript_path)
 
         # Initialize advanced bibliography cache
-        self.bib_cache = get_bibliography_cache(Path(manuscript_path).name)
+        self.bib_cache = get_bibliography_cache(Path(manuscript_path).name, Path(manuscript_path))
 
     def _is_ci_environment(self) -> bool:
         """Check if running in CI environment."""
@@ -708,19 +708,39 @@ class DOIValidator(BaseValidator):
                             differences = self.comparator.compare_joss_metadata(entry, external_metadata)
                         elif source_name == "DataCite":
                             differences = self.comparator.compare_datacite_metadata(entry, external_metadata)
+
+                            # If DataCite shows publisher/journal mismatches, validate with CrossRef as fallback
+                            if differences and any("Publisher/Journal mismatch" in diff for diff in differences):
+                                crossref_errors = self._validate_with_crossref_fallback(
+                                    entry, doi, bib_file, differences
+                                )
+                                if crossref_errors:
+                                    # If CrossRef validation found fewer issues, use those instead
+                                    crossref_mismatches = [e for e in crossref_errors if e.level.value == "error"]
+                                    if len(crossref_mismatches) < len([d for d in differences if "mismatch" in d]):
+                                        errors.extend(crossref_errors)
+                                        validation_successful = True
+                                        logger.info(
+                                            f"DOI {doi} validated via CrossRef fallback (DataCite had more issues)"
+                                        )
+                                        break
                         else:
                             # For OpenAlex, SemanticScholar, and CrossRef
                             differences = self.comparator.compare_metadata(entry, external_metadata, source_name)
 
                         if differences:
                             for diff in differences:
+                                # Extract more detailed information for enhanced error reporting
+                                enhanced_message = self._create_enhanced_error_message(
+                                    diff, entry, entry_key, doi, source_name
+                                )
                                 errors.append(
                                     create_validation_error(
                                         ErrorCode.METADATA_MISMATCH,
-                                        diff,
+                                        enhanced_message,
                                         file_path=bib_file,
                                         context=f"Entry: {entry_key}, DOI: {doi}",
-                                        suggestion=f"Verify bibliography entry against {source_name} data",
+                                        suggestion=self._get_verification_suggestion(diff, source_name, entry_key),
                                     )
                                 )
                         else:
@@ -787,3 +807,137 @@ class DOIValidator(BaseValidator):
     def _fetch_crossref_metadata(self, doi: str):
         """Fetch metadata from CrossRef (backward compatibility)."""
         return self.crossref_client.fetch_metadata(doi)
+
+    def _create_enhanced_error_message(
+        self, diff: str, entry: dict[str, Any], entry_key: str, doi: str, source_name: str
+    ) -> str:
+        """Create enhanced error message with specific entry details."""
+        # Parse the difference message to extract type and details
+        if "Publisher/Journal mismatch" in diff:
+            # Extract journal and publisher info from BibTeX entry
+            journal = entry.get("journal", "")
+            publisher = entry.get("publisher", "")
+
+            base_msg = f"Publisher/Journal mismatch ({source_name}): {diff.split(': ', 1)[1] if ': ' in diff else diff}"
+            enhanced_msg = (
+                f"{base_msg}\n    📚 BibTeX entry '{entry_key}': journal='{journal}', publisher='{publisher}'"
+            )
+
+            return enhanced_msg
+        elif "Title mismatch" in diff:
+            title = entry.get("title", "")
+            base_msg = f"Title mismatch ({source_name}): {diff.split(': ', 1)[1] if ': ' in diff else diff}"
+            enhanced_msg = (
+                f"{base_msg}\n    📚 BibTeX entry '{entry_key}': title='{title[:100]}...'"
+                if len(title) > 100
+                else f"{base_msg}\n    📚 BibTeX entry '{entry_key}': title='{title}'"
+            )
+
+            return enhanced_msg
+        else:
+            # For other types of mismatches, just add entry key info
+            return f"{diff}\n    📚 BibTeX entry '{entry_key}'"
+
+    def _get_verification_suggestion(self, diff: str, source_name: str, entry_key: str) -> str:
+        """Get specific verification suggestion based on mismatch type."""
+        if "Publisher/Journal mismatch" in diff:
+            return f"Cross-check journal '{entry_key}' against multiple sources (CrossRef, publisher website) to verify correct publisher information"
+        elif "Title mismatch" in diff:
+            return f"Verify title of entry '{entry_key}' against the actual publication on {source_name} or publisher website"
+        else:
+            return f"Verify bibliography entry '{entry_key}' against {source_name} data and other authoritative sources"
+
+    def _validate_with_crossref_fallback(
+        self, entry: dict[str, Any], doi: str, bib_file: str, datacite_differences: list[str]
+    ) -> list[ValidationError]:
+        """Validate against CrossRef as a secondary source when DataCite shows mismatches."""
+        errors = []
+        entry_key = entry.get("entry_key", "unknown")
+
+        try:
+            # Fetch metadata from CrossRef
+            crossref_metadata = self.crossref_client.fetch_metadata(doi)
+            if crossref_metadata:
+                # Compare with CrossRef
+                crossref_differences = self.comparator.compare_metadata(entry, crossref_metadata, "CrossRef")
+
+                if not crossref_differences:
+                    # CrossRef validation passed - this suggests DataCite might have less specific data
+                    from ..validators.base_validator import ValidationError, ValidationLevel
+
+                    errors.append(
+                        ValidationError(
+                            level=ValidationLevel.INFO,
+                            message=f"CrossRef validation passed for DOI {doi} (DataCite showed differences)",
+                            file_path=bib_file,
+                            context=f"Entry: {entry_key}",
+                        )
+                    )
+                elif len(crossref_differences) < len(datacite_differences):
+                    # CrossRef has fewer differences - prefer CrossRef data
+                    for diff in crossref_differences:
+                        enhanced_message = self._create_enhanced_error_message(diff, entry, entry_key, doi, "CrossRef")
+                        errors.append(
+                            create_validation_error(
+                                ErrorCode.METADATA_MISMATCH,
+                                enhanced_message,
+                                file_path=bib_file,
+                                context=f"Entry: {entry_key}, DOI: {doi}",
+                                suggestion=self._get_verification_suggestion(diff, "CrossRef", entry_key),
+                            )
+                        )
+                else:
+                    # Both sources show similar issues - stick with original DataCite differences
+                    pass
+
+        except Exception as e:
+            logger.debug(f"CrossRef fallback validation failed for {doi}: {e}")
+
+        return errors
+
+    def _verify_with_web_search(self, journal_name: str, doi: str) -> dict[str, Any]:
+        """Verify journal/publisher information using web search as final fallback."""
+        try:
+            # Search for the journal to verify its publisher
+            search_query = f"{journal_name} journal publisher site:publisher.org OR site:crossref.org OR site:springer.com OR site:ieee.org"
+
+            # This is a simplified implementation - in practice, you might want to use
+            # a proper search API or scrape specific publisher databases
+            logger.debug(f"Web search verification not implemented for: {search_query}")
+
+            return {
+                "verified": False,
+                "confidence": 0.0,
+                "source": "web_search",
+                "publisher": None,
+                "notes": "Web search verification not yet implemented",
+            }
+
+        except Exception as e:
+            logger.debug(f"Web search verification failed: {e}")
+            return {
+                "verified": False,
+                "confidence": 0.0,
+                "source": "web_search_error",
+                "publisher": None,
+                "notes": f"Search failed: {str(e)}",
+            }
+
+    def _get_confidence_score(self, datacite_diff: str, crossref_diff: str = None) -> float:
+        """Calculate confidence score for validation results."""
+        confidence = 0.5  # Base confidence
+
+        # Higher confidence if both sources agree
+        if crossref_diff and datacite_diff:
+            if datacite_diff == crossref_diff:
+                confidence = 0.9  # High confidence when sources agree
+            else:
+                confidence = 0.3  # Low confidence when sources disagree
+        elif not datacite_diff and not crossref_diff:
+            confidence = 0.95  # Very high confidence when both validate successfully
+        elif datacite_diff and not crossref_diff:
+            confidence = 0.7  # Medium-high confidence - prefer CrossRef
+        elif crossref_diff and not datacite_diff:
+            confidence = 0.8  # High confidence - DataCite usually more authoritative
+
+        return confidence

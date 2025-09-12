@@ -270,56 +270,21 @@ class CleanupManager:
         """Clean cache files.
 
         Args:
-            cache_type: Type of cache to clean ('all', 'legacy', 'manuscript', 'global', 'python')
+            cache_type: Type of cache to clean ('all', 'manuscript', 'python')
         """
         self.log("Cleaning cache files...", "STEP")
 
         # Import cache utilities
-        from ...core.cache.cache_utils import (
-            cleanup_legacy_rxiv_cache_dir,
-            get_legacy_rxiv_cache_dir,
-            get_manuscript_cache_dir,
-            migrate_rxiv_cache_directory,
-        )
+        from ...core.cache.cache_utils import get_manuscript_cache_dir
 
         cleaned_dirs = []
         all_success = True
 
-        # Clean legacy cache directories
-        if cache_type in ["all", "legacy"]:
-            legacy_cache_dirs = [Path(".cache"), Path(".rxiv_cache")]
-
-            # Check for .rxiv_cache and offer migration before cleanup
-            legacy_rxiv_cache = get_legacy_rxiv_cache_dir()
-            if legacy_rxiv_cache.exists():
-                self.log("Found legacy .rxiv_cache directory. Attempting migration...", "INFO")
-                try:
-                    if migrate_rxiv_cache_directory(force=False):
-                        self.log("Successfully migrated .rxiv_cache to standardized location", "SUCCESS")
-                        # Clean up the now-empty legacy directory
-                        cleanup_legacy_rxiv_cache_dir()
-                    else:
-                        self.log("No migration needed or migration failed", "WARNING")
-                except Exception as e:
-                    self.log(f"Migration failed: {e}", "WARNING")
-
-            for cache_dir in legacy_cache_dirs:
-                try:
-                    if cache_dir.exists():
-                        success = self.platform.remove_directory(cache_dir)
-                        if success:
-                            cleaned_dirs.append(str(cache_dir))
-                            if self.verbose:
-                                self.log(f"Removed legacy cache directory: {cache_dir}")
-                except Exception as e:
-                    self.log(f"Failed to remove legacy cache directory {cache_dir}: {e}", "WARNING")
-                    all_success = False
-
-        # Clean manuscript-local cache
+        # Clean manuscript-local cache (.rxiv_cache directory)
         if cache_type in ["all", "manuscript"]:
-            manuscript_cache_dir = get_manuscript_cache_dir()
-            if manuscript_cache_dir and manuscript_cache_dir.exists():
-                try:
+            try:
+                manuscript_cache_dir = get_manuscript_cache_dir()
+                if manuscript_cache_dir.exists():
                     success = self.platform.remove_directory(manuscript_cache_dir)
                     if success:
                         cleaned_dirs.append(str(manuscript_cache_dir))
@@ -327,17 +292,15 @@ class CleanupManager:
                     else:
                         self.log(f"Failed to remove manuscript-local cache: {manuscript_cache_dir}", "WARNING")
                         all_success = False
-                except Exception as e:
-                    self.log(f"Error cleaning manuscript-local cache: {e}", "WARNING")
+                elif cache_type == "manuscript":
+                    self.log("No manuscript-local cache found to clean")
+            except RuntimeError:
+                # Not in manuscript directory
+                if cache_type == "manuscript":
+                    self.log("Cannot clean manuscript cache - not in manuscript directory", "WARNING")
                     all_success = False
-            elif cache_type == "manuscript":
-                self.log("No manuscript-local cache found to clean")
 
-        # Clean global cache
-        if cache_type in ["all", "global"]:
-            success = self.clean_standardized_cache()
-            if not success:
-                all_success = False
+        # Global cache no longer exists - skip
 
         # Clean Python cache directories
         if cache_type in ["all", "python"]:
@@ -370,35 +333,9 @@ class CleanupManager:
         return all_success
 
     def clean_standardized_cache(self, subfolder: str | None = None) -> bool:
-        """Clean standardized cache directories.
-
-        Args:
-            subfolder: Optional subfolder to clean (e.g., 'doi', 'advanced')
-                      If None, cleans the entire cache directory
-        """
-        from ...core.cache.cache_utils import get_cache_dir
-
-        try:
-            cache_dir = get_cache_dir(subfolder)
-
-            if cache_dir.exists():
-                cache_type = f" ({subfolder})" if subfolder else ""
-                self.log(f"Cleaning standardized cache{cache_type}: {cache_dir}", "STEP")
-
-                if self.platform.remove_directory(cache_dir):
-                    self.log(f"Removed standardized cache directory: {cache_dir}", "SUCCESS")
-                    return True
-                else:
-                    self.log(f"Failed to remove standardized cache directory: {cache_dir}", "WARNING")
-                    return False
-            else:
-                cache_type = f" ({subfolder})" if subfolder else ""
-                self.log(f"No standardized cache{cache_type} to clean", "INFO")
-                return True
-
-        except Exception as e:
-            self.log(f"Error cleaning standardized cache: {e}", "ERROR")
-            return False
+        """Clean standardized cache directory - deprecated, only manuscript-local cache exists now."""
+        self.log("Global cache no longer exists - using manuscript-local cache only", "INFO")
+        return True
 
     def run_full_cleanup(self) -> bool:
         """Run the complete cleanup process."""
