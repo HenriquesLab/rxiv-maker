@@ -617,7 +617,7 @@ Summarize the key conclusions of your study and their broader impact.
 Figure references will be automatically generated. Place your figure scripts in the
 FIGURES/ directory and reference them using standard markdown syntax:
 
-![Figure 1: Example figure caption](FIGURES/Figure__example.mmd)
+![Example figure caption](FIGURES/Figure__example.pdf){#fig:example}
 
 # Tables
 

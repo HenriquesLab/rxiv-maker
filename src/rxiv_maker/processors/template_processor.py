@@ -293,7 +293,13 @@ def generate_keywords(yaml_metadata):
 
 def generate_bibliography(yaml_metadata):
     """Generate LaTeX bibliography section from YAML metadata."""
-    bibliography = yaml_metadata.get("bibliography", "03_REFERENCES")
+    bibliography_config = yaml_metadata.get("bibliography", "03_REFERENCES")
+
+    # Handle both dict and string formats for backward compatibility
+    if isinstance(bibliography_config, dict):
+        bibliography = bibliography_config.get("file", "03_REFERENCES")
+    else:
+        bibliography = bibliography_config
 
     # Remove .bib extension if present
     if bibliography.endswith(".bib"):
