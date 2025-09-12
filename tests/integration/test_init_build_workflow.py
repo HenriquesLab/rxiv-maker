@@ -7,13 +7,21 @@ where generated templates don't work out of the box.
 
 import subprocess
 
+# Import the LaTeX check function from conftest
+import sys
+from pathlib import Path
+
 import pytest
+
+sys.path.append(str(Path(__file__).parent.parent))
+from conftest import check_latex_available
 
 
 @pytest.mark.xdist_group(name="init_build_workflow")
 class TestInitBuildWorkflow:
     """Test that init-generated manuscripts build successfully."""
 
+    @pytest.mark.skipif(not check_latex_available(), reason="LaTeX not available")
     def test_init_then_build_default_manuscript(self, temp_dir, monkeypatch):
         """Test that rxiv init creates a buildable manuscript (default path)."""
         monkeypatch.chdir(temp_dir)
@@ -64,6 +72,7 @@ class TestInitBuildWorkflow:
         assert pdf_file.exists(), "PDF file was not generated"
         assert pdf_file.stat().st_size > 0, "Generated PDF is empty"
 
+    @pytest.mark.skipif(not check_latex_available(), reason="LaTeX not available")
     def test_init_then_build_custom_manuscript(self, temp_dir, monkeypatch):
         """Test that init + build works with custom manuscript directory."""
         monkeypatch.chdir(temp_dir)
@@ -102,6 +111,7 @@ class TestInitBuildWorkflow:
         pdf_file = manuscript_dir / "output" / f"{custom_name}.pdf"
         assert pdf_file.exists(), f"Custom PDF file {custom_name}.pdf not generated"
 
+    @pytest.mark.skipif(not check_latex_available(), reason="LaTeX not available")
     def test_figure_generation_during_build(self, temp_dir, monkeypatch):
         """Test that the mermaid figure is properly generated during build."""
         monkeypatch.chdir(temp_dir)

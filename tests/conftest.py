@@ -388,9 +388,36 @@ def minimal_manuscript(minimal_manuscript_template, temp_dir):
 def check_latex_available():
     """Check if LaTeX is available in the system."""
     try:
-        result = subprocess.run(["pdflatex", "--version"], capture_output=True, text=True)
-        return result.returncode == 0
-    except (FileNotFoundError, OSError):
+        # First check if pdflatex exists and runs
+        result = subprocess.run(["pdflatex", "--version"], capture_output=True, text=True, timeout=10)
+        if result.returncode != 0:
+            return False
+
+        # Additional check: try to compile a minimal LaTeX document
+        import tempfile
+
+        test_content = r"""
+\documentclass{article}
+\begin{document}
+Test
+\end{document}
+"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = Path(tmpdir) / "test.tex"
+            test_file.write_text(test_content)
+
+            compile_result = subprocess.run(
+                ["pdflatex", "-interaction=nonstopmode", "-output-directory", tmpdir, str(test_file)],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            # Check if PDF was created successfully
+            pdf_file = Path(tmpdir) / "test.pdf"
+            return compile_result.returncode == 0 and pdf_file.exists() and pdf_file.stat().st_size > 0
+
+    except (FileNotFoundError, OSError, subprocess.TimeoutExpired):
         return False
 
 
