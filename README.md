@@ -6,28 +6,52 @@
 
 <img src="src/logo/logo-rxiv-maker.svg" align="right" width="200" style="margin-left: 20px;"/>
 
-**Write scientific preprints in Markdown. Generate publication-ready PDFs instantly.**
+**Write scientific papers in Markdown. Get publication-ready PDFs with automated figures and citations.**
 
-Rxiv-Maker transforms scientific preprint writing by converting enhanced Markdown into professional PDFs with automated figure generation, citation management, and LaTeX typesetting - no LaTeX knowledge required. One beautiful template, infinite possibilities.
+Perfect for biology researchers who want professional manuscripts without LaTeX complexity. Your analysis code runs automatically to generate up-to-date figures and results.
 
-## ✨ Why Rxiv-Maker?
+## 🔄 How it Works
 
-### 🎯 **For Researchers**
-- **Write in Markdown**: Focus on content, not formatting
-- **Automated Figures**: Python/R scripts become publication figures  
-- **Smart Citations**: BibTeX integration with cross-references
-- **Instant PDFs**: From Markdown to camera-ready in seconds
+Simple 4-step process:
 
-### 🚀 **For Teams**  
-- **Git-Friendly**: Version control for manuscripts and figures
-- **Reproducible**: All figures generated from code
-- **Collaborative**: Standard tools, no vendor lock-in
-- **Multi-Platform**: Works everywhere with local installation
+1. **📝 Write in Markdown** - Use familiar markdown syntax (for advanced users, you can even embed Python code on the manuscript)
+2. **🔄 Smart Processing** - Rxiv-Maker automatically runs your code and formats everything professionally
+3. **📊 Live Figures** - Your scripts generate up-to-date plots and results in real-time
+4. **📄 Professional PDF** - Get LaTeX-quality output without learning LaTeX
 
-### 📈 **For Publishing**
-- **arXiv Ready**: Generate submission packages automatically
-- **Track Changes**: Visual diff between manuscript versions
-- **Quality Assurance**: Built-in validation and error checking
+*From simple Markdown with analysis code to publication-ready PDF in seconds.*
+
+## 🌟 Example in Action
+
+See how a simple analysis becomes a professional manuscript:
+
+**What you write (Markdown):**
+```markdown
+# Introduction
+
+{{py:exec
+import pandas as pd
+df = pd.read_csv("FIGURES/DATA/results.csv")
+correlation = df.corr().iloc[0,1]
+sample_size = len(df)
+}}
+
+Our analysis of {{py:get sample_size}} samples in Figure @fig:results shows
+significant improvement over previous methods [@smith2023; @jones2024].
+
+![Research Results](FIGURES/generate_plot.py)
+{#fig:results}
+
+The correlation coefficient was r = {{py:get correlation:.2f}} (p < 0.001).
+```
+
+**What happens automatically:**
+- 🐍 Python code runs and calculates your statistics
+- 📊 Figure script executes to create your plot
+- 📚 Citations get formatted and bibliography is generated
+- 🔢 Cross-references are numbered automatically
+
+**What you get:** Professional PDF with live data, properly formatted citations, numbered figures, and LaTeX-quality typesetting.
 
 ## 🚀 Installation
 
@@ -48,28 +72,12 @@ pip install rxiv-maker
 ```bash
 # 1. Install system dependencies
 sudo apt update
-sudo apt install python3-pip pipx texlive-latex-recommended texlive-fonts-recommended
+sudo apt install python3-pip pipx texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended texlive-fonts-extra texlive-science fonts-liberation fonts-dejavu-core fonts-lmodern fontconfig
 
 # 2. Install rxiv-maker
 pipx install rxiv-maker
 
 # 3. Verify installation
-rxiv check-installation
-```
-
-**Red Hat/CentOS/Fedora:**
-```bash
-# 1. Install system dependencies
-sudo dnf install python3-pip texlive-latex texlive-fonts-recommended
-
-# Install pipx
-python3 -m pip install --user pipx
-python3 -m pipx ensurepath
-
-# 2. Install rxiv-maker
-pipx install rxiv-maker
-
-# 3. Verify installation  
 rxiv check-installation
 ```
 
@@ -85,7 +93,7 @@ rxiv check-installation
 
 # Install system dependencies
 brew install pipx
-brew install --cask mactex-no-gui  # Full LaTeX installation
+brew install texlive # Full LaTeX installation
 ```
 
 **Installation:**
@@ -97,40 +105,19 @@ pipx install rxiv-maker
 rxiv check-installation
 ```
 
-**Alternative (minimal LaTeX):**
-```bash
-# For smaller LaTeX installation
-brew install pipx basictex
-pipx install rxiv-maker
-```
-
 </details>
 
 <details>
 <summary><strong>🪟 Windows Installation</strong></summary>
 
-**Option 1: WSL2 (Recommended)**
+**WSL2 (Recommended)**
 ```bash
 # Install WSL2 with Ubuntu (Windows PowerShell as Administrator)
 wsl --install -d Ubuntu-22.04
 
 # Restart computer, then launch Ubuntu and run:
 sudo apt update
-sudo apt install python3-pip pipx texlive-latex-recommended
-pipx install rxiv-maker
-rxiv check-installation
-```
-
-**Option 2: Native Windows**
-```powershell
-# Install Chocolatey (PowerShell as Administrator)
-Set-ExecutionPolicy Bypass -Scope Process -Force
-iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-
-# Install dependencies
-choco install python pipx miktex
-
-# Install rxiv-maker
+sudo apt install python3-pip pipx texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended texlive-fonts-extra texlive-science fonts-liberation fonts-dejavu-core fonts-lmodern fontconfig
 pipx install rxiv-maker
 rxiv check-installation
 ```
@@ -151,121 +138,52 @@ rxiv --help             # View available commands
 ```bash
 # Create manuscript 
 rxiv init my-paper
-cd my-paper
 
 # Generate PDF
-rxiv pdf
+rxiv pdf my-paper
 ```
 
 **🎯 [Complete Getting Started Guide →](docs/quick-start/first-manuscript.md)**
 
-## 🏆 Key Features
+## ⚙️ Advanced Features
 
-### 🎨 **Enhanced Markdown**
-- Scientific cross-references (`@fig:plot`, `@eq:formula`)
-- Auto-numbered figures, tables, and equations
-- Mathematical notation with LaTeX math
-- Code blocks with syntax highlighting
+**🐍 Python Integration**
+- Execute analysis code directly in your manuscript with `{{py:exec ...}}` and `{{py:get variable}}`
+- Real-time data analysis and visualization
+- Matplotlib, ggplot2, and custom plotting support
 
-### 📊 **Automated Figures & Data Analysis**
-- Execute Python/R scripts during PDF generation
-- **🐍 NEW: Jupyter-like executable Python code blocks**
-- Real-time data analysis with `{{py:exec}}` and `{{py:get variable}}`
-- Matplotlib, ggplot2, and custom visualizations
-- Version-controlled figure code and analysis modules
-
-### 📚 **Citation Management**
+**📚 Smart Citations & References**
 - BibTeX integration with `[@citation]` syntax
-- Automatic bibliography generation
-- Multiple citation styles (APA, Nature, etc.)
-- CrossRef DOI resolution
+- Automatic bibliography generation and formatting
+- CrossRef DOI resolution and validation
 
-### 🔧 **Developer Experience**
-- Modern CLI with rich output and progress bars
-- Consistent environments with package management
-- Git-friendly workflow with meaningful diffs
-- Comprehensive validation and error reporting
+**🎨 Scientific Writing Features**
+- Auto-numbered figures, tables, and equations
+- Cross-references (`@fig:plot`, `@eq:formula`)
+- Mathematical notation with LaTeX math support
+- Professional formatting and typesetting
 
-## 🌟 Example Manuscript
+**🔧 Workflow & Collaboration**
+- Git-friendly version control for manuscripts
+- Modern CLI with progress indicators
+- Comprehensive validation and error checking
+- Multi-platform support (Windows, macOS, Linux)
 
-**Input Markdown:**
-```markdown
-# Introduction
+## 📚 Documentation & Help
 
-{{py:exec
-import pandas as pd
-df = pd.read_csv("FIGURES/DATA/results.csv")
-correlation = df.corr().iloc[0,1]
-sample_size = len(df)
-}}
+**📖 Learning Resources**
+| **Start Here** | **Purpose** | **Time** |
+|-------------|-----------|--------|
+| **[🚀 Getting Started](docs/quick-start/first-manuscript.md)** | Your first manuscript in 5 minutes | 5 min |
+| **[📚 User Guide](docs/guides/user_guide.md)** | Complete workflows & all features | 30 min |
+| **[🐍 Python Guide](docs/guides/python-execution-guide.md)** | Data analysis & code execution | 15 min |
+| **[🔧 Troubleshooting](docs/troubleshooting/troubleshooting.md)** | Fix common issues | As needed |
 
-Our analysis of {{py:get sample_size}} samples in Figure @fig:results shows 
-significant improvement over previous methods [@smith2023; @jones2024].
-
-![Research Results](FIGURES/generate_plot.py)
-{#fig:results}
-
-The correlation coefficient was r = {{py:get correlation:.2f}} (p < 0.001).
-
-## References
-```
-
-**Output:** Professional PDF with numbered figures, live data integration, citations, and LaTeX-quality typesetting.
-
-## 📖 Documentation
-
-| Guide | Purpose | Time |
-|-------|---------|------|
-| **[🚀 Getting Started](docs/quick-start/first-manuscript.md)** | Installation → First PDF | 5 min |
-| **[📚 User Guide](docs/guides/user_guide.md)** | Complete workflows & features | 30 min |
-| **[🐍 Python Execution Guide](docs/guides/python-execution-guide.md)** | Jupyter-like code blocks & data analysis | 15 min |
-| **[⚙️ CLI Reference](docs/reference/cli-reference.md)** | All commands & options | 10 min |
-| **[🔧 Troubleshooting](docs/troubleshooting/troubleshooting.md)** | Common issues & solutions | As needed |
-| **[👩‍💻 Developer Guide](docs/development/developer-guide.md)** | Contributing & development | 45 min |
-
-## 🎯 Use Cases
-
-### 📄 **Research Preprints**
-- arXiv preprints with automated submission packages
-- bioRxiv and other preprint servers with professional formatting
-- Conference papers with consistent styling
-
-### 📊 **Reports & Analyses**  
-- Data analysis reports with live figures
-- Technical documentation with code examples
-- Grant applications with professional formatting
-
-### 🎓 **Academic Workflows**
-- Thesis chapters with cross-references
-- Collaborative writing with version control
-- Supplementary materials with automated generation
-
-## 🏃‍♀️ Alternative Workflows
-
-**Need specialized environments?**
-
-- **🌐 Google Colab**: Browser-based editing and PDF generation  
-- **⚡ GitHub Actions**: Automated cloud builds for teams
-- **🐳 Docker**: Use [docker-rxiv-maker](https://github.com/HenriquesLab/docker-rxiv-maker) for containerized execution
-
-## 🚀 Essential Commands
-
-```bash
-rxiv init my-paper          # Create new manuscript
-rxiv pdf                    # Generate PDF  
-rxiv validate              # Check manuscript quality
-rxiv arxiv                 # Prepare arXiv submission
-rxiv track-changes v1 v2   # Visual version comparison
-```
-
-**[📖 Complete Command Reference →](docs/reference/cli-reference.md)**
-
-## 🤝 Community
-
-- **💬 [GitHub Discussions](https://github.com/henriqueslab/rxiv-maker/discussions)** - Ask questions, share tips
-- **🐛 [Issues](https://github.com/henriqueslab/rxiv-maker/issues)** - Report bugs, request features  
-- **📚 [Examples](examples/)** - Real-world manuscript examples
-- **🧪 [Google Colab](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_colab.ipynb)** - Try without installing
+**🤝 Community & Support**
+- **💬 [Ask Questions](https://github.com/henriqueslab/rxiv-maker/discussions)** - Get help from the community
+- **🐛 [Report Issues](https://github.com/henriqueslab/rxiv-maker/issues)** - Found a bug? Let us know
+- **🧪 [Try Online](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_colab.ipynb)** - Test without installing
+- **📚 [See Examples](examples/)** - Real manuscript examples
 
 ## 🏗️ Contributing
 

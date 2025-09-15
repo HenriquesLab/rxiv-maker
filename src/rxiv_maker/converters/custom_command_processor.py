@@ -53,9 +53,11 @@ def process_custom_commands(text: MarkdownContent) -> LatexContent:
     text = re.sub(r"`[^`]+`", protect_inline_code, text)
 
     # Process custom commands with new 3-step Python execution model
+    # Store original text for accurate line number calculation
+    original_text_for_line_numbers = text
     text = _process_blindtext_commands(text)
     text = _process_tex_commands(text)
-    text = _process_python_commands_three_step(text)
+    text = _process_python_commands_three_step(text, original_text_for_line_numbers)
     # Future: text = _process_r_commands(text)
 
     # Restore protected code blocks
@@ -214,7 +216,7 @@ def _process_tex_commands(text: MarkdownContent) -> LatexContent:
     return "".join(result)
 
 
-def _process_python_commands_three_step(text: MarkdownContent) -> LatexContent:
+def _process_python_commands_three_step(text: MarkdownContent, original_text: MarkdownContent = None) -> LatexContent:
     """Process Python execution commands using enhanced 3-step execution model.
 
     Step 0: Process {{py:}} blocks - execute and display output
@@ -223,7 +225,8 @@ def _process_python_commands_three_step(text: MarkdownContent) -> LatexContent:
     Step 3: Continue with LaTeX conversion (Python code already resolved)
 
     Args:
-        text: Markdown content with Python commands
+        text: Markdown content with Python commands (potentially preprocessed)
+        original_text: Original markdown content before preprocessing (for accurate line numbers)
 
     Returns:
         LaTeX content with Python commands processed
@@ -243,7 +246,8 @@ def _process_python_commands_three_step(text: MarkdownContent) -> LatexContent:
     text = _process_python_inline_commands(text, executor)
 
     # STEP 1: Find and execute all {{py:exec}} blocks in order
-    exec_blocks = _find_python_exec_blocks(text)
+    # Use original text for accurate line numbers if available
+    exec_blocks = _find_python_exec_blocks(text, original_text)
 
     for exec_block in exec_blocks:
         try:
@@ -259,19 +263,42 @@ def _process_python_commands_three_step(text: MarkdownContent) -> LatexContent:
 
             logger = get_logger()
 
-            error_msg = f"Python execution error in exec block (line {exec_block['line_number']}): {str(e)}"
-            logger.error(error_msg)
+            # Create more informative error message
+            error_lines = str(e).split('\n')
+            main_error = error_lines[0] if error_lines else str(e)
+
+            # Show a preview of the code block for context
+            code_preview = exec_block["code"].strip()
+            lines = code_preview.split('\n')
+            preview_lines = lines[:3]  # Show first 3 lines
+            if len(lines) > 3:
+                preview_lines.append('...')
+            code_snippet = '\n    '.join(preview_lines)
+
+            error_msg = f"""Python execution error in exec block starting at line {exec_block['line_number']}:
+
+Error: {main_error}
+
+Code block preview:
+    {code_snippet}
+
+This error occurred while executing the {{{{py:exec}}}} block in the manuscript."""
 
             # Import here to avoid circular imports
             from .python_executor import PythonExecutionError
 
-            # Re-raise as PythonExecutionError to halt the build process
+            # Log the detailed error message once, then raise a simpler version to avoid repetition
+            logger.error(error_msg)
+
+            # Re-raise with a simpler message to avoid duplication in higher-level error handling
+            simple_msg = f"Python execution error in exec block starting at line {exec_block['line_number']}: {main_error}"
+
             if isinstance(e, PythonExecutionError):
                 # Preserve the original exception but ensure it halts the build
-                raise PythonExecutionError(error_msg) from e
+                raise PythonExecutionError(simple_msg) from e
             else:
                 # Convert other exceptions to PythonExecutionError
-                raise PythonExecutionError(error_msg) from e
+                raise PythonExecutionError(simple_msg) from e
 
     # Remove all {{py:exec}} blocks from text (they were initialization only)
     text = _remove_python_exec_blocks(text)
@@ -282,12 +309,23 @@ def _process_python_commands_three_step(text: MarkdownContent) -> LatexContent:
     return text
 
 
-def _find_python_exec_blocks(text: MarkdownContent) -> list[dict]:
-    """Find all {{py:exec}} blocks in text and return their details."""
+def _find_python_exec_blocks(text: MarkdownContent, original_text: MarkdownContent = None) -> list[dict]:
+    """Find all {{py:exec}} blocks in text and return their details.
+
+    Args:
+        text: Text to search for Python blocks (potentially preprocessed)
+        original_text: Original text for accurate line number calculation
+
+    Returns:
+        List of dictionaries with block details including accurate line numbers
+    """
     exec_blocks = []
 
+    # Use original text for line number calculation if available
+    line_number_text = original_text if original_text is not None else text
+
     # Split text into lines to calculate line numbers
-    lines = text.split("\n")
+    lines = line_number_text.split("\n")
     char_to_line = {}
     char_pos = 0
     for line_num, line in enumerate(lines, 1):
@@ -317,7 +355,24 @@ def _find_python_exec_blocks(text: MarkdownContent) -> list[dict]:
                 code = text[start : j - 2].strip()  # Exclude the }}
 
                 # Calculate line number where this block starts
-                line_number = char_to_line.get(i, 1)
+                if original_text is not None:
+                    # Find the position of this block in the original text
+                    # Look for the same {{py:exec block content in original text
+                    original_pos = original_text.find(full_match)
+                    if original_pos >= 0:
+                        # Create character-to-line mapping for original text
+                        orig_lines = original_text.split("\n")
+                        orig_char_to_line = {}
+                        orig_char_pos = 0
+                        for orig_line_num, orig_line in enumerate(orig_lines, 1):
+                            for _ in range(len(orig_line) + 1):  # +1 for newline
+                                orig_char_to_line[orig_char_pos] = orig_line_num
+                                orig_char_pos += 1
+                        line_number = orig_char_to_line.get(original_pos, 1)
+                    else:
+                        line_number = 1  # Fallback
+                else:
+                    line_number = char_to_line.get(i, 1)
 
                 exec_blocks.append(
                     {"full_match": full_match, "code": code, "start_pos": i, "end_pos": j, "line_number": line_number}
@@ -416,12 +471,25 @@ def _process_python_block_commands(text: MarkdownContent, executor) -> LatexCont
 
 def _process_python_inline_commands(text: MarkdownContent, executor) -> LatexContent:
     """Process inline {py: expression} commands."""
+    # Split text into lines to calculate line numbers for tracking
+    lines = text.split('\n')
 
     def process_inline_command(match: re.Match[str]) -> str:
         expression = match.group(1).strip()
+
+        # Calculate line number for this match
+        line_number = None
+        match_start = match.start()
+        char_count = 0
+        for line_idx, line in enumerate(lines):
+            if char_count + len(line) >= match_start:
+                line_number = line_idx + 1
+                break
+            char_count += len(line) + 1  # +1 for newline
+
         try:
             # Execute the expression as inline code
-            result = executor.execute_inline(expression)
+            result = executor.execute_inline(expression, line_number=line_number, file_path="manuscript")
             return result
         except Exception as e:
             return f"[Error: {str(e)}]"
@@ -435,11 +503,24 @@ def _process_python_inline_commands(text: MarkdownContent, executor) -> LatexCon
 
 def _process_python_get_blocks(text: MarkdownContent, executor) -> LatexContent:
     """Process all {{py:get}} blocks using the initialized Python context."""
+    # Split text into lines to calculate line numbers for tracking
+    lines = text.split('\n')
 
     def process_get_command(match: re.Match[str]) -> str:
         variable_name = match.group(1).strip()
+
+        # Calculate line number for this match
+        line_number = None
+        match_start = match.start()
+        char_count = 0
+        for line_idx, line in enumerate(lines):
+            if char_count + len(line) >= match_start:
+                line_number = line_idx + 1
+                break
+            char_count += len(line) + 1  # +1 for newline
+
         try:
-            result = executor.get_variable_value(variable_name)
+            result = executor.get_variable_value(variable_name, line_number=line_number, file_path="manuscript")
             return str(result) if result is not None else ""
         except Exception as e:
             return f"[Error retrieving {variable_name}: {str(e)}]"

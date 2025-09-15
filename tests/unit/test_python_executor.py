@@ -4,6 +4,7 @@ This module tests the secure Python execution functionality,
 including security restrictions, error handling, and output formatting.
 """
 
+import os
 import pytest
 
 from rxiv_maker.converters.python_executor import (
@@ -354,6 +355,145 @@ class TestGlobalExecutor:
         # Check it doesn't exist in second executor
         result = executor2.execute_inline("isolated_var")
         assert "not defined" in result.lower()
+
+
+class TestManuscriptPathIntegration:
+    """Test MANUSCRIPT_PATH variable functionality."""
+
+    def setup_method(self):
+        """Set up test executor for each test."""
+        from rxiv_maker.core.environment_manager import EnvironmentManager
+        self.original_env = os.environ.copy()
+        EnvironmentManager.clear_rxiv_vars()
+        self.executor = PythonExecutor()
+
+    def teardown_method(self):
+        """Clean up after each test."""
+        os.environ.clear()
+        os.environ.update(self.original_env)
+
+    def test_manuscript_path_from_environment(self, tmp_path):
+        """Test that MANUSCRIPT_PATH is correctly set from environment variable."""
+        from rxiv_maker.core.environment_manager import EnvironmentManager
+
+        # Create a test manuscript directory
+        manuscript_dir = tmp_path / "test_manuscript"
+        manuscript_dir.mkdir()
+
+        # Set the environment variable
+        EnvironmentManager.set_manuscript_path(manuscript_dir)
+
+        # Create a new executor to pick up the environment variable
+        executor = PythonExecutor()
+
+        # Execute code that uses MANUSCRIPT_PATH
+        result = executor.execute_inline("MANUSCRIPT_PATH")
+        assert result == str(manuscript_dir.resolve())
+
+    def test_manuscript_path_in_initialization_block(self, tmp_path):
+        """Test MANUSCRIPT_PATH availability in initialization blocks."""
+        from rxiv_maker.core.environment_manager import EnvironmentManager
+
+        manuscript_dir = tmp_path / "init_test_manuscript"
+        manuscript_dir.mkdir()
+
+        EnvironmentManager.set_manuscript_path(manuscript_dir)
+
+        executor = PythonExecutor()
+
+        # Test in initialization block
+        code = """
+manuscript_location = MANUSCRIPT_PATH
+print(f"Manuscript is at: {manuscript_location}")
+"""
+        result = executor.execute_block(code)
+        assert str(manuscript_dir.resolve()) in result
+
+        # Verify variable persists
+        location = executor.get_variable_value("manuscript_location")
+        assert location == str(manuscript_dir.resolve())
+
+    def test_manuscript_path_with_relative_operations(self, tmp_path):
+        """Test MANUSCRIPT_PATH with relative file operations."""
+        from rxiv_maker.core.environment_manager import EnvironmentManager
+        import os
+
+        # Create test manuscript structure
+        manuscript_dir = tmp_path / "relative_test"
+        manuscript_dir.mkdir()
+        data_dir = manuscript_dir / "DATA"
+        data_dir.mkdir()
+        test_file = data_dir / "test_data.txt"
+        test_file.write_text("test content\nline 2\n")
+
+        EnvironmentManager.set_manuscript_path(manuscript_dir)
+
+        executor = PythonExecutor()
+
+        # Test relative path operations
+        code = """
+import os
+# Change to manuscript directory
+os.chdir(MANUSCRIPT_PATH)
+# Test relative file access
+with open('DATA/test_data.txt', 'r') as f:
+    content = f.read()
+line_count = len(content.strip().split('\\n'))
+"""
+        executor.execute_block(code)
+
+        # Verify the operation worked
+        line_count = executor.get_variable_value("line_count")
+        assert line_count == 2
+
+    def test_manuscript_path_fallback_behavior(self):
+        """Test behavior when MANUSCRIPT_PATH environment variable is not set."""
+        from rxiv_maker.core.environment_manager import EnvironmentManager
+        import os
+
+        # Ensure no manuscript path is set
+        if EnvironmentManager.MANUSCRIPT_PATH in os.environ:
+            del os.environ[EnvironmentManager.MANUSCRIPT_PATH]
+
+        executor = PythonExecutor()
+
+        # Should still have MANUSCRIPT_PATH but it should be current working directory
+        result = executor.execute_inline("MANUSCRIPT_PATH")
+
+        # Should be some valid path (either detected manuscript dir or cwd)
+        assert result.startswith("/")  # Should be an absolute path
+        assert len(result) > 1  # Should not be empty
+
+    def test_manuscript_path_in_subprocess_execution(self, tmp_path):
+        """Test MANUSCRIPT_PATH in subprocess execution mode."""
+        from rxiv_maker.core.environment_manager import EnvironmentManager
+
+        manuscript_dir = tmp_path / "subprocess_test"
+        manuscript_dir.mkdir()
+
+        EnvironmentManager.set_manuscript_path(manuscript_dir)
+
+        executor = PythonExecutor()
+
+        # Test with code that would run in subprocess (complex operation)
+        code = """
+import subprocess
+import sys
+import os
+
+# Get manuscript path from environment
+manuscript_path = MANUSCRIPT_PATH
+print(f"Subprocess MANUSCRIPT_PATH: {manuscript_path}")
+
+# Verify it's the correct path
+expected_path = r"{}"
+is_correct = manuscript_path == expected_path
+print(f"Path is correct: {is_correct}")
+""".format(str(manuscript_dir.resolve()).replace("\\", "\\\\"))
+
+        result = executor.execute_block(code)
+        assert str(manuscript_dir.resolve()) in result
+        assert "Path is correct: True" in result
 
 
 class TestEdgeCases:

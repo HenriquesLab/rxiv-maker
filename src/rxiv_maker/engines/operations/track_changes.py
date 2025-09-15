@@ -504,9 +504,15 @@ class TrackChangesManager:
             except Exception as e:
                 self.log(f"Warning: Failed to copy style files using PathManager: {e}")
                 self._fallback_copy_style_files()
+                return
         else:
             # Fallback to manual copying
             self._fallback_copy_style_files()
+            return
+
+        # Always copy bibliography and figures regardless of PathManager success
+        # (PathManager only handles style files)
+        self._copy_bibliography_and_figures()
 
     def _fallback_copy_style_files(self):
         """Fallback method for copying style files when PathManager is not available."""
@@ -525,8 +531,12 @@ class TrackChangesManager:
             else:
                 self.log(f"Warning: Style file {src_path} not found")
 
+        # Also copy bibliography and figures when using fallback
+        self._copy_bibliography_and_figures()
+
+    def _copy_bibliography_and_figures(self):
+        """Copy bibliography and figures files needed for LaTeX compilation."""
         # Copy bibliography from current version
-        self.output_dir / "current"
         bib_src = self.manuscript_path / "03_REFERENCES.bib"
         bib_dst = self.output_dir / "03_REFERENCES.bib"
 

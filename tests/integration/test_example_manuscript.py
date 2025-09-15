@@ -47,7 +47,12 @@ class TestExampleManuscript:
 
     @pytest.fixture
     def example_manuscript_copy(self, execution_engine):
-        """Create a temporary copy of EXAMPLE_MANUSCRIPT for testing."""
+        """Create a temporary copy of EXAMPLE_MANUSCRIPT for testing.
+
+        CRITICAL: This copy includes the DATA directory and all Python execution
+        will happen with the manuscript directory as the working directory.
+        Paths like 'DATA/arxiv_monthly_submissions.csv' should work correctly.
+        """
         with tempfile.TemporaryDirectory() as tmpdir:
             src_path = Path("EXAMPLE_MANUSCRIPT")
             dst_path = Path(tmpdir) / "EXAMPLE_MANUSCRIPT"

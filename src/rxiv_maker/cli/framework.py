@@ -1191,7 +1191,7 @@ class BuildCommand(BaseCommand):
                 elif "figures" in str(e).lower():
                     self.info_message("💡 Tip: Check your figure scripts or use --force-figures")
 
-                raise CommandExecutionError(f"Build failed") from e
+                raise CommandExecutionError("Build failed") from e
 
         # Handle success messages outside progress context to avoid persistent progress bar
         if success and pdf_path:

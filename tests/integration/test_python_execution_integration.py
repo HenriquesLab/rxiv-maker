@@ -3,6 +3,9 @@
 This module tests the complete integration of Python execution functionality
 including the custom command processor, Python executor, and markdown-to-LaTeX
 conversion pipeline.
+
+IMPORTANT: Python execution happens with the manuscript directory as the working directory,
+so paths like 'DATA/file.csv' should be relative to the manuscript directory.
 """
 
 from rxiv_maker.converters.custom_command_processor import process_custom_commands

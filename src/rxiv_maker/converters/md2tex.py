@@ -105,7 +105,11 @@ def convert_markdown_to_latex(content: MarkdownContent, is_supplementary: bool =
     # This is essential for security - commented content should NEVER be processed
     content = preprocess_comments(content)
 
-    # SECOND: Convert fenced code blocks BEFORE protecting backticks
+    # CRITICAL: Process custom commands (Python/R execution) BEFORE any code protection
+    # This ensures Python code can be extracted properly before LaTeX processing interferes
+    content = process_custom_commands(content)
+
+    # SECOND: Convert fenced code blocks AFTER Python execution
     content = convert_code_blocks_to_latex(content)
 
     # Process enhanced math blocks ($$...$$ {#eq:id})
@@ -135,9 +139,6 @@ def convert_markdown_to_latex(content: MarkdownContent, is_supplementary: bool =
     # Process <newpage> and <float-barrier> markers early in the pipeline
     content = _process_newpage_markers(content)
     content = _process_float_barrier_markers(content)
-
-    # Process custom commands (blindtext, future Python/R commands)
-    content = process_custom_commands(content)
 
     # Convert lists BEFORE other processing to avoid conflicts
     content = convert_lists_to_latex(content)

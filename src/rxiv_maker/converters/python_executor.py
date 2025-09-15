@@ -1,7 +1,7 @@
 """Python code execution for markdown commands.
 
 This module provides execution of Python code within markdown documents.
-It includes output capture and error handling.
+It includes output capture and error handling with comprehensive reporting.
 """
 
 import io
@@ -9,6 +9,7 @@ import json
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
@@ -35,6 +36,13 @@ class PythonExecutor:
         self.manuscript_dir: Optional[Path] = None
         self.initialization_imports = []  # Track imports from initialization blocks
         self._detect_manuscript_directory()
+
+        # Initialize execution reporter for tracking Python activities
+        try:
+            from ..utils.python_execution_reporter import get_python_execution_reporter
+            self.reporter = get_python_execution_reporter()
+        except ImportError:
+            self.reporter = None
 
     def _detect_manuscript_directory(self) -> None:
         """Detect the manuscript directory structure for src/py path integration."""
@@ -148,20 +156,29 @@ class PythonExecutor:
         lines = code.split("\n")
         filtered_lines = []
 
+        # DEBUG: Save before and after filtering
+        with open("/tmp/comment_filter_debug.txt", "w") as f:
+            f.write("=== BEFORE COMMENT FILTERING ===\n")
+            for i, line in enumerate(lines, 1):
+                f.write(f"{i:2d}: {repr(line)}\n")
+
         for line in lines:
             # Handle inline comments - everything after # is a comment
             # But we need to be careful about # inside strings
             comment_pos = self._find_python_comment_start(line)
 
-            if comment_pos == 0:
-                # Entire line is a comment, replace with empty line to preserve line numbers
-                filtered_lines.append("")
-            elif comment_pos > 0:
-                # Inline comment, keep code before #
+            if comment_pos >= 0:
+                # Comment found, keep everything before the #
                 filtered_lines.append(line[:comment_pos].rstrip())
             else:
                 # No comment found, keep entire line
                 filtered_lines.append(line)
+
+        # DEBUG: Save filtered result
+        with open("/tmp/comment_filter_debug.txt", "a") as f:
+            f.write("\n=== AFTER COMMENT FILTERING ===\n")
+            for i, line in enumerate(filtered_lines, 1):
+                f.write(f"{i:2d}: {repr(line)}\n")
 
         return "\n".join(filtered_lines)
 
@@ -182,7 +199,8 @@ class PythonExecutor:
 
         # Check if line starts with # (full line comment)
         if line.lstrip().startswith("#"):
-            return 0
+            # Return the actual position of the # to preserve indentation
+            return line.find("#")
 
         # Look for # outside of strings
         in_single_quote = False
@@ -259,7 +277,8 @@ class PythonExecutor:
                 # Update persistent context with any new variables
                 self.execution_context.update(result.get("context", {}))
             else:
-                output = f"Error: {result['error']}"
+                # Return the detailed error directly without additional formatting
+                output = result['error']
 
             # Limit output length
             if len(output) > self.max_output_length:
@@ -346,6 +365,13 @@ try:
         '__builtins__': __builtins__
     }})
 
+    # Add special MANUSCRIPT_PATH variable
+    manuscript_dir = manuscript_context.get('manuscript_dir')
+    if manuscript_dir and manuscript_dir != "None":
+        exec_globals['MANUSCRIPT_PATH'] = manuscript_dir
+    else:
+        exec_globals['MANUSCRIPT_PATH'] = os.getcwd()
+
     # Add figure generation utilities to context
     try:
         from rxiv_maker.manuscript_utils.figure_utils import (
@@ -371,9 +397,7 @@ try:
         exec('''{init_imports}''', exec_globals)
 
     # Execute user code in the context
-    exec('''\\
-{chr(10).join(line for line in code.split(chr(10)))}
-''', exec_globals)
+    exec('''{code}''', exec_globals)
 
     # Capture final context (only simple types that can be JSON serialized)
     for key, value in exec_globals.items():
@@ -403,6 +427,11 @@ except Exception as e:
         if 'exec(' not in line and 'temp' not in line.lower() and 'subprocess' not in line.lower():
             filtered_tb.append(line)
 
+    # For FileNotFoundError, provide helpful guidance
+    if isinstance(e, FileNotFoundError):
+        error_parts.append("\\nHint: Check that the file path is correct and the file exists relative to the manuscript directory.")
+        error_parts.append("The Python code executes from the manuscript directory context.")
+
     if len(filtered_tb) > 1:  # More than just the exception line
         error_parts.append("Traceback:")
         error_parts.extend(filtered_tb[-3:])  # Last 3 lines of relevant traceback
@@ -429,7 +458,10 @@ print(json.dumps(result))
 
         try:
             # Execute in subprocess with timeout
-            # Use manuscript directory as working directory if available
+            # CRITICAL: Use manuscript directory as working directory if available
+            # This ensures that paths like 'DATA/arxiv_monthly_submissions.csv' work correctly
+            # when Python code is executed in manuscript context. The manuscript directory
+            # is where the manuscript files (01_MAIN.md, etc.) are located.
             working_dir = self.manuscript_dir if self.manuscript_dir else Path.cwd()
             process = subprocess.run(
                 [sys.executable, temp_file_path],
@@ -447,13 +479,22 @@ print(json.dumps(result))
                     json_line = stdout_lines[-1] if stdout_lines else "{}"
                     result = json.loads(json_line)
                     return result
-                except (json.JSONDecodeError, IndexError):
-                    return {"success": False, "output": process.stdout, "error": "Failed to parse execution result"}
+                except (json.JSONDecodeError, IndexError) as e:
+                    # Provide more detailed debugging information
+                    debug_info = f"JSON parsing failed: {e}\n"
+                    debug_info += f"Process stdout:\n{process.stdout}\n"
+                    debug_info += f"Process stderr:\n{process.stderr}\n"
+                    debug_info += f"Last line attempted: {repr(json_line if 'json_line' in locals() else 'N/A')}"
+                    return {"success": False, "output": process.stdout, "error": debug_info}
             else:
+                # Provide detailed error information
+                error_detail = f"Process exited with code {process.returncode}\n"
+                error_detail += f"Stdout: {process.stdout}\n"
+                error_detail += f"Stderr: {process.stderr}"
                 return {
                     "success": False,
                     "output": process.stdout,
-                    "error": process.stderr or f"Process exited with code {process.returncode}",
+                    "error": error_detail,
                 }
 
         except subprocess.TimeoutExpired:
@@ -513,15 +554,20 @@ print(json.dumps(result))
             wrapped_error = "\n".join(wrapped_lines)
             return f"\\begin{{verbatim}}\nPython execution error:\n{wrapped_error}\n\\end{{verbatim}}"
 
-    def execute_inline(self, code: str) -> str:
+    def execute_inline(self, code: str, line_number: Optional[int] = None, file_path: str = "manuscript") -> str:
         """Execute Python code inline and return result.
 
         Args:
             code: Python code to execute (should be expression)
+            line_number: Optional line number for reporting
+            file_path: Source file path for reporting
 
         Returns:
             String result for inline insertion
         """
+        start_time = time.time()
+        original_code = code
+
         try:
             # For inline execution, wrap in print() if it's an expression
             if not any(
@@ -531,15 +577,41 @@ print(json.dumps(result))
                 code = f"print({code})"
 
             output, success = self.execute_code_safely(code)
+            execution_time = time.time() - start_time
 
             if success:
+                # Report successful inline execution
+                if self.reporter:
+                    self.reporter.track_inline_execution(
+                        code=original_code,
+                        output=output,
+                        line_number=line_number,
+                        file_path=file_path,
+                        execution_time=execution_time
+                    )
                 return output.strip() or ""
             else:
+                # Report inline execution error
+                if self.reporter:
+                    self.reporter.track_error(
+                        error_message=output,
+                        code_snippet=original_code,
+                        line_number=line_number,
+                        file_path=file_path
+                    )
                 # Escape underscores in error messages for LaTeX compatibility
                 escaped_output = output.replace("_", "\\_")
                 return f"[Error: {escaped_output}]"
 
         except PythonExecutionError as e:
+            # Report inline execution error
+            if self.reporter:
+                self.reporter.track_error(
+                    error_message=str(e),
+                    code_snippet=original_code,
+                    line_number=line_number,
+                    file_path=file_path
+                )
             # Escape underscores in error messages for LaTeX compatibility
             error_msg = str(e).replace("_", "\\_")
             return f"[Error: {error_msg}]"
@@ -561,19 +633,54 @@ print(json.dumps(result))
             PythonExecutionError: If execution fails
             SecurityError: If code violates security restrictions
         """
+        # Track execution start time for reporting
+        start_time = time.time()
+
         # Execute the code and update persistent context
         try:
             # For initialization blocks, execute directly to preserve functions
             output, success = self._execute_initialization_directly(code, manuscript_file, line_number)
 
-            if not success:
+            # Calculate execution time
+            execution_time = time.time() - start_time
+
+            if success:
+                # Report successful execution
+                if self.reporter:
+                    self.reporter.track_exec_block(
+                        code=code,
+                        output=output,
+                        line_number=line_number,
+                        file_path=manuscript_file or "manuscript",
+                        execution_time=execution_time
+                    )
+            else:
+                # Report execution error
+                if self.reporter:
+                    self.reporter.track_error(
+                        error_message=output,
+                        code_snippet=code,
+                        line_number=line_number,
+                        file_path=manuscript_file or "manuscript"
+                    )
+
                 error_context = ""
                 if manuscript_file or line_number:
                     error_context = f" (in {manuscript_file or 'manuscript'}:{line_number or 'unknown'})"
                 raise PythonExecutionError(f"Initialization block execution failed{error_context}: {output}")
+
         except PythonExecutionError:
             raise
         except Exception as e:
+            # Report unexpected error
+            if self.reporter:
+                self.reporter.track_error(
+                    error_message=str(e),
+                    code_snippet=code,
+                    line_number=line_number,
+                    file_path=manuscript_file or "manuscript"
+                )
+
             error_context = ""
             if manuscript_file or line_number:
                 error_context = f" (in {manuscript_file or 'manuscript'}:{line_number or 'unknown'})"
@@ -605,7 +712,9 @@ print(json.dumps(result))
             if path not in sys.path:
                 sys.path.insert(0, path)
 
-        # Change to manuscript directory for relative path resolution
+        # CRITICAL: Change to manuscript directory for relative path resolution
+        # This ensures that paths like 'DATA/arxiv_monthly_submissions.csv' work correctly
+        # when executing initialization blocks in the manuscript context.
         if self.manuscript_dir:
             os.chdir(self.manuscript_dir)
 
@@ -623,6 +732,12 @@ print(json.dumps(result))
             # Prepare execution context
             exec_context = {"__builtins__": __builtins__}
             exec_context.update(self.execution_context)
+
+            # Add special MANUSCRIPT_PATH variable
+            if self.manuscript_dir:
+                exec_context["MANUSCRIPT_PATH"] = str(self.manuscript_dir)
+            else:
+                exec_context["MANUSCRIPT_PATH"] = os.getcwd()
 
             # Add figure utilities if available
             try:
@@ -687,11 +802,13 @@ print(json.dumps(result))
             sys.path[:] = original_sys_path
             os.chdir(original_cwd)
 
-    def get_variable_value(self, variable_name: str) -> Any:
+    def get_variable_value(self, variable_name: str, line_number: Optional[int] = None, file_path: str = "manuscript") -> Any:
         """Get the value of a variable from the execution context ({{py:get}}).
 
         Args:
             variable_name: Name of the variable to retrieve
+            line_number: Optional line number where variable is accessed
+            file_path: Source file path for reporting
 
         Returns:
             The value of the variable, or None if not found
@@ -700,9 +817,28 @@ print(json.dumps(result))
             PythonExecutionError: If variable cannot be retrieved
         """
         if variable_name not in self.execution_context:
+            # Report variable access error
+            if self.reporter:
+                self.reporter.track_error(
+                    error_message=f"Variable '{variable_name}' not found in context",
+                    code_snippet=f"{{{{py:get {variable_name}}}}}",
+                    line_number=line_number,
+                    file_path=file_path
+                )
             raise PythonExecutionError(f"Variable '{variable_name}' not found in context")
 
-        return self.execution_context[variable_name]
+        variable_value = self.execution_context[variable_name]
+
+        # Report successful variable access
+        if self.reporter:
+            self.reporter.track_get_variable(
+                variable_name=variable_name,
+                variable_value=variable_value,
+                line_number=line_number,
+                file_path=file_path
+            )
+
+        return variable_value
 
     def reset_context(self) -> None:
         """Reset the execution context."""

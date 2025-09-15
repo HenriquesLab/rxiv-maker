@@ -54,6 +54,7 @@ output.txt
 # Claude Code configuration
 CLAUDE.md
 .claude
+GEMINI.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -194,6 +195,7 @@ celerybeat.pid
 
 # Environments
 .venv
+.venv-linux
 env/
 venv/
 ENV/
@@ -386,5 +388,4 @@ build/
 # APT repository validation results (temporary files)
 validation-results/
 packaging/validation-results/
-.venv-linux
 rxivdraft/MANUSCRIPT/2025__antónio_d_brito_et_al__rxiv.pdf
