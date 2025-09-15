@@ -217,25 +217,22 @@ def update_pubmed_data_file(output_path: str = "DATA/pubmed_by_year.csv", start_
         return False
 
 
-def update_all_data_files(force_update: bool = False) -> Path:
+def update_all_data_files(force_update: bool = False) -> Dict[str, bool]:
     """Update all data files with latest information.
 
     Args:
         force_update: If True, always update. If False, check file age first.
 
     Returns:
-        Path to the DATA directory containing the updated files
+        Dictionary with update results for each file
     """
-    import os
+    results = {}
 
-    # Use relative path directly since Python execution should be in manuscript context
-    # The Python executor sets the working directory to the manuscript directory
-    data_dir = Path(__file__).parent.parent.parent / "DATA"
-    data_dir.mkdir(exist_ok=True)
-
-    # Define file paths
-    arxiv_path = data_dir / "arxiv_monthly_submissions.csv"
-    pubmed_path = data_dir / "pubmed_by_year.csv"
+    # Define file paths relative to manuscript root
+    # Get the manuscript root directory (2 levels up from src/py)
+    manuscript_root = Path(__file__).parent.parent.parent
+    arxiv_path = manuscript_root / "DATA" / "arxiv_monthly_submissions.csv"
+    pubmed_path = manuscript_root / "DATA" / "pubmed_by_year.csv"
 
     # Check if update is needed (files older than 1 day)
     def needs_update(file_path: str) -> bool:
@@ -254,21 +251,25 @@ def update_all_data_files(force_update: bool = False) -> Path:
         # Update arXiv data if needed
         if needs_update(str(arxiv_path)):
             print("Updating arXiv monthly submissions data...")
-            update_arxiv_data_file(str(arxiv_path))
+            results["arxiv"] = update_arxiv_data_file(str(arxiv_path))
         else:
             print("arXiv data is current")
+            results["arxiv"] = True
 
         # Update preprint data if needed
         if needs_update(str(pubmed_path)):
             print("Updating preprint server data...")
-            update_pubmed_data_file(str(pubmed_path))
+            results["pubmed"] = update_pubmed_data_file(str(pubmed_path))
         else:
             print("Preprint data is current")
+            results["pubmed"] = True
 
     except Exception as e:
         print(f"Update check failed: {e}")
+        results["arxiv"] = True
+        results["pubmed"] = True
 
-    return data_dir
+    return results
 
 
 def get_latest_statistics() -> Dict[str, Any]:

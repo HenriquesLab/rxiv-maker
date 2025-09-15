@@ -9,7 +9,16 @@ from pathlib import Path
 
 import pytest
 
-CLEANUP_AVAILABLE = False
+# Import cleanup utilities if available
+try:
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).parent.parent / "nox_utils"))
+    # from nox_utils import DiskSpaceMonitor, cleanup_manager
+
+    CLEANUP_AVAILABLE = True
+except ImportError:
+    CLEANUP_AVAILABLE = False
 
 
 # --- Helper Class for Local Engine Execution ---
