@@ -86,7 +86,7 @@ Final result: {{py:get summary_text}}
 """
 
         # Process the markdown
-        process_custom_commands(test_markdown)
+        result = process_custom_commands(test_markdown)
 
         # Get the reporter
         reporter = get_python_execution_reporter()
@@ -113,7 +113,7 @@ Final result: {{py:get summary_text}}
 
         # Verify the processed result contains expected values
         assert "20" in result  # sample_size
-        assert "5" in result   # inline calculation 2 + 3
+        assert "5" in result  # inline calculation 2 + 3
 
     def test_manuscript_path_in_python_execution_reporting(self, tmp_path):
         """Test that MANUSCRIPT_PATH is available and reported correctly."""
@@ -147,7 +147,7 @@ Data directory exists: {{py:get data_exists}}
 """
 
         # Process the markdown
-        process_custom_commands(test_markdown)
+        result = process_custom_commands(test_markdown)
 
         # Get reporter
         reporter = get_python_execution_reporter()
@@ -348,13 +348,13 @@ Line 12
             assert line_num > 0
             assert line_num <= 15  # Should be within reasonable range
 
-    @patch.object(BuildManager, 'generate_figures')
-    @patch.object(BuildManager, 'validate_manuscript', return_value=True)
-    @patch.object(BuildManager, 'generate_latex')
-    @patch.object(BuildManager, 'compile_pdf')
-    @patch.object(BuildManager, 'validate_pdf')
-    @patch.object(BuildManager, 'copy_final_pdf')
-    @patch.object(BuildManager, 'analyze_word_counts')
+    @patch.object(BuildManager, "generate_figures")
+    @patch.object(BuildManager, "validate_manuscript", return_value=True)
+    @patch.object(BuildManager, "generate_latex")
+    @patch.object(BuildManager, "compile_pdf")
+    @patch.object(BuildManager, "validate_pdf")
+    @patch.object(BuildManager, "copy_final_pdf")
+    @patch.object(BuildManager, "analyze_word_counts")
     def test_reporting_integration_with_build_manager(self, *mocks, tmp_path):
         """Test integration of reporting with BuildManager."""
         # Create minimal manuscript
@@ -383,14 +383,11 @@ Result: {{py:get test_value}}
 
         # Create BuildManager
         build_manager = BuildManager(
-            manuscript_path=str(manuscript_dir),
-            skip_validation=True,
-            skip_pdf_validation=True,
-            clear_output=False
+            manuscript_path=str(manuscript_dir), skip_validation=True, skip_pdf_validation=True, clear_output=False
         )
 
         # Mock display_python_execution_report to capture it being called
-        with patch.object(BuildManager, 'display_python_execution_report') as mock_display:
+        with patch.object(BuildManager, "display_python_execution_report") as mock_display:
             # Run build
             success = build_manager.build()
 

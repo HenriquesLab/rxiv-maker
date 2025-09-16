@@ -46,7 +46,11 @@ class PythonExecutionReporter:
     ) -> None:
         """Track execution of a Python code block."""
         entry = PythonExecutionEntry(
-            entry_type="exec", line_number=line_number, execution_time=execution_time, file_path=file_path, output=output
+            entry_type="exec",
+            line_number=line_number,
+            execution_time=execution_time,
+            file_path=file_path,
+            output=output,
         )
         self.entries.append(entry)
         self.total_execution_time += execution_time
@@ -91,7 +95,7 @@ class PythonExecutionReporter:
         error_count = sum(1 for entry in self.entries if entry.error_message)
 
         # Count unique files
-        files_processed = len(set(entry.file_path for entry in self.entries))
+        files_processed = len({entry.file_path for entry in self.entries})
 
         return {
             "total_executions": len(self.entries),

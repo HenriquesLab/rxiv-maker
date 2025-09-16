@@ -364,6 +364,7 @@ class TestManuscriptPathIntegration:
     def setup_method(self):
         """Set up test executor for each test."""
         from rxiv_maker.core.environment_manager import EnvironmentManager
+
         self.original_env = os.environ.copy()
         EnvironmentManager.clear_rxiv_vars()
         self.executor = PythonExecutor()
@@ -478,20 +479,21 @@ line_count = len(content.strip().split('\\n'))
         executor = PythonExecutor()
 
         # Test with code that would run in subprocess (complex operation)
-        code = """
+        expected_path = str(manuscript_dir.resolve()).replace("\\", "\\\\")
+        code = f"""
 import subprocess
 import sys
 import os
 
 # Get manuscript path from environment
 manuscript_path = MANUSCRIPT_PATH
-print(f"Subprocess MANUSCRIPT_PATH: {manuscript_path}")
+print(f"Subprocess MANUSCRIPT_PATH: {{manuscript_path}}")
 
 # Verify it's the correct path
 expected_path = r"{expected_path}"
 is_correct = manuscript_path == expected_path
-print(f"Path is correct: {is_correct}")
-""".format(expected_path=str(manuscript_dir.resolve()).replace("\\", "\\\\"))
+print(f"Path is correct: {{is_correct}}")
+"""
 
         result = executor.execute_block(code)
         assert str(manuscript_dir.resolve()) in result
