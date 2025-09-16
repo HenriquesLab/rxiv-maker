@@ -1,9 +1,10 @@
 """Tests for BuildManager manuscript path environment variable setting."""
 
 import os
-import pytest
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import patch
+
+import pytest
 
 from rxiv_maker.core.environment_manager import EnvironmentManager
 from rxiv_maker.engines.operations.build_manager import BuildManager
@@ -38,27 +39,25 @@ class TestBuildManagerManuscriptPath:
         main_file.write_text("# Test Content\n")
 
         # Mock the BuildManager's internal methods to avoid full build
-        with patch.object(BuildManager, 'setup_output_directory'):
-            with patch.object(BuildManager, 'generate_figures'):
-                with patch.object(BuildManager, 'validate_manuscript', return_value=True):
-                    with patch.object(BuildManager, 'generate_latex'):
-                        with patch.object(BuildManager, 'compile_pdf'):
-                            with patch.object(BuildManager, 'validate_pdf'):
-                                with patch.object(BuildManager, 'copy_final_pdf'):
-                                    with patch.object(BuildManager, 'analyze_word_counts'):
+        with patch.object(BuildManager, "setup_output_directory"):
+            with patch.object(BuildManager, "generate_figures"):
+                with patch.object(BuildManager, "validate_manuscript", return_value=True):
+                    with patch.object(BuildManager, "generate_manuscript_tex"):
+                        with patch.object(BuildManager, "compile_pdf"):
+                            with patch.object(BuildManager, "validate_pdf"):
+                                with patch.object(BuildManager, "copy_final_pdf"):
+                                    with patch.object(BuildManager, "run_word_count_analysis"):
                                         # Create build manager
                                         build_manager = BuildManager(
                                             manuscript_path=str(manuscript_dir),
                                             skip_validation=True,
-                                            skip_pdf_validation=True
+                                            skip_pdf_validation=True,
                                         )
 
                                         # Initially, environment variable should not be set
                                         assert EnvironmentManager.get_manuscript_path() is None
 
                                         # Mock the build process but capture environment setting
-                                        original_build = build_manager.build
-
                                         def mock_build():
                                             # This simulates the environment setting that happens at the start of build()
                                             EnvironmentManager.set_manuscript_path(build_manager.manuscript_dir)
@@ -104,11 +103,8 @@ The manuscript is located at: {{py:get manuscript_location}}
 """)
 
         # Create a minimal BuildManager and simulate the environment setting
-        build_manager = BuildManager(
-            manuscript_path=str(manuscript_dir),
-            skip_validation=True,
-            skip_pdf_validation=True,
-            clear_output=False
+        BuildManager(
+            manuscript_path=str(manuscript_dir), skip_validation=True, skip_pdf_validation=True, clear_output=False
         )
 
         # Manually set the environment variable as it would be during build
@@ -215,7 +211,9 @@ The manuscript is located at: {{py:get manuscript_location}}
     def test_error_handling_invalid_manuscript_path(self):
         """Test error handling when manuscript path is invalid."""
         # Try to create BuildManager with non-existent path
-        with pytest.raises((FileNotFoundError, ValueError)):
+        from rxiv_maker.core.path_manager import PathResolutionError
+
+        with pytest.raises((FileNotFoundError, ValueError, PathResolutionError)):
             BuildManager(manuscript_path="/non/existent/path")
 
     def test_environment_variable_inheritance_in_subprocesses(self, tmp_path):
@@ -244,6 +242,7 @@ class TestBuildManagerIntegrationWithPythonReporter:
         # Reset Python execution reporter
         try:
             from rxiv_maker.utils.python_execution_reporter import reset_python_execution_reporter
+
             reset_python_execution_reporter()
         except ImportError:
             pass
@@ -253,7 +252,7 @@ class TestBuildManagerIntegrationWithPythonReporter:
         os.environ.clear()
         os.environ.update(self.original_env)
 
-    @patch.object(BuildManager, 'display_python_execution_report')
+    @patch.object(BuildManager, "display_python_execution_report")
     def test_build_manager_calls_python_execution_report(self, mock_display_report, tmp_path):
         """Test that BuildManager calls Python execution reporting during build."""
         manuscript_dir = tmp_path / "reporting_test"
@@ -267,19 +266,18 @@ class TestBuildManagerIntegrationWithPythonReporter:
         main_file.write_text("# Test\n")
 
         # Mock all the build steps
-        with patch.object(BuildManager, 'setup_output_directory'):
-            with patch.object(BuildManager, 'generate_figures'):
-                with patch.object(BuildManager, 'validate_manuscript', return_value=True):
-                    with patch.object(BuildManager, 'generate_latex'):
-                        with patch.object(BuildManager, 'compile_pdf'):
-                            with patch.object(BuildManager, 'validate_pdf'):
-                                with patch.object(BuildManager, 'copy_final_pdf'):
-                                    with patch.object(BuildManager, 'analyze_word_counts'):
-
+        with patch.object(BuildManager, "setup_output_directory"):
+            with patch.object(BuildManager, "generate_figures"):
+                with patch.object(BuildManager, "validate_manuscript", return_value=True):
+                    with patch.object(BuildManager, "generate_manuscript_tex"):
+                        with patch.object(BuildManager, "compile_pdf"):
+                            with patch.object(BuildManager, "validate_pdf"):
+                                with patch.object(BuildManager, "copy_final_pdf"):
+                                    with patch.object(BuildManager, "run_word_count_analysis"):
                                         build_manager = BuildManager(
                                             manuscript_path=str(manuscript_dir),
                                             skip_validation=True,
-                                            skip_pdf_validation=True
+                                            skip_pdf_validation=True,
                                         )
 
                                         # Run build
@@ -302,7 +300,7 @@ class TestBuildManagerIntegrationWithPythonReporter:
         initial_path = EnvironmentManager.get_manuscript_path()
 
         # Simulate various build stages checking the environment
-        stages = ['setup', 'figures', 'validation', 'latex', 'compilation']
+        stages = ["setup", "figures", "validation", "latex", "compilation"]
 
         for stage in stages:
             current_path = EnvironmentManager.get_manuscript_path()

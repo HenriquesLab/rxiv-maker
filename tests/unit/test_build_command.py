@@ -110,7 +110,8 @@ class TestBuildCommand:
             result = self.runner.invoke(build, ["test_manuscript"], obj={"verbose": False, "engine": "local"})
 
         assert result.exit_code == 1
-        assert "Build failed: Unexpected error" in result.output
+        # Error format changed - now shows as "Error in build_X: Unexpected error"
+        assert "Error in build_" in result.output and "Unexpected error" in result.output
 
     @patch("rxiv_maker.core.logging_config.set_log_directory")
     @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
