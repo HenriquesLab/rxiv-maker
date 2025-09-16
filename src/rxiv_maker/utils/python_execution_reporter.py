@@ -55,6 +55,47 @@ class PythonExecutionReporter:
         self.entries.append(entry)
         self.total_execution_time += execution_time
 
+    def track_inline_execution(
+        self, code: str, output: str, line_number: int, file_path: str = "manuscript", execution_time: float = 0.0
+    ) -> None:
+        """Track execution of inline Python code (for variable substitution)."""
+        entry = PythonExecutionEntry(
+            entry_type="get",
+            line_number=line_number,
+            execution_time=execution_time,
+            file_path=file_path,
+            output=output,
+        )
+        self.entries.append(entry)
+        self.total_execution_time += execution_time
+
+    def track_get_variable(
+        self, variable_name: str, variable_value: str, line_number: int, file_path: str = "manuscript"
+    ) -> None:
+        """Track variable access during manuscript processing."""
+        entry = PythonExecutionEntry(
+            entry_type="get",
+            line_number=line_number,
+            execution_time=0.0,  # Variable access is immediate
+            file_path=file_path,
+            output=str(variable_value),
+        )
+        self.entries.append(entry)
+
+    def track_error(
+        self, error_message: str, code_snippet: str, line_number: int, file_path: str = "manuscript"
+    ) -> None:
+        """Track execution errors during manuscript processing."""
+        entry = PythonExecutionEntry(
+            entry_type="error",
+            line_number=line_number,
+            execution_time=0.0,  # Error tracking is immediate
+            file_path=file_path,
+            output="",
+            error_message=error_message,
+        )
+        self.entries.append(entry)
+
     def add_entry(
         self,
         operation_type: str,

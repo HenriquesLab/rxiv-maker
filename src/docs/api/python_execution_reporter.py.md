@@ -10,7 +10,7 @@ This module provides centralized reporting of Python code execution during manus
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L225"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L266"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_python_execution_reporter`
 
@@ -23,7 +23,7 @@ Get or create the global Python execution reporter.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L233"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L274"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `reset_python_execution_reporter`
 
@@ -80,7 +80,7 @@ Initialize the reporter.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L58"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L99"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `add_entry`
 
@@ -99,7 +99,7 @@ Add a general execution entry.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L210"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L251"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `display_report`
 
@@ -111,7 +111,7 @@ Display the Python execution report.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L174"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `format_errors_for_display`
 
@@ -123,7 +123,7 @@ Format execution errors for display.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L147"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L188"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `format_outputs_for_display`
 
@@ -135,7 +135,7 @@ Format execution outputs for display.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L118"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L159"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `format_summary_for_display`
 
@@ -147,7 +147,7 @@ Format summary statistics for display.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L189"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L230"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `format_verbose_report`
 
@@ -159,7 +159,7 @@ Format a comprehensive report for verbose output.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L151"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_entries_with_output`
 
@@ -171,7 +171,7 @@ Get all entries that have output.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L114"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L155"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_error_entries`
 
@@ -183,7 +183,7 @@ Get all entries that have errors.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L79"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L120"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `get_summary_statistics`
 
@@ -207,6 +207,23 @@ Reset the reporter for a new build.
 
 ---
 
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L85"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `track_error`
+
+```python
+track_error(
+    error_message: str,
+    code_snippet: str,
+    line_number: int,
+    file_path: str = 'manuscript'
+) → None
+```
+
+Track execution errors during manuscript processing. 
+
+---
+
 <a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L44"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `track_exec_block`
@@ -222,5 +239,40 @@ track_exec_block(
 ```
 
 Track execution of a Python code block. 
+
+---
+
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L72"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `track_get_variable`
+
+```python
+track_get_variable(
+    variable_name: str,
+    variable_value: str,
+    line_number: int,
+    file_path: str = 'manuscript'
+) → None
+```
+
+Track variable access during manuscript processing. 
+
+---
+
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/python_execution_reporter.py#L58"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>function</kbd> `track_inline_execution`
+
+```python
+track_inline_execution(
+    code: str,
+    output: str,
+    line_number: int,
+    file_path: str = 'manuscript',
+    execution_time: float = 0.0
+) → None
+```
+
+Track execution of inline Python code (for variable substitution). 
 
 
