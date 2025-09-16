@@ -130,6 +130,40 @@ def test(session, test_type):
 
 
 @nox.session(python="3.11", reuse_venv=True)
+def test_ci_exact(session):
+    """Test with exact CI environment settings to forecast failures locally.
+
+    This session replicates the exact GitHub Actions CI environment:
+    - Same environment variables
+    - Same test command and flags
+    - Same Python version (3.11)
+    - Same package versions
+
+    Use this to debug CI failures before pushing.
+    """
+    # Set the same environment variables as CI
+    session.env["FORCE_COLOR"] = "1"
+    session.env["UV_SYSTEM_PYTHON"] = "1"
+    session.env["PYTHONIOENCODING"] = "utf-8"
+    session.env["LC_ALL"] = "C.UTF-8"
+    session.env["LANG"] = "C.UTF-8"
+
+    install_project_deps(session)
+
+    # Run exact same command as CI with same flags
+    session.run(
+        "pytest",
+        "tests/unit/",
+        "-m",
+        "unit and not ci_exclude",
+        "--maxfail=3",
+        "--tb=short",
+        "-x",  # Stop on first failure like CI
+        *session.posargs,
+    )
+
+
+@nox.session(python="3.11", reuse_venv=True)
 def test_system(session):
     """Run system tests - comprehensive end-to-end testing (manual trigger only)."""
     install_project_deps(session)

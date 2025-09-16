@@ -409,7 +409,12 @@ manuscript_location = MANUSCRIPT_PATH
 print(f"Manuscript is at: {manuscript_location}")
 """
         result = executor.execute_block(code)
-        assert str(manuscript_dir.resolve()) in result
+        # Handle LaTeX line-wrapping by removing whitespace and LaTeX commands
+        cleaned_result = (
+            result.replace("\\begin{verbatim}", "").replace("\\end{verbatim}", "").replace("\n", "").replace(" ", "")
+        )
+        cleaned_path = str(manuscript_dir.resolve()).replace(" ", "")
+        assert cleaned_path in cleaned_result
 
         # Verify variable persists
         location = executor.get_variable_value("manuscript_location")
