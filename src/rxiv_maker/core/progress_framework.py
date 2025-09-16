@@ -250,7 +250,7 @@ class ConsoleProgressReporter:
         # Clean up progress display when operation finishes
         if self._progress is not None:
             try:
-                self._progress.__exit__(None, None, None)
+                self._progress.stop()
             except Exception as e:
                 logger.debug(f"Error cleaning up progress: {e}")
             finally:
@@ -332,7 +332,7 @@ class ConsoleProgressReporter:
         """Cleanup progress reporter."""
         if self._progress is not None:
             try:
-                self._progress.__exit__(None, None, None)
+                self._progress.stop()
             except Exception as e:
                 logger.debug(f"Error cleaning up progress: {e}")
             finally:

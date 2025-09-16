@@ -157,12 +157,6 @@ class PythonExecutor:
         lines = code.split("\n")
         filtered_lines = []
 
-        # DEBUG: Save before and after filtering
-        with open("/tmp/comment_filter_debug.txt", "w") as f:
-            f.write("=== BEFORE COMMENT FILTERING ===\n")
-            for i, line in enumerate(lines, 1):
-                f.write(f"{i:2d}: {repr(line)}\n")
-
         for line in lines:
             # Handle inline comments - everything after # is a comment
             # But we need to be careful about # inside strings
@@ -174,12 +168,6 @@ class PythonExecutor:
             else:
                 # No comment found, keep entire line
                 filtered_lines.append(line)
-
-        # DEBUG: Save filtered result
-        with open("/tmp/comment_filter_debug.txt", "a") as f:
-            f.write("\n=== AFTER COMMENT FILTERING ===\n")
-            for i, line in enumerate(filtered_lines, 1):
-                f.write(f"{i:2d}: {repr(line)}\n")
 
         return "\n".join(filtered_lines)
 

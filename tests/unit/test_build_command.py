@@ -125,7 +125,10 @@ class TestBuildCommand:
 
         # Mock Progress
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=mock_progress_instance)
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress.return_value = mock_progress_context
 
         # Test with environment variable
         with self.runner.isolated_filesystem():
