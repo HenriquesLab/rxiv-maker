@@ -932,3 +932,12 @@ def get_python_executor() -> PythonExecutor:
         # Use longer timeout for data processing scenarios that may fetch from web
         _global_executor = PythonExecutor(timeout=60)
     return _global_executor
+
+
+def reset_python_executor() -> None:
+    """Reset the global Python executor instance.
+
+    This is useful for testing to ensure clean state between tests.
+    """
+    global _global_executor
+    _global_executor = None

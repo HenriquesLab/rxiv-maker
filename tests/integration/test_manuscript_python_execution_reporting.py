@@ -10,6 +10,7 @@ from rxiv_maker.utils.python_execution_reporter import (
     get_python_execution_reporter,
     reset_python_execution_reporter,
 )
+from rxiv_maker.converters.python_executor import reset_python_executor
 
 
 class TestPythonExecutionReportingIntegration:
@@ -19,6 +20,8 @@ class TestPythonExecutionReportingIntegration:
         """Set up for each test."""
         # Reset Python execution reporter
         reset_python_execution_reporter()
+        # Reset global Python executor to ensure clean state
+        reset_python_executor()
 
         # Save original environment
         self.original_env = os.environ.copy()
@@ -30,8 +33,9 @@ class TestPythonExecutionReportingIntegration:
         os.environ.clear()
         os.environ.update(self.original_env)
 
-        # Reset reporter
+        # Reset reporter and executor
         reset_python_execution_reporter()
+        reset_python_executor()
 
     def test_end_to_end_python_execution_with_reporting(self, tmp_path):
         """Test complete end-to-end Python execution with reporting."""
@@ -411,10 +415,12 @@ class TestPythonExecutionReportingEdgeCases:
     def setup_method(self):
         """Set up for each test."""
         reset_python_execution_reporter()
+        reset_python_executor()
 
     def teardown_method(self):
         """Clean up after each test."""
         reset_python_execution_reporter()
+        reset_python_executor()
 
     def test_empty_python_blocks_reporting(self, tmp_path):
         """Test reporting behavior with empty Python blocks."""
