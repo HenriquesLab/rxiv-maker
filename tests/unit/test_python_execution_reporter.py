@@ -100,7 +100,8 @@ class TestPythonExecutionReporter:
 
         assert stats["total_executions"] == 6
         assert stats["initialization_blocks"] == 2
-        assert stats["inline_executions"] == 3  # Only "get" entries are counted as inline_executions
+        assert stats["variable_gets"] == 3  # "get" entries are counted as variable retrievals
+        assert stats["inline_executions"] == 1  # "inline" entries are counted as inline executions
         assert abs(stats["total_execution_time"] - 0.41) < 0.001  # Handle floating point precision
 
     def test_get_entries_by_type(self):
@@ -306,7 +307,8 @@ class TestReporterDisplayFormatting:
         # Verify summary contains expected information
         assert summary["total_executions"] == 5
         assert summary["initialization_blocks"] == 1
-        assert summary["inline_executions"] == 2  # "get" entries are counted as inline_executions
+        assert summary["variable_gets"] == 2  # "get" entries are counted as variable retrievals
+        assert summary["inline_executions"] == 1  # "inline" entries are counted as inline executions
         assert abs(summary["total_execution_time"] - 0.21) < 0.001
 
     def test_format_output_for_cli_display(self):
