@@ -217,7 +217,7 @@ class FigureChecksumManager:
 
         if updated_count > 0:
             self._save_checksums()
-            logger.info(f"Updated checksums for {updated_count} files")
+            logger.debug(f"Updated checksums for {updated_count} files")
 
     def cleanup_orphaned_checksums(self) -> None:
         """Remove checksums for files that no longer exist."""

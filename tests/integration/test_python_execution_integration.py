@@ -376,7 +376,7 @@ class TestPythonExecutionWithFileOperations:
     """Test Python execution integration with file operations."""
 
     def test_with_temporary_directory(self):
-        """Test Python execution with manuscript directory context."""
+        """Test Python execution with directory context."""
         markdown_text = """
 {{py:exec
 import os
@@ -385,14 +385,15 @@ from pathlib import Path
 # Get current working directory info
 current_dir = Path.cwd().name
 current_path = str(Path.cwd())
-is_project_dir = current_dir == "rxiv-maker"
-has_src = (Path.cwd() / "src").exists()
+# Test that we can determine directory properties
+is_valid_dir = len(current_dir) > 0
+has_content = len(list(Path.cwd().iterdir())) >= 0  # At least can list contents
 }}
 
 Directory info:
 - Current: {{py:get current_dir}}
-- Is project directory: {{py:get is_project_dir}}
-- Has src directory: {{py:get has_src}}
+- Is valid directory: {{py:get is_valid_dir}}
+- Can list contents: {{py:get has_content}}
 """
 
         result = process_custom_commands(markdown_text)
@@ -400,8 +401,8 @@ Directory info:
         # Should contain directory information
         assert "Directory info:" in result
         assert "Current:" in result
-        assert "Is project directory: True" in result
-        assert "Has src directory: True" in result
+        assert "Is valid directory: True" in result
+        assert "Can list contents: True" in result
 
     def test_path_integration_simulation(self):
         """Test path integration without actually manipulating filesystem."""

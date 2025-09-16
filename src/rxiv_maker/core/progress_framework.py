@@ -247,7 +247,17 @@ class ConsoleProgressReporter:
                 task_id, description=description, completed=stats.total_items or stats.completed_items
             )
 
-        # Log completion
+        # Clean up progress display when operation finishes
+        if self._progress is not None:
+            try:
+                self._progress.stop()
+            except Exception as e:
+                logger.debug(f"Error cleaning up progress: {e}")
+            finally:
+                self._progress = None
+                self._tasks.clear()
+
+        # Log completion (only for debug level to avoid redundant messages)
         duration = stats.duration
         if duration is not None:
             duration_str = f" ({duration:.2f}s)"
@@ -255,8 +265,7 @@ class ConsoleProgressReporter:
             duration_str = ""
 
         if success:
-            # Show user-friendly completion message without confusing operation ID
-            logger.info(f"✅ PDF build completed{duration_str}")
+            # Only show detailed completion message in debug mode - CLI framework handles user message
             if self.level == ProgressLevel.DEBUG:
                 self.console.print(
                     f"[green]Completed {stats.operation_type.value}: {operation_id}{duration_str}[/green]"
@@ -274,10 +283,11 @@ class ConsoleProgressReporter:
         if operation_id in self.operations:
             self.operations[operation_id].failed_items += 1
 
-        logger.error(f"Error in operation {operation_id}: {error}")
-
+        # Only log once - either to logger OR to console, not both
         if self.level in [ProgressLevel.STANDARD, ProgressLevel.DETAILED, ProgressLevel.DEBUG]:
             self.console.print(f"[red]Error in {operation_id}: {error}[/red]")
+        else:
+            logger.error(f"Error in operation {operation_id}: {error}")
 
     def get_statistics(self) -> Dict[str, OperationStats]:
         """Get operation statistics."""
@@ -322,7 +332,7 @@ class ConsoleProgressReporter:
         """Cleanup progress reporter."""
         if self._progress is not None:
             try:
-                self._progress.__exit__(None, None, None)
+                self._progress.stop()
             except Exception as e:
                 logger.debug(f"Error cleaning up progress: {e}")
             finally:

@@ -26,12 +26,19 @@ class TestBuildCommand:
         assert "does not exist" in result.output.lower() or "invalid" in result.output.lower()
 
     @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
-    def test_successful_pdf_generation(self, mock_build_manager):
+    @patch("rxiv_maker.core.progress_framework.progress_operation")
+    def test_successful_pdf_generation(self, mock_progress_operation, mock_build_manager):
         """Test successful PDF generation."""
         # Mock BuildManager
         mock_manager = MagicMock()
         mock_manager.build.return_value = True
         mock_build_manager.return_value = mock_manager
+
+        # Mock progress_operation context manager
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=MagicMock())
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress_operation.return_value = mock_progress_context
 
         # Use a real temporary directory that exists to pass Click validation
         with self.runner.isolated_filesystem():
@@ -45,17 +52,19 @@ class TestBuildCommand:
 
     @patch("rxiv_maker.core.logging_config.set_log_directory")
     @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
-    @patch("rxiv_maker.cli.framework.Progress")
-    def test_build_failure(self, mock_progress, mock_build_manager, mock_set_log_directory):
+    @patch("rxiv_maker.core.progress_framework.progress_operation")
+    def test_build_failure(self, mock_progress_operation, mock_build_manager, mock_set_log_directory):
         """Test PDF generation failure."""
         # Mock BuildManager with failure
         mock_manager = MagicMock()
         mock_manager.build.return_value = False
         mock_build_manager.return_value = mock_manager
 
-        # Mock Progress
-        mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        # Mock progress_operation context manager
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=MagicMock())
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress_operation.return_value = mock_progress_context
 
         # Use a real temporary directory that exists to pass Click validation
         with self.runner.isolated_filesystem():
@@ -68,17 +77,19 @@ class TestBuildCommand:
 
     @patch("rxiv_maker.core.logging_config.set_log_directory")
     @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
-    @patch("rxiv_maker.cli.framework.Progress")
-    def test_keyboard_interrupt_handling(self, mock_progress, mock_build_manager, mock_set_log_directory):
+    @patch("rxiv_maker.core.progress_framework.progress_operation")
+    def test_keyboard_interrupt_handling(self, mock_progress_operation, mock_build_manager, mock_set_log_directory):
         """Test keyboard interrupt handling."""
         # Mock BuildManager to raise KeyboardInterrupt
         mock_manager = MagicMock()
         mock_manager.build.side_effect = KeyboardInterrupt()
         mock_build_manager.return_value = mock_manager
 
-        # Mock Progress
-        mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        # Mock progress_operation context manager
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=MagicMock())
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress_operation.return_value = mock_progress_context
 
         # Use a real temporary directory that exists to pass Click validation
         with self.runner.isolated_filesystem():
@@ -91,17 +102,19 @@ class TestBuildCommand:
 
     @patch("rxiv_maker.core.logging_config.set_log_directory")
     @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
-    @patch("rxiv_maker.cli.framework.Progress")
-    def test_unexpected_error_handling(self, mock_progress, mock_build_manager, mock_set_log_directory):
+    @patch("rxiv_maker.core.progress_framework.progress_operation")
+    def test_unexpected_error_handling(self, mock_progress_operation, mock_build_manager, mock_set_log_directory):
         """Test unexpected error handling."""
         # Mock BuildManager to raise unexpected error
         mock_manager = MagicMock()
         mock_manager.build.side_effect = RuntimeError("Unexpected error")
         mock_build_manager.return_value = mock_manager
 
-        # Mock Progress
-        mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        # Mock progress_operation context manager
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=MagicMock())
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress_operation.return_value = mock_progress_context
 
         # Use a real temporary directory that exists to pass Click validation
         with self.runner.isolated_filesystem():
@@ -110,21 +123,26 @@ class TestBuildCommand:
             result = self.runner.invoke(build, ["test_manuscript"], obj={"verbose": False, "engine": "local"})
 
         assert result.exit_code == 1
-        assert "Build failed: Unexpected error" in result.output
+        # Error message should contain the actual error
+        assert "Unexpected error" in result.output
 
     @patch("rxiv_maker.core.logging_config.set_log_directory")
     @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
-    @patch("rxiv_maker.cli.framework.Progress")
-    def test_default_manuscript_path_from_env(self, mock_progress, mock_build_manager, mock_set_log_directory):
+    @patch("rxiv_maker.core.progress_framework.progress_operation")
+    def test_default_manuscript_path_from_env(
+        self, mock_progress_operation, mock_build_manager, mock_set_log_directory
+    ):
         """Test using MANUSCRIPT_PATH environment variable."""
         # Mock BuildManager
         mock_manager = MagicMock()
         mock_manager.build.return_value = True
         mock_build_manager.return_value = mock_manager
 
-        # Mock Progress
-        mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        # Mock progress_operation context manager
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=MagicMock())
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress_operation.return_value = mock_progress_context
 
         # Test with environment variable
         with self.runner.isolated_filesystem():
@@ -139,17 +157,19 @@ class TestBuildCommand:
 
     @patch("rxiv_maker.core.logging_config.set_log_directory")
     @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
-    @patch("rxiv_maker.cli.framework.Progress")
-    def test_build_options(self, mock_progress, mock_build_manager, mock_set_log_directory):
+    @patch("rxiv_maker.core.progress_framework.progress_operation")
+    def test_build_options(self, mock_progress_operation, mock_build_manager, mock_set_log_directory):
         """Test various build options."""
         # Mock BuildManager
         mock_manager = MagicMock()
         mock_manager.build.return_value = True
         mock_build_manager.return_value = mock_manager
 
-        # Mock Progress
-        mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        # Mock progress_operation context manager
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=MagicMock())
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress_operation.return_value = mock_progress_context
 
         # Use a real temporary directory
         with self.runner.isolated_filesystem():
@@ -197,7 +217,10 @@ class TestBuildCommand:
 
         # Mock Progress
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=mock_progress_instance)
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress.return_value = mock_progress_context
 
         # Test debug flag with real directory
         with self.runner.isolated_filesystem():
@@ -238,7 +261,10 @@ class TestBuildCommand:
 
         # Mock Progress
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=mock_progress_instance)
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress.return_value = mock_progress_context
 
         result = self.runner.invoke(build, ["test_manuscript", "--output-dir", "custom_output"])
 
@@ -263,7 +289,10 @@ class TestBuildCommand:
         mock_progress_instance = MagicMock()
         mock_task = MagicMock()
         mock_progress_instance.add_task.return_value = mock_task
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=mock_progress_instance)
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress.return_value = mock_progress_context
 
         result = self.runner.invoke(build, ["test_manuscript"])
 
@@ -302,7 +331,10 @@ class TestBuildCommandEdgeCases:
 
         # Mock Progress
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=mock_progress_instance)
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress.return_value = mock_progress_context
 
         result = self.runner.invoke(build, ["test_manuscript", "--skip-validation"])
 
@@ -333,7 +365,10 @@ class TestBuildCommandEdgeCases:
 
         # Mock Progress
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=mock_progress_instance)
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress.return_value = mock_progress_context
 
         result = self.runner.invoke(build, ["test_manuscript", "--track-changes", "v1.0.0", "--force-figures"])
 

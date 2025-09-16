@@ -733,6 +733,128 @@ def restore_protected_seqsplit(text: LatexContent) -> LatexContent:
     return text
 
 
+def identify_long_technical_identifiers(text: LatexContent, min_length: int = 15) -> LatexContent:
+    """Wrap long technical identifiers with seqsplit for better line breaking.
+
+    This function identifies long alphanumeric identifiers (gene names, protein names,
+    method names, etc.) and wraps them with LaTeX's seqsplit command to allow
+    proper line breaking in scientific documents.
+
+    Args:
+        text: Input text that may contain long technical identifiers
+        min_length: Minimum length for identifiers to be wrapped (default: 15)
+
+    Returns:
+        Text with long identifiers wrapped in seqsplit commands
+    """
+    # Avoid processing inside LaTeX commands, math mode, or existing seqsplit
+    # Pattern to match areas to protect from modification
+    protect_pattern = (
+        r"(\\[a-zA-Z]+\{[^}]*\})|"  # LaTeX commands like \cite{...}, \texttt{...}
+        r"(\$[^$]*\$)|"  # Math mode $...$
+        r"(\\seqsplit\{[^}]*\})"  # Existing seqsplit commands
+    )
+
+    protected_areas = []
+    for match in re.finditer(protect_pattern, text):
+        protected_areas.append((match.start(), match.end()))
+
+    def is_protected(start, end):
+        """Check if a position range is within a protected area."""
+        for pstart, pend in protected_areas:
+            if start >= pstart and end <= pend:
+                return True
+        return False
+
+    # Pattern for long technical identifiers
+    # Matches alphanumeric strings with underscores, dots, or mixed case
+    identifier_pattern = r"\b[A-Za-z][A-Za-z0-9_.]*[A-Za-z0-9][A-Za-z0-9_.]*\b"
+
+    def replace_identifier(match):
+        identifier = match.group()
+        start, end = match.span()
+
+        # Skip if in protected area
+        if is_protected(start, end):
+            return identifier
+
+        # Skip if already wrapped or too short
+        if len(identifier) < min_length:
+            return identifier
+
+        return f"\\seqsplit{{{identifier}}}"
+
+    result = re.sub(identifier_pattern, replace_identifier, text)
+    return result
+
+
+def wrap_long_strings_in_context(text: LatexContent, min_length: int = 20) -> LatexContent:
+    """Wrap long strings that appear after contextual keywords.
+
+    This function looks for long strings that appear after certain contextual
+    keywords (like "algorithm", "method", "protocol") and wraps them with seqsplit.
+
+    Args:
+        text: Input text to process
+        min_length: Minimum length for strings to be wrapped (default: 20)
+
+    Returns:
+        Text with contextual long strings wrapped in seqsplit
+    """
+    # Keywords that often precede technical identifiers
+    context_keywords = [
+        r"\balgorithm\s+",
+        r"\bmethod\s+",
+        r"\bprotocol\s+",
+        r"\btool\s+",
+        r"\bsoftware\s+",
+        r"\bpackage\s+",
+        r"\blibrary\s+",
+    ]
+
+    # Protect same areas as the identifier function
+    protect_pattern = (
+        r"(\\[a-zA-Z]+\{[^}]*\})|"  # LaTeX commands
+        r"(\$[^$]*\$)|"  # Math mode
+        r"(\\seqsplit\{[^}]*\})"  # Existing seqsplit
+    )
+
+    protected_areas = []
+    for match in re.finditer(protect_pattern, text):
+        protected_areas.append((match.start(), match.end()))
+
+    def is_protected(start, end):
+        """Check if a position range is within a protected area."""
+        for pstart, pend in protected_areas:
+            if start >= pstart and end <= pend:
+                return True
+        return False
+
+    result = text
+    for keyword in context_keywords:
+        # Pattern to match keyword followed by a long identifier
+        pattern = f"({keyword})([A-Za-z][A-Za-z0-9_.]*)"
+
+        def replace_contextual(match):
+            keyword_part = match.group(1)
+            identifier = match.group(2)
+            start, end = match.span()
+
+            # Skip if in protected area
+            if is_protected(start, end):
+                return match.group()
+
+            # Only wrap if identifier is long enough
+            if len(identifier) >= min_length:
+                return f"{keyword_part}\\seqsplit{{{identifier}}}"
+            else:
+                return match.group()
+
+        result = re.sub(pattern, replace_contextual, result, flags=re.IGNORECASE)
+
+    return result
+
+
 def find_and_replace_python_color(text: str) -> str:
     """Convert protected Python color placeholders to actual LaTeX."""
     result = []

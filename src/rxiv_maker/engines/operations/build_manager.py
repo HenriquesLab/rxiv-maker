@@ -117,14 +117,14 @@ class BuildManager:
     def log(self, message: str, level: str = "INFO"):
         """Log message with consistent formatting."""
         if level == "STEP":
-            # Step messages always show
+            # Step messages always show, just log to file
             print(f"📝 {message}")
-            logger.info(f"STEP: {message}")
+            logger.debug(f"STEP: {message}")  # Use debug level to avoid console duplication
         elif level == "INFO":
-            # Info messages show in verbose mode
+            # Info messages show in verbose mode or are just logged
+            logger.info(message)
             if self.verbose:
                 print(f"ℹ️ {message}")
-            logger.info(message)
         elif level == "WARNING":
             # Warning messages always show - for actionable issues only
             print(f"⚠️ {message}")
@@ -168,7 +168,7 @@ class BuildManager:
             shutil.rmtree(self.output_dir)
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.log(f"Output directory ready: {self.output_dir}")
+        self.log(f"Output directory ready: {self.output_dir}", "INFO")
 
     def validate_manuscript(self) -> bool:
         """Run manuscript validation using local execution."""
@@ -195,7 +195,7 @@ class BuildManager:
             )
 
             if validation_result:
-                self.log("Local validation completed successfully")
+                self.log("Local validation completed successfully", "INFO")
                 return True
             else:
                 self.log("Local validation failed", "ERROR")
@@ -220,7 +220,7 @@ class BuildManager:
 
             FigureGeneratorClass = get_figure_generator()
 
-            # Generate all figures (mermaid, python, etc.)
+            # Generate all figures in a single pass (mermaid, python, R, etc.)
             figure_gen = FigureGeneratorClass(
                 figures_dir=str(self.figures_dir),
                 output_dir=str(self.figures_dir),
@@ -229,17 +229,7 @@ class BuildManager:
             )
             figure_gen.process_figures()
 
-            # Generate R figures if any
-            r_figure_gen = FigureGeneratorClass(
-                figures_dir=str(self.figures_dir),
-                output_dir=str(self.figures_dir),
-                output_format="pdf",
-                r_only=True,
-                manuscript_path=str(self.manuscript_path),
-            )
-            r_figure_gen.process_figures()
-
-            self.log("Figure generation completed")
+            self.log("Figure generation completed", "INFO")
 
             # Update checksums after successful generation
             try:
@@ -250,7 +240,10 @@ class BuildManager:
                 else:
                     # Update checksums for all current source files
                     checksum_manager.update_checksums()
-                self.log("Updated figure checksums")
+
+                # Only log checksum updates in verbose mode
+                if self.verbose:
+                    self.log("Updated figure checksums", "INFO")
             except Exception as e:
                 self.log(f"Warning: Could not update figure checksums: {e}", "WARNING")
 
@@ -303,7 +296,7 @@ class BuildManager:
 
                 self.output_tex = Path(manuscript_output)
                 self.output_pdf = self.output_tex.with_suffix(".pdf")
-                self.log("LaTeX manuscript generated successfully")
+                self.log("LaTeX manuscript generated successfully", "INFO")
             else:
                 raise RuntimeError("Manuscript generation failed")
 
@@ -312,10 +305,68 @@ class BuildManager:
                 self.performance_tracker.end_operation("manuscript_generation")
 
         except Exception as e:
-            self.log(f"Manuscript generation failed: {e}", "ERROR")
+            # Don't log here - let the higher level handle the detailed logging
             if self.performance_tracker:
                 self.performance_tracker.end_operation("manuscript_generation", metadata={"error": str(e)})
             raise
+
+    def display_python_execution_report(self):
+        """Display Python execution report in the console during build."""
+        try:
+            # Import the Python execution reporter
+            from ...utils.python_execution_reporter import get_python_execution_reporter
+
+            reporter = get_python_execution_reporter()
+
+            # Check if any Python code was executed
+            if not reporter.has_python_activity():
+                return
+
+            self.log("Python Code Execution Summary", "STEP")
+
+            summary = reporter.get_execution_summary()
+
+            # Display execution summary
+            self.log(f"📊 Total Python operations: {summary['total_entries']}")
+            if summary["exec_blocks"] > 0:
+                self.log(f"🔧 Initialization blocks: {summary['exec_blocks']}")
+            if summary["get_variables"] > 0:
+                self.log(f"📝 Variable retrievals: {summary['get_variables']}")
+            if summary["inline_blocks"] > 0:
+                self.log(f"⚡ Inline executions: {summary['inline_blocks']}")
+            if summary["total_execution_time"] is not None:
+                self.log(f"⏱️  Total execution time: {summary['total_execution_time']:.3f}s")
+
+            # Display outputs from exec blocks
+            exec_entries = [e for e in reporter.entries if e.entry_type == "exec" and e.output.strip()]
+            if exec_entries:
+                self.log("📤 Python Execution Output:")
+                for i, entry in enumerate(exec_entries, 1):
+                    if entry.line_number:
+                        self.log(f"   Block {i} (line {entry.line_number}):")
+                    else:
+                        self.log(f"   Block {i}:")
+
+                    # Display output with proper indentation
+                    output_lines = entry.output.strip().split("\n")
+                    for line in output_lines:
+                        self.log(f"     {line}")
+
+                    if i < len(exec_entries):  # Add spacing between blocks
+                        self.log("")
+
+            # Display errors if any
+            error_entries = [e for e in reporter.entries if e.entry_type == "error"]
+            if error_entries:
+                self.log("❌ Python Execution Errors:")
+                for i, entry in enumerate(error_entries, 1):
+                    if entry.line_number:
+                        self.log(f"   Error {i} (line {entry.line_number}): {entry.error_message}", "ERROR")
+                    else:
+                        self.log(f"   Error {i}: {entry.error_message}", "ERROR")
+
+        except Exception as e:
+            self.log(f"Failed to display Python execution report: {e}", "WARNING")
 
     def compile_latex(self) -> bool:
         """Compile LaTeX to PDF using local LaTeX installation."""
@@ -397,7 +448,7 @@ class BuildManager:
                     )
 
                     if bibtex_result.returncode == 0:
-                        self.log("Bibtex completed successfully")
+                        self.log("Bibtex completed successfully", "INFO")
 
                         # Second pass - after bibtex
                         self.log("Running pdflatex (second pass)...")
@@ -432,7 +483,7 @@ class BuildManager:
 
                 # Check if PDF was generated successfully regardless of return code
                 if pdf_file.exists():
-                    self.log(f"PDF generated successfully: {pdf_file}")
+                    self.log(f"PDF generated successfully: {pdf_file}", "INFO")
                     if result.returncode != 0:
                         self.log("PDF generated despite LaTeX warnings/errors", "VERBOSE_WARNING")
                         if result.stderr and self.verbose:
@@ -555,7 +606,7 @@ class BuildManager:
             # Analyze word counts with improved section mapping
             self._analyze_improved_section_word_counts(content_sections)
 
-            self.log("Word count analysis completed")
+            self.log("Word count analysis completed", "INFO")
 
         except Exception as e:
             self.log(f"Word count analysis failed: {e}", "WARNING")
@@ -676,7 +727,7 @@ class BuildManager:
 
             output_refs_path = self.output_dir / "03_REFERENCES.bib"
             shutil.copy2(self.path_manager.references_bib, output_refs_path)
-            self.log(f"Copied {self.path_manager.references_bib.name} to output directory")
+            self.log(f"Copied {self.path_manager.references_bib.name} to output directory", "INFO")
             return True
 
         except Exception as e:
@@ -692,7 +743,7 @@ class BuildManager:
             copied_files = self.path_manager.copy_style_files_to_output()
 
             for copied_file in copied_files:
-                self.log(f"Copied {copied_file.name} to output directory")
+                self.log(f"Copied {copied_file.name} to output directory", "INFO")
 
             return True
 
@@ -716,12 +767,23 @@ class BuildManager:
                 if self.performance_tracker:
                     self.performance_tracker.start_operation("complete_build")
 
+                # Set manuscript path in environment for Python executor
+                EnvironmentManager.set_manuscript_path(self.manuscript_dir)
+
                 self.log("Starting PDF build process...", "STEP")
-                self.log(f"📁 Manuscript: {self.manuscript_dir}")
-                self.log(f"📁 Output: {self.output_dir}")
+                self.log(f"📁 Manuscript: {self.manuscript_dir}", "INFO")
+                self.log(f"📁 Output: {self.output_dir}", "INFO")
 
                 # Step 1: Setup
                 self.setup_output_directory()
+
+                # Reset Python execution reporter for this build
+                try:
+                    from ...utils.python_execution_reporter import reset_python_execution_reporter
+
+                    reset_python_execution_reporter()
+                except ImportError:
+                    pass  # Reporter not available
 
                 # Step 2: Generate figures first (before validation)
                 self.generate_figures()
@@ -738,6 +800,9 @@ class BuildManager:
 
                 # Step 5: Generate LaTeX manuscript
                 self.generate_manuscript_tex()
+
+                # Step 5.5: Display Python execution report in console (if applicable)
+                self.display_python_execution_report()
 
                 # Step 6: Copy references
                 self.copy_references()
@@ -765,9 +830,7 @@ class BuildManager:
                 # Step 11: Word count analysis
                 self.run_word_count_analysis()
 
-                # Success
-                self.log("PDF build completed successfully!", "SUCCESS")
-                self.log(f"📄 Generated: {self.output_pdf}")
+                # Build completed - let CLI framework handle success messaging
 
                 # End performance tracking
                 if self.performance_tracker:
@@ -785,7 +848,7 @@ class BuildManager:
                 return False
 
             except Exception as e:
-                self.log(f"Build failed with unexpected error: {e}", "ERROR")
+                # Log once with detailed context, don't duplicate
                 logger.error(f"Unexpected build error: {e}")
                 if self.performance_tracker:
                     self.performance_tracker.end_operation("complete_build", metadata={"error": str(e)})

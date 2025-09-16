@@ -17,6 +17,8 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+from rich.console import Console
+
 try:
     import requests
 except ImportError:
@@ -132,19 +134,22 @@ class FigureGenerator:
         if self.output_format not in self.supported_formats:
             raise ValueError(f"Unsupported format: {self.output_format}. Supported: {self.supported_formats}")
 
+        # Rich console for proper markup rendering
+        self.console = Console()
+
     def _log_summary(self, processed_count: int, processed_files: list, use_rich: bool = True):
         """Log processing summary with rich formatting."""
         if not processed_count:
             if use_rich:
-                print("✅ [green]No figures to process - all up to date![/green]")
+                self.console.print("✅ [green]No figures to process - all up to date![/green]")
             else:
                 print("✅ No figures to process - all up to date!")
             return
 
         if use_rich:
-            print(f"✅ [green]Successfully processed {processed_count} figure file(s):[/green]")
+            self.console.print(f"✅ [green]Successfully processed {processed_count} figure file(s):[/green]")
             for file_path in processed_files:
-                print(f"   • [cyan]{file_path.name}[/cyan]")
+                self.console.print(f"   • [cyan]{file_path.name}[/cyan]")
         else:
             print(f"✅ Successfully processed {processed_count} figure file(s):")
             for file_path in processed_files:
@@ -153,7 +158,7 @@ class FigureGenerator:
     def _skip_file_with_message(self, file_path: Path, reason: str, use_rich: bool = True) -> None:
         """Print skip message with consistent formatting."""
         if use_rich:
-            print(f"⏭️ [yellow]Skipping {file_path.name}: {reason}[/yellow]")
+            self.console.print(f"⏭️ [yellow]Skipping {file_path.name}: {reason}[/yellow]")
         else:
             print(f"⏭️ Skipping {file_path.name}: {reason}")
 
@@ -177,7 +182,7 @@ class FigureGenerator:
                 relative_path = str(mmd_file.relative_to(self.figures_dir))
                 if not self.checksum_manager.has_file_changed(relative_path) and output_file.exists():
                     if use_rich:
-                        print(f"⏭️ [dim]Skipping {mmd_file.name}: No changes detected[/dim]")
+                        self.console.print(f"⏭️ [dim]Skipping {mmd_file.name}: No changes detected[/dim]")
                     else:
                         print(f"⏭️ Skipping {mmd_file.name}: No changes detected")
                     continue
@@ -185,7 +190,7 @@ class FigureGenerator:
             # Use local Mermaid generation via web service (mermaid.ink)
             try:
                 if use_rich:
-                    print(f"🎨 [cyan]Generating {self.output_format.upper()} from {mmd_file.name}[/cyan]")
+                    self.console.print(f"🎨 [cyan]Generating {self.output_format.upper()} from {mmd_file.name}[/cyan]")
                 else:
                     print(f"🎨 Generating {self.output_format.upper()} from {mmd_file.name}")
 
@@ -198,13 +203,13 @@ class FigureGenerator:
                         self.checksum_manager.update_file_checksum(relative_path)
                 else:
                     if use_rich:
-                        print(f"❌ [red]Failed to generate {output_file.name}[/red]")
+                        self.console.print(f"❌ [red]Failed to generate {output_file.name}[/red]")
                     else:
                         print(f"❌ Failed to generate {output_file.name}")
 
             except Exception as e:
                 if use_rich:
-                    print(f"❌ [red]Error processing {mmd_file.name}: {e}[/red]")
+                    self.console.print(f"❌ [red]Error processing {mmd_file.name}: {e}[/red]")
                 else:
                     print(f"❌ Error processing {mmd_file.name}: {e}")
 
@@ -298,7 +303,7 @@ class FigureGenerator:
                     expected_outputs = self._get_expected_python_outputs(py_file)
                     if all(Path(output).exists() for output in expected_outputs):
                         if use_rich:
-                            print(f"⏭️ [dim]Skipping {py_file.name}: No changes detected[/dim]")
+                            self.console.print(f"⏭️ [dim]Skipping {py_file.name}: No changes detected[/dim]")
                         else:
                             print(f"⏭️ Skipping {py_file.name}: No changes detected")
                         continue
@@ -306,7 +311,7 @@ class FigureGenerator:
             # Execute the Python script using local Python
             try:
                 if use_rich:
-                    print(f"🐍 [cyan]Executing Python script: {py_file.name}[/cyan]")
+                    self.console.print(f"🐍 [cyan]Executing Python script: {py_file.name}[/cyan]")
                 else:
                     print(f"🐍 Executing Python script: {py_file.name}")
 
@@ -325,14 +330,14 @@ class FigureGenerator:
                         self.checksum_manager.update_file_checksum(relative_path)
 
                     if use_rich:
-                        print(f"✅ [green]Python script completed: {py_file.name}[/green]")
+                        self.console.print(f"✅ [green]Python script completed: {py_file.name}[/green]")
                     else:
                         print(f"✅ Python script completed: {py_file.name}")
                 else:
                     if use_rich:
-                        print(f"❌ [red]Python script failed: {py_file.name}[/red]")
+                        self.console.print(f"❌ [red]Python script failed: {py_file.name}[/red]")
                         if result.stderr:
-                            print(f"   [red]Error: {result.stderr}[/red]")
+                            self.console.print(f"   [red]Error: {result.stderr}[/red]")
                     else:
                         print(f"❌ Python script failed: {py_file.name}")
                         if result.stderr:
@@ -340,12 +345,12 @@ class FigureGenerator:
 
             except subprocess.TimeoutExpired:
                 if use_rich:
-                    print(f"⏰ [yellow]Python script timeout: {py_file.name}[/yellow]")
+                    self.console.print(f"⏰ [yellow]Python script timeout: {py_file.name}[/yellow]")
                 else:
                     print(f"⏰ Python script timeout: {py_file.name}")
             except Exception as e:
                 if use_rich:
-                    print(f"❌ [red]Error executing {py_file.name}: {e}[/red]")
+                    self.console.print(f"❌ [red]Error executing {py_file.name}: {e}[/red]")
                 else:
                     print(f"❌ Error executing {py_file.name}: {e}")
 
@@ -399,7 +404,7 @@ class FigureGenerator:
         # Check if Rscript is available
         if not self._check_rscript():
             if use_rich:
-                print("⚠️ [yellow]R/Rscript not found - skipping R files[/yellow]")
+                self.console.print("⚠️ [yellow]R/Rscript not found - skipping R files[/yellow]")
             else:
                 print("⚠️ R/Rscript not found - skipping R files")
             return []
@@ -417,7 +422,7 @@ class FigureGenerator:
                     expected_outputs = self._get_expected_r_outputs(r_file)
                     if all(Path(output).exists() for output in expected_outputs):
                         if use_rich:
-                            print(f"⏭️ [dim]Skipping {r_file.name}: No changes detected[/dim]")
+                            self.console.print(f"⏭️ [dim]Skipping {r_file.name}: No changes detected[/dim]")
                         else:
                             print(f"⏭️ Skipping {r_file.name}: No changes detected")
                         continue
@@ -425,7 +430,7 @@ class FigureGenerator:
             # Execute the R script using local Rscript
             try:
                 if use_rich:
-                    print(f"📊 [cyan]Executing R script: {r_file.name}[/cyan]")
+                    self.console.print(f"📊 [cyan]Executing R script: {r_file.name}[/cyan]")
                 else:
                     print(f"📊 Executing R script: {r_file.name}")
 
@@ -444,14 +449,14 @@ class FigureGenerator:
                         self.checksum_manager.update_file_checksum(relative_path)
 
                     if use_rich:
-                        print(f"✅ [green]R script completed: {r_file.name}[/green]")
+                        self.console.print(f"✅ [green]R script completed: {r_file.name}[/green]")
                     else:
                         print(f"✅ R script completed: {r_file.name}")
                 else:
                     if use_rich:
-                        print(f"❌ [red]R script failed: {r_file.name}[/red]")
+                        self.console.print(f"❌ [red]R script failed: {r_file.name}[/red]")
                         if result.stderr:
-                            print(f"   [red]Error: {result.stderr}[/red]")
+                            self.console.print(f"   [red]Error: {result.stderr}[/red]")
                     else:
                         print(f"❌ R script failed: {r_file.name}")
                         if result.stderr:
@@ -459,12 +464,12 @@ class FigureGenerator:
 
             except subprocess.TimeoutExpired:
                 if use_rich:
-                    print(f"⏰ [yellow]R script timeout: {r_file.name}[/yellow]")
+                    self.console.print(f"⏰ [yellow]R script timeout: {r_file.name}[/yellow]")
                 else:
                     print(f"⏰ R script timeout: {r_file.name}")
             except Exception as e:
                 if use_rich:
-                    print(f"❌ [red]Error executing {r_file.name}: {e}[/red]")
+                    self.console.print(f"❌ [red]Error executing {r_file.name}: {e}[/red]")
                 else:
                     print(f"❌ Error executing {r_file.name}: {e}")
 
@@ -544,7 +549,7 @@ class FigureGenerator:
 
         if not all_files:
             if use_rich:
-                print("ℹ️ [blue]No figure files found in FIGURES directory[/blue]")
+                self.console.print("ℹ️ [blue]No figure files found in FIGURES directory[/blue]")
             else:
                 print("ℹ️ No figure files found in FIGURES directory")
             return {"total_files": 0, "processed_files": [], "skipped_files": []}
@@ -586,7 +591,7 @@ class FigureGenerator:
                 self.checksum_manager._save_checksums()
             except Exception as e:
                 if use_rich:
-                    print(f"⚠️ [yellow]Warning: Failed to save figure cache: {e}[/yellow]")
+                    self.console.print(f"⚠️ [yellow]Warning: Failed to save figure cache: {e}[/yellow]")
                 else:
                     print(f"⚠️ Warning: Failed to save figure cache: {e}")
 

@@ -804,6 +804,24 @@ class DOIValidator(BaseValidator):
         journal = re.sub(r"\s+", " ", journal)
         return journal.strip().lower()
 
+    def resolve_doi(self, doi: str) -> dict:
+        """Resolve DOI to metadata (public API).
+
+        Args:
+            doi: The DOI to resolve
+
+        Returns:
+            Dictionary with metadata or error information
+        """
+        try:
+            metadata = self._fetch_crossref_metadata(doi)
+            if metadata:
+                return {"success": True, **metadata}
+            else:
+                return {"success": False, "error": "No metadata found"}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
     def _fetch_crossref_metadata(self, doi: str):
         """Fetch metadata from CrossRef (backward compatibility)."""
         return self.crossref_client.fetch_metadata(doi)

@@ -44,7 +44,7 @@ from data_updater import update_all_data_files
 
 # Update data files and load arXiv statistics
 update_all_data_files()
-df = pd.read_csv("DATA/arxiv_monthly_submissions.csv")
+df = pd.read_csv(Path("DATA") / "arxiv_monthly_submissions.csv")
 df['year_month'] = pd.to_datetime(df['year_month'])
 
 # Calculate key statistics for the manuscript
@@ -53,7 +53,7 @@ total_submissions = int(df['submissions'].sum())
 total_submissions_millions = round(total_submissions / 1_000_000, 2)
 years_span = int(df['year_month'].dt.year.max() - df['year_month'].dt.year.min() + 1)
 compilation_date = datetime.now().strftime("%B %d, %Y")
-last_updated = datetime.fromtimestamp(Path("DATA/arxiv_monthly_submissions.csv").stat().st_mtime).strftime("%B %Y")
+last_updated = datetime.fromtimestamp((Path("DATA") / "arxiv_monthly_submissions.csv").stat().st_mtime).strftime("%B %Y")
 
 print(f"Loaded {len(df)} months of arXiv data spanning {years_span} years")
 }}

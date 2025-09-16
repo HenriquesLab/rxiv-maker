@@ -351,9 +351,31 @@ class CleanCommand(BaseCommand):
 class InitCommand(BaseCommand):
     """Initialize command implementation using the framework."""
 
+    def setup_common_options(self, ctx: click.Context, manuscript_path: Optional[str] = None) -> None:
+        """Override setup to handle manuscript path for initialization.
+
+        Args:
+            ctx: Click context containing command options
+            manuscript_path: Optional manuscript path override
+        """
+        from rxiv_maker.core.environment_manager import EnvironmentManager
+
+        # Extract common options from context
+        self.verbose = ctx.obj.get("verbose", False) or EnvironmentManager.is_verbose()
+        self.engine = "local"  # Only local engine is supported
+
+        # Store manuscript path without PathManager validation since we're creating the directory
+        if manuscript_path is None:
+            manuscript_path = EnvironmentManager.get_manuscript_path() or "MANUSCRIPT"
+
+        # Store the raw path for use in execute_operation
+        self.raw_manuscript_path = manuscript_path
+
+        if self.verbose:
+            self.console.print(f"📁 Will create manuscript at: {manuscript_path}", style="blue")
+
     def execute_operation(
         self,
-        manuscript_path: Optional[str] = None,
         force: bool = False,
         no_interactive: bool = False,
         validate: bool = False,
@@ -361,7 +383,6 @@ class InitCommand(BaseCommand):
         """Execute manuscript initialization.
 
         Args:
-            manuscript_path: Directory to create for manuscript
             force: Force overwrite existing files
             no_interactive: Skip interactive prompts
             validate: Run validation after initialization
@@ -370,9 +391,8 @@ class InitCommand(BaseCommand):
 
         from rich.prompt import Prompt
 
-        # Use default manuscript path if not provided
-        if manuscript_path is None:
-            manuscript_path = "MANUSCRIPT"
+        # Get manuscript path from raw path (set during setup_common_options)
+        manuscript_path = self.raw_manuscript_path
 
         manuscript_dir = Path(manuscript_path)
 
@@ -610,9 +630,9 @@ Create tables using standard markdown syntax:
 # References
 
 Citations will be automatically formatted. Add entries to 03_REFERENCES.bib and
-reference them using @citation_key syntax.
+reference them in your text.
 
-Example: This is an important finding [@smith2023].
+This is an important finding [@smith2023; @johnson2022].
 """
 
     def _get_supplementary_template(self) -> str:
@@ -1149,6 +1169,11 @@ class BuildCommand(BaseCommand):
         # Initialize progress manager with our centralized framework
         progress_manager = get_progress_manager()
 
+        # Initialize variables to capture build results
+        success = False
+        pdf_path = None
+        build_manager = None
+
         with progress_operation(progress_manager, OperationType.BUILD, "Building PDF manuscript") as build_op:
             try:
                 if self.path_manager is None:
@@ -1166,40 +1191,39 @@ class BuildCommand(BaseCommand):
                     quiet=quiet,
                 )
 
-                self.console.print("📝 Starting PDF build process...", style="blue")
+                # Progress already shown by progress_operation context manager
 
                 # Execute build with centralized error handling
                 success = build_manager.build()
 
                 if success:
                     pdf_path = build_manager.output_pdf
-                    self.success_message("PDF build completed successfully!", f"Generated: {pdf_path}")
-
-                    # Show build statistics using our centralized progress framework
-                    if hasattr(build_manager, "get_build_stats"):
-                        stats = build_manager.get_build_stats()
-                        self.console.print(f"📊 Build time: {stats.get('duration', 'N/A')}", style="dim")
-
-                    # Show helpful tips after successful build
-                    self._show_build_tips()
                 else:
                     self.error_message("PDF build failed", "Check the logs above for detailed error information")
                     raise CommandExecutionError("Build failed")
 
             except Exception as e:
                 progress_manager.report_error(build_op, str(e))
+                # Don't duplicate error logging - progress_manager already logged it
+                # Just provide helpful tips for specific error types
                 if "validation" in str(e).lower():
-                    self.error_message(
-                        f"Build failed during validation: {e}", "Use --skip-validation to bypass validation checks"
-                    )
+                    self.info_message("💡 Tip: Use --skip-validation to bypass validation checks")
                 elif "figures" in str(e).lower():
-                    self.error_message(
-                        f"Build failed during figure generation: {e}",
-                        "Check your figure scripts or use --force-figures",
-                    )
-                else:
-                    self.error_message(f"Build failed: {e}")
-                raise CommandExecutionError(f"Build failed: {e}") from e
+                    self.info_message("💡 Tip: Check your figure scripts or use --force-figures")
+
+                raise CommandExecutionError("Build failed") from e
+
+        # Handle success messages outside progress context to avoid persistent progress bar
+        if success and pdf_path:
+            self.success_message("PDF build completed successfully!", f"Generated: {pdf_path}")
+
+            # Show build statistics using our centralized progress framework
+            if build_manager and hasattr(build_manager, "get_build_stats"):
+                stats = build_manager.get_build_stats()
+                self.console.print(f"📊 Build time: {stats.get('duration', 'N/A')}", style="dim")
+
+            # Show helpful tips after successful build
+            self._show_build_tips()
 
     def _show_build_tips(self) -> None:
         """Show helpful tips after successful PDF build."""

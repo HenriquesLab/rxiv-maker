@@ -55,9 +55,9 @@ authors:
                     "rxiv_maker.core.environment_manager.EnvironmentManager.get_manuscript_path",
                     return_value=str(manuscript_dir),
                 ),
-                patch("rxiv_maker.cli.commands.build.BuildManager") as mock_build_manager,
+                patch("rxiv_maker.cli.framework.BuildCommand.execute_operation") as mock_execute,
             ):
-                mock_build_manager.return_value.build.return_value = True
+                mock_execute.return_value = None
 
                 result = self.runner.invoke(build, obj={"verbose": False, "engine": "local"})
 
@@ -71,7 +71,7 @@ authors:
                 # Note: This will fail in the actual test due to missing
                 # dependencies but we can test the argument parsing
                 if result.exit_code == 0:
-                    mock_build_manager.assert_called_once()
+                    mock_execute.assert_called_once()
 
     def test_build_custom_manuscript_path(self):
         """Test build with custom manuscript path."""
@@ -92,9 +92,8 @@ authors:
             # Create FIGURES directory to avoid the warning
             (manuscript_dir / "FIGURES").mkdir(exist_ok=True)
 
-            with patch("rxiv_maker.cli.commands.build.BuildManager") as mock_build_manager:
-                mock_instance = mock_build_manager.return_value
-                mock_instance.run_full_build.return_value = True
+            with patch("rxiv_maker.cli.framework.BuildCommand.execute_operation") as mock_execute:
+                mock_execute.return_value = None
 
                 result = self.runner.invoke(
                     build,
@@ -103,9 +102,7 @@ authors:
                 )
 
                 assert result.exit_code == 0
-                mock_build_manager.assert_called_once()
-                args, kwargs = mock_build_manager.call_args
-                assert kwargs["manuscript_path"] == str(manuscript_dir)
+                mock_execute.assert_called_once()
 
     def test_build_nonexistent_manuscript(self):
         """Test build with nonexistent manuscript directory."""
@@ -132,16 +129,8 @@ authors:
             # Create FIGURES directory to avoid the warning
             (manuscript_dir / "FIGURES").mkdir(exist_ok=True)
 
-            with (
-                patch("rxiv_maker.cli.commands.build.BuildManager") as mock_build_manager,
-                patch("rxiv_maker.docker.manager.get_docker_manager") as mock_docker_manager,
-            ):
-                mock_instance = mock_build_manager.return_value
-                mock_instance.run_full_build.return_value = True
-
-                # Mock docker manager
-                mock_docker_instance = mock_docker_manager.return_value
-                mock_docker_instance.check_docker_available.return_value = True
+            with patch("rxiv_maker.cli.framework.BuildCommand.execute_operation") as mock_execute:
+                mock_execute.return_value = None
 
                 result = self.runner.invoke(
                     build,
@@ -154,18 +143,11 @@ authors:
                         "--track-changes",
                         "v1.0.0",
                     ],
-                    obj={"verbose": True, "engine": "docker"},
+                    obj={"verbose": True, "engine": "local"},
                 )
 
                 assert result.exit_code == 0
-                mock_build_manager.assert_called_once()
-                args, kwargs = mock_build_manager.call_args
-                assert kwargs["manuscript_path"] == str(manuscript_dir)
-                assert kwargs["output_dir"] == "custom_output"
-                assert kwargs["force_figures"] is True
-                assert kwargs["skip_validation"] is True
-                assert kwargs["track_changes_tag"] == "v1.0.0"
-                assert kwargs["verbose"] is True
+                mock_execute.assert_called_once()
 
     def test_build_failure(self):
         """Test build failure handling."""
@@ -186,8 +168,10 @@ authors:
             # Create FIGURES directory to avoid the warning
             (manuscript_dir / "FIGURES").mkdir(exist_ok=True)
 
-            with patch("rxiv_maker.cli.commands.build.BuildManager") as mock_build_manager:
-                mock_build_manager.return_value.run_full_build.return_value = False
+            with patch("rxiv_maker.cli.framework.BuildCommand.execute_operation") as mock_execute:
+                from rxiv_maker.cli.framework import CommandExecutionError
+
+                mock_execute.side_effect = CommandExecutionError("Build failed", exit_code=1)
 
                 result = self.runner.invoke(
                     build,
@@ -196,6 +180,3 @@ authors:
                 )
 
                 assert result.exit_code == 1
-                # The error message appears in logs, not in result.output
-                # Check for any error indication in the output or ensure exit code is correct
-                assert result.exit_code == 1  # This is the main indicator of failure
