@@ -1,11 +1,7 @@
 """Integration tests for Python execution reporting in manuscripts."""
 
 import os
-import tempfile
-from pathlib import Path
 from unittest.mock import patch
-
-import pytest
 
 from rxiv_maker.converters.custom_command_processor import process_custom_commands
 from rxiv_maker.core.environment_manager import EnvironmentManager
@@ -90,7 +86,7 @@ Final result: {{py:get summary_text}}
 """
 
         # Process the markdown
-        result = process_custom_commands(test_markdown)
+        process_custom_commands(test_markdown)
 
         # Get the reporter
         reporter = get_python_execution_reporter()
@@ -151,7 +147,7 @@ Data directory exists: {{py:get data_exists}}
 """
 
         # Process the markdown
-        result = process_custom_commands(test_markdown)
+        process_custom_commands(test_markdown)
 
         # Get reporter
         reporter = get_python_execution_reporter()
@@ -338,7 +334,7 @@ Line 12
 """
 
         # Process with line tracking
-        result = process_custom_commands(test_markdown)
+        process_custom_commands(test_markdown)
 
         # Get reporter
         reporter = get_python_execution_reporter()
@@ -448,7 +444,7 @@ Normal text here.
 """
 
         # Process the markdown
-        result = process_custom_commands(test_markdown)
+        process_custom_commands(test_markdown)
 
         # Get reporter
         reporter = get_python_execution_reporter()
@@ -481,7 +477,7 @@ Message: {{py:get unicode_message}}
 """
 
         # Process the markdown
-        result = process_custom_commands(test_markdown)
+        process_custom_commands(test_markdown)
 
         # Get reporter
         reporter = get_python_execution_reporter()
@@ -516,7 +512,7 @@ Result: {{py:get long_string}}
 """
 
         # Process the markdown
-        result = process_custom_commands(test_markdown)
+        process_custom_commands(test_markdown)
 
         # Get reporter
         reporter = get_python_execution_reporter()

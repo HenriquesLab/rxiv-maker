@@ -5,6 +5,7 @@ including security restrictions, error handling, and output formatting.
 """
 
 import os
+
 import pytest
 
 from rxiv_maker.converters.python_executor import (
@@ -415,8 +416,8 @@ print(f"Manuscript is at: {manuscript_location}")
 
     def test_manuscript_path_with_relative_operations(self, tmp_path):
         """Test MANUSCRIPT_PATH with relative file operations."""
+
         from rxiv_maker.core.environment_manager import EnvironmentManager
-        import os
 
         # Create test manuscript structure
         manuscript_dir = tmp_path / "relative_test"
@@ -448,8 +449,9 @@ line_count = len(content.strip().split('\\n'))
 
     def test_manuscript_path_fallback_behavior(self):
         """Test behavior when MANUSCRIPT_PATH environment variable is not set."""
-        from rxiv_maker.core.environment_manager import EnvironmentManager
         import os
+
+        from rxiv_maker.core.environment_manager import EnvironmentManager
 
         # Ensure no manuscript path is set
         if EnvironmentManager.MANUSCRIPT_PATH in os.environ:
@@ -486,10 +488,10 @@ manuscript_path = MANUSCRIPT_PATH
 print(f"Subprocess MANUSCRIPT_PATH: {manuscript_path}")
 
 # Verify it's the correct path
-expected_path = r"{}"
+expected_path = r"{expected_path}"
 is_correct = manuscript_path == expected_path
 print(f"Path is correct: {is_correct}")
-""".format(str(manuscript_dir.resolve()).replace("\\", "\\\\"))
+""".format(expected_path=str(manuscript_dir.resolve()).replace("\\", "\\\\"))
 
         result = executor.execute_block(code)
         assert str(manuscript_dir.resolve()) in result
