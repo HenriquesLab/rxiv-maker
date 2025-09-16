@@ -351,9 +351,31 @@ class CleanCommand(BaseCommand):
 class InitCommand(BaseCommand):
     """Initialize command implementation using the framework."""
 
+    def setup_common_options(self, ctx: click.Context, manuscript_path: Optional[str] = None) -> None:
+        """Override setup to handle manuscript path for initialization.
+
+        Args:
+            ctx: Click context containing command options
+            manuscript_path: Optional manuscript path override
+        """
+        from rxiv_maker.core.environment_manager import EnvironmentManager
+
+        # Extract common options from context
+        self.verbose = ctx.obj.get("verbose", False) or EnvironmentManager.is_verbose()
+        self.engine = "local"  # Only local engine is supported
+
+        # Store manuscript path without PathManager validation since we're creating the directory
+        if manuscript_path is None:
+            manuscript_path = EnvironmentManager.get_manuscript_path() or "MANUSCRIPT"
+
+        # Store the raw path for use in execute_operation
+        self.raw_manuscript_path = manuscript_path
+
+        if self.verbose:
+            self.console.print(f"📁 Will create manuscript at: {manuscript_path}", style="blue")
+
     def execute_operation(
         self,
-        manuscript_path: Optional[str] = None,
         force: bool = False,
         no_interactive: bool = False,
         validate: bool = False,
@@ -361,7 +383,6 @@ class InitCommand(BaseCommand):
         """Execute manuscript initialization.
 
         Args:
-            manuscript_path: Directory to create for manuscript
             force: Force overwrite existing files
             no_interactive: Skip interactive prompts
             validate: Run validation after initialization
@@ -370,9 +391,8 @@ class InitCommand(BaseCommand):
 
         from rich.prompt import Prompt
 
-        # Use default manuscript path if not provided
-        if manuscript_path is None:
-            manuscript_path = "MANUSCRIPT"
+        # Get manuscript path from raw path (set during setup_common_options)
+        manuscript_path = self.raw_manuscript_path
 
         manuscript_dir = Path(manuscript_path)
 
@@ -610,9 +630,9 @@ Create tables using standard markdown syntax:
 # References
 
 Citations will be automatically formatted. Add entries to 03_REFERENCES.bib and
-reference them using @citation_key syntax.
+reference them in your text.
 
-Example: This is an important finding [@smith2023].
+This is an important finding [@smith2023; @johnson2022].
 """
 
     def _get_supplementary_template(self) -> str:

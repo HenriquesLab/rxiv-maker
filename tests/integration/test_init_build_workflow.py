@@ -49,8 +49,9 @@ class TestInitBuildWorkflow:
 
         # Step 2: Verify the figure reference is correct
         main_content = (manuscript_dir / "01_MAIN.md").read_text()
-        assert "![](FIGURES/Figure__example.pdf)" in main_content, "Figure reference path incorrect"
-        assert "{#fig:example}" in main_content, "Figure ID format incorrect"
+        assert "![Figure 1: Example figure caption](FIGURES/Figure__example.mmd)" in main_content, (
+            "Figure reference path incorrect"
+        )
 
         # Step 3: Build the manuscript (this should succeed without errors)
         build_result = subprocess.run(

@@ -4,13 +4,13 @@ import os
 from unittest.mock import patch
 
 from rxiv_maker.converters.custom_command_processor import process_custom_commands
+from rxiv_maker.converters.python_executor import reset_python_executor
 from rxiv_maker.core.environment_manager import EnvironmentManager
 from rxiv_maker.engines.operations.build_manager import BuildManager
 from rxiv_maker.utils.python_execution_reporter import (
     get_python_execution_reporter,
     reset_python_execution_reporter,
 )
-from rxiv_maker.converters.python_executor import reset_python_executor
 
 
 class TestPythonExecutionReportingIntegration:

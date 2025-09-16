@@ -52,4 +52,4 @@ def init(
     """
     # Use centralized InitCommand framework - eliminates 250+ lines of boilerplate!
     command = InitCommand()
-    command.run(ctx, manuscript_path, force=force, no_interactive=no_interactive, validate=validate)
+    command.run(ctx, manuscript_path=manuscript_path, force=force, no_interactive=no_interactive, validate=validate)

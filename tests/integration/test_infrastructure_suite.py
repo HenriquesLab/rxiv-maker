@@ -355,7 +355,7 @@ class TestNetworkIntegration(InfrastructureTestBase):
         except ImportError:
             self.skipTest("DOI validator not available")
 
-        validator = DOIValidator()
+        validator = DOIValidator(manuscript_path=".")
 
         # Mock network failure
         with patch("requests.get") as mock_get:
