@@ -129,7 +129,7 @@ def test(session, test_type):
         )
 
 
-@nox.session(python="3.11", reuse_venv=True)
+@nox.session(venv_backend="none", reuse_venv=True)
 def test_ci_exact(session):
     """Test with exact CI environment settings to forecast failures locally.
 
@@ -148,7 +148,13 @@ def test_ci_exact(session):
     session.env["LC_ALL"] = "C.UTF-8"
     session.env["LANG"] = "C.UTF-8"
 
-    install_project_deps(session)
+    # Use current environment (assumes you're in the project venv)
+    import sys
+
+    if not sys.executable.endswith(".venv/bin/python"):
+        session.log("Warning: Not running in project virtual environment")
+        session.log(f"Current Python: {sys.executable}")
+        session.log("Run: source .venv/bin/activate")
 
     # Run exact same command as CI with same flags
     session.run(

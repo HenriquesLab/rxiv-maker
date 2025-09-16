@@ -501,7 +501,12 @@ print(f"Path is correct: {{is_correct}}")
 """
 
         result = executor.execute_block(code)
-        assert str(manuscript_dir.resolve()) in result
+        # Clean the result to handle LaTeX line wrapping in verbatim blocks
+        cleaned_result = (
+            result.replace("\\begin{verbatim}", "").replace("\\end{verbatim}", "").replace("\n", "").replace(" ", "")
+        )
+        cleaned_path = str(manuscript_dir.resolve()).replace(" ", "")
+        assert cleaned_path in cleaned_result
         assert "Path is correct: True" in result
 
 

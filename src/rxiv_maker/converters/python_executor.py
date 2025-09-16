@@ -315,6 +315,13 @@ class PythonExecutor:
         # Prepare initialization imports
         init_imports = "\n".join(self.initialization_imports)
 
+        # Escape the code and imports for safe embedding in the script
+        import json as json_module
+
+        # Create proper JSON strings that can be embedded in the script
+        code_json_str = json_module.dumps(code)
+        init_imports_json_str = json_module.dumps(init_imports)
+
         script_content = f"""
 import sys
 import io
@@ -381,12 +388,16 @@ try:
         # Figure utilities not available, continue without them
         pass
 
+    # Load code and imports from JSON to ensure proper escaping
+    init_imports_code = {init_imports_json_str}
+    user_code = {code_json_str}
+
     # Execute initialization imports first
-    if '''{init_imports}''':
-        exec('''{init_imports}''', exec_globals)
+    if init_imports_code:
+        exec(init_imports_code, exec_globals)
 
     # Execute user code in the context
-    exec('''{code}''', exec_globals)
+    exec(user_code, exec_globals)
 
     # Capture final context (only simple types that can be JSON serialized)
     for key, value in exec_globals.items():
