@@ -751,8 +751,8 @@ def identify_long_technical_identifiers(text: LatexContent, min_length: int = 15
     # Pattern to match areas to protect from modification
     protect_pattern = (
         r"(\\[a-zA-Z]+\{[^}]*\})|"  # LaTeX commands like \cite{...}, \texttt{...}
-        r"(\$[^$]*\$)|"              # Math mode $...$
-        r"(\\seqsplit\{[^}]*\})"     # Existing seqsplit commands
+        r"(\$[^$]*\$)|"  # Math mode $...$
+        r"(\\seqsplit\{[^}]*\})"  # Existing seqsplit commands
     )
 
     protected_areas = []
@@ -768,7 +768,7 @@ def identify_long_technical_identifiers(text: LatexContent, min_length: int = 15
 
     # Pattern for long technical identifiers
     # Matches alphanumeric strings with underscores, dots, or mixed case
-    identifier_pattern = r'\b[A-Za-z][A-Za-z0-9_.]*[A-Za-z0-9][A-Za-z0-9_.]*\b'
+    identifier_pattern = r"\b[A-Za-z][A-Za-z0-9_.]*[A-Za-z0-9][A-Za-z0-9_.]*\b"
 
     def replace_identifier(match):
         identifier = match.group()
@@ -803,20 +803,20 @@ def wrap_long_strings_in_context(text: LatexContent, min_length: int = 20) -> La
     """
     # Keywords that often precede technical identifiers
     context_keywords = [
-        r'\balgorithm\s+',
-        r'\bmethod\s+',
-        r'\bprotocol\s+',
-        r'\btool\s+',
-        r'\bsoftware\s+',
-        r'\bpackage\s+',
-        r'\blibrary\s+',
+        r"\balgorithm\s+",
+        r"\bmethod\s+",
+        r"\bprotocol\s+",
+        r"\btool\s+",
+        r"\bsoftware\s+",
+        r"\bpackage\s+",
+        r"\blibrary\s+",
     ]
 
     # Protect same areas as the identifier function
     protect_pattern = (
         r"(\\[a-zA-Z]+\{[^}]*\})|"  # LaTeX commands
-        r"(\$[^$]*\$)|"              # Math mode
-        r"(\\seqsplit\{[^}]*\})"     # Existing seqsplit
+        r"(\$[^$]*\$)|"  # Math mode
+        r"(\\seqsplit\{[^}]*\})"  # Existing seqsplit
     )
 
     protected_areas = []

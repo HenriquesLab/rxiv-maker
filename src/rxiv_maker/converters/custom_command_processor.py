@@ -264,18 +264,18 @@ def _process_python_commands_three_step(text: MarkdownContent, original_text: Ma
             logger = get_logger()
 
             # Create more informative error message
-            error_lines = str(e).split('\n')
+            error_lines = str(e).split("\n")
             main_error = error_lines[0] if error_lines else str(e)
 
             # Show a preview of the code block for context
             code_preview = exec_block["code"].strip()
-            lines = code_preview.split('\n')
+            lines = code_preview.split("\n")
             preview_lines = lines[:3]  # Show first 3 lines
             if len(lines) > 3:
-                preview_lines.append('...')
-            code_snippet = '\n    '.join(preview_lines)
+                preview_lines.append("...")
+            code_snippet = "\n    ".join(preview_lines)
 
-            error_msg = f"""Python execution error in exec block starting at line {exec_block['line_number']}:
+            error_msg = f"""Python execution error in exec block starting at line {exec_block["line_number"]}:
 
 Error: {main_error}
 
@@ -291,7 +291,9 @@ This error occurred while executing the {{{{py:exec}}}} block in the manuscript.
             logger.error(error_msg)
 
             # Re-raise with a simpler message to avoid duplication in higher-level error handling
-            simple_msg = f"Python execution error in exec block starting at line {exec_block['line_number']}: {main_error}"
+            simple_msg = (
+                f"Python execution error in exec block starting at line {exec_block['line_number']}: {main_error}"
+            )
 
             if isinstance(e, PythonExecutionError):
                 # Preserve the original exception but ensure it halts the build
@@ -472,7 +474,7 @@ def _process_python_block_commands(text: MarkdownContent, executor) -> LatexCont
 def _process_python_inline_commands(text: MarkdownContent, executor) -> LatexContent:
     """Process inline {py: expression} commands."""
     # Split text into lines to calculate line numbers for tracking
-    lines = text.split('\n')
+    lines = text.split("\n")
 
     def process_inline_command(match: re.Match[str]) -> str:
         expression = match.group(1).strip()
@@ -504,7 +506,7 @@ def _process_python_inline_commands(text: MarkdownContent, executor) -> LatexCon
 def _process_python_get_blocks(text: MarkdownContent, executor) -> LatexContent:
     """Process all {{py:get}} blocks using the initialized Python context."""
     # Split text into lines to calculate line numbers for tracking
-    lines = text.split('\n')
+    lines = text.split("\n")
 
     def process_get_command(match: re.Match[str]) -> str:
         variable_name = match.group(1).strip()

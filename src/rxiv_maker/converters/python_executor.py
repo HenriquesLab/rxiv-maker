@@ -40,6 +40,7 @@ class PythonExecutor:
         # Initialize execution reporter for tracking Python activities
         try:
             from ..utils.python_execution_reporter import get_python_execution_reporter
+
             self.reporter = get_python_execution_reporter()
         except ImportError:
             self.reporter = None
@@ -278,7 +279,7 @@ class PythonExecutor:
                 self.execution_context.update(result.get("context", {}))
             else:
                 # Return the detailed error directly without additional formatting
-                output = result['error']
+                output = result["error"]
 
             # Limit output length
             if len(output) > self.max_output_length:
@@ -587,17 +588,14 @@ print(json.dumps(result))
                         output=output,
                         line_number=line_number,
                         file_path=file_path,
-                        execution_time=execution_time
+                        execution_time=execution_time,
                     )
                 return output.strip() or ""
             else:
                 # Report inline execution error
                 if self.reporter:
                     self.reporter.track_error(
-                        error_message=output,
-                        code_snippet=original_code,
-                        line_number=line_number,
-                        file_path=file_path
+                        error_message=output, code_snippet=original_code, line_number=line_number, file_path=file_path
                     )
                 # Escape underscores in error messages for LaTeX compatibility
                 escaped_output = output.replace("_", "\\_")
@@ -607,10 +605,7 @@ print(json.dumps(result))
             # Report inline execution error
             if self.reporter:
                 self.reporter.track_error(
-                    error_message=str(e),
-                    code_snippet=original_code,
-                    line_number=line_number,
-                    file_path=file_path
+                    error_message=str(e), code_snippet=original_code, line_number=line_number, file_path=file_path
                 )
             # Escape underscores in error messages for LaTeX compatibility
             error_msg = str(e).replace("_", "\\_")
@@ -652,7 +647,7 @@ print(json.dumps(result))
                         output=output,
                         line_number=line_number,
                         file_path=manuscript_file or "manuscript",
-                        execution_time=execution_time
+                        execution_time=execution_time,
                     )
             else:
                 # Report execution error
@@ -661,7 +656,7 @@ print(json.dumps(result))
                         error_message=output,
                         code_snippet=code,
                         line_number=line_number,
-                        file_path=manuscript_file or "manuscript"
+                        file_path=manuscript_file or "manuscript",
                     )
 
                 error_context = ""
@@ -678,7 +673,7 @@ print(json.dumps(result))
                     error_message=str(e),
                     code_snippet=code,
                     line_number=line_number,
-                    file_path=manuscript_file or "manuscript"
+                    file_path=manuscript_file or "manuscript",
                 )
 
             error_context = ""
@@ -802,7 +797,9 @@ print(json.dumps(result))
             sys.path[:] = original_sys_path
             os.chdir(original_cwd)
 
-    def get_variable_value(self, variable_name: str, line_number: Optional[int] = None, file_path: str = "manuscript") -> Any:
+    def get_variable_value(
+        self, variable_name: str, line_number: Optional[int] = None, file_path: str = "manuscript"
+    ) -> Any:
         """Get the value of a variable from the execution context ({{py:get}}).
 
         Args:
@@ -823,7 +820,7 @@ print(json.dumps(result))
                     error_message=f"Variable '{variable_name}' not found in context",
                     code_snippet=f"{{{{py:get {variable_name}}}}}",
                     line_number=line_number,
-                    file_path=file_path
+                    file_path=file_path,
                 )
             raise PythonExecutionError(f"Variable '{variable_name}' not found in context")
 
@@ -832,10 +829,7 @@ print(json.dumps(result))
         # Report successful variable access
         if self.reporter:
             self.reporter.track_get_variable(
-                variable_name=variable_name,
-                variable_value=variable_value,
-                line_number=line_number,
-                file_path=file_path
+                variable_name=variable_name, variable_value=variable_value, line_number=line_number, file_path=file_path
             )
 
         return variable_value
