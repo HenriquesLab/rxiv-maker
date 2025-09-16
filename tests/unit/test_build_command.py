@@ -55,7 +55,10 @@ class TestBuildCommand:
 
         # Mock Progress
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=mock_progress_instance)
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress.return_value = mock_progress_context
 
         # Use a real temporary directory that exists to pass Click validation
         with self.runner.isolated_filesystem():
@@ -78,7 +81,10 @@ class TestBuildCommand:
 
         # Mock Progress
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=mock_progress_instance)
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress.return_value = mock_progress_context
 
         # Use a real temporary directory that exists to pass Click validation
         with self.runner.isolated_filesystem():
@@ -101,7 +107,10 @@ class TestBuildCommand:
 
         # Mock Progress
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=mock_progress_instance)
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress.return_value = mock_progress_context
 
         # Use a real temporary directory that exists to pass Click validation
         with self.runner.isolated_filesystem():
@@ -153,7 +162,10 @@ class TestBuildCommand:
 
         # Mock Progress
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=mock_progress_instance)
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress.return_value = mock_progress_context
 
         # Use a real temporary directory
         with self.runner.isolated_filesystem():
@@ -201,7 +213,10 @@ class TestBuildCommand:
 
         # Mock Progress
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=mock_progress_instance)
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress.return_value = mock_progress_context
 
         # Test debug flag with real directory
         with self.runner.isolated_filesystem():
@@ -242,7 +257,10 @@ class TestBuildCommand:
 
         # Mock Progress
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=mock_progress_instance)
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress.return_value = mock_progress_context
 
         result = self.runner.invoke(build, ["test_manuscript", "--output-dir", "custom_output"])
 
@@ -267,7 +285,10 @@ class TestBuildCommand:
         mock_progress_instance = MagicMock()
         mock_task = MagicMock()
         mock_progress_instance.add_task.return_value = mock_task
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=mock_progress_instance)
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress.return_value = mock_progress_context
 
         result = self.runner.invoke(build, ["test_manuscript"])
 
@@ -306,7 +327,10 @@ class TestBuildCommandEdgeCases:
 
         # Mock Progress
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=mock_progress_instance)
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress.return_value = mock_progress_context
 
         result = self.runner.invoke(build, ["test_manuscript", "--skip-validation"])
 
@@ -337,7 +361,10 @@ class TestBuildCommandEdgeCases:
 
         # Mock Progress
         mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        mock_progress_context = MagicMock()
+        mock_progress_context.__enter__ = MagicMock(return_value=mock_progress_instance)
+        mock_progress_context.__exit__ = MagicMock(return_value=None)
+        mock_progress.return_value = mock_progress_context
 
         result = self.runner.invoke(build, ["test_manuscript", "--track-changes", "v1.0.0", "--force-figures"])
 
