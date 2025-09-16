@@ -95,7 +95,7 @@ Final result: {{py:get summary_text}}
         assert len(reporter.entries) > 0
 
         # Check that we have different types of operations
-        operation_types = {entry.operation_type for entry in reporter.entries}
+        operation_types = {entry.entry_type for entry in reporter.entries}
         expected_types = {"exec", "get", "inline"}
         assert expected_types.issubset(operation_types) or "init" in operation_types
 
@@ -295,7 +295,7 @@ Quick check: {py: len(data) > 0}
         assert len(reporter.entries) >= 5  # Multiple operations should be recorded
 
         # Check for different operation types
-        operation_types = {entry.operation_type for entry in reporter.entries}
+        operation_types = {entry.entry_type for entry in reporter.entries}
         assert len(operation_types) >= 2  # Should have at least exec/init and get operations
 
         # Verify output capture
@@ -354,7 +354,7 @@ Line 12
     @patch.object(BuildManager, "compile_pdf")
     @patch.object(BuildManager, "validate_pdf")
     @patch.object(BuildManager, "copy_final_pdf")
-    @patch.object(BuildManager, "analyze_word_counts")
+    @patch.object(BuildManager, "run_word_count_analysis")
     def test_reporting_integration_with_build_manager(self, *mocks, tmp_path):
         """Test integration of reporting with BuildManager."""
         # Create minimal manuscript

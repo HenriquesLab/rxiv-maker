@@ -60,7 +60,7 @@ class PythonExecutionReporter:
     ) -> None:
         """Track execution of inline Python code (for variable substitution)."""
         entry = PythonExecutionEntry(
-            entry_type="get",
+            entry_type="inline",
             line_number=line_number,
             execution_time=execution_time,
             file_path=file_path,
@@ -124,6 +124,8 @@ class PythonExecutionReporter:
                 "total_executions": 0,
                 "total_execution_time": 0.0,
                 "initialization_blocks": 0,
+                "execution_blocks": 0,
+                "variable_gets": 0,
                 "inline_executions": 0,
                 "errors": 0,
                 "files_processed": 0,
@@ -133,6 +135,7 @@ class PythonExecutionReporter:
         init_count = sum(1 for entry in self.entries if entry.entry_type == "init")
         exec_count = sum(1 for entry in self.entries if entry.entry_type == "exec")
         get_count = sum(1 for entry in self.entries if entry.entry_type == "get")
+        inline_count = sum(1 for entry in self.entries if entry.entry_type == "inline")
         error_count = sum(1 for entry in self.entries if entry.error_message)
 
         # Count unique files
@@ -143,7 +146,8 @@ class PythonExecutionReporter:
             "total_execution_time": self.total_execution_time,
             "initialization_blocks": init_count,
             "execution_blocks": exec_count,
-            "inline_executions": get_count,
+            "variable_gets": get_count,
+            "inline_executions": inline_count,
             "errors": error_count,
             "files_processed": files_processed,
         }
@@ -176,6 +180,9 @@ class PythonExecutionReporter:
 
         if stats["execution_blocks"] > 0:
             lines.append(f"   • Execution blocks: {stats['execution_blocks']}")
+
+        if stats["variable_gets"] > 0:
+            lines.append(f"   • Variable retrievals: {stats['variable_gets']}")
 
         if stats["inline_executions"] > 0:
             lines.append(f"   • Inline evaluations: {stats['inline_executions']}")
