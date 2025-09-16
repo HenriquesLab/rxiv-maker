@@ -242,9 +242,6 @@ def _process_python_commands_three_step(text: MarkdownContent, original_text: Ma
     # STEP 0: Process simple {{py:}} blocks that execute and display output
     text = _process_python_block_commands(text, executor)
 
-    # STEP 0.5: Process inline {py: expression} commands
-    text = _process_python_inline_commands(text, executor)
-
     # STEP 1: Find and execute all {{py:exec}} blocks in order
     # Use original text for accurate line numbers if available
     exec_blocks = _find_python_exec_blocks(text, original_text)
@@ -304,6 +301,9 @@ This error occurred while executing the {{{{py:exec}}}} block in the manuscript.
 
     # Remove all {{py:exec}} blocks from text (they were initialization only)
     text = _remove_python_exec_blocks(text)
+
+    # STEP 1.5: Process inline {py: expression} commands (after exec blocks are executed)
+    text = _process_python_inline_commands(text, executor)
 
     # STEP 2: Process all {{py:get}} blocks using initialized context
     text = _process_python_get_blocks(text, executor)

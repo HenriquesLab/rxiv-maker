@@ -294,13 +294,32 @@ class PythonExecutor:
             Dictionary with execution results
         """
         # Create a script that properly handles context persistence
-        context_json = json.dumps(
-            {
-                k: v
-                for k, v in context.items()
-                if k != "__builtins__" and isinstance(v, (int, float, str, bool, list, dict))
-            }
-        )
+        # Filter context to include only JSON-serializable types, with better error handling
+        filtered_context = {}
+        for k, v in context.items():
+            if k == "__builtins__":
+                continue
+            # Try to serialize each item individually to catch problematic values
+            try:
+                # Allow more types including None, and handle nested structures
+                if isinstance(v, (int, float, str, bool, list, dict, type(None))):
+                    # Test if it's actually serializable (nested structures might contain functions)
+                    json.dumps(v)
+                    filtered_context[k] = v
+                elif hasattr(v, "__iter__") and not isinstance(v, (str, bytes)):
+                    # Handle iterables by converting to list and filtering contents
+                    try:
+                        list_v = list(v)
+                        if all(isinstance(item, (int, float, str, bool, type(None))) for item in list_v):
+                            filtered_context[k] = list_v
+                    except Exception:
+                        # Skip problematic iterables
+                        pass
+            except (TypeError, ValueError):
+                # Skip non-serializable values (like functions)
+                continue
+
+        context_json = json.dumps(filtered_context)
 
         # Get src/py paths to add to PYTHONPATH
         src_py_paths = self._get_src_py_paths()
