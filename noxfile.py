@@ -138,6 +138,7 @@ def test_ci_exact(session):
     - Same test command and flags
     - Same Python version (3.11)
     - Same package versions
+    - Same PATH limitations (no 'python' executable, only 'python3')
 
     Use this to debug CI failures before pushing.
     """
@@ -156,17 +157,59 @@ def test_ci_exact(session):
         session.log(f"Current Python: {sys.executable}")
         session.log("Run: source .venv/bin/activate")
 
-    # Run exact same command as CI with same flags
-    session.run(
-        "pytest",
-        "tests/unit/",
-        "-m",
-        "unit and not ci_exclude",
-        "--maxfail=3",
-        "--tb=short",
-        "-x",  # Stop on first failure like CI
-        *session.posargs,
-    )
+    # Mimic CI PATH restrictions - remove 'python' executable access
+    import os
+    from pathlib import Path
+
+    current_path = os.environ.get("PATH", "")
+    path_dirs = current_path.split(os.pathsep)
+    filtered_path_dirs = []
+
+    for path_dir in path_dirs:
+        # Temporarily rename 'python' executables to reproduce CI conditions
+        path_obj = Path(path_dir)
+        python_exec = path_obj / "python"
+
+        if python_exec.exists() and not python_exec.is_symlink():
+            # Create a backup and remove from PATH visibility
+            backup_name = path_obj / "python.ci_hidden"
+            if not backup_name.exists():
+                try:
+                    python_exec.rename(backup_name)
+                    session.log(f"Temporarily hidden: {python_exec}")
+                except Exception as e:
+                    session.log(f"Cannot hide {python_exec}: {e}")
+
+        filtered_path_dirs.append(path_dir)
+
+    # Update PATH for this session
+    session.env["PATH"] = os.pathsep.join(filtered_path_dirs)
+
+    try:
+        # Run exact same command as CI with same flags
+        session.run(
+            "pytest",
+            "tests/unit/",
+            "-m",
+            "unit and not ci_exclude",
+            "--maxfail=3",
+            "--tb=short",
+            "-x",  # Stop on first failure like CI
+            *session.posargs,
+        )
+    finally:
+        # Restore any hidden executables
+        for path_dir in path_dirs:
+            path_obj = Path(path_dir)
+            backup_name = path_obj / "python.ci_hidden"
+            python_exec = path_obj / "python"
+
+            if backup_name.exists() and not python_exec.exists():
+                try:
+                    backup_name.rename(python_exec)
+                    session.log(f"Restored: {python_exec}")
+                except Exception as e:
+                    session.log(f"Cannot restore {python_exec}: {e}")
 
 
 @nox.session(python="3.11", reuse_venv=True)

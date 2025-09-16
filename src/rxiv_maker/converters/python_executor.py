@@ -319,8 +319,9 @@ class PythonExecutor:
         import json as json_module
 
         # Create proper JSON strings that can be embedded in the script
-        code_json_str = json_module.dumps(code)
-        init_imports_json_str = json_module.dumps(init_imports)
+        # Use ensure_ascii=False to properly handle Unicode characters
+        code_json_str = json_module.dumps(code, ensure_ascii=False)
+        init_imports_json_str = json_module.dumps(init_imports, ensure_ascii=False)
 
         script_content = f"""
 import sys
@@ -451,8 +452,8 @@ result = {{
 print(json.dumps(result))
 """
 
-        # Create a temporary file with the script
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as temp_file:
+        # Create a temporary file with the script, using UTF-8 encoding explicitly
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False, encoding="utf-8") as temp_file:
             temp_file.write(script_content)
             temp_file_path = temp_file.name
 
@@ -463,12 +464,29 @@ print(json.dumps(result))
             # when Python code is executed in manuscript context. The manuscript directory
             # is where the manuscript files (01_MAIN.md, etc.) are located.
             working_dir = self.manuscript_dir if self.manuscript_dir else Path.cwd()
+
+            # Set environment variables to ensure UTF-8 encoding
+            import os
+
+            env = os.environ.copy()
+            env["PYTHONIOENCODING"] = "utf-8"
+            env["LC_ALL"] = "C.UTF-8"
+            env["LANG"] = "C.UTF-8"
+
+            # Determine Python executable, handling CI environments where only 'python3' exists
+            python_executable = sys.executable
+            if not Path(python_executable).exists():
+                # Fallback to 'python3' for CI environments like GitHub Actions
+                python_executable = "python3"
+
             process = subprocess.run(
-                [sys.executable, temp_file_path],
+                [python_executable, temp_file_path],
                 capture_output=True,
                 text=True,
                 timeout=self.timeout,
                 cwd=working_dir,
+                encoding="utf-8",
+                env=env,
             )
 
             if process.returncode == 0:
