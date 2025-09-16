@@ -166,6 +166,16 @@ class TestPythonExecutionReporter:
 class TestGlobalReporter:
     """Test the global reporter functionality."""
 
+    def setup_method(self):
+        """Set up for each test."""
+        # Reset reporter before each test to ensure clean state
+        reset_python_execution_reporter()
+
+    def teardown_method(self):
+        """Clean up after each test."""
+        # Reset reporter after each test to not pollute other tests
+        reset_python_execution_reporter()
+
     def test_singleton_behavior(self):
         """Test that get_python_execution_reporter returns same instance."""
         reporter1 = get_python_execution_reporter()
