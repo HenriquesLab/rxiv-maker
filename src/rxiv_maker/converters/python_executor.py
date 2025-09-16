@@ -536,7 +536,11 @@ print(json.dumps(result))
             Formatted output for insertion into document
         """
         try:
-            output, success = self.execute_code_safely(code)
+            # Pass manuscript directory context and execution context for MANUSCRIPT_PATH and variables
+            manuscript_context = {"manuscript_dir": str(self.manuscript_dir)} if self.manuscript_dir else {}
+            output, success = self.execute_code_safely(
+                code, context=self.execution_context, manuscript_context=manuscript_context
+            )
 
             if success:
                 if output.strip():
@@ -594,7 +598,11 @@ print(json.dumps(result))
                 # Looks like an expression, wrap in print
                 code = f"print({code})"
 
-            output, success = self.execute_code_safely(code)
+            # Pass manuscript directory context and execution context for MANUSCRIPT_PATH and variables
+            manuscript_context = {"manuscript_dir": str(self.manuscript_dir)} if self.manuscript_dir else {}
+            output, success = self.execute_code_safely(
+                code, context=self.execution_context, manuscript_context=manuscript_context
+            )
             execution_time = time.time() - start_time
 
             if success:
@@ -820,18 +828,66 @@ print(json.dumps(result))
         """Get the value of a variable from the execution context ({{py:get}}).
 
         Args:
-            variable_name: Name of the variable to retrieve
+            variable_name: Name of the variable or expression to evaluate
             line_number: Optional line number where variable is accessed
             file_path: Source file path for reporting
 
         Returns:
-            The value of the variable, or None if not found
+            The value of the variable or expression result
 
         Raises:
             PythonExecutionError: If variable cannot be retrieved
         """
-        if variable_name not in self.execution_context:
-            # Report variable access error
+        # First try simple variable lookup
+        if variable_name in self.execution_context:
+            variable_value = self.execution_context[variable_name]
+
+            # Report successful variable access
+            if self.reporter:
+                self.reporter.track_get_variable(
+                    variable_name=variable_name,
+                    variable_value=variable_value,
+                    line_number=line_number,
+                    file_path=file_path,
+                )
+            return variable_value
+
+        # If not a simple variable, try to evaluate as expression
+        try:
+            # For security, only allow simple expressions like len(var), var['key'], etc.
+            # Use ast.literal_eval for safe evaluation when possible
+            import ast
+
+            # First try ast.literal_eval for simple literal expressions
+            try:
+                variable_value = ast.literal_eval(variable_name)
+            except (ValueError, SyntaxError):
+                # If not a literal, use restricted eval with limited builtins
+                # Create safe execution context for evaluation
+                safe_builtins = {"len": len, "str": str, "int": int, "float": float, "bool": bool}
+                eval_context = {"__builtins__": safe_builtins}
+                eval_context.update(self.execution_context)
+
+                # Add special MANUSCRIPT_PATH variable if available
+                if self.manuscript_dir:
+                    eval_context["MANUSCRIPT_PATH"] = str(self.manuscript_dir)
+
+                # Evaluate the expression with restricted context
+                variable_value = eval(variable_name, eval_context)  # noqa: S307
+
+            # Report successful expression evaluation
+            if self.reporter:
+                self.reporter.track_get_variable(
+                    variable_name=variable_name,
+                    variable_value=variable_value,
+                    line_number=line_number,
+                    file_path=file_path,
+                )
+
+            return variable_value
+
+        except Exception:
+            # Report variable/expression access error
             if self.reporter:
                 self.reporter.track_error(
                     error_message=f"Variable '{variable_name}' not found in context",
@@ -839,17 +895,7 @@ print(json.dumps(result))
                     line_number=line_number,
                     file_path=file_path,
                 )
-            raise PythonExecutionError(f"Variable '{variable_name}' not found in context")
-
-        variable_value = self.execution_context[variable_name]
-
-        # Report successful variable access
-        if self.reporter:
-            self.reporter.track_get_variable(
-                variable_name=variable_name, variable_value=variable_value, line_number=line_number, file_path=file_path
-            )
-
-        return variable_value
+            raise PythonExecutionError(f"Variable '{variable_name}' not found in context") from None
 
     def reset_context(self) -> None:
         """Reset the execution context."""
