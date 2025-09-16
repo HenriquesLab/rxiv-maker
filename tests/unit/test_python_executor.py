@@ -413,8 +413,11 @@ print(f"Manuscript is at: {manuscript_location}")
         cleaned_result = (
             result.replace("\\begin{verbatim}", "").replace("\\end{verbatim}", "").replace("\n", "").replace(" ", "")
         )
-        cleaned_path = str(manuscript_dir.resolve()).replace(" ", "")
-        assert cleaned_path in cleaned_result
+        # Normalize for OS differences (case sensitivity, separators) by lowering and replacing backslashes
+        cleaned_path = str(manuscript_dir.resolve()).replace(" ", "").replace("\\", "/").lower()
+        assert cleaned_path in cleaned_result.lower(), (
+            f"Expected normalized manuscript path '{cleaned_path}' in output '{cleaned_result}'"
+        )
 
         # Verify variable persists
         location = executor.get_variable_value("manuscript_location")
@@ -505,8 +508,10 @@ print(f"Path is correct: {{is_correct}}")
         cleaned_result = (
             result.replace("\\begin{verbatim}", "").replace("\\end{verbatim}", "").replace("\n", "").replace(" ", "")
         )
-        cleaned_path = str(manuscript_dir.resolve()).replace(" ", "")
-        assert cleaned_path in cleaned_result
+        cleaned_path = str(manuscript_dir.resolve()).replace(" ", "").replace("\\", "/").lower()
+        assert cleaned_path in cleaned_result.lower(), (
+            f"Expected normalized manuscript path '{cleaned_path}' in output '{cleaned_result}'"
+        )
         assert "Path is correct: True" in result
 
 

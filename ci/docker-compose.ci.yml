@@ -3,10 +3,10 @@ version: '3.8'
 services:
   ci-test:
     build:
-      context: .
-      dockerfile: Dockerfile.ci
+      context: ..
+      dockerfile: ci/Dockerfile.ci
     volumes:
-      - .:/workspace:cached
+      - ..:/workspace:cached
       - /workspace/__pycache__
       - /workspace/.pytest_cache
       - /workspace/.nox
@@ -31,3 +31,19 @@ services:
     extends: ci-test
     # Run specific failing test
     command: pytest tests/unit/test_python_executor.py::TestManuscriptPathIntegration::test_manuscript_path_in_initialization_block -v
+
+  ci-test-integration:
+    extends: ci-test
+    command: bash -lc "uv run nox -s \"test(test_type='integration')\""
+
+  ci-test-build-validation:
+    extends: ci-test
+    command: bash -lc "uv run nox -s build"
+
+  ci-test-coverage:
+    extends: ci-test
+    command: bash -lc "uv run nox -s \"test(test_type='full')\""
+
+  ci-test-pdf:
+    extends: ci-test
+    command: bash -lc "uv run nox -s pdf"

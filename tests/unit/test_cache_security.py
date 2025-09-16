@@ -193,6 +193,8 @@ class TestAtomicOperations:
 
     def test_atomic_write_failure_cleanup(self, tmp_path):
         """Test that temporary files are cleaned up on failure."""
+        import os
+
         from rxiv_maker.core.cache.secure_cache_utils import _atomic_write
 
         target_file = tmp_path / "target.txt"
@@ -201,6 +203,10 @@ class TestAtomicOperations:
         tmp_path.chmod(0o555)
 
         try:
+            # Skip test if running as root (Docker containers often run as root)
+            if os.getuid() == 0:
+                pytest.skip("Test skipped when running as root - permission restrictions don't apply")
+
             with pytest.raises((OSError, PermissionError)):
                 _atomic_write(b"content", target_file)
         finally:
