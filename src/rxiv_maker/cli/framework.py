@@ -68,7 +68,23 @@ class BaseCommand(ABC):
         # Resolve manuscript path
         try:
             if manuscript_path is None:
-                manuscript_path = EnvironmentManager.get_manuscript_path() or "MANUSCRIPT"
+                # First check environment variable
+                manuscript_path = EnvironmentManager.get_manuscript_path()
+
+                # If no environment variable, check if we're already in a manuscript directory
+                if manuscript_path is None:
+                    from rxiv_maker.core.cache.cache_utils import find_manuscript_directory
+
+                    manuscript_dir = find_manuscript_directory()
+                    if manuscript_dir is not None:
+                        manuscript_path = str(manuscript_dir)
+                        if self.verbose:
+                            self.console.print(f"🔍 Detected manuscript directory: {manuscript_path}", style="green")
+                    else:
+                        # Fall back to default MANUSCRIPT subdirectory
+                        manuscript_path = "MANUSCRIPT"
+                        if self.verbose:
+                            self.console.print("📁 Using default MANUSCRIPT subdirectory", style="yellow")
 
             # Use PathManager for path validation and resolution
             self.path_manager = PathManager(manuscript_path=manuscript_path, output_dir="output")
