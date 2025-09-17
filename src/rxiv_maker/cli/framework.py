@@ -37,7 +37,6 @@ class BaseCommand(ABC):
     - Standardized error handling and exit codes
     - Progress reporting utilities
     - Environment variable integration
-    - Docker readiness checking
     - Common logging and console patterns
     """
 
@@ -155,8 +154,7 @@ class BaseCommand(ABC):
         """Execute the main command operation.
 
         This method should contain the core logic for the command.
-        Path resolution, Docker checking, and error handling are handled
-        by the framework.
+        Path resolution and error handling are handled by the framework.
 
         Args:
             **kwargs: Command-specific arguments
@@ -175,9 +173,8 @@ class BaseCommand(ABC):
         This method handles:
         1. Common option setup
         2. Path resolution
-        3. Docker readiness (if needed)
-        4. Operation execution
-        5. Error handling and exit codes
+        3. Operation execution
+        4. Error handling and exit codes
 
         Args:
             ctx: Click context

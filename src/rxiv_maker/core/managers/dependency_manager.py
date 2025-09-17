@@ -13,7 +13,6 @@ from typing import Dict, List, Optional, Set
 
 from ..logging_config import get_logger
 from .install_manager import InstallManager, InstallMode
-from .resource_manager import get_resource_manager
 
 logger = get_logger()
 
@@ -21,11 +20,10 @@ logger = get_logger()
 class DependencyType(Enum):
     """Types of dependencies."""
 
-    SYSTEM_BINARY = "system_binary"  # System executables (pdflatex, docker, etc.)
+    SYSTEM_BINARY = "system_binary"  # System executables (pdflatex, etc.)
     PYTHON_PACKAGE = "python_package"  # Python modules/packages
     R_PACKAGE = "r_package"  # R packages
     FONT = "font"  # System fonts
-    DOCKER_IMAGE = "docker_image"  # Docker images
     ENVIRONMENT_VAR = "environment_var"  # Environment variables
     UBUNTU_PACKAGE = "ubuntu_package"  # Ubuntu/Debian packages via apt
 
@@ -178,35 +176,6 @@ class PythonPackageChecker(DependencyChecker):
                 return None
 
 
-class DockerImageChecker(DependencyChecker):
-    """Checker for Docker images."""
-
-    def check(self, spec: DependencySpec) -> DependencyResult:
-        """Check Docker image availability."""
-        try:
-            # First check if docker is available
-            if not shutil.which("docker"):
-                return DependencyResult(
-                    spec=spec,
-                    status=DependencyStatus.ERROR,
-                    error_message="Docker not available",
-                    resolution_hint="Install Docker",
-                )
-
-            # Check if image exists locally
-            result = subprocess.run(["docker", "images", "-q", spec.name], capture_output=True, text=True, timeout=30)
-
-            if result.returncode == 0 and result.stdout.strip():
-                return DependencyResult(spec=spec, status=DependencyStatus.AVAILABLE, version="local")
-            else:
-                return DependencyResult(
-                    spec=spec, status=DependencyStatus.MISSING, resolution_hint=f"docker pull {spec.name}"
-                )
-
-        except Exception as e:
-            return DependencyResult(spec=spec, status=DependencyStatus.ERROR, error_message=str(e))
-
-
 class EnvironmentVarChecker(DependencyChecker):
     """Checker for environment variables."""
 
@@ -268,13 +237,10 @@ class DependencyManager:
 
     def __init__(self):
         """Initialize dependency manager."""
-        self.resource_manager = get_resource_manager()
-
         # Dependency checkers by type
         self.checkers: Dict[DependencyType, DependencyChecker] = {
             DependencyType.SYSTEM_BINARY: SystemBinaryChecker(),
             DependencyType.PYTHON_PACKAGE: PythonPackageChecker(),
-            DependencyType.DOCKER_IMAGE: DockerImageChecker(),
             DependencyType.ENVIRONMENT_VAR: EnvironmentVarChecker(),
             DependencyType.UBUNTU_PACKAGE: UbuntuPackageChecker(),
         }
@@ -310,27 +276,6 @@ class DependencyManager:
                 required=True,
                 contexts={"build", "pdf"},
                 install_hint="Usually included with LaTeX distribution",
-            )
-        )
-
-        # Docker dependencies
-        self.register_dependency(
-            DependencySpec(
-                name="docker",
-                type=DependencyType.SYSTEM_BINARY,
-                required=False,
-                contexts={"docker"},
-                install_hint="Install Docker Desktop or Docker Engine",
-            )
-        )
-
-        self.register_dependency(
-            DependencySpec(
-                name="henriqueslab/rxiv-maker-base:latest",
-                type=DependencyType.DOCKER_IMAGE,
-                required=False,
-                contexts={"docker"},
-                install_hint="docker pull henriqueslab/rxiv-maker-base:latest",
             )
         )
 
@@ -380,7 +325,7 @@ class DependencyManager:
                 )
             )
 
-        # Ubuntu packages (from docker-rxiv-maker Dockerfile)
+        # System packages
         # Core system utilities
         for pkg in ["curl", "wget", "unzip", "ca-certificates", "software-properties-common", "gnupg", "lsb-release"]:
             self.register_dependency(
@@ -611,7 +556,7 @@ class DependencyManager:
         """Check dependencies for a specific context.
 
         Args:
-            context: Context to check (e.g., "build", "figures", "docker")
+            context: Context to check (e.g., "build", "figures")
             required_only: Only check required dependencies
             parallel: Check dependencies in parallel
 

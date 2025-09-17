@@ -1,119 +1,151 @@
-# Installation Guide
+# Developer Installation Guide
 
-This guide covers pip/pipx installation for Rxiv-Maker - the recommended approach for all users.
+*Technical installation guide for contributors, developers, and advanced users*
 
-## 🎯 **Recommended Installation Method**
+> **👋 New User?** For standard installation, see the **[Complete Installation Guide](https://rxiv-maker.henriqueslab.org/getting-started/installation/)** on our website.
 
-**Universal Installation with pip/pipx** is the recommended approach for all platforms:
-- ✅ **Simple**: Single command installation
-- ✅ **Reliable**: Uses standard Python packaging
-- ✅ **Consistent**: Same method across all platforms  
-- ✅ **Maintainable**: Automatic updates with pip/pipx
-- ✅ **Isolated**: pipx installs in separate environments
-
-## 🚀 Universal Installation
-
-**Quick Installation:**
-```bash
-# Using pipx (recommended - installs in isolated environment)
-pipx install rxiv-maker
-
-# Or using pip
-pip install rxiv-maker
-
-# Verify installation
-rxiv check-installation
-```
-
-## 📋 Platform-Specific Setup
-
-### 🐧 **Linux**
-
-```bash
-# Ubuntu/Debian
-sudo apt update
-sudo apt install python3-pip pipx texlive-latex-recommended
-pipx install rxiv-maker
-
-# Red Hat/CentOS/Fedora  
-sudo dnf install python3-pip texlive-latex
-python3 -m pip install --user pipx
-pipx install rxiv-maker
-
-# Verify
-rxiv check-installation
-```
-
-### 🍎 **macOS**
-
-```bash
-# Install Homebrew (if needed)
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# Install dependencies
-brew install pipx
-brew install --cask mactex-no-gui
-
-# Install rxiv-maker
-pipx install rxiv-maker
-rxiv check-installation
-```
-
-### 🪟 **Windows**
-
-**Option 1: WSL2 (Recommended)**
-```bash
-# Install WSL2 (PowerShell as Administrator)
-wsl --install -d Ubuntu-22.04
-
-# Restart, then in Ubuntu:
-sudo apt update
-sudo apt install python3-pip pipx texlive-latex-recommended
-pipx install rxiv-maker
-```
-
-**Option 2: Native Windows**
-```powershell
-# Install Chocolatey (PowerShell as Administrator)
-Set-ExecutionPolicy Bypass -Scope Process -Force
-iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-
-# Install dependencies
-choco install python pipx miktex
-pipx install rxiv-maker
-```
-
-## 🚀 Quick Start
-
-After installation, create your first PDF:
-
-```bash
-# Create a new manuscript
-rxiv init my-paper
-cd my-paper
-
-# Generate PDF
-rxiv pdf
-
-# Verify everything works
-rxiv check-installation --detailed
-```
-
-## 🔧 Alternative Workflows
-
-**For specialized use cases:**
-
-- **🐳 Docker Builds**: Use `RXIV_ENGINE=DOCKER` for containerized execution
-- **🌐 Google Colab**: [Try in browser](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_colab.ipynb) without installation  
-- **⚡ GitHub Actions**: Set up automated cloud builds for team collaboration
-- **🔄 Development Setup**: Clone repository with `git clone https://github.com/henriqueslab/rxiv-maker.git` for contributing
-
-## 🆘 Need Help?
-
-- **Quick Questions**: Check [User Guide](../guides/user_guide.md)
-- **Installation Issues**: See [Troubleshooting](../troubleshooting/troubleshooting.md)
-- **Community Support**: [GitHub Discussions](https://github.com/henriqueslab/rxiv-maker/discussions)
+This guide covers **developer-specific installation workflows** for contributing to rxiv-maker or advanced customization.
 
 ---
 
-*This streamlined installation focuses on pip/pipx for reliable, consistent setup across all platforms.*
+## 🛠️ Developer Installation
+
+### Quick Developer Setup
+```bash
+# Clone repository
+git clone https://github.com/henriqueslab/rxiv-maker.git
+cd rxiv-maker
+
+# Install in development mode
+pip install -e ".[dev]"
+
+# Setup pre-commit hooks
+pre-commit install
+
+# Verify development setup
+rxiv check-installation --detailed
+```
+
+### Virtual Environment Setup
+```bash
+# Create isolated development environment
+python -m venv .venv-dev
+source .venv-dev/bin/activate  # Linux/macOS
+# .venv-dev\Scripts\activate   # Windows
+
+# Install development dependencies
+pip install -e ".[dev]"
+pre-commit install
+```
+
+## 🔧 Development Workflows
+
+### Testing & Contribution Setup
+```bash
+# Run tests to verify your setup
+python -m pytest tests/ -v
+
+# Run specific test categories
+python -m pytest tests/unit/ -v        # Unit tests only
+python -m pytest tests/integration/ -v  # Integration tests
+
+# Run linting and formatting
+pre-commit run --all-files
+
+# Build documentation locally
+mkdocs serve  # If working on website
+```
+
+### Advanced Installation Options
+
+#### From Source (Latest Development)
+```bash
+# Install from main branch
+pip install git+https://github.com/henriqueslab/rxiv-maker.git
+
+# Install specific branch or tag
+pip install git+https://github.com/henriqueslab/rxiv-maker.git@feature-branch
+pip install git+https://github.com/henriqueslab/rxiv-maker.git@v1.2.3
+```
+
+#### With Optional Dependencies
+```bash
+# Full development environment
+pip install "rxiv-maker[dev]"
+
+# Documentation building
+pip install "rxiv-maker[docs]"
+
+# All optional dependencies
+pip install "rxiv-maker[all]"
+```
+
+## 🧪 Testing Your Development Setup
+
+After installation, verify everything works:
+
+```bash
+# Run development health check
+rxiv check-installation --detailed
+
+# Create test manuscript
+rxiv init test-manuscript
+cd test-manuscript
+
+# Test basic functionality
+rxiv validate           # Check manuscript structure
+rxiv pdf               # Generate PDF
+rxiv clean            # Clean up
+
+# Run project tests (from repo root)
+cd .. && python -m pytest tests/unit/ -v
+```
+
+## 🐳 Container Development
+
+### Using docker-rxiv-maker
+For containerized development without local LaTeX installation:
+
+```bash
+# Use docker-rxiv-maker for PDF generation
+git clone https://github.com/HenriquesLab/docker-rxiv-maker.git
+cd docker-rxiv-maker
+
+# Follow docker-rxiv-maker setup instructions
+# Then use for testing your changes
+```
+
+**📖 [Docker Development Guide →](development/docker-engine-mode.md)**
+
+## 🌐 Alternative Development Environments
+
+### GitHub Codespaces
+Develop rxiv-maker in the cloud:
+
+1. Go to [rxiv-maker repository](https://github.com/HenriquesLab/rxiv-maker)
+2. Click "Code" → "Codespaces" → "Create codespace"
+3. Wait for environment setup
+4. Run `pip install -e ".[dev]"` in terminal
+
+### Google Colab Development
+For quick experimentation:
+
+**📖 [Colab Development Notebook →](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_colab.ipynb)**
+
+## 🆘 Developer Support
+
+- **Development Questions**: [GitHub Discussions](https://github.com/henriqueslab/rxiv-maker/discussions)
+- **Bug Reports**: [GitHub Issues](https://github.com/henriqueslab/rxiv-maker/issues)
+- **Contributing Guide**: [CONTRIBUTING.md](../../CONTRIBUTING.md)
+- **Developer Guide**: [docs/development/developer-guide.md](../development/developer-guide.md)
+
+## 🔗 Related Resources
+
+- **[User Installation Guide](https://rxiv-maker.henriqueslab.org/getting-started/installation/)** - Standard installation
+- **[Developer Guide](../development/developer-guide.md)** - Comprehensive development documentation
+- **[Testing Guide](../development/github-actions-testing.md)** - Testing workflows
+- **[Docker Guide](development/docker-engine-mode.md)** - Container development
+
+---
+
+*This developer guide focuses on technical setup for contributing to rxiv-maker. For standard user installation, see our [website](https://rxiv-maker.henriqueslab.org/).*

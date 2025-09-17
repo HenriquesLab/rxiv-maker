@@ -13,7 +13,6 @@ from .config_manager import ConfigManager
 from .dependency_manager import DependencyManager
 from .execution_manager import ExecutionManager
 from .install_manager import InstallManager
-from .resource_manager import ResourceManager
 from .state_manager import StateManager
 from .validation_manager import ValidationManager
 from .workflow_manager import WorkflowManager
@@ -23,7 +22,6 @@ __all__ = [
     "get_cache_manager",
     "DependencyManager",
     "ExecutionManager",
-    "ResourceManager",
     "StateManager",
     "ValidationManager",
     "WorkflowManager",

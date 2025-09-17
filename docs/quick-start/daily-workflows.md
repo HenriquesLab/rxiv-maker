@@ -260,5 +260,5 @@ rxiv validate || exit 1
 ## Next Steps
 
 - **[Complete Guide](../guides/user_guide.md)** - Comprehensive documentation
-- **[CLI Reference](../reference/cli-commands.md)** - All commands and options
+- **[CLI Reference](../reference/cli-reference.md)** - All commands and options
 - **[Troubleshooting](../troubleshooting/)** - Common issues and solutions

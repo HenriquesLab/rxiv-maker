@@ -7,7 +7,6 @@ Preprint servers accelerate research dissemination, but authors still face compl
 ## Main
 
 <!-- Introduction -->
-
 Preprint servers like arXiv, bioRxiv, and medRxiv have become central to research communication [@beck2020;@levchenk2024;@Fraser2020_preprint_growth]. As submission rates climb (@sfig:arxiv_growth, @sfig:preprint_trends), researchers now handle tasks once managed by journal production teams [@Vale2015_preprints;@Tenant2016_academic_publishing]. Most manuscript preparation workflows use proprietary formats that work poorly with version control systems, making collaborative research more difficult [@lin2020].
 
 Computational research faces particular challenges because algorithms, analysis methods, and processing pipelines change frequently. In computational biology, researchers struggle to keep manuscripts synchronised with evolving analysis code, leading to publications that don't accurately describe the methods used. 
@@ -172,7 +171,7 @@ For specialised use cases requiring containerised environments, the separate doc
 ### Visual Studio Code Extension
 A dedicated Visual Studio Code extension (available as a separate project at vscode-rxiv-maker) provides an integrated development environment optimised for rxiv-maker manuscript preparation. The extension leverages the Language Server Protocol to deliver real-time syntax highlighting for academic markdown syntax, intelligent autocompletion for bibliographic citations from BibTeX files, and context-aware suggestions for cross-references to figures, tables, equations, and supplementary materials.
 
-The extension integrates seamlessly with the core framework through file system monitoring and automated workspace detection, automatically recognising rxiv-maker project structures and activating appropriate editing features. Schema validation for YAML configuration files ensures project metadata adheres to reproducibility specifications, whilst integrated terminal access enables direct execution of framework commands. This companion extension provides researchers with an accessible, feature-rich editing experience that maintains reproducibility guarantees whilst reducing technical barriers to adoption.
+The extension integrates seamlessly with the core framework through file system monitoring and automated workspace detection, automatically recognising rxiv-maker project structures and activating appropriate editing features. Schema validation for YAML configuration files ensures project metadata adheres to reproducibility specifications, whilst integrated terminal access enables direct execution of framework commands. This companion extension provides researchers with an accessible, feature-rich editing experience that maintains reproducibility guarantees whilst reducing technical barriers to adoption. The extension's syntax highlighting capabilities are demonstrated in @sfig:vscode_extension.
 
 ### Quality Assurance
 Framework reliability is ensured through comprehensive multi-level validation protocols and user-facing quality checks. Unit tests validate individual components, integration tests verify end-to-end pipelines, and platform tests validate deployment environment behaviour across different operating systems. Pre-commit pipelines enforce code formatting, linting, and type checking, ensuring code quality throughout development.

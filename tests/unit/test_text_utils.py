@@ -133,4 +133,3 @@ class TestCleanTextForAnalysis:
         assert result == "content"
         assert not result.startswith(" ")
         assert not result.endswith(" ")
-

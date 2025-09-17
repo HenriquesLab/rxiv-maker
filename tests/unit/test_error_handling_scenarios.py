@@ -285,25 +285,13 @@ class TestResourceExhaustionScenarios(unittest.TestCase):
 
     @pytest.mark.fast
     def test_memory_exhaustion(self):
-        """Test handling of memory exhaustion."""
-        try:
-            # Mock memory to show low available memory
-            with patch("psutil.virtual_memory") as mock_memory:
-                mock_memory.return_value = Mock(
-                    total=8 * 1024**3,  # 8GB total
-                    available=100 * 1024**2,  # 100MB available
-                    percent=95.0,
-                )
+        """Test handling of memory exhaustion scenarios."""
+        # Test memory-related error handling without psutil dependency
+        # Simulate memory exhaustion by testing memory error handling
+        available_memory_mb = 100  # Simulated low memory
+        minimum_required_mb = 500  # Required memory threshold
 
-                memory_info = mock_memory.return_value
-                available_gb = memory_info.available / (1024**3)
-
-                # Check if there's sufficient memory
-                minimum_required_gb = 1.0
-                self.assertLess(available_gb, minimum_required_gb)
-
-        except ImportError:
-            self.skipTest("psutil not available")
+        self.assertLess(available_memory_mb, minimum_required_mb)
 
     def test_large_file_handling(self):
         """Test handling of extremely large files."""

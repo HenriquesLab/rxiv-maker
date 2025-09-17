@@ -415,7 +415,7 @@ rxiv clean --figures-only
 rxiv pdf --force-figures
 
 # Test figure scripts individually
-python FIGURES/my_plot.py
+python FIGURES/statistical_analysis_plot.py
 ```
 
 ---

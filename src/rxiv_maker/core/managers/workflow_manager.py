@@ -16,7 +16,6 @@ from typing import Any, Callable, Dict, List, Optional, Set
 from ..error_recovery import RecoveryEnhancedMixin
 from ..logging_config import get_logger
 from .cache_manager import get_cache_manager
-from .resource_manager import get_resource_manager, managed_resources
 from .state_manager import get_state_manager
 
 logger = get_logger()
@@ -250,7 +249,6 @@ class Workflow:
 
         # Integration with other managers
         self.state_manager = get_state_manager()
-        self.resource_manager = get_resource_manager()
         self.cache_manager = get_cache_manager()
 
         logger.debug(f"Workflow initialized: {config.name}")
@@ -340,25 +338,24 @@ class Workflow:
         logger.info(f"Starting workflow: {self.config.name}")
 
         try:
-            with managed_resources():
-                # Build execution plan
-                execution_plan = self._build_execution_plan()
+            # Build execution plan
+            execution_plan = self._build_execution_plan()
 
-                if not execution_plan:
-                    raise RuntimeError("No executable steps found")
+            if not execution_plan:
+                raise RuntimeError("No executable steps found")
 
-                # Execute steps according to plan
-                if self.config.execution_mode == ExecutionMode.SEQUENTIAL:
-                    success = self._execute_sequential(execution_plan)
-                elif self.config.execution_mode == ExecutionMode.PARALLEL:
-                    success = self._execute_parallel(execution_plan)
-                else:  # ADAPTIVE
-                    success = self._execute_adaptive(execution_plan)
+            # Execute steps according to plan
+            if self.config.execution_mode == ExecutionMode.SEQUENTIAL:
+                success = self._execute_sequential(execution_plan)
+            elif self.config.execution_mode == ExecutionMode.PARALLEL:
+                success = self._execute_parallel(execution_plan)
+            else:  # ADAPTIVE
+                success = self._execute_adaptive(execution_plan)
 
-                # Update final status
-                with self._lock:
-                    self.status = WorkflowStatus.COMPLETED if success else WorkflowStatus.FAILED
-                    self.end_time = time.time()
+            # Update final status
+            with self._lock:
+                self.status = WorkflowStatus.COMPLETED if success else WorkflowStatus.FAILED
+                self.end_time = time.time()
 
                 duration = self.end_time - (self.start_time or 0)
                 logger.info(f"Workflow {self.config.name} {'completed' if success else 'failed'} ({duration:.1f}s)")
