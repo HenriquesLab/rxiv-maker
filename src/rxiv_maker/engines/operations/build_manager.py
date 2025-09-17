@@ -283,7 +283,11 @@ class BuildManager:
             yaml_metadata = extract_yaml_metadata(str(manuscript_md))
 
             # Inject rxiv-maker citation if acknowledgment is enabled
-            inject_rxiv_citation(yaml_metadata)
+            try:
+                inject_rxiv_citation(yaml_metadata)
+            except Exception as e:
+                self.log(f"Warning: Citation injection failed: {e}", "WARNING")
+                # Continue with build process even if citation injection fails
 
             # Generate the manuscript using local execution
             manuscript_output = generate_preprint(
