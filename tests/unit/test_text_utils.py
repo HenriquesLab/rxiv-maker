@@ -1,7 +1,5 @@
 """Unit tests for text_utils module."""
 
-import pytest
-
 from rxiv_maker.utils.text_utils import clean_text_for_analysis, count_words_in_text
 
 
@@ -135,3 +133,4 @@ class TestCleanTextForAnalysis:
         assert result == "content"
         assert not result.startswith(" ")
         assert not result.endswith(" ")
+
