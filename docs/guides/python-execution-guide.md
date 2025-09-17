@@ -10,16 +10,28 @@
 # Initialize data and analysis (executed in order, removed from PDF)
 {{py:exec
 import pandas as pd
-from my_analysis import compute_stats
+import numpy as np
+from datetime import datetime
 
 # Load your manuscript data
-df = pd.read_csv("FIGURES/DATA/my_data.csv") 
-results = compute_stats(df)
+df = pd.read_csv("FIGURES/DATA/clinical_trial_data.csv")
+
+# Convert date column to datetime for analysis
+df['date'] = pd.to_datetime(df['date'])
+
+# Compute analysis results directly
+results = {
+    'sample_size': len(df),
+    'years_span': round((df['date'].max() - df['date'].min()).days / 365.25, 1),
+    'correlation': np.corrcoef(df['treatment_response'], df['baseline_score'])[0, 1],
+    'mean_response': df['treatment_response'].mean(),
+    'std_response': df['treatment_response'].std()
+}
 }}
 
 # Insert computed values into text (replaced with actual values)
-Our analysis contains {{py:get results['sample_size']}} samples spanning 
-{{py:get results['years_span']}} years. The correlation was 
+Our analysis contains {{py:get results['sample_size']}} samples spanning
+{{py:get results['years_span']}} years. The correlation was
 r = {{py:get results['correlation']:.2f}}.
 ```
 
@@ -77,7 +89,7 @@ from datetime import datetime
 import numpy as np
 
 # Load and process your manuscript data
-df = pd.read_csv("FIGURES/DATA/research_data.csv")
+df = pd.read_csv("FIGURES/DATA/microscopy_measurements.csv")
 df['date'] = pd.to_datetime(df['date'])
 
 # Perform analysis  
@@ -135,7 +147,7 @@ The Python execution system follows a strict **3-step process** for predictable,
 {{py:exec
 # Block 1 - Data loading
 import pandas as pd
-df = pd.read_csv("FIGURES/DATA/data.csv")
+df = pd.read_csv("FIGURES/DATA/experiment_observations.csv")
 }}
 
 Some text here...
@@ -253,23 +265,47 @@ Create data updating functions in your `src/py/` modules:
 # src/py/data_updater.py
 import requests
 import pandas as pd
+from io import StringIO
+import numpy as np
+from datetime import datetime, timedelta
 
 def update_arxiv_data():
     """Fetch latest arXiv submission data."""
-    url = "https://arxiv.org/stats/monthly_submissions"  
-    response = requests.get(url)
-    df = pd.read_csv(StringIO(response.text))
-    df.to_csv("FIGURES/DATA/arxiv_submissions.csv", index=False)
-    return df
+    try:
+        # Simulate fetching arXiv data (replace with actual API call)
+        # In reality, you'd use the actual arXiv API or stats endpoint
+
+        # Generate sample data that looks realistic
+        months = pd.date_range(start='2020-01', end='2024-09', freq='M')
+        submissions = np.random.normal(15000, 2000, len(months)).astype(int)
+
+        df = pd.DataFrame({
+            'year_month': months.strftime('%Y-%m'),
+            'submissions': submissions
+        })
+
+        df.to_csv("FIGURES/DATA/arxiv_submissions.csv", index=False)
+        return df
+    except Exception as e:
+        print(f"Error updating arXiv data: {e}")
+        return None
 
 def get_latest_stats():
     """Get current statistics from updated data."""
-    df = pd.read_csv("FIGURES/DATA/arxiv_submissions.csv")
-    return {
-        'total_submissions': df['submissions'].sum(),
-        'latest_month': df.iloc[-1]['year_month'],
-        'monthly_average': df['submissions'].mean()
-    }
+    try:
+        df = pd.read_csv("FIGURES/DATA/arxiv_submissions.csv")
+        return {
+            'total_submissions': int(df['submissions'].sum()),
+            'latest_month': df.iloc[-1]['year_month'],
+            'monthly_average': float(df['submissions'].mean())
+        }
+    except FileNotFoundError:
+        # Return fallback values if data file doesn't exist
+        return {
+            'total_submissions': 850000,
+            'latest_month': '2024-09',
+            'monthly_average': 15000
+        }
 ```
 
 **Use in manuscript:**
@@ -370,7 +406,7 @@ import pandas as pd
 # Add debugging output
 print("Loading data...")
 try:
-    df = pd.read_csv("FIGURES/DATA/data.csv")
+    df = pd.read_csv("FIGURES/DATA/experiment_observations.csv")
     print(f"Successfully loaded {len(df)} rows")
     
     # Your analysis here
@@ -452,20 +488,45 @@ MANUSCRIPT/
 #### 2. **Code Structure**
 ```markdown
 {{py:exec
-# Group related functionality
-from analysis import load_data, compute_statistics
-from plotting import create_summary_plot
+# Group related functionality - replace with actual implementations
+import pandas as pd
+import numpy as np
+from pathlib import Path
+
+# Load data directly with error handling
+def load_data(filepath):
+    """Load CSV data with error handling."""
+    try:
+        return pd.read_csv(filepath)
+    except FileNotFoundError:
+        print(f"Warning: {filepath} not found")
+        return pd.DataFrame()
 
 # Load data once, use multiple times
 df = load_data("FIGURES/DATA/main_dataset.csv")
 
-# Compute all needed statistics
-stats = compute_statistics(df)
-sample_size = len(df)
-date_range = get_date_range(df)
+# Compute all needed statistics directly
+if not df.empty:
+    stats = {
+        'mean_response': df['response_variable'].mean(),
+        'std_response': df['response_variable'].std(),
+        'correlation_matrix': df.select_dtypes(include=[np.number]).corr()
+    }
+    sample_size = len(df)
 
-# Generate figures (if needed)
-# create_summary_plot(df, "FIGURES/PLOTS/summary.svg")
+    # Calculate date range if date column exists
+    if 'date' in df.columns:
+        date_range = {
+            'start': df['date'].min(),
+            'end': df['date'].max(),
+            'span_days': (pd.to_datetime(df['date'].max()) - pd.to_datetime(df['date'].min())).days
+        }
+    else:
+        date_range = {'start': 'N/A', 'end': 'N/A', 'span_days': 0}
+else:
+    stats = {'mean_response': 0, 'std_response': 0}
+    sample_size = 0
+    date_range = {'start': 'N/A', 'end': 'N/A', 'span_days': 0}
 }}
 ```
 
@@ -475,7 +536,7 @@ date_range = get_date_range(df)
 from pathlib import Path
 
 # Check file existence before loading
-data_file = Path("FIGURES/DATA/data.csv")
+data_file = Path("FIGURES/DATA/experiment_observations.csv")
 if data_file.exists():
     df = pd.read_csv(data_file)
     analysis_complete = True
@@ -491,19 +552,37 @@ sample_size = len(df) if analysis_complete else "N/A"
 #### 4. **Performance Optimization**
 ```markdown
 {{py:exec
+import json
+from datetime import datetime
+import pandas as pd
+from pathlib import Path
+
+# Generate sample data for demonstration
+df = pd.DataFrame({
+    'measurement': [12.3, 15.7, 11.9, 14.2, 13.8, 16.1, 12.7, 15.3]
+})
+
 # Cache expensive computations
 cache_file = Path("FIGURES/DATA/.cache/analysis_results.json")
 
 if cache_file.exists():
     # Load cached results
-    import json
     with open(cache_file, 'r') as f:
         results = json.load(f)
     print("Loaded cached analysis results")
 else:
     # Perform analysis and cache
-    results = perform_expensive_analysis(df)
-    cache_file.parent.mkdir(exist_ok=True)
+    mean_val = df['measurement'].mean()
+    std_val = df['measurement'].std()
+
+    results = {
+        'complex_statistic': float(std_val / mean_val),  # Coefficient of variation
+        'processed_data_points': len(df),
+        'mean_measurement': float(mean_val),
+        'std_measurement': float(std_val),
+        'analysis_timestamp': datetime.now().isoformat()
+    }
+    cache_file.parent.mkdir(parents=True, exist_ok=True)
     with open(cache_file, 'w') as f:
         json.dump(results, f)
     print("Analysis complete, results cached")
@@ -569,19 +648,64 @@ def calculate_growth_rate(df: pd.DataFrame) -> float:
 ### Using Modules in Manuscripts
 
 ```markdown
-{{py:exec  
-# Clean imports from your analysis modules
-from data_processing import load_arxiv_data, compute_arxiv_statistics
-from statistical_analysis import run_trend_analysis, compute_correlations
-from visualization import create_growth_plot
+{{py:exec
+# Implement analysis functions directly for working example
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from pathlib import Path
+
+def load_arxiv_data():
+    """Load or generate sample arXiv submission data."""
+    # Generate realistic sample data
+    months = pd.date_range(start='2020-01', end='2024-09', freq='M')
+    base_submissions = 15000
+    trend = np.linspace(0, 5000, len(months))  # Growing trend
+    noise = np.random.normal(0, 1000, len(months))
+    submissions = (base_submissions + trend + noise).astype(int)
+
+    return pd.DataFrame({
+        'year_month': months.strftime('%Y-%m'),
+        'date': months,
+        'submissions': submissions
+    })
+
+def compute_arxiv_statistics(df):
+    """Compute comprehensive statistics from arXiv data."""
+    growth_rate = (df['submissions'].iloc[-1] / df['submissions'].iloc[0]) ** (1/len(df)*12) - 1
+
+    return {
+        'total_submissions': int(df['submissions'].sum()),
+        'monthly_average': float(df['submissions'].mean()),
+        'growth_rate': float(growth_rate),
+        'data_span_years': (df['date'].max() - df['date'].min()).days / 365.25
+    }
+
+def run_trend_analysis(df):
+    """Analyze submission trends over time."""
+    return {
+        'trend_slope': np.polyfit(range(len(df)), df['submissions'], 1)[0],
+        'r_squared': np.corrcoef(range(len(df)), df['submissions'])[0,1]**2
+    }
 
 # Load and analyze data
 df = load_arxiv_data()
 stats = compute_arxiv_statistics(df)
 trends = run_trend_analysis(df)
 
-# Generate figures  
-create_growth_plot(df, output_path="FIGURES/PLOTS/arxiv_growth.svg")
+# Optional: Generate and save figure
+plot_path = Path("FIGURES/PLOTS/arxiv_growth.svg")
+plot_path.parent.mkdir(parents=True, exist_ok=True)
+
+plt.figure(figsize=(10, 6))
+plt.plot(df['date'], df['submissions'], marker='o', linewidth=2)
+plt.title('arXiv Monthly Submissions Growth')
+plt.xlabel('Date')
+plt.ylabel('Submissions')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+plt.close()
 }}
 
 Our analysis of {{py:get stats['total_submissions']:,}} arXiv submissions 
@@ -763,9 +887,13 @@ with {{py:get quality_summary['completeness']}} data completeness across
 <!-- Old approach - no longer recommended -->
 {{py:
 import pandas as pd
-df = pd.read_csv("data.csv")
-result = df.mean()
-print(f"Mean value: {result}")
+df = pd.read_csv("FIGURES/DATA/experiment_observations.csv")
+
+# Calculate mean for specific numeric columns
+numeric_columns = df.select_dtypes(include=['number']).columns
+mean_values = df[numeric_columns].mean()
+overall_mean = df['measurement_value'].mean()  # Assuming 'measurement_value' column
+print(f"Mean measurement value: {overall_mean:.2f}")
 }}
 ```
 
@@ -775,11 +903,17 @@ print(f"Mean value: {result}")
 <!-- New 3-step approach -->
 {{py:exec
 import pandas as pd
-df = pd.read_csv("FIGURES/DATA/data.csv")
-mean_result = df['value'].mean()
+import numpy as np
+
+df = pd.read_csv("FIGURES/DATA/experiment_observations.csv")
+
+# Calculate specific statistical measures for the measurement column
+mean_result = df['measurement_value'].mean()
+std_result = df['measurement_value'].std()
+sample_count = len(df)
 }}
 
-The mean value in our dataset is {{py:get mean_result:.2f}}.
+The mean measurement value in our dataset is {{py:get mean_result:.2f}} ± {{py:get std_result:.2f}} (n = {{py:get sample_count}}).
 ```
 
 ### Migration Steps

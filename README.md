@@ -16,7 +16,7 @@ Rxiv-Maker transforms scientific preprint writing by converting enhanced Markdow
 - **Write in Markdown**: Focus on content, not formatting
 - **Automated Figures**: Python/R scripts become publication figures  
 - **Smart Citations**: BibTeX integration with cross-references
-- **Instant PDFs**: From Markdown to camera-ready in seconds
+- **Instant PDFs**: From Markdown to professional academic PDF
 
 ### 🚀 **For Teams**  
 - **Git-Friendly**: Version control for manuscripts and figures
@@ -31,118 +31,19 @@ Rxiv-Maker transforms scientific preprint writing by converting enhanced Markdow
 
 ## 🚀 Installation
 
-**Universal Installation (Recommended):**
+**Quick Installation (All Platforms):**
 
 ```bash
-# Using pipx (isolated environment, recommended)
-pipx install rxiv-maker
-
-# Or using pip
-pip install rxiv-maker
-```
-
-<details>
-<summary><strong>🐧 Linux Installation</strong></summary>
-
-**Ubuntu/Debian:**
-```bash
-# 1. Install system dependencies
-sudo apt update
-sudo apt install python3-pip pipx texlive-latex-recommended texlive-fonts-recommended
-
-# 2. Install rxiv-maker
-pipx install rxiv-maker
-
-# 3. Verify installation
-rxiv check-installation
-```
-
-**Red Hat/CentOS/Fedora:**
-```bash
-# 1. Install system dependencies
-sudo dnf install python3-pip texlive-latex texlive-fonts-recommended
-
-# Install pipx
-python3 -m pip install --user pipx
-python3 -m pipx ensurepath
-
-# 2. Install rxiv-maker
-pipx install rxiv-maker
-
-# 3. Verify installation  
-rxiv check-installation
-```
-
-</details>
-
-<details>
-<summary><strong>🍎 macOS Installation</strong></summary>
-
-**Prerequisites:**
-```bash
-# Install Homebrew if you don't have it
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# Install system dependencies
-brew install pipx
-brew install --cask mactex-no-gui  # Full LaTeX installation
-```
-
-**Installation:**
-```bash
-# Install rxiv-maker
+# Using pipx (recommended)
 pipx install rxiv-maker
 
 # Verify installation
 rxiv check-installation
 ```
 
-**Alternative (minimal LaTeX):**
-```bash
-# For smaller LaTeX installation
-brew install pipx basictex
-pipx install rxiv-maker
-```
+**Need platform-specific setup?** 📖 **[Complete Installation Guide →](https://rxiv-maker.henriqueslab.org/getting-started/installation/)**
 
-</details>
-
-<details>
-<summary><strong>🪟 Windows Installation</strong></summary>
-
-**Option 1: WSL2 (Recommended)**
-```bash
-# Install WSL2 with Ubuntu (Windows PowerShell as Administrator)
-wsl --install -d Ubuntu-22.04
-
-# Restart computer, then launch Ubuntu and run:
-sudo apt update
-sudo apt install python3-pip pipx texlive-latex-recommended
-pipx install rxiv-maker
-rxiv check-installation
-```
-
-**Option 2: Native Windows**
-```powershell
-# Install Chocolatey (PowerShell as Administrator)
-Set-ExecutionPolicy Bypass -Scope Process -Force
-iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-
-# Install dependencies
-choco install python pipx miktex
-
-# Install rxiv-maker
-pipx install rxiv-maker
-rxiv check-installation
-```
-
-</details>
-
-**Verify your installation:**
-```bash
-rxiv check-installation  # Verify all dependencies
-rxiv --version           # Check version
-rxiv --help             # View available commands
-```
+**For developers:** 🛠️ **[Developer Setup →](docs/quick-start/installation.md)**
 
 ## 🔥 Quick Start
 
@@ -194,15 +95,20 @@ rxiv pdf
 
 {{py:exec
 import pandas as pd
-df = pd.read_csv("FIGURES/DATA/results.csv")
-correlation = df.corr().iloc[0,1]
+import numpy as np
+
+df = pd.read_csv("FIGURES/DATA/experimental_results.csv")
+
+# Calculate correlation between specific columns (safer than iloc)
+# Assuming the CSV has columns like 'treatment_effect' and 'baseline_score'
+correlation = df['treatment_effect'].corr(df['baseline_score'])
 sample_size = len(df)
 }}
 
 Our analysis of {{py:get sample_size}} samples in Figure @fig:results shows 
 significant improvement over previous methods [@smith2023; @jones2024].
 
-![Research Results](FIGURES/generate_plot.py)
+![Research Results](FIGURES/experimental_visualization.py)
 {#fig:results}
 
 The correlation coefficient was r = {{py:get correlation:.2f}} (p < 0.001).
@@ -230,15 +136,15 @@ The correlation coefficient was r = {{py:get correlation:.2f}} (p < 0.001).
 - bioRxiv and other preprint servers with professional formatting
 - Conference papers with consistent styling
 
-### 📊 **Reports & Analyses**  
-- Data analysis reports with live figures
-- Technical documentation with code examples
-- Grant applications with professional formatting
+### 📊 **Preprint Features**
+- **Reproducible figures** generated from Python/R scripts
+- **Live data integration** that updates with analysis changes
+- **Professional formatting** optimized for preprint servers
 
-### 🎓 **Academic Workflows**
-- Thesis chapters with cross-references
-- Collaborative writing with version control
-- Supplementary materials with automated generation
+### 🎓 **Preprint Workflows**
+- **arXiv submissions** with cross-references and mathematical notation
+- **Collaborative preprint writing** with version control
+- **Supplementary materials** with automated generation
 
 ## 🏃‍♀️ Alternative Workflows
 

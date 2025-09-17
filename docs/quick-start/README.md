@@ -1,6 +1,27 @@
 # Quick Start Learning Path
 
-Choose your learning path based on your experience and time available.
+*Developer-focused learning path for the main repository*
+
+> **👋 New to Rxiv-Maker?** Start with our **[Website Documentation](https://rxiv-maker.henriqueslab.org/)** for the complete user experience with tutorials, examples, and guides.
+
+---
+
+## 🌐 Documentation Navigation
+
+| **For Users** | **For Developers** | **For Teams** |
+|-------|---------|------|
+| **[Website Docs](https://rxiv-maker.henriqueslab.org/)** | **[This Repository](../navigation.md)** | **[Docker Infrastructure](https://github.com/HenriquesLab/docker-rxiv-maker)** |
+| Complete tutorials | Technical reference | Containerized workflows |
+| **[VS Code Extension](https://marketplace.visualstudio.com/items?itemName=henriqueslab.rxiv-maker)** | **[API Reference](../../src/docs/api/)** | **[GitHub Actions](../github-actions-guide.md)** |
+| Enhanced editing | Code documentation | Team collaboration |
+
+**📍 [Complete Navigation Guide →](../navigation.md)**
+
+---
+
+## 🎯 Repository Learning Path
+
+Choose your learning path based on your experience and time available:
 
 ## 🎯 Progressive Learning Path
 
@@ -74,7 +95,7 @@ Once you've completed these guides, explore advanced topics:
 - **[Collaboration Guide](../guides/collaboration-guide.md)** - Multi-author workflows
 
 ### 🔧 **Technical References**
-- **[CLI Reference](../reference/cli-commands.md)** - Complete command documentation
+- **[CLI Reference](../reference/cli-reference.md)** - Complete command documentation
 - **[Installation Guide](installation.md)** - Detailed setup options
 - **[Troubleshooting](../troubleshooting/common-issues.md)** - Common issues and solutions
 

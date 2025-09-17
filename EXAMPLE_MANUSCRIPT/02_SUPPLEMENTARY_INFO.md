@@ -19,9 +19,9 @@
 | **Pandoc** [@pandoc2020] | Converter | Excellent | Format conversion | Universal format support, extensible filters | Yes |
 | **Typst** [@Typst2024] | Typesetter | Good | Modern typesetting | Fast compilation, modern syntax, growing ecosystem | Yes |
 | **Bookdown** [@Xie2016_bookdown] | Publisher | R Markdown | Academic books | Cross-references, multiple formats | Yes |
-| **Direct LaTeX** | Typesetter | None | Traditional publishing | Ultimate control, established workflows, mature ecosystem | Yes |
+| **Direct LaTeX** | Typesetter | None | Traditional publishing | Full control, established workflows, mature ecosystem | Yes |
 
-{#stable:tool-comparison} **Comprehensive Comparison of Manuscript Preparation Tools.** This comparison positions each tool within the scientific publishing ecosystem based on current capabilities and primary strengths. Rxiv-Maker specialises in reproducible preprint workflows with local-first execution, automated figure generation, and developer-centric features. Overleaf remains the leading collaborative LaTeX platform, whilst Quarto excels at multi-format computational publishing. The comparison reflects that different tools address distinct workflow requirements: collaborative editing (Overleaf), multi-format output (Quarto), version-controlled writing (Manubot), and reproducible preprint generation (Rxiv-Maker).
+{#stable:tool-comparison} **Comprehensive Comparison of Manuscript Preparation Tools.** This comparison positions each tool within the scientific publishing ecosystem based on current capabilities and primary strengths. Rxiv-Maker specialises in reproducible preprint workflows with local-first execution, automated figure generation, and developer-centric features. Overleaf is a popular collaborative LaTeX platform, whilst Quarto excels at multi-format computational publishing. The comparison reflects that different tools address distinct workflow requirements: collaborative editing (Overleaf), multi-format output (Quarto), version-controlled writing (Manubot), and reproducible preprint generation (Rxiv-Maker).
 
 | **Deployment Method** | **Environment** | **Dependencies** | **Collaboration** | **Ease of Use** | **Reproducibility** |
 |-------------------|-------------|-------------|--------------|-------------|----------------|
@@ -134,8 +134,7 @@ Sample C & $473.15 \pm 0.20$ & $1.000 \pm 0.020$ & $88.9 \pm 2.3$ \\
 \multicolumn{3}{|l|}{Mean $\pm$ Standard Deviation} & $90.8 \pm 4.5$ \\
 \hline
 \end{tabular}
-\captionsetup{justification=justified,singlelinecheck=false}
-\caption{\textbf{Example Measurement Results with Statistical Analysis}. The data shown is purely illustrative and does not represent actual experimental results.}
+\caption{\textbf{Example Measurement Results with Statistical Analysis.} The data shown is purely illustrative and does not represent actual experimental results.}
 \label{stable:experimental-results}
 \end{stable}
 }}
@@ -155,3 +154,5 @@ This example showcases LaTeX features including professional table borders (`\hl
 ![](FIGURES/SFigure__architecture.pdf)
 {#sfig:architecture width="90%"} **Detailed System Architecture and Processing Layers.** Comprehensive technical diagram showing the complete Rxiv-Maker architecture, including input layer organisation, processing engine components (parsers, converters, generators), compilation infrastructure, output generation, and deployment methodology integration. This figure illustrates the modular design that enables independent development and testing of system components across different deployment environments.
 
+![](FIGURES/SFigure__vscode_extension.png)
+{#sfig:vscode_extension width="100%"} **Visual Studio Code Extension Syntax Highlighting Demonstration.** Screenshot showing the comprehensive syntax highlighting capabilities of the Rxiv-Maker VS Code extension. 

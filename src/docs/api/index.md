@@ -15,6 +15,7 @@ Welcome to the API documentation for rxiv-maker.
 - [utils.operation_ids.py](utils_operation_ids.py.md)
 - [utils.platform.py](utils_platform.py.md)
 - [utils.python_execution_reporter.py](utils_python_execution_reporter.py.md)
+- [utils.text_utils.py](utils_text_utils.py.md)
 - [utils.unicode_safe.py](utils_unicode_safe.py.md)
 - [utils.url_to_doi.py](utils_url_to_doi.py.md)
 - [validate.py](validate.py.md)

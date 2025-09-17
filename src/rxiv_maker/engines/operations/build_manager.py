@@ -274,12 +274,20 @@ class BuildManager:
                 self.performance_tracker.start_operation("manuscript_generation")
 
             from ...processors.yaml_processor import extract_yaml_metadata
+            from ...utils.citation_utils import inject_rxiv_citation
             from ...utils.file_helpers import find_manuscript_md
             from ..operations.generate_preprint import generate_preprint
 
             # Extract YAML metadata from the manuscript
             manuscript_md = find_manuscript_md(str(self.path_manager.manuscript_path))
             yaml_metadata = extract_yaml_metadata(str(manuscript_md))
+
+            # Inject rxiv-maker citation if acknowledgment is enabled
+            try:
+                inject_rxiv_citation(yaml_metadata)
+            except Exception as e:
+                self.log(f"Warning: Citation injection failed: {e}", "WARNING")
+                # Continue with build process even if citation injection fails
 
             # Generate the manuscript using local execution
             manuscript_output = generate_preprint(
@@ -617,7 +625,7 @@ class BuildManager:
 
     def _analyze_improved_section_word_counts(self, content_sections):
         """Analyze word counts for each section with improved main content detection."""
-        from .analyze_word_count import count_words_in_text
+        from ...utils.text_utils import count_words_in_text
 
         # Define section guidelines with main content calculation
         section_guidelines = {

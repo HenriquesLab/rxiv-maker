@@ -354,7 +354,7 @@ For complete troubleshooting of figure positioning, see the **[Complete Figure G
 ```bash
 # Run script directly to see errors
 cd FIGURES/
-python my_script.py
+python immunofluorescence_quantification.py
 
 # Check Python environment
 python --version
@@ -430,12 +430,12 @@ R -e "install.packages(c('ggplot2', 'dplyr', 'readr'))"
 #### 1. Check Figure References
 ```markdown
 # Correct syntax
-![Figure caption](FIGURES/my_script.py)
+![Figure caption](FIGURES/cell_viability_analysis.py)
 {#fig:label}
 
 # Common mistakes to avoid
-![Caption](figures/script.py)          # Wrong path case
-![Caption](FIGURES/script.py           # Missing closing )
+![Caption](figures/cell_viability_analysis.py)          # Wrong path case
+![Caption](FIGURES/cell_viability_analysis.py           # Missing closing )
 ![Caption](FIGURES/nonexistent.py)    # File doesn't exist
 ```
 
@@ -760,7 +760,7 @@ pip install -e .
 export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
 
 # Use UV for development (handles paths automatically)
-uv run python script.py
+uv run python flow_cytometry_analysis.py
 uv run pytest
 ```
 

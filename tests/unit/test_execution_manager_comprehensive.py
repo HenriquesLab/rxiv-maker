@@ -385,41 +385,6 @@ class TestExecutionManagerPerformance:
 class TestExecutionManagerIntegration:
     """Test ExecutionManager integration with other components."""
 
-    def test_integration_with_resource_manager(self):
-        """Test ExecutionManager working with ResourceManager."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_path = Path(temp_dir)
-
-            from rxiv_maker.core.managers.resource_manager import get_resource_manager
-
-            context = ExecutionContext(mode=ExecutionMode.LOCAL, working_dir=temp_path, output_dir=temp_path / "output")
-
-            manager = LocalExecutionManager(context)
-            rm = get_resource_manager()
-
-            def resource_using_step(context):
-                # Create resources during step execution
-                temp_file = rm.create_temp_file(suffix=".test")
-                temp_file.write_text("test content")
-                context["temp_file_path"] = str(temp_file)
-                return StepResult.SUCCESS
-
-            manager.add_step(
-                step_id="resource_step",
-                name="Resource Step",
-                description="Step using resources",
-                function=resource_using_step,
-            )
-
-            with rm.managed_execution():
-                result = manager.setup_pipeline().execute()
-
-                assert result.success is True
-                # Temp file should exist during execution
-                temp_file_path = context.shared_state.get("temp_file_path")
-                if temp_file_path:
-                    assert Path(temp_file_path).exists()
-
     def test_progress_reporting(self):
         """Test progress reporting during execution."""
         with tempfile.TemporaryDirectory() as temp_dir:

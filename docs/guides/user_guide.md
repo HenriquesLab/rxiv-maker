@@ -568,7 +568,7 @@ library(ggplot2)
 library(dplyr)
 
 # Load data
-data <- read.csv("data/experiment.csv")
+data <- read.csv("FIGURES/DATA/behavioral_study_results.csv")
 
 # Create publication-quality plot
 p <- ggplot(data, aes(x = treatment, y = response)) +
@@ -600,7 +600,7 @@ rxiv pdf --force-figures
 rxiv clean --figures-only
 
 # Generate figures without full PDF
-python FIGURES/my_script.py  # Test individual scripts
+python FIGURES/dose_response_analysis.py  # Test individual scripts
 
 # Debug figure issues
 rxiv pdf --verbose           # See detailed figure generation logs
@@ -796,7 +796,7 @@ rxiv check-installation  # Verify setup
 
 # Figures broken?
 rxiv clean --figures-only # Clear figure cache
-python FIGURES/script.py  # Test individual script
+python FIGURES/protein_expression_plot.py  # Test individual script
 ```
 
 ### 🤝 **Community & Support**

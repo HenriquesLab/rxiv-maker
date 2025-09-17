@@ -4,8 +4,6 @@ Tests to verify that the new centralized managers work correctly together
 and integrate properly with the existing rxiv-maker codebase.
 """
 
-import tempfile
-
 
 # Test the centralized managers
 def test_content_processor_integration():
@@ -96,34 +94,6 @@ def test_dependency_manager_integration():
         return False
 
 
-def test_resource_manager_integration():
-    """Test ResourceManager basic functionality."""
-    try:
-        from rxiv_maker.core.resource_manager import get_resource_manager, managed_resources
-
-        # Test manager instantiation
-        resource_manager = get_resource_manager()
-
-        # Test basic resource management
-        assert hasattr(resource_manager, "register_temp_file")
-        assert hasattr(resource_manager, "cleanup_all")
-
-        # Test basic functionality without complex cleanup scenarios
-        # Just verify the context manager doesn't crash
-        with managed_resources():
-            # Simple test that the context manager works
-            temp_file = tempfile.NamedTemporaryFile(delete=True)
-            # Don't register or do complex cleanup - just test it doesn't crash
-            temp_file.close()
-
-        print("✅ ResourceManager integration test passed")
-        return True
-
-    except Exception as e:
-        print(f"❌ ResourceManager integration test failed: {e}")
-        return False
-
-
 def test_validation_manager_integration():
     """Test ValidationManager basic functionality."""
     try:
@@ -172,7 +142,6 @@ def run_all_integration_tests():
         test_content_processor_integration,
         test_command_framework_integration,
         test_dependency_manager_integration,
-        test_resource_manager_integration,
         test_validation_manager_integration,
         test_execution_manager_integration,
     ]

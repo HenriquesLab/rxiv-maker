@@ -19,9 +19,7 @@ from .operations import (
     FigureGenerator,
     PDFValidator,
     TrackChangesManager,
-    analyze_manuscript_word_count,
     # Utilities
-    copy_pdf_with_custom_filename,
     generate_api_docs,
     generate_preprint,
     # Publishing
@@ -39,10 +37,8 @@ __all__ = [
     "BibliographyFixer",
     "validate_manuscript",
     "PDFValidator",
-    "analyze_manuscript_word_count",
     "prepare_arxiv_package",
     "TrackChangesManager",
-    "copy_pdf_with_custom_filename",
     "CleanupManager",
     "EnvironmentSetup",
     "generate_api_docs",

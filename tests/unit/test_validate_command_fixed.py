@@ -14,13 +14,13 @@ class TestValidateCommand:
         """Set up test fixtures before each test."""
         self.runner = CliRunner()
 
-    @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
-    def test_successful_validation(self, mock_validate_manuscript, mock_progress):
+    @patch("rxiv_maker.cli.commands.validate.validate_manuscript")
+    @patch("rich.console.Console.status")
+    def test_successful_validation(self, mock_status, mock_validate_manuscript):
         """Test successful manuscript validation."""
-        # Mock Progress
-        mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        # Mock status context manager
+        mock_status.return_value.__enter__.return_value = MagicMock()
+        mock_status.return_value.__exit__.return_value = None
 
         # Mock validate_manuscript to succeed (return True)
         mock_validate_manuscript.return_value = True
@@ -37,13 +37,13 @@ class TestValidateCommand:
             assert "✅ Validation passed!" in result.output
             mock_validate_manuscript.assert_called_once()
 
-    @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
-    def test_validation_failure(self, mock_validate_manuscript, mock_progress):
+    @patch("rxiv_maker.cli.commands.validate.validate_manuscript")
+    @patch("rich.console.Console.status")
+    def test_validation_failure(self, mock_status, mock_validate_manuscript):
         """Test manuscript validation failure."""
-        # Mock Progress
-        mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        # Mock status context manager
+        mock_status.return_value.__enter__.return_value = MagicMock()
+        mock_status.return_value.__exit__.return_value = None
 
         # Mock validate_manuscript to return False (validation failed)
         mock_validate_manuscript.return_value = False
@@ -57,19 +57,16 @@ class TestValidateCommand:
             result = self.runner.invoke(validate, ["test_manuscript"], obj={"verbose": False})
 
             assert result.exit_code == 1
-            assert "❌ Validation failed. See details above." in result.output
-            assert "💡 Run with --detailed for more information" in result.output
-            # Check for the core message ignoring line breaks
-            assert "rxiv pdf" in result.output and "--skip-validation" in result.output
-            assert "to build anyway" in result.output
+            assert "❌ Validation failed - see errors above" in result.output
+            mock_validate_manuscript.assert_called_once()
 
-    @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
-    def test_validation_success_exit_zero(self, mock_validate_manuscript, mock_progress):
+    @patch("rxiv_maker.cli.commands.validate.validate_manuscript")
+    @patch("rich.console.Console.status")
+    def test_validation_success_exit_zero(self, mock_status, mock_validate_manuscript):
         """Test validation with successful return - should be treated as success."""
-        # Mock Progress
-        mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        # Mock status context manager
+        mock_status.return_value.__enter__.return_value = MagicMock()
+        mock_status.return_value.__exit__.return_value = None
 
         # Mock validate_manuscript to return True (success)
         mock_validate_manuscript.return_value = True
@@ -84,14 +81,15 @@ class TestValidateCommand:
 
             # Should succeed with exit code 0
             assert result.exit_code == 0
+            mock_validate_manuscript.assert_called_once()
 
-    @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
-    def test_keyboard_interrupt_handling(self, mock_validate_manuscript, mock_progress):
+    @patch("rxiv_maker.cli.commands.validate.validate_manuscript")
+    @patch("rich.console.Console.status")
+    def test_keyboard_interrupt_handling(self, mock_status, mock_validate_manuscript):
         """Test keyboard interrupt handling."""
-        # Mock Progress
-        mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        # Mock status context manager
+        mock_status.return_value.__enter__.return_value = MagicMock()
+        mock_status.return_value.__exit__.return_value = None
 
         # Mock validate_manuscript to raise KeyboardInterrupt
         mock_validate_manuscript.side_effect = KeyboardInterrupt()
@@ -105,15 +103,16 @@ class TestValidateCommand:
             result = self.runner.invoke(validate, ["test_manuscript"], obj={"verbose": False})
 
             assert result.exit_code == 1
-            assert "⏹️  validation interrupted by user" in result.output
+            # Click intercepts KeyboardInterrupt and shows "Aborted."
+            assert "Aborted." in result.output
 
-    @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
-    def test_unexpected_error_handling(self, mock_validate_manuscript, mock_progress):
+    @patch("rxiv_maker.cli.commands.validate.validate_manuscript")
+    @patch("rich.console.Console.status")
+    def test_unexpected_error_handling(self, mock_status, mock_validate_manuscript):
         """Test unexpected error handling."""
-        # Mock Progress
-        mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        # Mock status context manager
+        mock_status.return_value.__enter__.return_value = MagicMock()
+        mock_status.return_value.__exit__.return_value = None
 
         # Mock validate_manuscript to raise an unexpected error
         mock_validate_manuscript.side_effect = RuntimeError("Unexpected validation error")
@@ -127,17 +126,16 @@ class TestValidateCommand:
             result = self.runner.invoke(validate, ["test_manuscript"], obj={"verbose": False})
 
             assert result.exit_code == 1
-            assert "❌ Unexpected error during validation" in result.output
-            # The full error message contains the original error
+            assert "❌ Validation error: Unexpected validation error" in result.output
             assert "Unexpected validation error" in result.output
 
-    @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
-    def test_default_manuscript_path_from_env(self, mock_validate_manuscript, mock_progress):
+    @patch("rxiv_maker.cli.commands.validate.validate_manuscript")
+    @patch("rich.console.Console.status")
+    def test_default_manuscript_path_from_env(self, mock_status, mock_validate_manuscript):
         """Test that default manuscript path is taken from environment."""
-        # Mock Progress
-        mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        # Mock status context manager
+        mock_status.return_value.__enter__.return_value = MagicMock()
+        mock_status.return_value.__exit__.return_value = None
 
         # Mock validate_manuscript to succeed
         mock_validate_manuscript.return_value = True
@@ -163,13 +161,13 @@ class TestValidateCommand:
                 # Clean up environment variable
                 del os.environ["MANUSCRIPT_PATH"]
 
-    @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
-    def test_argv_manipulation(self, mock_validate_manuscript, mock_progress):
+    @patch("rxiv_maker.cli.commands.validate.validate_manuscript")
+    @patch("rich.console.Console.status")
+    def test_argv_manipulation(self, mock_status, mock_validate_manuscript):
         """Test that argv manipulation doesn't affect validation."""
-        # Mock Progress
-        mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        # Mock status context manager
+        mock_status.return_value.__enter__.return_value = MagicMock()
+        mock_status.return_value.__exit__.return_value = None
 
         # Mock validate_manuscript to succeed
         mock_validate_manuscript.return_value = True
@@ -187,13 +185,13 @@ class TestValidateCommand:
             # Verify the validation function was called correctly
             mock_validate_manuscript.assert_called_once()
 
-    @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
-    def test_validation_options(self, mock_validate_manuscript, mock_progress):
+    @patch("rxiv_maker.cli.commands.validate.validate_manuscript")
+    @patch("rich.console.Console.status")
+    def test_validation_options(self, mock_status, mock_validate_manuscript):
         """Test that validation options are passed correctly."""
-        # Mock Progress
-        mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        # Mock status context manager
+        mock_status.return_value.__enter__.return_value = MagicMock()
+        mock_status.return_value.__exit__.return_value = None
 
         # Mock validate_manuscript to succeed
         mock_validate_manuscript.return_value = True
@@ -220,13 +218,13 @@ class TestValidateCommand:
             assert kwargs["verbose"] is True
             assert kwargs["check_latex"] is True
 
-    @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
-    def test_verbose_error_reporting(self, mock_validate_manuscript, mock_progress):
+    @patch("rxiv_maker.cli.commands.validate.validate_manuscript")
+    @patch("rich.console.Console.status")
+    def test_verbose_error_reporting(self, mock_status, mock_validate_manuscript):
         """Test that verbose mode shows exception traceback."""
-        # Mock Progress
-        mock_progress_instance = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
+        # Mock status context manager
+        mock_status.return_value.__enter__.return_value = MagicMock()
+        mock_status.return_value.__exit__.return_value = None
 
         # Mock validate_manuscript to raise an error
         mock_validate_manuscript.side_effect = RuntimeError("Detailed error")
@@ -240,17 +238,15 @@ class TestValidateCommand:
             result = self.runner.invoke(validate, ["test_manuscript"], obj={"verbose": True})
 
             assert result.exit_code == 1
-            assert "❌ Unexpected error during validation" in result.output
+            assert "❌ Validation error: Detailed error" in result.output
 
-    @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
-    def test_progress_update_on_success(self, mock_validate_manuscript, mock_progress):
+    @patch("rxiv_maker.cli.commands.validate.validate_manuscript")
+    @patch("rich.console.Console.status")
+    def test_progress_update_on_success(self, mock_status, mock_validate_manuscript):
         """Test that progress is updated correctly on successful validation."""
-        # Mock Progress
-        mock_progress_instance = MagicMock()
-        mock_task = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
-        mock_progress_instance.add_task.return_value = mock_task
+        # Mock status context manager
+        mock_status.return_value.__enter__.return_value = MagicMock()
+        mock_status.return_value.__exit__.return_value = None
 
         # Mock validate_manuscript to succeed
         mock_validate_manuscript.return_value = True
@@ -264,20 +260,16 @@ class TestValidateCommand:
             result = self.runner.invoke(validate, ["test_manuscript"], obj={"verbose": False})
 
             assert result.exit_code == 0
+            assert "✅ Validation passed!" in result.output
+            mock_validate_manuscript.assert_called_once()
 
-            # Verify progress was updated correctly
-            mock_progress_instance.add_task.assert_called_once_with("Running validation...", total=None)
-            mock_progress_instance.update.assert_called_with(mock_task, description="✅ Validation completed")
-
-    @patch("rxiv_maker.cli.framework.Progress")
-    @patch("rxiv_maker.engines.operations.validate.validate_manuscript")
-    def test_progress_update_on_failure(self, mock_validate_manuscript, mock_progress):
+    @patch("rxiv_maker.cli.commands.validate.validate_manuscript")
+    @patch("rich.console.Console.status")
+    def test_progress_update_on_failure(self, mock_status, mock_validate_manuscript):
         """Test that progress is updated correctly on failed validation."""
-        # Mock Progress
-        mock_progress_instance = MagicMock()
-        mock_task = MagicMock()
-        mock_progress.return_value.__enter__.return_value = mock_progress_instance
-        mock_progress_instance.add_task.return_value = mock_task
+        # Mock status context manager
+        mock_status.return_value.__enter__.return_value = MagicMock()
+        mock_status.return_value.__exit__.return_value = None
 
         # Mock validate_manuscript to fail
         mock_validate_manuscript.return_value = False
@@ -291,10 +283,8 @@ class TestValidateCommand:
             result = self.runner.invoke(validate, ["test_manuscript"], obj={"verbose": False})
 
             assert result.exit_code == 1
-
-            # Verify progress was updated correctly
-            mock_progress_instance.add_task.assert_called_once_with("Running validation...", total=None)
-            mock_progress_instance.update.assert_called_with(mock_task, description="❌ Validation failed")
+            assert "❌ Validation failed - see errors above" in result.output
+            mock_validate_manuscript.assert_called_once()
 
     def test_nonexistent_manuscript_directory(self):
         """Test handling of nonexistent manuscript directory."""

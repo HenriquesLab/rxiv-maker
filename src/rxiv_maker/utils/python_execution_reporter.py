@@ -234,6 +234,23 @@ class PythonExecutionReporter:
 
         return "\n".join(lines)
 
+    def has_python_activity(self) -> bool:
+        """Check if any Python activity was recorded."""
+        return len(self.entries) > 0
+
+    def get_execution_summary(self) -> dict:
+        """Get execution summary compatible with build manager expectations."""
+        stats = self.get_summary_statistics()
+
+        return {
+            "total_entries": stats["total_executions"],
+            "exec_blocks": stats["execution_blocks"] + stats["initialization_blocks"],
+            "get_variables": stats["variable_gets"],
+            "inline_blocks": stats["inline_executions"],
+            "total_execution_time": stats["total_execution_time"],
+            "errors": stats["errors"],
+        }
+
     def format_verbose_report(self) -> str:
         """Format a comprehensive report for verbose output."""
         if not self.entries:

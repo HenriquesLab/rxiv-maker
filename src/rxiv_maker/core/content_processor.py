@@ -14,7 +14,6 @@ from typing import Any, Callable, Dict, List, Optional
 from ..converters.types import LatexContent, MarkdownContent, ProtectedContent
 from .error_recovery import RecoveryEnhancedMixin
 from .logging_config import get_logger
-from .managers.resource_manager import get_resource_manager, managed_resources
 
 logger = get_logger()
 
@@ -87,7 +86,6 @@ class ContentProcessor(RecoveryEnhancedMixin):
         """
         super().__init__()
         self.progress_callback = progress_callback
-        self.resource_manager = get_resource_manager()
 
         # Processor registry
         self.processors: Dict[str, ProcessorConfig] = {}
@@ -739,113 +737,112 @@ class ContentProcessor(RecoveryEnhancedMixin):
 
         logger.info("Starting content processing pipeline")
 
-        with managed_resources():
-            # Clear previous state
-            self.protected_content.clear()
-            self.processing_metadata.clear()
+        # Clear previous state
+        self.protected_content.clear()
+        self.processing_metadata.clear()
 
-            # Get execution order
-            ordered_processors = self._get_execution_order()
+        # Get execution order
+        ordered_processors = self._get_execution_order()
 
-            if not ordered_processors:
-                logger.warning("No processors enabled")
-                return ProcessingResult(
-                    success=False,
-                    content=content,
-                    duration=0.0,
-                    stage=ProcessingStage.PREPARATION,
-                    errors=["No processors enabled"],
-                )
+        if not ordered_processors:
+            logger.warning("No processors enabled")
+            return ProcessingResult(
+                success=False,
+                content=content,
+                duration=0.0,
+                stage=ProcessingStage.PREPARATION,
+                errors=["No processors enabled"],
+            )
 
-            # Process content through pipeline
-            current_content = content
-            processor_results = {}
-            warnings = []
-            errors = []
-            current_stage = ProcessingStage.PREPARATION
+        # Process content through pipeline
+        current_content = content
+        processor_results = {}
+        warnings = []
+        errors = []
+        current_stage = ProcessingStage.PREPARATION
 
-            for i, processor_name in enumerate(ordered_processors):
-                config = self.processors[processor_name]
-                function = self.processor_functions[processor_name]
+        for i, processor_name in enumerate(ordered_processors):
+            config = self.processors[processor_name]
+            function = self.processor_functions[processor_name]
 
-                # Report progress
-                if self.progress_callback:
-                    self.progress_callback(f"Processing {processor_name}", i + 1, len(ordered_processors))
+            # Report progress
+            if self.progress_callback:
+                self.progress_callback(f"Processing {processor_name}", i + 1, len(ordered_processors))
 
-                # Update current stage
-                current_stage = config.stage
+            # Update current stage
+            current_stage = config.stage
 
+            try:
+                processor_start = time.time()
+
+                # Execute processor
+                logger.debug(f"Running processor: {processor_name} ({config.stage.value})")
+
+                # Pass context to processor, handling different function signatures
+                processor_kwargs = {"is_supplementary": is_supplementary, **kwargs}
+
+                if config.timeout:
+                    # TODO: Implement timeout handling
+                    pass
+
+                # Try calling with kwargs first, fallback to content-only
                 try:
-                    processor_start = time.time()
+                    processed_content = function(current_content, **processor_kwargs)
+                except TypeError as e:
+                    if "unexpected keyword argument" in str(e):
+                        # Function doesn't accept the additional arguments, call with content only
+                        logger.debug(f"Processor {processor_name} doesn't accept kwargs, calling with content only")
+                        processed_content = function(current_content)
+                    else:
+                        raise
 
-                    # Execute processor
-                    logger.debug(f"Running processor: {processor_name} ({config.stage.value})")
+                processor_duration = time.time() - processor_start
 
-                    # Pass context to processor, handling different function signatures
-                    processor_kwargs = {"is_supplementary": is_supplementary, **kwargs}
+                # Store result
+                processor_results[processor_name] = {
+                    "success": True,
+                    "duration": processor_duration,
+                    "stage": config.stage.value,
+                }
 
-                    if config.timeout:
-                        # TODO: Implement timeout handling
-                        pass
+                current_content = processed_content
 
-                    # Try calling with kwargs first, fallback to content-only
-                    try:
-                        processed_content = function(current_content, **processor_kwargs)
-                    except TypeError as e:
-                        if "unexpected keyword argument" in str(e):
-                            # Function doesn't accept the additional arguments, call with content only
-                            logger.debug(f"Processor {processor_name} doesn't accept kwargs, calling with content only")
-                            processed_content = function(current_content)
-                        else:
-                            raise
+                logger.debug(f"Processor {processor_name} completed ({processor_duration:.3f}s)")
 
-                    processor_duration = time.time() - processor_start
+            except Exception as e:
+                error_msg = f"Processor {processor_name} failed: {e}"
+                logger.error(error_msg)
+                errors.append(error_msg)
 
-                    # Store result
-                    processor_results[processor_name] = {
-                        "success": True,
-                        "duration": processor_duration,
-                        "stage": config.stage.value,
-                    }
+                processor_results[processor_name] = {"success": False, "error": str(e), "stage": config.stage.value}
 
-                    current_content = processed_content
+                # Continue processing unless critical
+                if config.priority == ProcessorPriority.CRITICAL:
+                    logger.error(f"Critical processor {processor_name} failed, stopping pipeline")
+                    break
 
-                    logger.debug(f"Processor {processor_name} completed ({processor_duration:.3f}s)")
+        # Calculate final result
+        total_duration = time.time() - start_time
+        success = len(errors) == 0
 
-                except Exception as e:
-                    error_msg = f"Processor {processor_name} failed: {e}"
-                    logger.error(error_msg)
-                    errors.append(error_msg)
+        result = ProcessingResult(
+            success=success,
+            content=current_content,
+            duration=total_duration,
+            stage=current_stage,
+            processor_results=processor_results,
+            protected_content=self.protected_content.copy(),
+            metadata=self.processing_metadata.copy(),
+            warnings=warnings,
+            errors=errors,
+        )
 
-                    processor_results[processor_name] = {"success": False, "error": str(e), "stage": config.stage.value}
+        logger.info(
+            f"Content processing completed: {len(ordered_processors)} processors, "
+            f"{len(errors)} errors, {len(warnings)} warnings ({total_duration:.1f}s)"
+        )
 
-                    # Continue processing unless critical
-                    if config.priority == ProcessorPriority.CRITICAL:
-                        logger.error(f"Critical processor {processor_name} failed, stopping pipeline")
-                        break
-
-            # Calculate final result
-            total_duration = time.time() - start_time
-            success = len(errors) == 0
-
-            result = ProcessingResult(
-                success=success,
-                content=current_content,
-                duration=total_duration,
-                stage=current_stage,
-                processor_results=processor_results,
-                protected_content=self.protected_content.copy(),
-                metadata=self.processing_metadata.copy(),
-                warnings=warnings,
-                errors=errors,
-            )
-
-            logger.info(
-                f"Content processing completed: {len(ordered_processors)} processors, "
-                f"{len(errors)} errors, {len(warnings)} warnings ({total_duration:.1f}s)"
-            )
-
-            return result
+        return result
 
     def get_processor_status(self) -> Dict[str, Dict[str, Any]]:
         """Get status of all registered processors.

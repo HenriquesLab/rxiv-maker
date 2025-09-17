@@ -99,7 +99,7 @@ Reference the equation: See @eq:diffusion for the diffusion equation.
 
 ### Figures with Advanced Positioning
 ```markdown
-![Figure Caption](FIGURES/figure_script.py){#fig:results width="0.8\textwidth" tex_position="t"}
+![Figure Caption](FIGURES/experimental_analysis.py){#fig:results width="0.8\textwidth" tex_position="t"}
 
 - `width`: Control figure size
 - `tex_position`: "t" (top), "b" (bottom), "h" (here), "p" (page)
@@ -222,16 +222,33 @@ See Figure 1.
 ```python
 # In FIGURES/multi_panel.py
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+# Load experimental data for multi-panel figure
+treatment_data = pd.read_csv("../DATA/treatment_effects.csv")
+control_data = pd.read_csv("../DATA/control_effects.csv")
+
+# Extract time series for plotting
+time_points = treatment_data['time_hours']
+treatment_response = treatment_data['response_magnitude']
+control_response = control_data['response_magnitude']
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
-# Panel A
-ax1.plot(data1)
-ax1.text(0.05, 0.95, 'A', transform=ax1.transAxes, 
+# Panel A - Treatment Effects
+ax1.plot(time_points, treatment_response, 'o-', linewidth=2, markersize=4)
+ax1.set_xlabel('Time (hours)')
+ax1.set_ylabel('Response Magnitude')
+ax1.set_title('Treatment Effects')
+ax1.text(0.05, 0.95, 'A', transform=ax1.transAxes,
          fontsize=16, weight='bold')
 
-# Panel B  
-ax2.plot(data2)
+# Panel B - Control Comparison
+ax2.plot(time_points, control_response, 's-', linewidth=2, markersize=4, color='red')
+ax2.set_xlabel('Time (hours)')
+ax2.set_ylabel('Response Magnitude')
+ax2.set_title('Control Conditions')
 ax2.text(0.05, 0.95, 'B', transform=ax2.transAxes,
          fontsize=16, weight='bold')
 
@@ -339,4 +356,4 @@ grep -o "@[a-zA-Z0-9:_-]*" 01_MAIN.md
 
 - **[Publishing Guide](publishing-guide.md)** - Submission and peer review
 - **[Figures Guide](figures-guide.md)** - Advanced figure creation
-- **[CLI Reference](../reference/cli-commands.md)** - Complete command guide
+- **[CLI Reference](../reference/cli-reference.md)** - Complete command guide
