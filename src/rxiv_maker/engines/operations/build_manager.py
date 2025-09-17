@@ -625,25 +625,7 @@ class BuildManager:
 
     def _analyze_improved_section_word_counts(self, content_sections):
         """Analyze word counts for each section with improved main content detection."""
-
-        def count_words_in_text(text: str) -> int:
-            """Count words in text, excluding code blocks and LaTeX commands."""
-            import re
-
-            if not text or not text.strip():
-                return 0
-
-            # Remove code blocks
-            text = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
-            text = re.sub(r"`[^`]+`", "", text)
-
-            # Remove LaTeX commands and environments
-            text = re.sub(r"\\[a-zA-Z]+\{[^}]*\}", "", text)
-            text = re.sub(r"\\[a-zA-Z]+", "", text)
-
-            # Split by whitespace and count non-empty words
-            words = [word for word in text.split() if word.strip()]
-            return len(words)
+        from ...utils.text_utils import count_words_in_text
 
         # Define section guidelines with main content calculation
         section_guidelines = {

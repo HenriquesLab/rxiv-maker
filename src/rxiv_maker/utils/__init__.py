@@ -32,6 +32,7 @@ from .pdf_utils import (
     get_custom_pdf_filename,
 )
 from .platform import safe_console_print, safe_print
+from .text_utils import clean_text_for_analysis, count_words_in_text
 from .tips import get_build_success_tip, get_general_tip
 
 __all__ = [
@@ -50,4 +51,6 @@ __all__ = [
     "inject_rxiv_citation",
     "get_build_success_tip",
     "get_general_tip",
+    "count_words_in_text",
+    "clean_text_for_analysis",
 ]
