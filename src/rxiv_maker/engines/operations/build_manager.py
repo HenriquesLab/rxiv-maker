@@ -274,12 +274,16 @@ class BuildManager:
                 self.performance_tracker.start_operation("manuscript_generation")
 
             from ...processors.yaml_processor import extract_yaml_metadata
+            from ...utils.citation_utils import inject_rxiv_citation
             from ...utils.file_helpers import find_manuscript_md
             from ..operations.generate_preprint import generate_preprint
 
             # Extract YAML metadata from the manuscript
             manuscript_md = find_manuscript_md(str(self.path_manager.manuscript_path))
             yaml_metadata = extract_yaml_metadata(str(manuscript_md))
+
+            # Inject rxiv-maker citation if acknowledgment is enabled
+            inject_rxiv_citation(yaml_metadata)
 
             # Generate the manuscript using local execution
             manuscript_output = generate_preprint(
@@ -617,7 +621,25 @@ class BuildManager:
 
     def _analyze_improved_section_word_counts(self, content_sections):
         """Analyze word counts for each section with improved main content detection."""
-        from .analyze_word_count import count_words_in_text
+
+        def count_words_in_text(text: str) -> int:
+            """Count words in text, excluding code blocks and LaTeX commands."""
+            import re
+
+            if not text or not text.strip():
+                return 0
+
+            # Remove code blocks
+            text = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
+            text = re.sub(r"`[^`]+`", "", text)
+
+            # Remove LaTeX commands and environments
+            text = re.sub(r"\\[a-zA-Z]+\{[^}]*\}", "", text)
+            text = re.sub(r"\\[a-zA-Z]+", "", text)
+
+            # Split by whitespace and count non-empty words
+            words = [word for word in text.split() if word.strip()]
+            return len(words)
 
         # Define section guidelines with main content calculation
         section_guidelines = {
