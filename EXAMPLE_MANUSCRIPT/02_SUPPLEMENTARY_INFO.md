@@ -8,11 +8,11 @@
 | **LaTeX Graphics** | `.tex`, `.tikz` | LaTeX compilation | PDF | Vector | Mathematical diagrams |
 | **Data Files** | `.csv`, `.json`, `.xlsx` | Python and R processing | Via scripts | Computed | Raw data integration |
 
-{#stable:figure-formats} **Supported Figure Generation Methods.** Comprehensive overview of the framework's figure processing capabilities, demonstrating support for both static and dynamic content generation with emphasis on reproducible computational graphics.
+{#stable:figure-formats} **Supported Figure Generation Methods.** Overview of the framework's figure processing capabilities, demonstrating support for both static and dynamic content generation with emphasis on reproducible computational graphics.
 
 | **Tool** | **Type** | **Markdown** | **Primary Use Case** | **Key Strengths** | **Open Source** |
 |----------|----------|--------------|-------------------|-------------------|-----------------|
-| **Rxiv-Maker** | Pipeline | Excellent | Reproducible preprints | Local-first execution, intelligent caching, rich CLI | Yes |
+| **Rxiv-Maker** | Pipeline | Excellent | Reproducible preprints | Local-first execution, automated caching, rich CLI | Yes |
 | **Overleaf** [@Overleaf2024] | Web Editor | Limited | Collaborative LaTeX | Real-time collaboration, rich templates, cloud-based | Freemium |
 | **Quarto** [@Quarto2024] | Publisher | Native | Multi-format publishing | Polyglot support, multiple outputs, scientific focus | Yes |
 | **Manubot** [@himmelstein2019] | Collaborative | Native | Version-controlled writing | Automated citations, transparent collaboration, Git-based | Yes |
@@ -21,7 +21,7 @@
 | **Bookdown** [@Xie2016_bookdown] | Publisher | R Markdown | Academic books | Cross-references, multiple formats | Yes |
 | **Direct LaTeX** | Typesetter | None | Traditional publishing | Full control, established workflows, mature ecosystem | Yes |
 
-{#stable:tool-comparison} **Comprehensive Comparison of Manuscript Preparation Tools.** This comparison positions each tool within the scientific publishing ecosystem based on current capabilities and primary strengths. Rxiv-Maker specialises in reproducible preprint workflows with local-first execution, automated figure generation, and developer-centric features. Overleaf is a popular collaborative LaTeX platform, whilst Quarto excels at multi-format computational publishing. The comparison reflects that different tools address distinct workflow requirements: collaborative editing (Overleaf), multi-format output (Quarto), version-controlled writing (Manubot), and reproducible preprint generation (Rxiv-Maker).
+{#stable:tool-comparison} **Comparison of Manuscript Preparation Tools.** This comparison positions each tool within the scientific publishing ecosystem based on current capabilities and primary strengths. Rxiv-Maker specialises in reproducible preprint workflows with local-first execution, automated figure generation, and developer-centric features. Overleaf is a popular collaborative LaTeX platform, whilst Quarto excels at multi-format computational publishing. The comparison reflects that different tools address distinct workflow requirements: collaborative editing (Overleaf), multi-format output (Quarto), version-controlled writing (Manubot), and reproducible preprint generation (Rxiv-Maker).
 
 | **Deployment Method** | **Environment** | **Dependencies** | **Collaboration** | **Ease of Use** | **Reproducibility** |
 |-------------------|-------------|-------------|--------------|-------------|----------------|
@@ -46,7 +46,7 @@
 | `- list item` | `\begin{itemize}\item...\end{itemize}` | Unordered list |
 | `1. list item` | `\begin{enumerate}\item...\end{enumerate}` | Ordered list |
 | *Links and URLs* | | |
-| `[link text](url)` | `\href{url}{link text}` | Hyperlink with custom text |
+| `[link text](URL)` | `\href{URL}{link text}` | Hyperlink with custom text |
 | `https://example.com` | `\url{https://example.com}` | Bare URL |
 | *Citations* | | |
 | `@citation` | `\cite{citation}` | Single citation reference |
@@ -76,7 +76,7 @@
 
 Rxiv-Maker's figure generation capabilities demonstrate automated processing pipelines maintaining transparent connections between source data and final visualisations whilst ensuring computational reproducibility. The system supports two primary methodologies: Mermaid diagram processing and Python/R-based data visualisation, each addressing distinct requirements within scientific publishing workflows.
 
-Mermaid diagram processing leverages the Mermaid CLI to convert text-based specifications into publication-ready graphics. This approach enables version-controlled diagram creation where complex flowcharts, system architectures, and conceptual models are specified using intuitive syntax and automatically rendered into multiple output formats. The system generates SVG, PNG, and PDF variants accommodating different compilation requirements whilst maintaining vector quality. This automation eliminates manual effort for diagram creation and updates, ensuring modifications are immediately reflected in the final document.
+Mermaid diagram processing leverages the Mermaid CLI to convert text-based specifications into publication-ready graphics. This approach enables version-controlled diagram creation where complex flowcharts, system architectures, and conceptual models are specified using intuitive syntax and automatically rendered into multiple output formats. The system generates SVG, PNG, and PDF variants accommodating different compilation requirements whilst maintaining vector quality. This automation reduces manual effort for diagram creation and updates, ensuring modifications are immediately reflected in the final document.
 
 Script-based figure generation represents computational reproducibility where analytical scripts execute during compilation to generate figures directly from source data. This integration ensures visualisations remain synchronised with underlying datasets and analytical methods, eliminating outdated or inconsistent graphics. The system executes image generation scripts within the compilation environment, automatically detecting generated files and incorporating them into document structure. This approach transforms figures from static illustrations into dynamic, reproducible computational artefacts enhancing scientific rigour.
 
@@ -94,7 +94,7 @@ or the Navier-Stokes equations:
 
 $$\rho\left(\frac{\partial \mathbf{v}}{\partial t} + \mathbf{v} \cdot \nabla \mathbf{v}\right) = -\nabla p + \mu \nabla^2 \mathbf{v} + \mathbf{f}$$
 
-demonstrate the framework's capability to handle sophisticated mathematical typography, including Greek letters, partial derivatives, vector notation, and complex fraction structures.
+demonstrate the framework's capability to handle complex mathematical typography, including Greek letters, partial derivatives, vector notation, and complex fraction structures.
 
 The system supports LaTeX's mathematical environments by directly including LaTeX code blocks. This hybrid approach enables simple markdown syntax for straightforward expressions whilst retaining access to LaTeX's full capabilities for complex multi-line derivations.
 
@@ -104,17 +104,17 @@ Statistical notation commonly required in manuscripts is supported, including co
 
 {#snote:caching-validation} **Intelligent Caching and Validation Systems**
 
-Rxiv-Maker implements sophisticated caching mechanisms that significantly accelerate manuscript compilation through content-based change detection and selective regeneration. The caching system operates at multiple levels: file-level checksums track modifications to source documents, whilst content-based hashing monitors changes within executable code blocks and figure generation scripts.
+Rxiv-Maker implements automated caching mechanisms that accelerate manuscript compilation through content-based change detection and selective regeneration. The caching system operates at multiple levels: file-level checksums track modifications to source documents, whilst content-based hashing monitors changes within executable code blocks and figure generation scripts.
 
-The figure caching system maintains checksums for Python, R, and Mermaid source files, comparing current content against cached versions to determine whether regeneration is necessary. This approach eliminates redundant computation whilst ensuring figures remain synchronised with their source code. Cache invalidation occurs automatically when dependencies change, maintaining consistency without manual intervention.
+The figure caching system maintains checksums for Python, R, and Mermaid source files, comparing current content against cached versions to determine whether regeneration is necessary. This approach reduces redundant computation whilst ensuring figures remain synchronised with their source code. Cache invalidation occurs automatically when dependencies change, maintaining consistency without manual intervention.
 
-The comprehensive validation framework provides multi-layered quality assurance through LaTeX error parsing with contextual error messages, figure validation that verifies file existence and format compatibility, and citation validation with DOI resolution through CrossRef and DataCite APIs. The system generates detailed diagnostic reports that guide users through error resolution, significantly reducing debugging complexity.
+The validation framework provides multi-layered quality assurance through LaTeX error parsing with contextual error messages, figure validation that verifies file existence and format compatibility, and citation validation with DOI resolution through CrossRef and DataCite APIs. The system generates detailed diagnostic reports that guide users through error resolution, reducing debugging complexity.
 
 Dependency validation ensures all required components (LaTeX distributions, Python packages, R libraries, Node.js modules) are properly installed and configured before manuscript processing begins. The validation system provides automated installation suggestions for missing dependencies, streamlining setup procedures across different computing environments.
 
 {#snote:latex-injection} **Direct LaTeX Integration and Advanced Typesetting**
 
-While Rxiv-Maker's markdown-to-LaTeX conversion handles the majority of scientific publishing requirements, the framework provides direct LaTeX injection capabilities through `{{tex: ...}}` blocks for sophisticated typesetting scenarios that exceed markdown's capabilities. This approach offers researchers an "escape hatch" to access LaTeX's full typesetting power when needed, while maintaining the simplicity of markdown for routine content.
+While Rxiv-Maker's markdown-to-LaTeX conversion handles the majority of scientific publishing requirements, the framework provides direct LaTeX injection capabilities through `{{tex: ...}}` blocks for complex typesetting scenarios that exceed markdown's capabilities. This approach offers researchers an "escape hatch" to access LaTeX's full typesetting power when needed, while maintaining the simplicity of markdown for routine content.
 
 Direct LaTeX injection is particularly valuable for complex tables with custom formatting, advanced mathematical layouts, specialized scientific notation, and publication-quality data presentation that requires precise control over spacing, alignment, and typography. The following example demonstrates a measurement data table utilizing LaTeX's professional table formatting capabilities:
 
@@ -155,4 +155,4 @@ This example showcases LaTeX features including professional table borders (`\hl
 {#sfig:architecture width="90%"} **Detailed System Architecture and Processing Layers.** Comprehensive technical diagram showing the complete Rxiv-Maker architecture, including input layer organisation, processing engine components (parsers, converters, generators), compilation infrastructure, output generation, and deployment methodology integration. This figure illustrates the modular design that enables independent development and testing of system components across different deployment environments.
 
 ![](FIGURES/SFigure__vscode_extension.png)
-{#sfig:vscode_extension width="100%"} **Visual Studio Code Extension Syntax Highlighting Demonstration.** Screenshot showing the comprehensive syntax highlighting capabilities of the Rxiv-Maker VS Code extension. 
+{#sfig:vscode_extension width="100%"} **Visual Studio Code Extension Syntax Highlighting Demonstration.** Screenshot showing the syntax highlighting capabilities of the Rxiv-Maker VS Code extension. 

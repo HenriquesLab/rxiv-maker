@@ -51,13 +51,13 @@ pip install -e .
 | `make pdf VERBOSE=true` | `rxiv pdf --verbose` | Verbose output |
 | `make validate MANUSCRIPT_PATH=X` | `rxiv validate X/` | Validate specific path |
 
-### Docker Mode
+### Container Usage
 
 | Legacy Make Command | Modern CLI Command | Notes |
 |-------------------|-------------------|-------|
-| `make pdf RXIV_ENGINE=DOCKER` | `rxiv pdf` | Engine deprecated - use local |
-| `make validate RXIV_ENGINE=DOCKER` | `rxiv validate` | Engine deprecated - use local |
-| `export RXIV_ENGINE=DOCKER` | **Deprecated** | Use docker-rxiv-maker for containers |
+| `make pdf RXIV_ENGINE=DOCKER` | `rxiv pdf` | Standard command |
+| `make validate RXIV_ENGINE=DOCKER` | `rxiv validate` | Standard command |
+| `export RXIV_ENGINE=DOCKER` | See [Container Guide](../environments/containers.md) | For containerized builds |
 
 ### Bibliography Management
 
@@ -79,7 +79,7 @@ pip install -e .
 | Legacy Make Command | Modern CLI Command | Notes |
 |-------------------|-------------------|-------|
 | `make pdf-track-changes TAG=v1.0.0` | `rxiv track-changes MANUSCRIPT/ v1.0.0` | Track changes |
-| With custom path | `rxiv track-changes MY_PAPER/ v1.0.0` | Local engine only |
+| With custom path | `rxiv track-changes MY_PAPER/ v1.0.0` | Standard development only |
 
 ## Migration Examples
 
@@ -102,7 +102,7 @@ rxiv pdf
 MANUSCRIPT_PATH=MY_PAPER RXIV_ENGINE=DOCKER make validate
 MANUSCRIPT_PATH=MY_PAPER RXIV_ENGINE=DOCKER make pdf
 
-# New workflow (engine deprecated - use local)
+# New workflow
 rxiv validate MY_PAPER/
 rxiv pdf MY_PAPER/
 ```
@@ -126,17 +126,8 @@ rxiv pdf --force-figures --verbose
 
 ## Common Patterns
 
-### Legacy Engine Configuration (Deprecated)
-```bash
-# Environment variable (deprecated - engine removed)
-# Use docker-rxiv-maker for containerized builds
-
-# Persistent via rxiv.yml files
-cat > rxiv.yml << 'EOF'
-engine:
-  type: docker
-EOF
-```
+### Container Development
+For containerized builds, see the **[Container Guide](../environments/containers.md)** for setup and usage patterns.
 
 ### Checking Installation
 ```bash
@@ -186,7 +177,7 @@ exec $SHELL
 
 - Run `rxiv --help` for general help
 - Run `rxiv COMMAND --help` for command-specific help
-- Check [CLI Reference](CLI_REFERENCE.md) for complete command documentation
+- Check [CLI Reference](../reference/cli-reference.md) for complete command documentation
 - Visit [GitHub Discussions](https://github.com/henriqueslab/rxiv-maker/discussions) for community support
 
 ## Keeping Legacy Commands

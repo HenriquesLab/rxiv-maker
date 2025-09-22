@@ -774,7 +774,7 @@ export RXIV_PARALLEL_JOBS=8
 - **[👩‍💻 Developer Guide](../development/developer-guide.md)** - Contribute to Rxiv-Maker
 
 #### 🎆 **Complete Documentation Hub**
-**[🗺️ Documentation Index →](../../DOCUMENTATION_INDEX.md)** - Navigate all documentation by topic and user type
+**[🗺️ Documentation Navigation →](../navigation.md)** - Navigate all documentation by topic and user type
 
 ### Quick Reference Cards
 

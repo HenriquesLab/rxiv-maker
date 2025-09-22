@@ -2,7 +2,7 @@
 
 *Comprehensive development reference for Rxiv-Maker contributors and maintainers*
 
-**Prerequisites**: Read [CONTRIBUTING.md](CONTRIBUTING.md) first for contribution guidelines and setup basics.
+**Prerequisites**: Read [CONTRIBUTING.md](../../CONTRIBUTING.md) first for contribution guidelines and setup basics.
 
 ---
 
@@ -23,7 +23,7 @@
 
 ## 🛠️ Development Environment Setup
 
-### Local Development Setup
+### Development Environment Setup
 
 #### Quick Setup (Recommended)
 ```bash
@@ -508,7 +508,7 @@ def mock_latex_environment():
 
 Rxiv-Maker supports multiple build engines for different environments:
 
-#### Local Engine (Default)
+#### Standard Build Engine (Default)
 ```python
 # src/rxiv_maker/engines/local.py
 class LocalBuildEngine(AbstractBuildEngine):
@@ -666,7 +666,7 @@ def select_optimal_engine() -> AbstractBuildEngine:
         return PodmanBuildEngine()
     
     if LocalBuildEngine().is_available():
-        logger.info("Using local engine with system tools")
+        logger.info("Using standard engine with system tools")
         return LocalBuildEngine()
     
     raise EnvironmentError("No suitable build engine available")
@@ -2109,11 +2109,11 @@ git push origin feature/your-feature-name
 1. **Service-Oriented**: Business logic in service layer
 2. **Engine Abstraction**: Support multiple build environments
 3. **Graceful Degradation**: Fallback when dependencies missing
-4. **Local-First**: Validate locally before CI/CD
+4. **Development-First**: Validate during development before CI/CD
 5. **Container-Ready**: Support Docker/Podman workflows
 
-**🚀 Ready to contribute?** Check [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines and [GitHub Issues](https://github.com/henriqueslab/rxiv-maker/issues) for tasks to work on.
+**🚀 Ready to contribute?** Check [CONTRIBUTING.md](../../CONTRIBUTING.md) for detailed guidelines and [GitHub Issues](https://github.com/henriqueslab/rxiv-maker/issues) for tasks to work on.
 
 ---
 
-**📚 [User Guide](USER_GUIDE.md) | ⚙️ [CLI Reference](CLI_REFERENCE.md) | 🔧 [Troubleshooting](TROUBLESHOOTING.md) | 🚀 [Getting Started](GETTING_STARTED.md)**
+**📚 [User Guide](../guides/user_guide.md) | ⚙️ [CLI Reference](../reference/cli-reference.md) | 🔧 [Troubleshooting](../troubleshooting/troubleshooting.md) | 🚀 [Getting Started](../quick-start/first-manuscript.md)**

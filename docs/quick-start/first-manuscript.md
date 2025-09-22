@@ -10,7 +10,7 @@ This guide provides **developer shortcuts** for quickly testing rxiv-maker funct
 
 ## 🚀 Quick Development Test
 
-### Rapid Setup (30 seconds)
+### Quick Setup
 ```bash
 # Quick development test
 rxiv init test-manuscript && cd test-manuscript
@@ -28,7 +28,7 @@ rxiv clean && rxiv pdf          # Clean build test
 ### Test Different Build Options
 ```bash
 # Test various build configurations
-rxiv pdf --engine local          # Local build (default)
+rxiv pdf                         # Standard build (default)
 rxiv pdf --force-figures         # Force figure regeneration
 rxiv pdf --skip-validation      # Skip structure validation
 ```

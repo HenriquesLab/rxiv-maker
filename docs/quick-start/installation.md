@@ -103,19 +103,9 @@ cd .. && python -m pytest tests/unit/ -v
 
 ## 🐳 Container Development
 
-### Using docker-rxiv-maker
-For containerized development without local LaTeX installation:
+For containerized development without dependency installation:
 
-```bash
-# Use docker-rxiv-maker for PDF generation
-git clone https://github.com/HenriquesLab/docker-rxiv-maker.git
-cd docker-rxiv-maker
-
-# Follow docker-rxiv-maker setup instructions
-# Then use for testing your changes
-```
-
-**📖 [Docker Development Guide →](../development/docker-engine-mode.md)**
+**📖 [Container Development Guide →](../environments/containers.md)**
 
 ## 🌐 Alternative Development Environments
 
@@ -144,7 +134,7 @@ For quick experimentation:
 - **[User Installation Guide](https://rxiv-maker.henriqueslab.org/getting-started/installation/)** - Standard installation
 - **[Developer Guide](../development/developer-guide.md)** - Comprehensive development documentation
 - **[Testing Guide](../development/github-actions-testing.md)** - Testing workflows
-- **[Docker Guide](development/docker-engine-mode.md)** - Container development
+- **[Container Guide](../environments/containers.md)** - Container development
 
 ---
 

@@ -252,7 +252,7 @@ If a release has critical issues:
 
 If automated systems fail, manual release can be performed:
 
-### 1. Build and Test Locally
+### 1. Build and Test
 ```bash
 # Run full test suite
 nox -s tests

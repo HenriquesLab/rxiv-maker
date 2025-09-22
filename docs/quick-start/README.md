@@ -34,7 +34,7 @@ Choose your learning path based on your experience and time available:
 - Generate a basic PDF
 - Understand the file structure
 
-**Time investment:** 5 minutes  
+**Time investment:** Quick start  
 **Outcome:** Working manuscript with basic PDF output
 
 ---
@@ -49,7 +49,7 @@ Choose your learning path based on your experience and time available:
 - Change tracking and version control
 - arXiv submission preparation
 
-**Time investment:** 15 minutes  
+**Time investment:** Moderate walkthrough  
 **Outcome:** Publication-ready manuscript with figures, citations, and professional formatting
 
 ---
@@ -100,7 +100,7 @@ Once you've completed these guides, explore advanced topics:
 - **[Troubleshooting](../troubleshooting/common-issues.md)** - Common issues and solutions
 
 ### 🎯 **Specialized Topics**
-- **[Docker Mode](../development/docker-engine-mode.md)** - Containerized execution
+- **[Container Guide](../environments/containers.md)** - Containerized execution
 - **[GitHub Actions](../development/github-actions-testing.md)** - Automated workflows
 
 ---
@@ -109,7 +109,7 @@ Once you've completed these guides, explore advanced topics:
 
 ### Before You Start
 1. **Have Python 3.11+ installed** - Check with `python --version`
-2. **Allocate uninterrupted time** - Even 5 minutes works better with focus
+2. **Allocate focused time** - Even short sessions work better with focus
 3. **Have a text editor ready** - VS Code, Sublime, or any editor you prefer
 
 ### As You Learn

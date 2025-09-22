@@ -1,43 +1,27 @@
-# Local Development Setup
+# Development Setup
 
-This guide covers setting up Rxiv-Maker for local development across different platforms and architectures.
+This guide covers setting up rxiv-maker for development across different platforms and architectures.
 
-## 🐳 Quick Start with Docker (Recommended)
+## 🚀 Quick Start
 
-**If you prefer to avoid installing LaTeX, Python, and R locally, you can use Docker to run everything in containers.**
-
-### Prerequisites
-- Install Docker Desktop from [docker.com](https://www.docker.com/products/docker-desktop)
-- Install Make (typically pre-installed on macOS/Linux, see platform-specific sections below for Windows)
-
-### Docker Setup (Cross-Platform)
+### Standard Setup
 ```bash
 # Clone repository
 git clone https://github.com/henriqueslab/rxiv-maker.git
 cd rxiv-maker
 
-# Note: Docker/Podman engines have been deprecated
-# For containerized execution, use docker-rxiv-maker repository
+# Install dependencies
+pip install -e ".[dev]"
 
-# Generate PDF using local engine (only supported engine)
+# Generate PDF
+rxiv pdf EXAMPLE_MANUSCRIPT/
+
+# Or use legacy make interface
 make pdf
-
-# Validate manuscript
-make validate
-
-# Run tests
-make test
 ```
 
-### Benefits of Containerized Development (docker-rxiv-maker)
-- **No dependency installation**: Skip LaTeX, Python, R installation
-- **Cross-platform consistency**: Identical environment on Windows, macOS, Linux
-- **No version conflicts**: Isolated from your local installations
-- **Faster CI/CD**: Same pre-compiled images used in GitHub Actions
-
-### When to Use Docker vs Local Installation
-- **Use Docker if**: You want quick setup, avoid dependency conflicts, or ensure reproducible builds
-- **Use Local if**: You need faster iteration, custom development tools, or offline development
+### Container Setup (Alternative)
+For containerized development, see the **[Container Guide](../environments/containers.md)**.
 
 ---
 
@@ -56,7 +40,7 @@ brew install --cask mactex-no-gui  # For LaTeX support
 ```
 
 
-#### Local Build
+#### Setup
 ```bash
 # Clone repository
 git clone https://github.com/HenriquesLab/rxiv-maker.git
@@ -86,7 +70,7 @@ brew install --cask mactex-no-gui
 ```
 
 
-#### Local Build (Native ARM64)
+#### Setup (Native ARM64)
 ```bash
 # Clone repository
 git clone https://github.com/HenriquesLab/rxiv-maker.git
@@ -124,7 +108,7 @@ sudo apt install -y texlive-latex-recommended texlive-fonts-recommended  # Minim
 ```
 
 
-#### Local Build
+#### Setup
 ```bash
 # Clone repository
 git clone https://github.com/HenriquesLab/rxiv-maker.git
@@ -194,7 +178,7 @@ choco install -y miktex
 ```
 
 
-#### Local Build (PowerShell)
+#### Setup (PowerShell)
 ```powershell
 # Clone repository
 git clone https://github.com/HenriquesLab/rxiv-maker.git
@@ -305,7 +289,7 @@ autocmd FileType tex setlocal textwidth=80
 
 ## 🧪 Testing Setup
 
-### Running Tests Locally
+### Running Tests
 
 ```bash
 # Install test dependencies
@@ -439,5 +423,5 @@ wsl --set-default-version 2
 
 ## 📖 Additional Resources
 
-- [CI/CD Setup](../ci-cd/)
+- [CI/CD Guide](../development/github-actions-testing.md)
 - [Contributing Guide](../../CONTRIBUTING.md)

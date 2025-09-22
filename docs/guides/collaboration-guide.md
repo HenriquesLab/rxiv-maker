@@ -110,7 +110,7 @@ Perfect for first-time users who want to get started immediately.
 - ✅ **Automated builds** on every commit
 - ✅ **Version control** for your manuscripts
 - ✅ **Team collaboration** with shared repositories
-- ✅ **No local setup** required
+- ✅ **No system setup** required
 - ✅ **Free for public repositories**
 - ✅ **Works with private repositories**
 
@@ -520,8 +520,8 @@ If you encounter issues:
 ---
 
 ## Related Documentation
-- [Command Reference](../reference/commands.md) - Complete command documentation
-- [User Guide](../getting-started/user_guide.md) - Complete usage instructions
-- [Docker Guide](docker-engine-mode.md) - Containerized builds
-- [Local Development Setup](../platforms/LOCAL_DEVELOPMENT.md) - Platform-specific installation
+- [CLI Reference](../reference/cli-reference.md) - Complete command documentation
+- [User Guide](user_guide.md) - Complete usage instructions
+- [Container Guide](../environments/containers.md) - Containerized builds
+- [Development Setup](../platforms/development-setup.md) - Platform-specific installation
 - [Change Tracking Guide](change-tracking.md) - Version comparison

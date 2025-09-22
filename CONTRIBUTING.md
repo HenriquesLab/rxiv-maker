@@ -32,39 +32,31 @@ We follow a **local-first validation** approach to ensure code quality while min
 - **New features**: Discuss first via issues or discussions
 - **Refactoring**: Improve code quality while maintaining functionality
 
-## 🐳 Containerized Development
+## 🚀 Development Environment
 
-> **📌 Note**: Built-in Docker/Podman engines have been **deprecated**. For containerized development, use the dedicated [docker-rxiv-maker](https://github.com/HenriquesLab/docker-rxiv-maker) repository.
-
-### Container Development Options
-
-#### Option 1: docker-rxiv-maker (Recommended for Container Users)
-For contributors who prefer containerized environments:
+### Standard Development Setup (Recommended)
+Most contributors should use the standard development environment:
 
 ```bash
-# Use pre-built container for development testing
-git clone https://github.com/HenriquesLab/docker-rxiv-maker.git
-cd docker-rxiv-maker
-
-# Test your changes with container
-docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
-```
-
-**📖 [docker-rxiv-maker Documentation →](https://github.com/HenriquesLab/docker-rxiv-maker)**
-
-#### Option 2: Local Development (Recommended)
-Most contributors should use local development for the best experience:
-
-```bash
-# Install dependencies locally
+# Install dependencies
 pip install -e ".[dev]"
 pre-commit install
 
-# Test changes directly
+# Test changes
 rxiv pdf EXAMPLE_MANUSCRIPT/
 ```
 
-**📖 [Local Development Guide →](docs/development/developer-guide.md)**
+**📖 [Developer Guide →](docs/development/developer-guide.md)**
+
+### Container Development (Alternative)
+For contributors who prefer containerized environments:
+
+```bash
+# Use pre-built container for testing
+docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
+```
+
+**📖 [Container Guide →](docs/environments/containers.md)**
 
 ---
 
@@ -84,9 +76,9 @@ rxiv pdf EXAMPLE_MANUSCRIPT/
    
    ### 🎯 **Development Setup**
 
-   **Local development is recommended** for the best contributor experience:
+   **Standard development setup** for the best contributor experience:
 
-   - **Installation**: Follow [Local Development Setup guide](docs/platforms/LOCAL_DEVELOPMENT.md) for your platform
+   - **Installation**: Follow [Development Setup guide](docs/platforms/LOCAL_DEVELOPMENT.md) for your platform
    - **Development mode**: Install rxiv-maker in editable mode:
      ```bash
      pip install -e .
@@ -122,7 +114,7 @@ rxiv pdf EXAMPLE_MANUSCRIPT/
    rxiv pdf EXAMPLE_MANUSCRIPT/               # Build PDF
    
    # Or use legacy commands
-   MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT make pdf  # Local execution only
+   MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT make pdf  # Legacy make interface
    ```
 
 ### Development Workflow
@@ -154,7 +146,7 @@ rxiv pdf EXAMPLE_MANUSCRIPT/
    nox -s "test(test_type='integration')"     # Integration tests only
    
    # Specialized testing
-   nox -s "pdf"                               # PDF generation (local engine)
+   nox -s "pdf"                               # PDF generation
    
    # Code quality checks
    nox -s lint                                # Linting (ruff + mypy)
@@ -166,7 +158,7 @@ rxiv pdf EXAMPLE_MANUSCRIPT/
    
    # Test with manuscripts using modern CLI
    rxiv validate EXAMPLE_MANUSCRIPT/          # Validate manuscript
-   rxiv pdf EXAMPLE_MANUSCRIPT/               # Build PDF (local engine)
+   rxiv pdf EXAMPLE_MANUSCRIPT/               # Build PDF
    ```
 
 4. **Submit Your Contribution**
@@ -329,7 +321,7 @@ def example_function():
 - Keep items parallel in structure
 
 ## Links
-- Use [descriptive text](https://example.com) format
+- Use `[descriptive text](URL)` format
 - Prefer relative links for internal documentation
 ```
 

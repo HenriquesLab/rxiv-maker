@@ -102,10 +102,10 @@ rxiv track-changes \
     --verbose
 ```
 
-### Local Usage
+### Standard Usage
 
 ```bash
-# Use local environment (only supported engine)
+# Use standard development environment
 make pdf-track-changes TAG=v1.0.0
 
 # Combine with figure regeneration
@@ -327,4 +327,4 @@ make pdf-track-changes TAG=before-figure-update FORCE_FIGURES=true
 
 ---
 
-*This workflow guide provides comprehensive coverage of change tracking capabilities. For technical details, see the [Commands Reference](../reference/commands.md#change-tracking). For troubleshooting, see the [Troubleshooting Guide](../troubleshooting/common-issues.md).*
+*This workflow guide provides comprehensive coverage of change tracking capabilities. For technical details, see the [CLI Reference](../reference/cli-reference.md#change-tracking). For troubleshooting, see the [Troubleshooting Guide](../troubleshooting/common-issues.md).*

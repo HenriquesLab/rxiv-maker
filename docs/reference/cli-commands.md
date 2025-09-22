@@ -22,9 +22,9 @@
 
 ## Quick Links
 
-- **[Core Commands](cli-reference.md#core-commands)** - Essential workflows
-- **[Advanced Options](cli-reference.md#advanced-options)** - Power user features  
-- **[Build Engines](cli-reference.md#build-engines)** - Local vs Docker modes
+- **[Core Commands](cli-reference.md#-core-commands)** - Essential workflows
+- **[Advanced Commands](cli-reference.md#-advanced-commands)** - Power user features  
+- **[Development Environment](cli-reference.md#development-environment)** - Standard development mode
 - **[Troubleshooting](cli-reference.md#troubleshooting)** - Common issues
 
 ---

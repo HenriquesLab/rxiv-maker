@@ -165,7 +165,7 @@ chmod +x ~/.local/bin/rxiv
 
 **Solutions:**
 
-#### 1. Verify Local Installation
+#### 1. Verify Installation
 ```bash
 # Check installation and dependencies
 rxiv check-installation
@@ -482,12 +482,6 @@ def generate_efficient_plot():
 if __name__ == "__main__":
     generate_efficient_plot()
 ```
-
----
-
-## Container Support Deprecated
-
-**Note:** Docker and Podman engine modes have been deprecated. For containerized execution, use the separate [docker-rxiv-maker](https://github.com/HenriquesLab/docker-rxiv-maker) repository which provides Docker containers specifically designed for rxiv-maker.
 
 ---
 
@@ -938,10 +932,9 @@ echo "rxiv validate" > .git/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
 ```
 
-### Use Local Mode (Default)
+### Standard Development (Default)
 ```bash
-# Local mode is the only supported engine
-# No configuration needed - always uses local dependencies
+# No configuration needed - always uses system dependencies
 rxiv pdf
 ```
 

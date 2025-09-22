@@ -6,15 +6,15 @@
 
 ## 🎯 Why Use GitHub Actions?
 
-GitHub Actions enables **zero-installation manuscript building** perfect for:
+GitHub Actions enables **cloud-based manuscript building** useful for:
 
 - **👥 Team collaboration** - No need for everyone to install LaTeX
 - **🌍 Cross-platform consistency** - Same results everywhere
 - **🔄 Automated builds** - PDF updates on every commit
 - **📦 Version control** - Full manuscript history with PDFs
-- **⚡ Quick testing** - Test changes without local setup
+- **⚡ Quick testing** - Test changes without system setup
 
-## 🚀 Quick Setup (5 Minutes)
+## 🚀 Quick Setup
 
 ### 1. Fork or Use Template
 ```bash
@@ -222,7 +222,7 @@ Enable verbose logging in workflow:
 
 - **[Workflow Examples](workflows/github-actions.md)** - Working configurations
 - **[Testing Documentation](development/github-actions-testing.md)** - Development workflows
-- **[Local Setup Guide](quick-start/installation.md)** - Local development
+- **[Development Setup Guide](quick-start/installation.md)** - Standard development
 - **[Collaboration Guide](guides/collaboration-guide.md)** - Team writing strategies
 
 ---

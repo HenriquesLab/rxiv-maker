@@ -126,7 +126,7 @@ rxiv pdf
 # Step 3: Force figure regeneration if needed
 rxiv pdf --force-figures
 
-# Step 4: Try docker-rxiv-maker if local issues
+# Step 4: Try containerized build if needed
 docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
 ```
 
@@ -136,17 +136,9 @@ rxiv pdf --verbose             # Detailed output
 rxiv pdf --debug               # Maximum verbosity
 ```
 
-## Docker Workflows
+## Container Workflows
 
-### Using docker-rxiv-maker
-```bash
-# For containerized builds when needed
-docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
-docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv validate
-
-# See docker-rxiv-maker repository for complete setup
-# https://github.com/HenriquesLab/docker-rxiv-maker
-```
+For containerized development, see the **[Container Guide](../environments/containers.md)** for complete setup and usage patterns.
 
 ## Configuration Management
 
@@ -161,7 +153,7 @@ echo $MANUSCRIPT_PATH          # Current manuscript path
 # Set default manuscript directory
 export MANUSCRIPT_PATH="manuscripts/"
 
-# Default engine is local (only supported engine)
+# Default engine configuration (no setup needed)
 
 # Use rxiv.yml files for manuscript-specific settings
 cat > rxiv.yml << 'EOF'
@@ -179,7 +171,7 @@ EOF
 # Skip validation for quick iterations
 rxiv pdf --skip-validation
 
-# Use local engine (default and only supported)
+# Standard PDF generation
 rxiv pdf
 ```
 

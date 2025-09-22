@@ -360,7 +360,7 @@ jupyter notebook
 
 ## See Also
 
-- [General Installation Guide](../getting-started/installation.md)
-- [Docker Guide (deprecated)](../development/docker-engine-mode.md)
+- [General Installation Guide](../quick-start/installation.md)
+- [Container Guide](containers.md)
 - [Troubleshooting Guide](../troubleshooting/troubleshooting-missing-figures.md)
 - [Platform-specific guides](../platforms/)
