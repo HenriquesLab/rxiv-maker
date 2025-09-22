@@ -16,21 +16,20 @@ This guide covers setting up Rxiv-Maker for local development across different p
 git clone https://github.com/henriqueslab/rxiv-maker.git
 cd rxiv-maker
 
-# Generate PDF using Docker (only Docker and Make required locally)
-make pdf RXIV_ENGINE=DOCKER
+# Note: Docker/Podman engines have been deprecated
+# For containerized execution, use docker-rxiv-maker repository
+
+# Generate PDF using local engine (only supported engine)
+make pdf
 
 # Validate manuscript
-make validate RXIV_ENGINE=DOCKER
+make validate
 
 # Run tests
-make test RXIV_ENGINE=DOCKER
-
-# Make Docker mode default for your session
-export RXIV_ENGINE=DOCKER
-make pdf  # Now runs in Docker automatically
+make test
 ```
 
-### Benefits of Docker Mode
+### Benefits of Containerized Development (docker-rxiv-maker)
 - **No dependency installation**: Skip LaTeX, Python, R installation
 - **Cross-platform consistency**: Identical environment on Windows, macOS, Linux
 - **No version conflicts**: Isolated from your local installations
@@ -397,12 +396,11 @@ rxiv-maker/
 
 ## 🔧 Troubleshooting
 
-### Docker Alternative for Complex Issues
+### Containerized Alternative for Complex Issues
 If you encounter persistent setup issues with local installations, consider using Docker mode instead:
 ```bash
-# Skip all local dependency installation
-make pdf RXIV_ENGINE=DOCKER
-make validate RXIV_ENGINE=DOCKER
+# For containerized execution, use docker-rxiv-maker
+# See: https://github.com/HenriquesLab/docker-rxiv-maker
 ```
 This approach eliminates most platform-specific issues and provides a consistent environment.
 

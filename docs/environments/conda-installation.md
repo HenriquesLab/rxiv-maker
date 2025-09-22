@@ -361,6 +361,6 @@ jupyter notebook
 ## See Also
 
 - [General Installation Guide](../getting-started/installation.md)
-- [Docker Mode Guide](../workflows/docker-engine-mode.md)
+- [Docker Guide (deprecated)](../development/docker-engine-mode.md)
 - [Troubleshooting Guide](../troubleshooting/troubleshooting-missing-figures.md)
 - [Platform-specific guides](../platforms/)

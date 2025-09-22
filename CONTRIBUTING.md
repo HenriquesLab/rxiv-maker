@@ -32,50 +32,39 @@ We follow a **local-first validation** approach to ensure code quality while min
 - **New features**: Discuss first via issues or discussions
 - **Refactoring**: Improve code quality while maintaining functionality
 
-## 🐳 Docker Development Workflow
+## 🐳 Containerized Development
 
-For contributors who prefer containerized development, Docker mode eliminates the need to install LaTeX, Python, R, and Node.js locally while providing an identical environment to our CI/CD system.
+> **📌 Note**: Built-in Docker/Podman engines have been **deprecated**. For containerized development, use the dedicated [docker-rxiv-maker](https://github.com/HenriquesLab/docker-rxiv-maker) repository.
 
-### Quick Docker Setup
-1. **Prerequisites**: Install Docker Desktop + Make (see [Docker guide](docs/development/docker-engine-mode.md))
-2. **Development**: Add `RXIV_ENGINE=DOCKER` to any make command
-3. **Pre-commit**: Requires local Python for git hooks (minimal setup)
+### Container Development Options
 
-### Key Docker Commands
+#### Option 1: docker-rxiv-maker (Recommended for Container Users)
+For contributors who prefer containerized environments:
+
 ```bash
-# Set as default for your session
-export RXIV_ENGINE=DOCKER
+# Use pre-built container for development testing
+git clone https://github.com/HenriquesLab/docker-rxiv-maker.git
+cd docker-rxiv-maker
 
-# Core development commands (add RXIV_ENGINE=DOCKER to any make command)
-make pdf RXIV_ENGINE=DOCKER
-make validate RXIV_ENGINE=DOCKER  
-make test RXIV_ENGINE=DOCKER
+# Test your changes with container
+docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
 ```
 
-### Docker vs Local Development
-- **Docker**: Faster setup, matches CI environment, cross-platform consistency
-- **Local**: Faster iteration, better IDE integration, offline development
+**📖 [docker-rxiv-maker Documentation →](https://github.com/HenriquesLab/docker-rxiv-maker)**
 
-For complete Docker setup instructions, see the [Docker Engine Mode guide](docs/development/docker-engine-mode.md).
+#### Option 2: Local Development (Recommended)
+Most contributors should use local development for the best experience:
 
-### 🔄 Container Engine Reliability (v1.4.24)
+```bash
+# Install dependencies locally
+pip install -e ".[dev]"
+pre-commit install
 
-Recent improvements ensure robust container engine support with graceful fallbacks:
+# Test changes directly
+rxiv pdf EXAMPLE_MANUSCRIPT/
+```
 
-**Enhanced Engine Detection:**
-- Docker and Podman engines now verify both binary availability and daemon/service status
-- Better error messages when container engines are unavailable
-- Nox sessions properly detect running container services
-
-**Graceful Fallback Logic:**
-- Container validation automatically falls back to local validation when needed
-- Clear warning messages inform users of fallback behavior  
-- No breaking errors when Docker/Podman daemons are not running
-
-**Improved Developer Experience:**
-- Seamless operation regardless of container engine availability
-- All engines (local, Docker, Podman) tested and verified working
-- Backward compatibility maintained with existing workflows
+**📖 [Local Development Guide →](docs/development/developer-guide.md)**
 
 ---
 
@@ -93,24 +82,10 @@ Recent improvements ensure robust container engine support with graceful fallbac
 
 2. **Set Up Development Environment**
    
-   ### 🎯 **Choose Your Development Setup (Pick ONE)**
-   
-   <details>
-   <summary><strong>🐳 Docker Development (Recommended for Contributors)</strong></summary>
-   
-   **Benefits**: Matches CI environment, no dependency conflicts, easier setup
-   
-   - **Installation**: Follow [Docker Engine Mode guide](docs/development/docker-engine-mode.md)
-   - **Workflow**: See [Docker Development Workflow](#-docker-development-workflow) section below
-   - **Pre-commit**: Minimal Python needed for git hooks only
-   
-   </details>
-   
-   <details>
-   <summary><strong>🏠 Local Development (Full Control)</strong></summary>
-   
-   **Benefits**: Faster iteration, better IDE integration, offline development
-   
+   ### 🎯 **Development Setup**
+
+   **Local development is recommended** for the best contributor experience:
+
    - **Installation**: Follow [Local Development Setup guide](docs/platforms/LOCAL_DEVELOPMENT.md) for your platform
    - **Development mode**: Install rxiv-maker in editable mode:
      ```bash
@@ -147,7 +122,7 @@ Recent improvements ensure robust container engine support with graceful fallbac
    rxiv pdf EXAMPLE_MANUSCRIPT/               # Build PDF
    
    # Or use legacy commands
-   MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT make pdf  # Add RXIV_ENGINE=DOCKER for Docker mode
+   MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT make pdf  # Local execution only
    ```
 
 ### Development Workflow
@@ -179,8 +154,7 @@ Recent improvements ensure robust container engine support with graceful fallbac
    nox -s "test(test_type='integration')"     # Integration tests only
    
    # Specialized testing
-   nox -s "pdf(engine='local')"               # PDF generation (local engine)
-   nox -s "pdf(engine='docker')"              # PDF generation (Docker engine)
+   nox -s "pdf"                               # PDF generation (local engine)
    
    # Code quality checks
    nox -s lint                                # Linting (ruff + mypy)
@@ -193,7 +167,6 @@ Recent improvements ensure robust container engine support with graceful fallbac
    # Test with manuscripts using modern CLI
    rxiv validate EXAMPLE_MANUSCRIPT/          # Validate manuscript
    rxiv pdf EXAMPLE_MANUSCRIPT/               # Build PDF (local engine)
-   RXIV_ENGINE=DOCKER rxiv pdf EXAMPLE_MANUSCRIPT/  # Build in Docker
    ```
 
 4. **Submit Your Contribution**

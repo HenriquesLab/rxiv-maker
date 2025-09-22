@@ -14,7 +14,7 @@ rxiv pdf --force-figures
 rxiv pdf --verbose
 
 # 🐳 Use Docker to bypass local issues
-RXIV_ENGINE=DOCKER rxiv pdf
+docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
 ```
 
 ## Common Figure Problems

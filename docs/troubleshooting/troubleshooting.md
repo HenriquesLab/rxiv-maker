@@ -334,8 +334,8 @@ rxiv pdf --skip-validation --no-figures
 # Install missing LaTeX packages (if using local LaTeX)
 sudo tlmgr install siunitx ifsym
 
-# Use container mode to avoid package issues
-rxiv pdf --engine docker
+# Use docker-rxiv-maker for containerized builds
+docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
 ```
 
 For complete troubleshooting of figure positioning, see the **[Complete Figure Guide](../guides/figures-guide.md)**.
@@ -607,8 +607,8 @@ time rxiv pdf --skip-validation --no-figures
 # Pre-pull images
 docker pull henriqueslab/rxiv-maker-base:latest
 
-# Use local mode after setup
-export RXIV_ENGINE_TYPE=local
+# Use local mode (default and only supported engine)
+# No configuration needed - always uses local engine
 ```
 
 #### 4. Figure Generation Optimization
@@ -629,8 +629,8 @@ export RXIV_PARALLEL_JOBS=4  # Adjust based on CPU cores
 
 **Solutions:**
 ```bash
-# Use local mode for better resource control
-rxiv pdf --engine local
+# Use local mode (only supported engine)
+rxiv pdf
 
 # Monitor memory usage
 htop
@@ -715,8 +715,8 @@ sudo pacman -S python python-pip texlive-most nodejs npm make
 # Allow container access (if needed)
 setsebool -P container_manage_cgroup on
 
-# Use Podman for better SELinux integration
-rxiv pdf --engine podman
+# Use docker-rxiv-maker for containerized builds on SELinux systems
+docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
 ```
 
 ---
@@ -785,8 +785,8 @@ grep -i warning debug.log
 ### Container Debugging
 
 ```bash
-# Debug Docker builds
-RXIV_ENGINE=DOCKER RXIV_DEBUG=1 rxiv pdf
+# Debug builds with verbose output
+rxiv pdf --verbose
 
 # Access container for debugging
 docker run -it --rm \
@@ -938,10 +938,11 @@ echo "rxiv validate" > .git/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
 ```
 
-### Use Container Mode for Consistency
+### Use Local Mode (Default)
 ```bash
-# Set as default to avoid local dependency issues
-export RXIV_ENGINE_TYPE=docker
+# Local mode is the only supported engine
+# No configuration needed - always uses local dependencies
+rxiv pdf
 ```
 
 ### Always Validate Before Building

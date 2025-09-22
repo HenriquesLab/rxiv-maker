@@ -102,14 +102,14 @@ rxiv track-changes \
     --verbose
 ```
 
-### Docker Integration
+### Local Usage
 
 ```bash
-# Use Docker for consistent environment
-make pdf-track-changes TAG=v1.0.0 RXIV_ENGINE=DOCKER
+# Use local environment (only supported engine)
+make pdf-track-changes TAG=v1.0.0
 
 # Combine with figure regeneration
-make clean && make pdf-track-changes TAG=v1.0.0 FORCE_FIGURES=true RXIV_ENGINE=DOCKER
+make clean && make pdf-track-changes TAG=v1.0.0 FORCE_FIGURES=true
 ```
 
 ### CI/CD Integration
@@ -143,7 +143,7 @@ jobs:
     - name: Generate change tracking PDF
       if: steps.prev-tag.outputs.prev_tag != ''
       run: |
-        make pdf-track-changes TAG=${{ steps.prev-tag.outputs.prev_tag }} RXIV_ENGINE=DOCKER
+        make pdf-track-changes TAG=${{ steps.prev-tag.outputs.prev_tag }}
         
     - name: Upload change tracking PDF
       if: steps.prev-tag.outputs.prev_tag != ''
@@ -166,7 +166,7 @@ track-changes:
   script:
     - PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
     - if [ -n "$PREV_TAG" ]; then
-        make pdf-track-changes TAG=$PREV_TAG RXIV_ENGINE=DOCKER;
+        make pdf-track-changes TAG=$PREV_TAG;
       fi
   artifacts:
     paths:

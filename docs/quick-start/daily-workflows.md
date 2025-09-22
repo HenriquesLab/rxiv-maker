@@ -126,8 +126,8 @@ rxiv pdf
 # Step 3: Force figure regeneration if needed
 rxiv pdf --force-figures
 
-# Step 4: Try Docker if local issues
-rxiv pdf --engine docker
+# Step 4: Try docker-rxiv-maker if local issues
+docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
 ```
 
 ### Debug Mode
@@ -138,20 +138,14 @@ rxiv pdf --debug               # Maximum verbosity
 
 ## Docker Workflows
 
-### Set Docker as Default
+### Using docker-rxiv-maker
 ```bash
-# One-time setup for consistent environment
-export RXIV_ENGINE_TYPE=docker
+# For containerized builds when needed
+docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
+docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv validate
 
-# Now all commands use Docker automatically
-rxiv pdf                       # Runs in container
-rxiv validate                  # Runs in container
-```
-
-### Temporary Docker Use
-```bash
-rxiv pdf --engine docker       # Just this command
-rxiv validate --engine docker  # Just this validation
+# See docker-rxiv-maker repository for complete setup
+# https://github.com/HenriquesLab/docker-rxiv-maker
 ```
 
 ## Configuration Management
@@ -159,7 +153,6 @@ rxiv validate --engine docker  # Just this validation
 ### View Current Settings
 ```bash
 # Use environment variables for configuration
-echo $RXIV_ENGINE_TYPE         # Current engine
 echo $MANUSCRIPT_PATH          # Current manuscript path
 ```
 
@@ -168,8 +161,7 @@ echo $MANUSCRIPT_PATH          # Current manuscript path
 # Set default manuscript directory
 export MANUSCRIPT_PATH="manuscripts/"
 
-# Set default engine
-export RXIV_ENGINE_TYPE=docker
+# Default engine is local (only supported engine)
 
 # Use rxiv.yml files for manuscript-specific settings
 cat > rxiv.yml << 'EOF'
@@ -187,8 +179,8 @@ EOF
 # Skip validation for quick iterations
 rxiv pdf --skip-validation
 
-# Use Docker for consistent performance
-rxiv pdf --engine docker
+# Use local engine (default and only supported)
+rxiv pdf
 ```
 
 ### Efficient Figure Development
@@ -233,7 +225,7 @@ rxiv pdf --help              # Command-specific help
 # Troubleshooting
 rxiv validate --detailed     # Comprehensive checks
 rxiv pdf --verbose           # Detailed output
-rxiv pdf --engine docker     # Use containerized build
+docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf  # Use containerized build
 ```
 
 ## Workflow Automation

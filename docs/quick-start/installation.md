@@ -115,7 +115,7 @@ cd docker-rxiv-maker
 # Then use for testing your changes
 ```
 
-**📖 [Docker Development Guide →](development/docker-engine-mode.md)**
+**📖 [Docker Development Guide →](../development/docker-engine-mode.md)**
 
 ## 🌐 Alternative Development Environments
 

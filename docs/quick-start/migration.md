@@ -55,9 +55,9 @@ pip install -e .
 
 | Legacy Make Command | Modern CLI Command | Notes |
 |-------------------|-------------------|-------|
-| `make pdf RXIV_ENGINE=DOCKER` | `rxiv pdf --engine docker` | Use Docker engine |
-| `make validate RXIV_ENGINE=DOCKER` | `rxiv validate --engine docker` | Validate in Docker |
-| `export RXIV_ENGINE=DOCKER` | Set in config or use `--engine` | Per-command option |
+| `make pdf RXIV_ENGINE=DOCKER` | `rxiv pdf` | Engine deprecated - use local |
+| `make validate RXIV_ENGINE=DOCKER` | `rxiv validate` | Engine deprecated - use local |
+| `export RXIV_ENGINE=DOCKER` | **Deprecated** | Use docker-rxiv-maker for containers |
 
 ### Bibliography Management
 
@@ -79,7 +79,7 @@ pip install -e .
 | Legacy Make Command | Modern CLI Command | Notes |
 |-------------------|-------------------|-------|
 | `make pdf-track-changes TAG=v1.0.0` | `rxiv track-changes MANUSCRIPT/ v1.0.0` | Track changes |
-| With custom path and Docker | `rxiv track-changes MY_PAPER/ v1.0.0 --engine docker` | Combined options |
+| With custom path | `rxiv track-changes MY_PAPER/ v1.0.0` | Local engine only |
 
 ## Migration Examples
 
@@ -96,15 +96,15 @@ rxiv validate
 rxiv pdf
 ```
 
-### Example 2: Custom Manuscript with Docker
+### Example 2: Custom Manuscript Path
 ```bash
 # Old workflow
 MANUSCRIPT_PATH=MY_PAPER RXIV_ENGINE=DOCKER make validate
 MANUSCRIPT_PATH=MY_PAPER RXIV_ENGINE=DOCKER make pdf
 
-# New workflow
-rxiv validate MY_PAPER/ --engine docker
-rxiv pdf MY_PAPER/ --engine docker
+# New workflow (engine deprecated - use local)
+rxiv validate MY_PAPER/
+rxiv pdf MY_PAPER/
 ```
 
 ### Example 3: Force Figure Regeneration
@@ -126,10 +126,10 @@ rxiv pdf --force-figures --verbose
 
 ## Common Patterns
 
-### Setting Default Engine
+### Legacy Engine Configuration (Deprecated)
 ```bash
-# Environment variable (session only)
-export RXIV_ENGINE_TYPE=docker
+# Environment variable (deprecated - engine removed)
+# Use docker-rxiv-maker for containerized builds
 
 # Persistent via rxiv.yml files
 cat > rxiv.yml << 'EOF'

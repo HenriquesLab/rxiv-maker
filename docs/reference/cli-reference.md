@@ -105,7 +105,7 @@ rxiv pdf --skip-validation
 rxiv pdf --force-figures
 
 # Debug failing build
-rxiv pdf --verbose --engine local
+rxiv pdf --verbose
 
 # Preprint submission
 rxiv pdf --force-figures --output-dir submission/
@@ -389,7 +389,7 @@ rxiv arxiv --zip-filename resubmission-v2.zip
 ### Build Issues
 ```bash
 # Verbose build for debugging
-rxiv pdf --verbose --engine local
+rxiv pdf --verbose
 
 # Clean and retry
 rxiv clean --all
