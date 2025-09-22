@@ -89,7 +89,11 @@ class ReleaseOrchestrator:
             log_section(self.logger, "Starting Release Pipeline")
 
             # Step 1: Pre-flight validation
-            if not self.validate_pre_conditions():
+            pre_condition_result = self.validate_pre_conditions()
+            if pre_condition_result == "exists":
+                log_section(self.logger, "Release already exists - pipeline completed successfully")
+                return True
+            elif not pre_condition_result:
                 return False
 
             # Step 2: Create GitHub release
@@ -120,7 +124,7 @@ class ReleaseOrchestrator:
             self.handle_release_failure(e)
             return False
 
-    def validate_pre_conditions(self) -> bool:
+    def validate_pre_conditions(self) -> bool | str:
         """Validate all pre-conditions for release."""
         log_step(self.logger, "Validating pre-conditions", "START")
 
@@ -141,12 +145,18 @@ class ReleaseOrchestrator:
             # Check if release already exists (unless forcing)
             if not self.force:
                 if check_github_release_exists("henriqueslab", "rxiv-maker", self.version, self.github_token):
-                    raise ValueError(f"GitHub release {self.version} already exists")
+                    self.logger.info(f"GitHub release {self.version} already exists - skipping release creation")
+                    log_step(self.logger, "Release already exists", "SUCCESS")
+                    return "exists"
 
                 # Check PyPI (with clean version)
                 clean_version = self.version.lstrip("v")
                 if check_pypi_package_available(self.config.package_name, clean_version):
-                    raise ValueError(f"PyPI package {self.config.package_name}=={clean_version} already exists")
+                    self.logger.info(
+                        f"PyPI package {self.config.package_name}=={clean_version} already exists - skipping PyPI upload"
+                    )
+                    log_step(self.logger, "PyPI package already exists", "SUCCESS")
+                    return "exists"
 
             # Additional validations (git status, changelog, etc.) can be added here
 

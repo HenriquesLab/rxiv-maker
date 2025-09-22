@@ -37,7 +37,7 @@ We follow a **local-first validation** approach to ensure code quality while min
 For contributors who prefer containerized development, Docker mode eliminates the need to install LaTeX, Python, R, and Node.js locally while providing an identical environment to our CI/CD system.
 
 ### Quick Docker Setup
-1. **Prerequisites**: Install Docker Desktop + Make (see [Docker guide](docs/docker-engine-mode.md))
+1. **Prerequisites**: Install Docker Desktop + Make (see [Docker guide](docs/development/docker-engine-mode.md))
 2. **Development**: Add `RXIV_ENGINE=DOCKER` to any make command
 3. **Pre-commit**: Requires local Python for git hooks (minimal setup)
 
@@ -56,7 +56,7 @@ make test RXIV_ENGINE=DOCKER
 - **Docker**: Faster setup, matches CI environment, cross-platform consistency
 - **Local**: Faster iteration, better IDE integration, offline development
 
-For complete Docker setup instructions, see the [Docker Engine Mode guide](docs/docker-engine-mode.md).
+For complete Docker setup instructions, see the [Docker Engine Mode guide](docs/development/docker-engine-mode.md).
 
 ### 🔄 Container Engine Reliability (v1.4.24)
 
@@ -100,7 +100,7 @@ Recent improvements ensure robust container engine support with graceful fallbac
    
    **Benefits**: Matches CI environment, no dependency conflicts, easier setup
    
-   - **Installation**: Follow [Docker Engine Mode guide](docs/docker-engine-mode.md)
+   - **Installation**: Follow [Docker Engine Mode guide](docs/development/docker-engine-mode.md)
    - **Workflow**: See [Docker Development Workflow](#-docker-development-workflow) section below
    - **Pre-commit**: Minimal Python needed for git hooks only
    
@@ -356,7 +356,7 @@ def example_function():
 - Keep items parallel in structure
 
 ## Links
-- Use [descriptive text](URL) format
+- Use [descriptive text](https://example.com) format
 - Prefer relative links for internal documentation
 ```
 
@@ -433,7 +433,7 @@ This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating
 ## 📞 Contact
 
 - **Maintainers**: See [CODEOWNERS](.github/CODEOWNERS)
-- **Security Issues**: See [SECURITY.md](SECURITY.md)
+- **Security Issues**: See [SECURITY.md](docs/security/SECURITY.md)
 - **General Questions**: Use GitHub Discussions
 
 Thank you for contributing to Rxiv-Maker! Your efforts make scientific publishing more accessible and efficient for researchers worldwide. 🚀

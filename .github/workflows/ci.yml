@@ -231,61 +231,20 @@ jobs:
           uv run nox -s "test(test_type='full')"
           echo "✅ Coverage validation passed"
 
-  # Job 5: Container engine testing (conditional)
+  # Job 5: Container engine testing (deprecated - engines removed)
   container-tests:
-    name: Container Tests (${{ matrix.engine }})
+    name: Container Tests (deprecated)
     runs-on: ubuntu-latest
     needs: [fast-tests, integration-tests, coverage-validation]
-    if: |
-      github.event.inputs.test_suite == 'system' ||
-      github.event.inputs.test_suite == 'full' ||
-      (github.event_name == 'pull_request' && contains(github.event.pull_request.changed_files, 'src/rxiv_maker/engines/')) ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    timeout-minutes: 30
-
-    strategy:
-      fail-fast: false
-      matrix:
-        engine: [docker] # Can add podman later: [docker, podman]
+    if: false # Disabled - docker/podman engines deprecated
+    timeout-minutes: 5
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.11'
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          version: 'latest'
-          enable-cache: true
-
-      - name: Setup container engine (${{ matrix.engine }})
+      - name: Skip deprecated container tests
         run: |
-          if [ "${{ matrix.engine }}" == "docker" ]; then
-            echo "🐳 Docker is pre-installed"
-            docker --version
-          elif [ "${{ matrix.engine }}" == "podman" ]; then
-            echo "🦭 Installing Podman..."
-            sudo apt-get update
-            sudo apt-get install -y podman
-            podman --version
-          fi
-
-      - name: Install dependencies
-        run: |
-          uv sync --frozen --extra dev
-
-      - name: Run container engine tests
-        env:
-          RXIV_ENGINE: ${{ matrix.engine }}
-        run: |
-          echo "🧪 Running ${{ matrix.engine }} container tests..."
-          uv run nox -s "pdf(engine='${{ matrix.engine }}')"
-          echo "✅ Container tests passed"
+          echo "⚠️ Container tests skipped - Docker/Podman engines have been deprecated"
+          echo "Use docker-rxiv-maker repository for containerized workflows"
+          echo "Local engine testing is covered in integration tests"
 
   # Job 5: System tests (manual trigger or specific conditions)
   system-tests:
@@ -418,7 +377,7 @@ jobs:
           echo "| Fast Tests | ${{ needs.fast-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} | ~10min |" >> $GITHUB_STEP_SUMMARY
           echo "| Integration Tests | ${{ needs.integration-tests.result == 'success' && '✅ Passed' || (needs.integration-tests.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} | ~20min |" >> $GITHUB_STEP_SUMMARY
           echo "| Build Validation | ${{ needs.build-validation.result == 'success' && '✅ Passed' || '❌ Failed' }} | ~10min |" >> $GITHUB_STEP_SUMMARY
-          echo "| Container Tests | ${{ needs.container-tests.result == 'success' && '✅ Passed' || (needs.container-tests.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} | ~25min |" >> $GITHUB_STEP_SUMMARY
+          echo "| Container Tests | ⏭️ Skipped (deprecated) | ~0min |" >> $GITHUB_STEP_SUMMARY
           echo "| System Tests | ${{ needs.system-tests.result == 'success' && '✅ Passed' || (needs.system-tests.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} | ~40min |" >> $GITHUB_STEP_SUMMARY
           echo "| Security Scan | ${{ needs.security-scan.result == 'success' && '✅ Passed' || (needs.security-scan.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} | ~10min |" >> $GITHUB_STEP_SUMMARY
           echo "| Documentation | ${{ needs.docs-validation.result == 'success' && '✅ Passed' || (needs.docs-validation.result == 'skipped' && '⏭️ Skipped') || '❌ Failed' }} | ~5min |" >> $GITHUB_STEP_SUMMARY
