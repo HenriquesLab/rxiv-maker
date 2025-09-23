@@ -152,12 +152,12 @@ Dear Editor,
 We submit our manuscript "Title" for consideration at [Journal Name].
 
 This work reports [key finding] and demonstrates [significance]. 
-The results advance our understanding of [field] by [contribution].
+The results advance our understanding of \[field\] by \[contribution\].
 
-This manuscript is appropriate for [Journal] because [reasons]:
-- [Reason 1]
-- [Reason 2]
-- [Reason 3]
+This manuscript is appropriate for \[Journal\] because of the following reasons:
+- \[Reason 1\]
+- \[Reason 2\]
+- \[Reason 3\]
 
 We suggest the following reviewers:
 - Dr. X (expertise in Y)

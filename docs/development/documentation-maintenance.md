@@ -76,7 +76,7 @@ Weekly failures create GitHub issues automatically:
 [API Reference](../../src/docs/api/)
 
 # With anchors
-[CLI Commands](../reference/cli-reference.md#core-commands)
+[CLI Commands](../reference/cli-reference.md)
 
 # Absolute paths from repository root
 [Contributing](/CONTRIBUTING.md)

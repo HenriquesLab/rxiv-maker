@@ -327,4 +327,4 @@ make pdf-track-changes TAG=before-figure-update FORCE_FIGURES=true
 
 ---
 
-*This workflow guide provides comprehensive coverage of change tracking capabilities. For technical details, see the [CLI Reference](../reference/cli-reference.md#change-tracking). For troubleshooting, see the [Troubleshooting Guide](../troubleshooting/common-issues.md).*
+*This workflow guide provides comprehensive coverage of change tracking capabilities. For technical details, see the [CLI Reference](../reference/cli-reference.md). For troubleshooting, see the [Troubleshooting Guide](../troubleshooting/common-issues.md).*

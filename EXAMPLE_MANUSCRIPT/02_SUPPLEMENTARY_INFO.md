@@ -46,7 +46,7 @@
 | `- list item` | `\begin{itemize}\item...\end{itemize}` | Unordered list |
 | `1. list item` | `\begin{enumerate}\item...\end{enumerate}` | Ordered list |
 | *Links and URLs* | | |
-| `[link text](URL)` | `\href{URL}{link text}` | Hyperlink with custom text |
+| `\[link text\](url)` | `\href{url}{link text}` | Hyperlink with custom text |
 | `https://example.com` | `\url{https://example.com}` | Bare URL |
 | *Citations* | | |
 | `@citation` | `\cite{citation}` | Single citation reference |

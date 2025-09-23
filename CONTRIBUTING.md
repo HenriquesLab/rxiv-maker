@@ -78,7 +78,7 @@ docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
 
    **Standard development setup** for the best contributor experience:
 
-   - **Installation**: Follow [Development Setup guide](docs/platforms/LOCAL_DEVELOPMENT.md) for your platform
+   - **Installation**: Follow [Development Setup guide](docs/platforms/development-setup.md) for your platform
    - **Development mode**: Install rxiv-maker in editable mode:
      ```bash
      pip install -e .
@@ -321,7 +321,7 @@ def example_function():
 - Keep items parallel in structure
 
 ## Links
-- Use `[descriptive text](URL)` format
+- Use `\[descriptive text\](url)` format for examples
 - Prefer relative links for internal documentation
 ```
 

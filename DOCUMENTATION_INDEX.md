@@ -30,11 +30,11 @@ Welcome to the comprehensive documentation for Rxiv-Maker! This index provides a
 ### Development
 - **[Developer Guide](docs/development/developer-guide.md)** - Contributing to rxiv-maker
 - **[Documentation Maintenance](docs/development/documentation-maintenance.md)** - Keeping docs updated
-- **[Docker Engine Mode](docs/development/docker-engine-mode.md)** - Container setup (deprecated)
+- **[Container Guide](docs/environments/containers.md)** - Container setup and usage
 
 ## 🌐 Environment Setup
 
-- **[Local Development](docs/platforms/LOCAL_DEVELOPMENT.md)** - Native installation
+- **[Development Setup](docs/platforms/development-setup.md)** - Native installation and setup
 - **[Conda Installation](docs/environments/conda-installation.md)** - Anaconda/Miniconda setup
 
 ## 🔒 Project Information

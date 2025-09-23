@@ -1,0 +1,34 @@
+graph TD
+    A[Markdown Content] --> B[Input Processing]
+    C[Figure Scripts] --> B
+    D[Bibliography] --> B
+
+    B --> E[Content Conversion]
+
+    E --> F[LaTeX Generation]
+    E --> G[Figure Generation]
+
+    F --> H[Output Generation]
+    G --> H
+
+    H --> I[PDF Document]
+
+    subgraph "A: Input Processing"
+        B
+    end
+
+    subgraph "B: Content Conversion"
+        E
+        F
+        G
+    end
+
+    subgraph "C: Output Generation"
+        H
+        I
+    end
+
+    style A fill:#e3f2fd
+    style C fill:#e8f5e8
+    style D fill:#fff3e0
+    style I fill:#fce4ec

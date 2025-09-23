@@ -1,0 +1,31 @@
+<svg width="450" height="350" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100%" height="100%" fill="#f8f9fa"/>
+
+  <!-- Schematic components -->
+  <circle cx="120" cy="100" r="40" fill="#4caf50" stroke="#333" stroke-width="2"/>
+  <text x="120" y="105" text-anchor="middle" font-family="Arial" font-size="12" fill="white">A</text>
+
+  <rect x="250" y="60" width="80" height="80" fill="#2196f3" stroke="#333" stroke-width="2" rx="5"/>
+  <text x="290" y="105" text-anchor="middle" font-family="Arial" font-size="12" fill="white">B</text>
+
+  <polygon points="120,200 160,240 80,240" fill="#ff9800" stroke="#333" stroke-width="2"/>
+  <text x="120" y="230" text-anchor="middle" font-family="Arial" font-size="12" fill="white">C</text>
+
+  <ellipse cx="290" cy="220" rx="50" ry="30" fill="#9c27b0" stroke="#333" stroke-width="2"/>
+  <text x="290" y="225" text-anchor="middle" font-family="Arial" font-size="12" fill="white">D</text>
+
+  <!-- Connections -->
+  <line x1="160" y1="100" x2="250" y2="100" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="290" y1="140" x2="290" y2="190" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="160" y1="220" x2="240" y2="220" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333"/>
+    </marker>
+  </defs>
+
+  <text x="225" y="30" text-anchor="middle" font-family="Arial" font-size="16" fill="#333">
+    Detailed Schematic
+  </text>
+</svg>
