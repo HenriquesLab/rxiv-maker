@@ -73,7 +73,7 @@ class DocumentationLinkChecker:
             if readme_path.exists() and readme_path not in markdown_files:
                 markdown_files.append(readme_path)
 
-        return sorted(list(set(markdown_files)))
+        return sorted(set(markdown_files))
 
     def extract_links(self, content: str) -> List[Tuple[str, str]]:
         """Extract all markdown links from content."""

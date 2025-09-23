@@ -34,7 +34,7 @@ ax.annotate(
     "Steepest learning curve",
     xy=(8, 42),
     xytext=(6, 60),
-    arrowprops=dict(arrowstyle="->", lw=1.5, color="red"),
+    arrowprops={"arrowstyle": "->", "lw": 1.5, "color": "red"},
     fontsize=10,
     ha="center",
 )
@@ -43,7 +43,7 @@ ax.annotate(
     "Minimal improvement",
     xy=(10, 72),
     xytext=(8, 85),
-    arrowprops=dict(arrowstyle="->", lw=1.5, color="blue"),
+    arrowprops={"arrowstyle": "->", "lw": 1.5, "color": "blue"},
     fontsize=10,
     ha="center",
 )

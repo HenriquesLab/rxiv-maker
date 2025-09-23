@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Statistical analysis figure for documentation example.
+
 Generates supplementary figure showing data analysis results.
 """
 

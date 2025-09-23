@@ -47,7 +47,7 @@ arrows = [
 ]
 
 for start, end in arrows:
-    ax.annotate("", xy=end, xytext=start, arrowprops=dict(arrowstyle="->", lw=2, color="black"))
+    ax.annotate("", xy=end, xytext=start, arrowprops={"arrowstyle": "->", "lw": 2, "color": "black"})
 
 ax.set_xlim(0, 10)
 ax.set_ylim(1, 7)

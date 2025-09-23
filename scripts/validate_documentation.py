@@ -117,12 +117,12 @@ def main():
 
     # Remove duplicates and filter out hidden files and auto-generated API docs
     markdown_files = list(
-        set(
+        {
             f
             for f in markdown_files
             if not any(part.startswith(".") for part in f.parts)
             and not str(f).startswith("src/docs/api/")  # Skip auto-generated API docs
-        )
+        }
     )
 
     if not markdown_files:
