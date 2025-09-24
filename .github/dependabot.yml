@@ -68,7 +68,7 @@ updates:
 
   # Docker dependencies (if Dockerfile exists)
   - package-ecosystem: "docker"
-    directory: "src/docker/images/base/"
+    directory: "ci/"
     schedule:
       interval: "monthly"
       day: "monday"

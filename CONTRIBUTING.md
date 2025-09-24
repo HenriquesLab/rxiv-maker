@@ -32,50 +32,30 @@ We follow a **local-first validation** approach to ensure code quality while min
 - **New features**: Discuss first via issues or discussions
 - **Refactoring**: Improve code quality while maintaining functionality
 
-## 🐳 Docker Development Workflow
+## 🚀 Development Environment
 
-For contributors who prefer containerized development, Docker mode eliminates the need to install LaTeX, Python, R, and Node.js locally while providing an identical environment to our CI/CD system.
+### Standard Development Setup (Recommended)
+Most contributors should use the standard development environment:
 
-### Quick Docker Setup
-1. **Prerequisites**: Install Docker Desktop + Make (see [Docker guide](docs/docker-engine-mode.md))
-2. **Development**: Add `RXIV_ENGINE=DOCKER` to any make command
-3. **Pre-commit**: Requires local Python for git hooks (minimal setup)
-
-### Key Docker Commands
 ```bash
-# Set as default for your session
-export RXIV_ENGINE=DOCKER
+# Install dependencies
+pip install -e ".[dev]"
+pre-commit install
 
-# Core development commands (add RXIV_ENGINE=DOCKER to any make command)
-make pdf RXIV_ENGINE=DOCKER
-make validate RXIV_ENGINE=DOCKER  
-make test RXIV_ENGINE=DOCKER
+# Test changes
+rxiv pdf EXAMPLE_MANUSCRIPT/
 ```
 
-### Docker vs Local Development
-- **Docker**: Faster setup, matches CI environment, cross-platform consistency
-- **Local**: Faster iteration, better IDE integration, offline development
 
-For complete Docker setup instructions, see the [Docker Engine Mode guide](docs/docker-engine-mode.md).
+### Container Development (Alternative)
+For contributors who prefer containerized environments:
 
-### 🔄 Container Engine Reliability (v1.4.24)
+```bash
+# Use pre-built container for testing
+docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
+```
 
-Recent improvements ensure robust container engine support with graceful fallbacks:
-
-**Enhanced Engine Detection:**
-- Docker and Podman engines now verify both binary availability and daemon/service status
-- Better error messages when container engines are unavailable
-- Nox sessions properly detect running container services
-
-**Graceful Fallback Logic:**
-- Container validation automatically falls back to local validation when needed
-- Clear warning messages inform users of fallback behavior  
-- No breaking errors when Docker/Podman daemons are not running
-
-**Improved Developer Experience:**
-- Seamless operation regardless of container engine availability
-- All engines (local, Docker, Podman) tested and verified working
-- Backward compatibility maintained with existing workflows
+**📖 [Container Guide →](docs/containers.md)**
 
 ---
 
@@ -93,35 +73,19 @@ Recent improvements ensure robust container engine support with graceful fallbac
 
 2. **Set Up Development Environment**
    
-   ### 🎯 **Choose Your Development Setup (Pick ONE)**
-   
-   <details>
-   <summary><strong>🐳 Docker Development (Recommended for Contributors)</strong></summary>
-   
-   **Benefits**: Matches CI environment, no dependency conflicts, easier setup
-   
-   - **Installation**: Follow [Docker Engine Mode guide](docs/docker-engine-mode.md)
-   - **Workflow**: See [Docker Development Workflow](#-docker-development-workflow) section below
-   - **Pre-commit**: Minimal Python needed for git hooks only
-   
-   </details>
-   
-   <details>
-   <summary><strong>🏠 Local Development (Full Control)</strong></summary>
-   
-   **Benefits**: Faster iteration, better IDE integration, offline development
-   
-   - **Installation**: Follow [Local Development Setup guide](docs/platforms/LOCAL_DEVELOPMENT.md) for your platform
+   ### 🎯 **Development Setup**
+
+   **Standard development setup** for the best contributor experience:
+
+   - **Installation**: See installation documentation for your platform
    - **Development mode**: Install rxiv-maker in editable mode:
      ```bash
-     pip install -e .
+     pip install -e ".[dev]"
      ```
    - **Pre-commit**: Install hooks after setup:
      ```bash
      pre-commit install
      ```
-   
-   </details>
 
 3. **Install Pre-commit Hooks (MANDATORY)**
    
@@ -147,7 +111,7 @@ Recent improvements ensure robust container engine support with graceful fallbac
    rxiv pdf EXAMPLE_MANUSCRIPT/               # Build PDF
    
    # Or use legacy commands
-   MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT make pdf  # Add RXIV_ENGINE=DOCKER for Docker mode
+   MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT make pdf  # Legacy make interface
    ```
 
 ### Development Workflow
@@ -179,8 +143,7 @@ Recent improvements ensure robust container engine support with graceful fallbac
    nox -s "test(test_type='integration')"     # Integration tests only
    
    # Specialized testing
-   nox -s "pdf(engine='local')"               # PDF generation (local engine)
-   nox -s "pdf(engine='docker')"              # PDF generation (Docker engine)
+   nox -s "pdf"                               # PDF generation
    
    # Code quality checks
    nox -s lint                                # Linting (ruff + mypy)
@@ -192,8 +155,7 @@ Recent improvements ensure robust container engine support with graceful fallbac
    
    # Test with manuscripts using modern CLI
    rxiv validate EXAMPLE_MANUSCRIPT/          # Validate manuscript
-   rxiv pdf EXAMPLE_MANUSCRIPT/               # Build PDF (local engine)
-   RXIV_ENGINE=DOCKER rxiv pdf EXAMPLE_MANUSCRIPT/  # Build in Docker
+   rxiv pdf EXAMPLE_MANUSCRIPT/               # Build PDF
    ```
 
 4. **Submit Your Contribution**
@@ -356,7 +318,7 @@ def example_function():
 - Keep items parallel in structure
 
 ## Links
-- Use [descriptive text](URL) format
+- Use `[descriptive text](url)` format
 - Prefer relative links for internal documentation
 ```
 
@@ -433,7 +395,7 @@ This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating
 ## 📞 Contact
 
 - **Maintainers**: See [CODEOWNERS](.github/CODEOWNERS)
-- **Security Issues**: See [SECURITY.md](SECURITY.md)
+- **Security Issues**: Report via GitHub Security Advisories
 - **General Questions**: Use GitHub Discussions
 
 Thank you for contributing to Rxiv-Maker! Your efforts make scientific publishing more accessible and efficient for researchers worldwide. 🚀

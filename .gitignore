@@ -389,3 +389,6 @@ packaging/validation-results/
 .venv-linux
 rxivdraft/MANUSCRIPT/2025__antónio_d_brito_et_al__rxiv.pdf
 .ci_artifacts
+
+.gemini/
+gha-creds-*.json

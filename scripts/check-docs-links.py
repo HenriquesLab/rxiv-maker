@@ -60,12 +60,26 @@ class DocumentationLinkChecker:
         """Find all markdown files in the repository."""
         markdown_files = []
 
+        # Exclude patterns for auto-generated or temporary files
+        exclude_patterns = [
+            ".nox",
+            ".venv",
+            ".pytest_cache",
+            "node_modules",
+            "output.md",  # Auto-generated file
+            "docs_validation_report.md",  # Auto-generated report
+        ]
+
         # Search in docs/ directory and root
         search_paths = [self.docs_path, self.base_path]
 
         for search_path in search_paths:
             if search_path.exists():
-                markdown_files.extend(search_path.rglob("*.md"))
+                for md_file in search_path.rglob("*.md"):
+                    # Skip if file matches any exclude pattern
+                    if any(pattern in str(md_file) for pattern in exclude_patterns):
+                        continue
+                    markdown_files.append(md_file)
 
         # Also check README files specifically
         for readme_name in ["README.md", "CONTRIBUTING.md", "CHANGELOG.md"]:
@@ -73,14 +87,42 @@ class DocumentationLinkChecker:
             if readme_path.exists() and readme_path not in markdown_files:
                 markdown_files.append(readme_path)
 
-        return sorted(list(set(markdown_files)))
+        return sorted(set(markdown_files))
+
+    def remove_code_blocks(self, content: str) -> str:
+        """Remove code blocks and inline code from content to avoid false positives."""
+        # Remove fenced code blocks (```...```)
+        content = re.sub(r"```[\s\S]*?```", "", content, flags=re.MULTILINE)
+
+        # Remove indented code blocks (4 spaces or tab at start of line)
+        content = re.sub(r"^(?:    |\t).*$", "", content, flags=re.MULTILINE)
+
+        # Remove HTML comments
+        content = re.sub(r"<!--[\s\S]*?-->", "", content)
+
+        # Remove table rows (they often contain pipe-separated links that aren't real links)
+        # Keep only lines that don't start with | (table rows)
+        lines = content.split("\n")
+        non_table_lines = [line for line in lines if not line.strip().startswith("|")]
+        content = "\n".join(non_table_lines)
+
+        # Remove inline code (`...`)
+        content = re.sub(r"`[^`]+`", "", content)
+
+        # Remove escaped markdown syntax
+        content = re.sub(r"\\(\[|\]|\(|\))", "", content)
+
+        return content
 
     def extract_links(self, content: str) -> List[Tuple[str, str]]:
-        """Extract all markdown links from content."""
+        """Extract all markdown links from content, excluding code blocks."""
+        # Remove code blocks and inline code before extracting links
+        clean_content = self.remove_code_blocks(content)
+
         links = []
 
         for pattern in self.link_patterns:
-            matches = re.finditer(pattern, content)
+            matches = re.finditer(pattern, clean_content)
             for match in matches:
                 text, url = match.groups()
                 links.append((text.strip(), url.strip()))
@@ -133,14 +175,20 @@ class DocumentationLinkChecker:
                         content = f.read()
 
                     # Look for anchor in headers or explicit anchors
-                    anchor_patterns = [
-                        f"#{anchor}",  # Explicit anchor
-                        f"# {anchor.replace('-', ' ')}",  # Header converted to anchor
-                        f"## {anchor.replace('-', ' ')}",  # Subheader
-                        f"### {anchor.replace('-', ' ')}",  # Sub-subheader
-                    ]
+                    # Extract all headers from content
+                    header_pattern = r"^(#{1,6})\s+(.+)$"
+                    headers = re.findall(header_pattern, content, re.MULTILINE)
 
-                    found_anchor = any(pattern.lower() in content.lower() for pattern in anchor_patterns)
+                    # Generate anchors from headers (GitHub style: lowercase, strip emojis/special chars, spaces to hyphens)
+                    found_anchor = False
+                    for _level, header in headers:
+                        # Remove emojis and special characters, keep alphanumeric and spaces
+                        clean_header = re.sub(r"[^\w\s-]", "", header)
+                        # Convert to GitHub anchor format
+                        generated_anchor = clean_header.strip().lower().replace(" ", "-")
+                        if generated_anchor == anchor:
+                            found_anchor = True
+                            break
                     if not found_anchor:
                         issues.append(f"Broken anchor: '{link_text}' -> '{url}' (anchor '#{anchor}' not found)")
 

@@ -6,9 +6,9 @@
 
 <img src="src/logo/logo-rxiv-maker.svg" align="right" width="200" style="margin-left: 20px;"/>
 
-**Write scientific preprints in Markdown. Generate publication-ready PDFs instantly.**
+**Write scientific preprints in Markdown. Generate publication-ready PDFs efficiently.**
 
-Rxiv-Maker transforms scientific preprint writing by converting enhanced Markdown into professional PDFs with automated figure generation, citation management, and LaTeX typesetting - no LaTeX knowledge required. One beautiful template, infinite possibilities.
+Rxiv-Maker converts enhanced Markdown into professional PDFs with automated figure generation, citation management, and LaTeX typesetting. While LaTeX installation is required, users don't need to write LaTeX code directly.
 
 ## ✨ Why Rxiv-Maker?
 
@@ -41,13 +41,11 @@ pipx install rxiv-maker
 rxiv check-installation
 ```
 
-**Need platform-specific setup?** 📖 **[Complete Installation Guide →](https://rxiv-maker.henriqueslab.org/getting-started/installation/)**
-
-**For developers:** 🛠️ **[Developer Setup →](docs/quick-start/installation.md)**
+**Need help?** 📖 **[Installation Guide](docs/installation.md)**
 
 ## 🔥 Quick Start
 
-**Get your first PDF in under 2 minutes:**
+**Get your first PDF quickly:**
 
 ```bash
 # Create manuscript 
@@ -58,7 +56,7 @@ cd my-paper
 rxiv pdf
 ```
 
-**🎯 [Complete Getting Started Guide →](docs/quick-start/first-manuscript.md)**
+**🎯 [Getting Started Guide](docs/first-manuscript.md)**
 
 ## 🏆 Key Features
 
@@ -108,7 +106,7 @@ sample_size = len(df)
 Our analysis of {{py:get sample_size}} samples in Figure @fig:results shows 
 significant improvement over previous methods [@smith2023; @jones2024].
 
-![Research Results](FIGURES/experimental_visualization.py)
+![Research Results](EXAMPLE_MANUSCRIPT/FIGURES/SFigure__arxiv_growth.py)
 {#fig:results}
 
 The correlation coefficient was r = {{py:get correlation:.2f}} (p < 0.001).
@@ -120,14 +118,12 @@ The correlation coefficient was r = {{py:get correlation:.2f}} (p < 0.001).
 
 ## 📖 Documentation
 
-| Guide | Purpose | Time |
-|-------|---------|------|
-| **[🚀 Getting Started](docs/quick-start/first-manuscript.md)** | Installation → First PDF | 5 min |
-| **[📚 User Guide](docs/guides/user_guide.md)** | Complete workflows & features | 30 min |
-| **[🐍 Python Execution Guide](docs/guides/python-execution-guide.md)** | Jupyter-like code blocks & data analysis | 15 min |
-| **[⚙️ CLI Reference](docs/reference/cli-reference.md)** | All commands & options | 10 min |
-| **[🔧 Troubleshooting](docs/troubleshooting/troubleshooting.md)** | Common issues & solutions | As needed |
-| **[👩‍💻 Developer Guide](docs/development/developer-guide.md)** | Contributing & development | 45 min |
+- **[Installation](docs/installation.md)** - Setup and dependencies
+- **[Getting Started](docs/first-manuscript.md)** - Your first manuscript
+- **[User Guide](docs/user_guide.md)** - Complete features and workflows
+- **[Python Execution](docs/python-execution-guide.md)** - Jupyter-like code blocks
+- **[CLI Reference](docs/cli-reference.md)** - All commands
+- **[Troubleshooting](docs/troubleshooting.md)** - Common issues
 
 ## 🎯 Use Cases
 
@@ -164,13 +160,13 @@ rxiv arxiv                 # Prepare arXiv submission
 rxiv track-changes v1 v2   # Visual version comparison
 ```
 
-**[📖 Complete Command Reference →](docs/reference/cli-reference.md)**
+**[📖 CLI Reference](docs/cli-reference.md)**
 
 ## 🤝 Community
 
 - **💬 [GitHub Discussions](https://github.com/henriqueslab/rxiv-maker/discussions)** - Ask questions, share tips
 - **🐛 [Issues](https://github.com/henriqueslab/rxiv-maker/issues)** - Report bugs, request features  
-- **📚 [Examples](examples/)** - Real-world manuscript examples
+- **📚 [Example Manuscript](EXAMPLE_MANUSCRIPT/)** - Complete manuscript example
 - **🧪 [Google Colab](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_colab.ipynb)** - Try without installing
 
 ## 🏗️ Contributing
@@ -189,8 +185,6 @@ cd rxiv-maker
 pip install -e ".[dev]"
 pre-commit install
 ```
-
-**[📋 Full Contributing Guide →](docs/development/developer-guide.md)**
 
 ## 📄 Citation
 
@@ -219,6 +213,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 *"Because science is hard enough without fighting with LaTeX."*
 
-**[🚀 Start Writing →](docs/quick-start/first-manuscript.md)** | **[📚 Learn More →](docs/guides/user_guide.md)** | **[⚙️ Commands →](docs/reference/cli-reference.md)**
+**[🚀 Start Writing](docs/first-manuscript.md)** | **[📚 User Guide](docs/user_guide.md)** | **[⚙️ CLI Reference](docs/cli-reference.md)**
 
 </div>

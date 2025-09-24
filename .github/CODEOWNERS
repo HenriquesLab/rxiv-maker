@@ -1,0 +1,26 @@
+# CODEOWNERS file for rxiv-maker
+# This file defines who owns different parts of the codebase
+
+# Global ownership
+* @henriqueslab/maintainers
+
+# Core source code
+/src/ @henriqueslab/maintainers @paxcalpt
+
+# Documentation
+/docs/ @henriqueslab/maintainers
+*.md @henriqueslab/maintainers
+
+# CI/CD workflows
+/.github/ @henriqueslab/maintainers @paxcalpt
+
+# Build and configuration files
+pyproject.toml @henriqueslab/maintainers @paxcalpt
+noxfile.py @henriqueslab/maintainers @paxcalpt
+Makefile @henriqueslab/maintainers @paxcalpt
+
+# Testing
+/tests/ @henriqueslab/maintainers
+
+# Example manuscript
+/EXAMPLE_MANUSCRIPT/ @henriqueslab/maintainers
