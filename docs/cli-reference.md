@@ -486,4 +486,4 @@ rxiv pdf --skip-validation
 # Edit files and re-run for quick feedback
 ```
 
-**🎓 [Back to First Manuscript](../quick-start/first-manuscript.md) | 📚 [User Guide](../guides/user_guide.md) | 🔧 [Troubleshooting](../troubleshooting/troubleshooting.md)**
+**🎓 [Back to First Manuscript](first-manuscript.md) | 📚 [User Guide](user_guide.md) | 🔧 [Troubleshooting](troubleshooting.md)**

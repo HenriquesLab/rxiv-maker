@@ -985,4 +985,4 @@ Analysis results: mean = {{py:get mean_val}}, std = {{py:get std_dev:.3f}}.
 
 ---
 
-**📚 [User Guide](user_guide.md) | 📊 [Figures Guide](figures-guide.md) | ⚙️ [CLI Reference](../reference/cli-reference.md)**
+**📚 [User Guide](user_guide.md) | 📊 [Figures Guide](figures-guide.md) | ⚙️ [CLI Reference](cli-reference.md)**

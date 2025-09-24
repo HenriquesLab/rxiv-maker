@@ -105,7 +105,7 @@ cd .. && python -m pytest tests/unit/ -v
 
 For containerized development without dependency installation:
 
-**📖 [Container Development Guide →](../environments/containers.md)**
+**📖 [Container Development Guide →](containers.md)**
 
 ## 🌐 Alternative Development Environments
 
@@ -126,15 +126,15 @@ For quick experimentation:
 
 - **Development Questions**: [GitHub Discussions](https://github.com/henriqueslab/rxiv-maker/discussions)
 - **Bug Reports**: [GitHub Issues](https://github.com/henriqueslab/rxiv-maker/issues)
-- **Contributing Guide**: [CONTRIBUTING.md](../../CONTRIBUTING.md)
-- **Developer Guide**: [docs/development/developer-guide.md](../development/developer-guide.md)
+- **Contributing Guide**: [CONTRIBUTING.md](../CONTRIBUTING.md)
+- **Developer Guide**: [do]()
 
 ## 🔗 Related Resources
 
 - **[User Installation Guide](https://rxiv-maker.henriqueslab.org/getting-started/installation/)** - Standard installation
-- **[Developer Guide](../development/developer-guide.md)** - Comprehensive development documentation
+- **[Developer Guide]()** - Comprehensive development documentation
 - **[Testing Guide](../development/github-actions-testing.md)** - Testing workflows
-- **[Container Guide](../environments/containers.md)** - Container development
+- **[Container Guide](containers.md)** - Container development
 
 ---
 

@@ -55,4 +55,4 @@ Once you are happy with your changes, upload the updated files back to Colab or 
 - ✅ **GPU acceleration** available for complex figure generation
 - ✅ **Cloud storage** - Save your work to Google Drive
 
-For detailed troubleshooting and advanced features, see the main [User Guide](../guides/user_guide.md).
+For detailed troubleshooting and advanced features, see the main [User Guide](user_guide.md).

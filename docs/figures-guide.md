@@ -616,4 +616,4 @@ This creates a professional, well-positioned figure with:
 
 ---
 
-**📚 [User Guide](user_guide.md) | ⚙️ [CLI Reference](../reference/cli-reference.md) | 🔧 [Troubleshooting](../troubleshooting/troubleshooting.md)**
+**📚 [User Guide](user_guide.md) | ⚙️ [CLI Reference](cli-reference.md) | 🔧 [Troubleshooting](troubleshooting.md)**

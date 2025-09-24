@@ -356,4 +356,4 @@ grep -o "@[a-zA-Z0-9:_-]*" 01_MAIN.md
 
 - **[Publishing Guide](publishing-guide.md)** - Submission and peer review
 - **[Figures Guide](figures-guide.md)** - Advanced figure creation
-- **[CLI Reference](../reference/cli-reference.md)** - Complete command guide
+- **[CLI Reference](cli-reference.md)** - Complete command guide

@@ -338,7 +338,7 @@ sudo tlmgr install siunitx ifsym
 docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
 ```
 
-For complete troubleshooting of figure positioning, see the **[Complete Figure Guide](../guides/figures-guide.md)**.
+For complete troubleshooting of figure positioning, see the **[Complete Figure Guide](figures-guide.md)**.
 
 ---
 
@@ -948,4 +948,4 @@ rxiv validate && rxiv pdf
 
 ---
 
-**📚 [User Guide](../guides/user_guide.md) | ⚙️ [CLI Reference](../reference/cli-reference.md) | 🚀 [First Manuscript](../quick-start/first-manuscript.md)**
+**📚 [User Guide](user_guide.md) | ⚙️ [CLI Reference](cli-reference.md) | 🚀 [First Manuscript](first-manuscript.md)**

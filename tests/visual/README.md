@@ -42,6 +42,6 @@ Add new manuscripts to this directory when you need to:
 
 ## Related Documentation
 
-- [User Guide](../../docs/guides/user_guide.md) - For user-facing examples
-- [Figures Guide](../../docs/guides/figures-guide.md) - Figure usage documentation
-- [Developer Guide](../../docs/development/developer-guide.md) - Development workflows
+- [User Guide](../../docs/user_guide.md) - For user-facing examples
+- [Figures Guide](../../docs/figures-guide.md) - Figure usage documentation
+- [Developer Guide]() - Development workflows

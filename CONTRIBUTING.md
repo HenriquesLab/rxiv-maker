@@ -46,7 +46,6 @@ pre-commit install
 rxiv pdf EXAMPLE_MANUSCRIPT/
 ```
 
-**📖 [Developer Guide →](docs/development/developer-guide.md)**
 
 ### Container Development (Alternative)
 For contributors who prefer containerized environments:
@@ -56,7 +55,7 @@ For contributors who prefer containerized environments:
 docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
 ```
 
-**📖 [Container Guide →](docs/environments/containers.md)**
+**📖 [Container Guide →](docs/containers.md)**
 
 ---
 
@@ -78,7 +77,7 @@ docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
 
    **Standard development setup** for the best contributor experience:
 
-   - **Installation**: Follow [Development Setup guide](docs/platforms/development-setup.md) for your platform
+   - **Installation**: See installation documentation for your platform
    - **Development mode**: Install rxiv-maker in editable mode:
      ```bash
      pip install -e ".[dev]"
@@ -396,7 +395,7 @@ This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating
 ## 📞 Contact
 
 - **Maintainers**: See [CODEOWNERS](.github/CODEOWNERS)
-- **Security Issues**: See [SECURITY.md](docs/security/SECURITY.md)
+- **Security Issues**: Report via GitHub Security Advisories
 - **General Questions**: Use GitHub Discussions
 
 Thank you for contributing to Rxiv-Maker! Your efforts make scientific publishing more accessible and efficient for researchers worldwide. 🚀

@@ -2,7 +2,7 @@
 
 *Complete guide for productive scientific writing with Rxiv-Maker*
 
-**Prerequisites**: Complete the [first manuscript walkthrough](../quick-start/first-manuscript.md) for installation and basic setup.
+**Prerequisites**: Complete the [first manuscript walkthrough](first-manuscript.md) for installation and basic setup.
 
 ---
 
@@ -769,12 +769,12 @@ export RXIV_PARALLEL_JOBS=8
 ### 📋 Documentation Navigation
 
 #### 🎯 **Essential Next Steps**
-- **[📝 CLI Reference](../reference/cli-reference.md)** - Master all commands 
-- **[🔧 Troubleshooting](../troubleshooting/troubleshooting.md)** - Solve any issues
-- **[👩‍💻 Developer Guide](../development/developer-guide.md)** - Contribute to Rxiv-Maker
+- **[📝 CLI Reference](cli-reference.md)** - Master all commands 
+- **[🔧 Troubleshooting](troubleshooting.md)** - Solve any issues
+- **[👩‍💻 Developer Guide]()** - Contribute to Rxiv-Maker
 
 #### 🎆 **Complete Documentation Hub**
-**[🗺️ Documentation Navigation →](../navigation.md)** - Navigate all documentation by topic and user type
+**[🗺️ Documentation Navigation →]()** - Navigate all documentation by topic and user type
 
 ### Quick Reference Cards
 
@@ -803,7 +803,7 @@ python FIGURES/protein_expression_plot.py  # Test individual script
 
 - **[💬 GitHub Discussions](https://github.com/henriqueslab/rxiv-maker/discussions)** - Ask questions, share tips
 - **[🐛 GitHub Issues](https://github.com/henriqueslab/rxiv-maker/issues)** - Report bugs, request features  
-- **[🤝 Contributing Guide](../../CONTRIBUTING.md)** - Help make Rxiv-Maker better
+- **[🤝 Contributing Guide](../CONTRIBUTING.md)** - Help make Rxiv-Maker better
 
 ---
 
