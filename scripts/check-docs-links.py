@@ -175,14 +175,20 @@ class DocumentationLinkChecker:
                         content = f.read()
 
                     # Look for anchor in headers or explicit anchors
-                    anchor_patterns = [
-                        f"#{anchor}",  # Explicit anchor
-                        f"# {anchor.replace('-', ' ')}",  # Header converted to anchor
-                        f"## {anchor.replace('-', ' ')}",  # Subheader
-                        f"### {anchor.replace('-', ' ')}",  # Sub-subheader
-                    ]
+                    # Extract all headers from content
+                    header_pattern = r"^(#{1,6})\s+(.+)$"
+                    headers = re.findall(header_pattern, content, re.MULTILINE)
 
-                    found_anchor = any(pattern.lower() in content.lower() for pattern in anchor_patterns)
+                    # Generate anchors from headers (GitHub style: lowercase, strip emojis/special chars, spaces to hyphens)
+                    found_anchor = False
+                    for _level, header in headers:
+                        # Remove emojis and special characters, keep alphanumeric and spaces
+                        clean_header = re.sub(r"[^\w\s-]", "", header)
+                        # Convert to GitHub anchor format
+                        generated_anchor = clean_header.strip().lower().replace(" ", "-")
+                        if generated_anchor == anchor:
+                            found_anchor = True
+                            break
                     if not found_anchor:
                         issues.append(f"Broken anchor: '{link_text}' -> '{url}' (anchor '#{anchor}' not found)")
 

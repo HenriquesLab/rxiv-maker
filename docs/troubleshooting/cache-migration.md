@@ -189,4 +189,4 @@ rxiv clean --cache-only
 
 The migration is implemented in `src/rxiv_maker/utils/cache_utils.py` using the `platformdirs` library to ensure cross-platform compatibility. Each cache manager (DOI, bibliography, figures, updates) handles its own migration transparently.
 
-For more information, see the [cache utilities API documentation](../api/cache_utils.py.md).
+For more information, see the [cache utilities API documentation](../../src/docs/api/cache_utils.py.md).
