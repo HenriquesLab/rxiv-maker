@@ -1,5 +1,0 @@
-# PowerShell Property Reference
-
-This file exists to prevent broken link errors in the documentation link checker.
-
-The reference `[System.Net.ServicePointManager]::SecurityProtocol` is PowerShell syntax, not a markdown link.

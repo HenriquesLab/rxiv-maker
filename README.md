@@ -41,9 +41,7 @@ pipx install rxiv-maker
 rxiv check-installation
 ```
 
-**Need platform-specific setup?** 📖 **[Complete Installation Guide →](https://rxiv-maker.henriqueslab.org/getting-started/installation/)**
-
-**For developers:** 🛠️ **[Developer Setup →](docs/quick-start/installation.md)**
+**Need help?** 📖 **[Installation Guide](docs/installation.md)**
 
 ## 🔥 Quick Start
 
@@ -58,7 +56,7 @@ cd my-paper
 rxiv pdf
 ```
 
-**🎯 [Complete Getting Started Guide →](docs/quick-start/first-manuscript.md)**
+**🎯 [Getting Started Guide](docs/first-manuscript.md)**
 
 ## 🏆 Key Features
 
@@ -120,14 +118,12 @@ The correlation coefficient was r = {{py:get correlation:.2f}} (p < 0.001).
 
 ## 📖 Documentation
 
-| Guide | Purpose | Scope |
-|-------|---------|-------|
-| **[🚀 Getting Started](docs/quick-start/first-manuscript.md)** | Installation → First PDF | Quick start |
-| **[📚 User Guide](docs/guides/user_guide.md)** | Complete workflows & features | Comprehensive |
-| **[🐍 Python Execution Guide](docs/guides/python-execution-guide.md)** | Jupyter-like code blocks & data analysis | Focused guide |
-| **[⚙️ CLI Reference](docs/reference/cli-reference.md)** | All commands & options | Reference |
-| **[🔧 Troubleshooting](docs/troubleshooting/troubleshooting.md)** | Common issues & solutions | As needed |
-| **[👩‍💻 Developer Guide](docs/development/developer-guide.md)** | Contributing & development | Advanced guide |
+- **[Installation](docs/installation.md)** - Setup and dependencies
+- **[Getting Started](docs/first-manuscript.md)** - Your first manuscript
+- **[User Guide](docs/user_guide.md)** - Complete features and workflows
+- **[Python Execution](docs/python-execution-guide.md)** - Jupyter-like code blocks
+- **[CLI Reference](docs/cli-reference.md)** - All commands
+- **[Troubleshooting](docs/troubleshooting.md)** - Common issues
 
 ## 🎯 Use Cases
 
@@ -164,7 +160,7 @@ rxiv arxiv                 # Prepare arXiv submission
 rxiv track-changes v1 v2   # Visual version comparison
 ```
 
-**[📖 Complete Command Reference →](docs/reference/cli-reference.md)**
+**[📖 CLI Reference](docs/cli-reference.md)**
 
 ## 🤝 Community
 
@@ -189,8 +185,6 @@ cd rxiv-maker
 pip install -e ".[dev]"
 pre-commit install
 ```
-
-**[📋 Full Contributing Guide →](docs/development/developer-guide.md)**
 
 ## 📄 Citation
 
@@ -219,6 +213,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 *"Because science is hard enough without fighting with LaTeX."*
 
-**[🚀 Start Writing →](docs/quick-start/first-manuscript.md)** | **[📚 Learn More →](docs/guides/user_guide.md)** | **[⚙️ Commands →](docs/reference/cli-reference.md)**
+**[🚀 Start Writing](docs/first-manuscript.md)** | **[📚 User Guide](docs/user_guide.md)** | **[⚙️ CLI Reference](docs/cli-reference.md)**
 
 </div>

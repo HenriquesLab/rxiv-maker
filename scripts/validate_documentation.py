@@ -19,24 +19,27 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 
-def extract_python_code_blocks(content: str) -> List[Tuple[str, int]]:
-    """Extract Python code blocks from markdown content."""
+def extract_code_blocks(content: str) -> List[Tuple[str, int, str]]:
+    """Extract code blocks from markdown content."""
     code_blocks = []
     lines = content.split("\n")
-    in_python_block = False
+    in_code_block = False
     current_block = []
     block_start_line = 0
+    language = ""
 
     for i, line in enumerate(lines, 1):
-        if line.strip().startswith("```python"):
-            in_python_block = True
-            block_start_line = i
-            current_block = []
-        elif line.strip() == "```" and in_python_block:
-            in_python_block = False
-            if current_block:
-                code_blocks.append(("\n".join(current_block), block_start_line))
-        elif in_python_block:
+        if line.strip().startswith("```"):
+            if not in_code_block:
+                in_code_block = True
+                block_start_line = i
+                language = line.strip()[3:]
+                current_block = []
+            else:
+                in_code_block = False
+                if current_block:
+                    code_blocks.append(("\n".join(current_block), block_start_line, language))
+        elif in_code_block:
             current_block.append(line)
 
     return code_blocks
@@ -55,20 +58,23 @@ def validate_python_syntax(code: str, filename: str, line_num: int) -> bool:
         return False
 
 
-def validate_shell_commands(content: str, filename: str) -> bool:
+def validate_shell_commands(code: str, filename: str) -> bool:
     """Basic validation of shell commands in documentation."""
-    # Find shell code blocks
-    shell_pattern = r"```(?:bash|sh|shell)\n(.*?)\n```"
-    shell_blocks = re.findall(shell_pattern, content, re.DOTALL)
+    # Basic checks for dangerous commands
+    if re.search(r"\brm\s+-rf\s+/", code):
+        logger.warning(f"{filename}: Potentially dangerous rm -rf / command found")
+        # Don't fail for this, just warn
 
-    valid = True
-    for block in shell_blocks:
-        # Basic checks for dangerous commands
-        if re.search(r"\brm\s+-rf\s+/", block):
-            logger.warning(f"{filename}: Potentially dangerous rm -rf / command found")
-            # Don't fail for this, just warn
+    return True
 
-    return valid
+
+def validate_code_block(code: str, filename: str, line_num: int, language: str) -> bool:
+    """Validate a single code block."""
+    if language == "python":
+        return validate_python_syntax(code, filename, line_num)
+    elif language in ("bash", "sh", "shell"):
+        return validate_shell_commands(code, filename)
+    return True
 
 
 def validate_documentation_file(file_path: Path) -> bool:
@@ -83,15 +89,11 @@ def validate_documentation_file(file_path: Path) -> bool:
 
     valid = True
 
-    # Validate Python code blocks
-    python_blocks = extract_python_code_blocks(content)
-    for code, line_num in python_blocks:
-        if not validate_python_syntax(code, str(file_path), line_num):
+    # Validate code blocks
+    code_blocks = extract_code_blocks(content)
+    for code, line_num, language in code_blocks:
+        if not validate_code_block(code, str(file_path), line_num, language):
             valid = False
-
-    # Validate shell commands
-    if not validate_shell_commands(content, str(file_path)):
-        valid = False
 
     return valid
 

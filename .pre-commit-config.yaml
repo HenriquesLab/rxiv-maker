@@ -97,7 +97,7 @@ repos:
         entry: scripts/check-docs.sh
         language: system
         files: .*\.md$
-        exclude: ^(git_submodules/.*|docs_validation_report\.md|src/docs/api/.*)$
+        exclude: ^(git_submodules/.*|docs_validation_report\.md|src/docs/.*)$
         pass_filenames: false
         stages: [pre-commit, manual]
 
