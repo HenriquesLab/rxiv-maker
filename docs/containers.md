@@ -104,5 +104,4 @@ docker run -v ${PWD}:/workspace -w /workspace henriqueslab/rxiv-maker-base:lates
 ## 🔗 Related Resources
 
 - **[Installation Guide](installation.md)** - Standard installation
-- **[Developer Guide]()** - Contributing to rxiv-maker
 - **[Troubleshooting](troubleshooting.md)** - Common issues

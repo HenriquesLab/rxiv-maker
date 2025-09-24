@@ -127,13 +127,10 @@ For quick experimentation:
 - **Development Questions**: [GitHub Discussions](https://github.com/henriqueslab/rxiv-maker/discussions)
 - **Bug Reports**: [GitHub Issues](https://github.com/henriqueslab/rxiv-maker/issues)
 - **Contributing Guide**: [CONTRIBUTING.md](../CONTRIBUTING.md)
-- **Developer Guide**: [do]()
 
 ## 🔗 Related Resources
 
 - **[User Installation Guide](https://rxiv-maker.henriqueslab.org/getting-started/installation/)** - Standard installation
-- **[Developer Guide]()** - Comprehensive development documentation
-- **[Testing Guide](../development/github-actions-testing.md)** - Testing workflows
 - **[Container Guide](containers.md)** - Container development
 
 ---

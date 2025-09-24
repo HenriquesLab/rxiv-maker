@@ -87,9 +87,6 @@ rxiv validate && rxiv pdf
 
 ## 🔗 Developer Resources
 
-- **[Developer Guide]()** - Complete development documentation
-- **[Testing Guide](../development/github-actions-testing.md)** - Testing workflows
-- **[API Documentation](../../src/docs/api/)** - Code reference
 - **[Contributing Guide](../CONTRIBUTING.md)** - Contribution guidelines
 
 ## 🌐 User-Facing Documentation
