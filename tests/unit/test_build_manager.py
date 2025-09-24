@@ -601,7 +601,52 @@ l.4 \undefined
         parser = LaTeXErrorParser(manuscript_path=self.manuscript_dir)
         errors = parser._parse_log_file(error_output)
         assert any(e.error_type == "missing_file" for e in errors)
+
+        # Test that .sty files get package installation guidance
+        latex_error = errors[0]
+        suggestion = parser._get_error_suggestion(latex_error)
+        assert suggestion is not None
+        assert "Missing LaTeX package" in suggestion
+        assert "nonexistentpackage.sty" in suggestion
+        assert "Installation instructions" in suggestion or "tlmgr install" in suggestion
+
+    def test_latex_missing_cls_file_error(self):
+        """Test handling of missing .cls file errors with installation guidance."""
+        error_output = r"""
+! LaTeX Error: File `custom_style.cls' not found.
+"""
+        from rxiv_maker.validators.latex_error_parser import LaTeXErrorParser
+
+        parser = LaTeXErrorParser(manuscript_path=self.manuscript_dir)
+        errors = parser._parse_log_file(error_output)
         assert any(e.error_type == "missing_file" for e in errors)
+
+        # Test that .cls files get package installation guidance
+        latex_error = errors[0]
+        suggestion = parser._get_error_suggestion(latex_error)
+        assert suggestion is not None
+        assert "Missing LaTeX package" in suggestion
+        assert "custom_style.cls" in suggestion
+        assert "Installation instructions" in suggestion or "tlmgr install" in suggestion
+
+    def test_latex_regular_file_missing_no_package_guidance(self):
+        """Test that regular files don't get package installation guidance."""
+        error_output = r"""
+! LaTeX Error: File `myimage.png' not found.
+"""
+        from rxiv_maker.validators.latex_error_parser import LaTeXErrorParser
+
+        parser = LaTeXErrorParser(manuscript_path=self.manuscript_dir)
+        errors = parser._parse_log_file(error_output)
+        assert any(e.error_type == "missing_file" for e in errors)
+
+        # Test that regular files get different suggestion
+        latex_error = errors[0]
+        suggestion = parser._get_error_suggestion(latex_error)
+        assert suggestion is not None
+        assert "Missing LaTeX package" not in suggestion
+        assert "cannot be found" in suggestion
+        assert "myimage.png" in suggestion
 
     def test_latex_compilation_timeout(self):
         """Test handling of LaTeX compilation timeout."""

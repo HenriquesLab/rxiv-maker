@@ -301,9 +301,15 @@ class LaTeXErrorParser(BaseValidator):
                     file_match = re.search(r"File `([^']+)' not found", latex_error.raw_error)
                     if file_match:
                         missing_file = file_match.group(1)
-                        suggestion = (
-                            f"The file '{missing_file}' cannot be found. Check the file path and ensure it exists."
-                        )
+
+                        # Check if missing file is a LaTeX package (.sty or .cls)
+                        if missing_file.endswith(".sty") or missing_file.endswith(".cls"):
+                            package_name = missing_file.replace(".sty", "").replace(".cls", "")
+                            suggestion = self._get_package_installation_guidance(package_name, missing_file)
+                        else:
+                            suggestion = (
+                                f"The file '{missing_file}' cannot be found. Check the file path and ensure it exists."
+                            )
 
                 elif latex_error.error_type == "undefined_citation" and latex_error.raw_error:
                     cite_match = re.search(r"Citation '([^']+)'", latex_error.raw_error)
@@ -318,3 +324,52 @@ class LaTeXErrorParser(BaseValidator):
                 return suggestion
 
         return "Check LaTeX syntax and package requirements"
+
+    def _get_package_installation_guidance(self, package_name: str, missing_file: str) -> str:
+        """Generate platform-specific guidance for installing missing LaTeX packages.
+
+        Args:
+            package_name: Name of the missing package (without .sty/.cls extension)
+            missing_file: Full filename of the missing file
+
+        Returns:
+            Detailed installation guidance message
+        """
+        import platform
+
+        system = platform.system()
+
+        guidance = f"Missing LaTeX package: '{missing_file}'\n\n"
+        guidance += "📦 Installation instructions:\n\n"
+
+        if system == "Linux":
+            guidance += "For Ubuntu/Debian:\n"
+            guidance += "  sudo apt-get install texlive-latex-extra\n"
+            guidance += f"  # Or for specific package: tlmgr install {package_name}\n\n"
+            guidance += "For Fedora/RHEL:\n"
+            guidance += f"  sudo dnf install texlive-{package_name}\n\n"
+            guidance += "For Arch Linux:\n"
+            guidance += "  sudo pacman -S texlive-most\n"
+
+        elif system == "Darwin":  # macOS
+            guidance += "For macOS with TeX Live (MacTeX):\n"
+            guidance += f"  sudo tlmgr install {package_name}\n\n"
+            guidance += "For macOS with Homebrew:\n"
+            guidance += "  brew install --cask mactex\n"
+            guidance += f"  # Then: sudo tlmgr install {package_name}\n"
+
+        elif system == "Windows":
+            guidance += "For Windows with MiKTeX:\n"
+            guidance += "  1. Open MiKTeX Console\n"
+            guidance += "  2. Go to Packages tab\n"
+            guidance += f"  3. Search for '{package_name}' and install\n\n"
+            guidance += "For Windows with TeX Live:\n"
+            guidance += f"  tlmgr install {package_name}\n"
+
+        else:
+            guidance += "Generic installation (TeX Live):\n"
+            guidance += f"  tlmgr install {package_name}\n"
+
+        guidance += "\n💡 Alternatively, you can install the full LaTeX distribution to get all packages."
+
+        return guidance

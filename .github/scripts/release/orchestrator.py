@@ -125,7 +125,7 @@ class ReleaseOrchestrator:
             self.handle_release_failure(e)
             return False
 
-    def validate_pre_conditions(self) -> Union[bool, str]:
+    def validate_pre_conditions(self) -> "bool | str":
         """Validate all pre-conditions for release."""
         log_step(self.logger, "Validating pre-conditions", "START")
 

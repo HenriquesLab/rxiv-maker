@@ -1,4 +1,5 @@
 # Change Tracking Workflow
+{#change-tracking}
 
 Change tracking in Rxiv-Maker allows researchers to generate PDFs that visually highlight differences between the current manuscript and any previous version stored in git. This capability is essential for academic workflows involving manuscript revisions, collaborative reviews, and version documentation.
 

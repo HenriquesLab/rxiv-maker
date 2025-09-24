@@ -81,14 +81,12 @@ docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
    - **Installation**: Follow [Development Setup guide](docs/platforms/development-setup.md) for your platform
    - **Development mode**: Install rxiv-maker in editable mode:
      ```bash
-     pip install -e .
+     pip install -e ".[dev]"
      ```
    - **Pre-commit**: Install hooks after setup:
      ```bash
      pre-commit install
      ```
-   
-   </details>
 
 3. **Install Pre-commit Hooks (MANDATORY)**
    
@@ -321,7 +319,7 @@ def example_function():
 - Keep items parallel in structure
 
 ## Links
-- Use `\[descriptive text\](url)` format for examples
+- Use `[descriptive text](url)` format
 - Prefer relative links for internal documentation
 ```
 

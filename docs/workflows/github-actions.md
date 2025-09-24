@@ -31,4 +31,4 @@ GitHub Actions provides automated PDF generation and testing workflows for rxiv-
 
 **📖 Complete Documentation:** [GitHub Actions Testing Guide](../development/github-actions-testing.md)
 
-**🚀 Installation Options:** [Complete Installation Guide](../quick-start/installation.md#github-actions-automated-cloud-builds)
+**🚀 Installation Options:** [Complete Installation Guide](../quick-start/installation.md)

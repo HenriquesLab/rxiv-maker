@@ -38,7 +38,6 @@ docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
 
 - **[Figure Generation Failures](troubleshooting.md#figure-generation-failures)**
 - **[Python Environment Issues](troubleshooting.md#environment-setup-problems)**
-- **[Container Engine Issues](troubleshooting.md#container-engine-issues)**
 - **[Complete Figure Guide](../guides/figures-guide.md)**
 
 ---
