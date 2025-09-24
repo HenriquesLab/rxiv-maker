@@ -22,9 +22,9 @@
 
 ## Quick Links
 
-- **[Core Commands](cli-reference.md#-core-commands)** - Essential workflows
-- **[Advanced Commands](cli-reference.md#-advanced-commands)** - Power user features
-- **[Troubleshooting](cli-reference.md#-troubleshooting-commands)** - Common issues
+- **[Core Commands](cli-reference.md#core-commands)** - Essential workflows
+- **[Advanced Commands](cli-reference.md#advanced-commands)** - Power user features
+- **[Troubleshooting](cli-reference.md#troubleshooting-commands)** - Common issues
 
 ---
 

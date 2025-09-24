@@ -390,9 +390,9 @@ rxiv validate || {
 - **[Missing Figures Guide](troubleshooting-missing-figures.md)** - Resolving figure generation and file issues
 
 ### Documentation
-- **[User Guide](../getting-started/user_guide.md)** - Complete usage instructions
-- **[Rxiv-Markdown Syntax Guide](../reference/rxiv-markdown-syntax.md)** - Complete syntax reference
-- **[CLI Reference](../CLI_REFERENCE.md)** - Command-line interface documentation
+- **[User Guide](../guides/user_guide.md)** - Complete usage instructions
+- **[Rxiv-Markdown Syntax Guide](../reference/rxiv-markdown.md)** - Complete syntax reference
+- **[CLI Reference](../reference/cli-reference.md)** - Command-line interface documentation
 
 ---
 

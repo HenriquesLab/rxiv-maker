@@ -362,9 +362,9 @@ This text has a footnote[^1].
 ## Related Documentation
 
 - **[Complete Figure Guide](../guides/figures-guide.md)** - Complete guide to figure positioning, formatting, and troubleshooting
-- **[User Guide](../getting-started/user_guide.md)** - Complete usage instructions
+- **[User Guide](../guides/user_guide.md)** - Complete usage instructions
 - **[Troubleshooting Guide](../troubleshooting/common-issues.md)** - Common issues and solutions
-- **[CLI Reference](../CLI_REFERENCE.md)** - Command-line interface documentation
+- **[CLI Reference](cli-reference.md)** - Command-line interface documentation
 
 ---
 
