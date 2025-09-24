@@ -23,4 +23,4 @@ The conversion pipeline uses a sophisticated protection system to prevent proces
 2. Process document elements in specific order
 3. Restore protected content at appropriate stages
 
-See [CLAUDE.md](../../CLAUDE.md) for detailed architecture documentation.
+See [CLAUDE.md](https://github.com/HenriquesLab/rxiv-maker/blob/main/CLAUDE.md) for detailed architecture documentation.
