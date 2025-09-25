@@ -52,6 +52,13 @@ def process_custom_commands(text: MarkdownContent) -> LatexContent:
 
     text = re.sub(r"`[^`]+`", protect_inline_code, text)
 
+    # Protect tex block placeholders from being processed
+    def protect_tex_placeholder(match: re.Match[str]) -> str:
+        protected_blocks.append(match.group(0))
+        return f"__CUSTOM_CODE_BLOCK_{len(protected_blocks) - 1}__"
+
+    text = re.sub(r"XXPROTECTEDTEXBLOCKXX\d+XXPROTECTEDTEXBLOCKXX", protect_tex_placeholder, text)
+
     # Process custom commands with new 3-step Python execution model
     # Store original text for accurate line number calculation
     original_text_for_line_numbers = text
@@ -178,6 +185,17 @@ def _process_tex_commands(text: MarkdownContent) -> LatexContent:
         # Look for {{tex:
         start_marker = "{{tex:"
         if text[i : i + len(start_marker)] == start_marker:
+            # Check if this tex command is inside a texttt/detokenize block (should be left as literal)
+            context_start = max(0, i - 30)  # Look back for context
+            context = text[context_start:i]
+
+            # If we're inside \texttt{\detokenize{, don't process this as a tex command
+            if r"\texttt{\detokenize{" in context and context.count("{") > context.count("}"):
+                # This is inside a detokenize block - treat as literal text
+                result.append(text[i])
+                i += 1
+                continue
+
             # Found the start of a TeX command
             # Find the matching closing }}
             brace_count = 2  # Start with {{
@@ -451,8 +469,12 @@ def _process_python_block_commands(text: MarkdownContent, executor) -> LatexCont
                         output = executor.execute_block(code)
                         result.append(output)
                         i = j
-                    except Exception as e:
-                        # Handle execution errors
+                    except (ValueError, KeyError, AttributeError, TypeError) as e:
+                        # Handle specific execution errors with logging
+                        from ..core.logging_config import get_logger
+
+                        logger = get_logger()
+                        logger.warning(f"Python execution error in py:get command: {str(e)}")
                         error_msg = f"```\nPython execution error: {str(e)}\n```"
                         result.append(error_msg)
                         i = j
@@ -493,7 +515,12 @@ def _process_python_inline_commands(text: MarkdownContent, executor) -> LatexCon
             # Execute the expression as inline code
             result = executor.execute_inline(expression, line_number=line_number, file_path="manuscript")
             return result
-        except Exception as e:
+        except (ValueError, KeyError, AttributeError, TypeError, NameError, SyntaxError) as e:
+            # Handle specific Python execution errors with logging
+            from ..core.logging_config import get_logger
+
+            logger = get_logger()
+            logger.warning(f"Python inline execution error for '{expression}' at line {line_number}: {str(e)}")
             return f"[Error: {str(e)}]"
 
     # Process {py: expression} patterns (single braces, not double braces)
@@ -524,7 +551,21 @@ def _process_python_get_blocks(text: MarkdownContent, executor) -> LatexContent:
         try:
             result = executor.get_variable_value(variable_name, line_number=line_number, file_path="manuscript")
             return str(result) if result is not None else ""
+        except (ValueError, KeyError, AttributeError, NameError) as e:
+            # Handle specific variable retrieval errors with logging
+            from ..core.logging_config import get_logger
+
+            logger = get_logger()
+            logger.warning(f"Error retrieving variable '{variable_name}' at line {line_number}: {str(e)}")
+            return f"[Error retrieving {variable_name}: {str(e)}]"
         except Exception as e:
+            # Handle PythonExecutionError and other execution-related errors
+            from ..core.logging_config import get_logger
+
+            logger = get_logger()
+            logger.warning(
+                f"Python execution error retrieving variable '{variable_name}' at line {line_number}: {str(e)}"
+            )
             return f"[Error retrieving {variable_name}: {str(e)}]"
 
     # Process {{py:get variable}} blocks

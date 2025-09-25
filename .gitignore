@@ -391,4 +391,5 @@ rxivdraft/MANUSCRIPT/2025__antónio_d_brito_et_al__rxiv.pdf
 .ci_artifacts
 
 .gemini/
+.gemini-clipboard/
 gha-creds-*.json

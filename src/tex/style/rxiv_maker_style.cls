@@ -113,11 +113,11 @@
 \setcounter{totalnumber}{5}                % Max floats per page total
 
 %% Consistent spacing around floats
-\setlength{\floatsep}{12pt plus 2pt minus 2pt}        % Between consecutive floats
-\setlength{\textfloatsep}{12pt plus 2pt minus 2pt}    % Between text and float
-\setlength{\intextsep}{12pt plus 2pt minus 2pt}       % For wrapped floats
-\setlength{\dblfloatsep}{12pt plus 2pt minus 2pt}     % Between double-column floats
-\setlength{\dbltextfloatsep}{12pt plus 2pt minus 2pt} % Between text and double-column float
+\setlength{\floatsep}{10pt plus 2pt minus 2pt}        % Between consecutive floats
+\setlength{\textfloatsep}{8pt plus 1pt minus 1pt}     % Between text and float
+\setlength{\intextsep}{10pt plus 2pt minus 2pt}       % For wrapped floats
+\setlength{\dblfloatsep}{10pt plus 2pt minus 2pt}     % Between double-column floats
+\setlength{\dbltextfloatsep}{8pt plus 1pt minus 1pt}  % Between text and double-column float
 
 %% Caption spacing - uniform for figures and tables
 \setlength{\abovecaptionskip}{8pt}         % Space above captions

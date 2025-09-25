@@ -47,6 +47,12 @@ def fetch_arxiv_monthly_data() -> pd.DataFrame:
         df = pd.DataFrame(data)
         df["year_month"] = pd.to_datetime(df["year_month"])
 
+        # Verify chronological ordering
+        if not df["year_month"].is_monotonic_increasing:
+            df = df.sort_values("year_month").reset_index(drop=True)
+            # Recalculate cumulative with correct ordering
+            df["cumulative_submissions"] = df["submissions"].cumsum()
+
         print(f"Fetched {len(df)} months of arXiv data from {df['year_month'].min()} to {df['year_month'].max()}")
         return df
 
@@ -128,7 +134,7 @@ def _get_pubmed_count(search_term: str) -> int:
             "retmode": "xml",
             "retmax": 0,  # We only want the count, not the actual records
             "tool": "rxiv-maker",
-            "email": "research@example.com",  # Replace with actual contact
+            "email": "ricardo.henriques@itqb.unl.pt",
         }
 
         response = requests.get(base_url, params=params, timeout=30)

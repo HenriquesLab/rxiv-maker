@@ -161,20 +161,45 @@ def process_code_spans(text: MarkdownContent) -> LatexContent:
             ]
         )
 
-        if has_latex_commands:
-            # For code spans with LaTeX commands, escape them manually without using \detokenize
-            # to avoid table parsing issues
-            escaped_content = code_content
-            # Replace backslashes with a safe LaTeX representation
-            escaped_content = escaped_content.replace("\\", "\\textbackslash ")
-            # Handle other special characters that might need escaping
-            escaped_content = escaped_content.replace("{", "\\{")
-            escaped_content = escaped_content.replace("}", "\\}")
-            escaped_content = escaped_content.replace("#", "\\#")
-            escaped_content = escaped_content.replace("&", "\\&")
-            escaped_content = escaped_content.replace("%", "\\%")
-            escaped_content = escaped_content.replace("$", "\\$")
-            return f"\\texttt{{{escaped_content}}}"
+        # Check if this is a {{tex:...}} or {{py:...}} reference that should be displayed literally
+        # Also handle protected tex block placeholders
+        is_block_reference = (
+            code_content.startswith("{{")
+            and code_content.endswith("}}")
+            and ("tex:" in code_content or "py:" in code_content)
+        ) or code_content.startswith("XXPROTECTEDTEXBLOCKXX")
+
+        # Check if this code span contains Markdown syntax or special characters that need verbatim display
+        # Exclude {{tex:...}} and {{py:...}} references from markdown syntax treatment
+        has_markdown_syntax = not is_block_reference and any(
+            syntax in code_content
+            for syntax in [
+                "**",  # Bold markdown
+                "*",  # Italic markdown (but not if it's just a single asterisk in regular text)
+                "~~",  # Strikethrough markdown
+                "`",  # Nested backticks
+                "~",  # Subscript syntax (when standalone)
+                "^",  # Superscript syntax (when standalone)
+                "#",  # Header syntax (single hash)
+                "##",  # Header syntax
+                "###",  # Header syntax
+                "@",  # Citation references
+                "<!--",  # HTML comments
+                "<",  # HTML tags or special syntax
+                ">",  # HTML tags or special syntax
+                "[",  # Link syntax
+                "]",  # Link syntax
+            ]
+        )
+
+        if is_block_reference:
+            # For {{tex:...}} and {{py:...}} references, use detokenize for robust handling
+            # This avoids all the brace escaping issues by treating content literally
+            return f"\\texttt{{\\detokenize{{{code_content}}}}}"
+        elif has_latex_commands or has_markdown_syntax:
+            # For code spans with LaTeX commands or Markdown syntax, use \detokenize for true verbatim display
+            # This ensures that \textbf{bold text} or **bold text** appears literally in the PDF
+            return f"PROTECTED_DETOKENIZE_START{{{code_content}}}PROTECTED_DETOKENIZE_END"
         elif has_dollar_paren or has_math_delimiters or has_protected_math:
             # For code spans with mathematical content, use \detokenize for robust
             # protection. This prevents LaTeX from interpreting $ as math delimiters
@@ -253,7 +278,26 @@ def process_code_spans(text: MarkdownContent) -> LatexContent:
                             # Check if this is followed by the end marker
                             end_marker = "}PROTECTED_DETOKENIZE_END"
                             if text[j : j + len(end_marker)] == end_marker:
-                                replacement = f"\\texttt{{\\detokenize{{{content}}}}}"
+                                # Handle LaTeX commands with braces specially to avoid \detokenize spacing issues
+                                if (
+                                    content.startswith("\\")
+                                    and "{" in content
+                                    and "}" in content
+                                    and content.count("\\") == 1
+                                ):
+                                    # For simple LaTeX commands like \textbf{bold text}, use manual approach
+                                    # to avoid the space that \detokenize introduces after \textbf
+                                    escaped_content = (
+                                        content.replace("\\", "\\textbackslash ")
+                                        .replace("{", "\\{")
+                                        .replace("}", "\\}")
+                                    )
+                                    replacement = f"\\texttt{{{escaped_content}}}"
+                                else:
+                                    # For everything else (markdown syntax, simple text), use \detokenize
+                                    # This will handle special characters like #, ~, ^ correctly
+                                    # Note: \detokenize may double hash characters in PDF but this is better than backslashes
+                                    replacement = f"\\texttt{{\\detokenize{{{content}}}}}"
                                 result.append(replacement)
                                 i = j + len(end_marker)
                                 break
@@ -443,7 +487,10 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
     # CRITICAL: Protect content that's already been processed by table_processor
     # The table processor uses \detokenize{} for complex cases - don't touch these
     # Protect \texttt{\detokenize{...}} commands (from table processor)
-    text = re.sub(r"\\texttt\{\\detokenize\{[^}]*\}\}", protect_latex_command, text)
+    # Use a more robust pattern that handles nested braces, including triple braces like {{{tex:...}}}
+    text = re.sub(
+        r"\\texttt\{\\detokenize\{[^{}]*(?:\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}[^{}]*)*\}\}", protect_latex_command, text
+    )
 
     # Protect standalone \detokenize{...} commands
     text = re.sub(r"\\detokenize\{[^}]*\}", protect_latex_command, text)
