@@ -46,9 +46,9 @@ def convert_figures_to_latex(text: MarkdownContent, is_supplementary: bool = Fal
     text = re.sub(r"`[^`]+`", protect_inline_code, text)
 
     # Process different figure formats
-    text = _process_new_figure_format(text)
-    text = _process_figure_with_attributes(text)
-    text = _process_figure_without_attributes(text)
+    text = _process_new_figure_format(text, is_supplementary)
+    text = _process_figure_with_attributes(text, is_supplementary)
+    text = _process_figure_without_attributes(text, is_supplementary)
 
     # Restore protected code blocks
     for i, block in enumerate(protected_blocks):
@@ -132,6 +132,7 @@ def create_latex_figure_environment(
     path: str,
     caption: str,
     attributes: Optional[Dict[str, Any]] = None,
+    is_supplementary: bool = False,
 ) -> str:
     if attributes is None:
         attributes = {}
@@ -186,14 +187,14 @@ def create_latex_figure_environment(
 
     def _pos_single(pos: Optional[str]) -> str:
         if not pos:
-            return "[!htbp]"
+            return "[p]" if is_supplementary else "[!htbp]"
         core = _strip_br(pos)
         filt = "".join(c for c in core if c in "htbp!")
         return f"[{filt or '!htbp'}]"
 
     def _pos_star(pos: Optional[str]) -> str:
         if not pos:
-            return "[!tbp]"
+            return "[p]" if is_supplementary else "[!tbp]"
         core = _strip_br(pos)
         filt = "".join(c for c in core if c in "tbp!")  # drop h/H
         return f"[{filt or '!tbp'}]"
@@ -285,13 +286,18 @@ def create_latex_figure_environment(
         figure_env, rel_unit, position = "figure*", r"\textwidth", _pos_star(user_pos)
         w_expr, w_kind = _parse_len(user_width, rel_unit)
 
-    # Full-page: default to two-column float page unless explicitly forced single-column
+    # Full-page: respect user's positioning choice for tex_position="p"
+    # Only upgrade to figure* if explicitly requested or width indicates two-column need
     if _strip_br(user_pos) == "p":
-        if singlecol_p:
-            figure_env, rel_unit, position = "figure", r"\textwidth", "[p]"
+        if singlecol_p or not (is_span_req or r"\textwidth" in (user_width or "")):
+            # Keep single-column figure with [p] positioning
+            figure_env, rel_unit, position = "figure", r"\linewidth", "[p]"
         else:
+            # Upgrade to two-column only when explicitly requested or width requires it
             figure_env, rel_unit, position = "figure*", r"\textwidth", "[p]"
         w_expr, w_kind = _parse_len(user_width, rel_unit)
+        # Auto-enable barrier for [p] figures to ensure one figure per page
+        barrier = True
 
     # Landscape
     env_name = ("sidewaysfigure*" if figure_env == "figure*" else "sidewaysfigure") if landscape else figure_env
@@ -357,7 +363,7 @@ def create_latex_figure_environment(
     return "\n".join(lines)
 
 
-def _process_new_figure_format(text: MarkdownContent) -> LatexContent:
+def _process_new_figure_format(text: MarkdownContent, is_supplementary: bool = False) -> LatexContent:
     r"""Process the new figure format:
 
     ![](path)
@@ -419,7 +425,7 @@ def _process_new_figure_format(text: MarkdownContent) -> LatexContent:
             return m.group(0)
 
         try:
-            return create_latex_figure_environment(path, caption_text, attributes)
+            return create_latex_figure_environment(path, caption_text, attributes, is_supplementary)
         except Exception:
             # If LaTeX emission fails, keep original block untouched
             return m.group(0)
@@ -427,7 +433,7 @@ def _process_new_figure_format(text: MarkdownContent) -> LatexContent:
     return pattern.sub(_repl, text)
 
 
-def _process_figure_without_attributes(text: MarkdownContent) -> LatexContent:
+def _process_figure_without_attributes(text: MarkdownContent, is_supplementary: bool = False) -> LatexContent:
     """Process figures without attributes: ![caption](path) or ![caption](path "title")."""
     import re
 
@@ -456,7 +462,7 @@ def _process_figure_without_attributes(text: MarkdownContent) -> LatexContent:
             )?
             [ \t]*
         \)
-        (?![ \t]*\{)                      # don't consume cases with immediate {attributes}
+        (?![ \t\r\n]*\{)                  # don't consume cases with {attributes} (even with newlines)
         """,
         re.VERBOSE,
     )
@@ -484,7 +490,7 @@ def _process_figure_without_attributes(text: MarkdownContent) -> LatexContent:
             return m.group(0)
 
         try:
-            return create_latex_figure_environment(path, caption)
+            return create_latex_figure_environment(path, caption, None, is_supplementary)
         except Exception:
             return m.group(0)
 
@@ -518,7 +524,7 @@ def validate_figure_path(path: FigurePath) -> bool:
     return ext.lower() in valid_extensions
 
 
-def _process_figure_with_attributes(text: MarkdownContent) -> LatexContent:
+def _process_figure_with_attributes(text: MarkdownContent, is_supplementary: bool = False) -> LatexContent:
     """Process figures with attributes: ![caption](path){attributes}."""
 
     def process_figure_with_attributes(match: re.Match[str]) -> str:
@@ -528,10 +534,39 @@ def _process_figure_with_attributes(text: MarkdownContent) -> LatexContent:
 
         # Parse attributes
         attributes = parse_figure_attributes(attr_string)
-        return create_latex_figure_environment(path, caption, attributes)
+        return create_latex_figure_environment(path, caption, attributes, is_supplementary)
 
-    # Handle figures with attributes (old format)
-    return re.sub(r"!\[([^\]]*)\]\(([^)]+)\)\{([^}]+)\}", process_figure_with_attributes, text)
+    # Handle figures with attributes (old format) - both inline and with newlines
+    # First try inline format: ![caption](path){attributes}
+    text = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)\{([^}]+)\}", process_figure_with_attributes, text)
+
+    # Then try format with newline: ![caption](path)\n{attributes} caption
+    def process_figure_with_newline_attributes(match: re.Match[str]) -> str:
+        image_caption = match.group(1)
+        path = match.group(2)
+        attr_string = match.group(3)
+        caption_text = match.group(4).strip()
+
+        # If there's text in the image brackets and also in the caption, combine them
+        if image_caption and caption_text:
+            combined_caption = f"{image_caption}. {caption_text}"
+        elif image_caption:
+            combined_caption = image_caption
+        else:
+            combined_caption = caption_text
+
+        # Parse attributes
+        attributes = parse_figure_attributes(attr_string)
+        return create_latex_figure_environment(path, combined_caption, attributes, is_supplementary)
+
+    text = re.sub(
+        r"!\[([^\]]*)\]\(([^)]+)\)\s*\n\s*\{([^}]+)\}\s*(.*?)(?=\n\n|\Z)",
+        process_figure_with_newline_attributes,
+        text,
+        flags=re.DOTALL,
+    )
+
+    return text
 
 
 def extract_figure_ids_from_text(text: MarkdownContent) -> list[FigureId]:

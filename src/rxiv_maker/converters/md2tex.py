@@ -105,8 +105,13 @@ def convert_markdown_to_latex(content: MarkdownContent, is_supplementary: bool =
     # This is essential for security - commented content should NEVER be processed
     content = preprocess_comments(content)
 
+    # PROTECT TEX BLOCKS: Protect {{tex:...}} blocks from markdown processing
+    # This must happen early to prevent markdown syntax inside tex blocks from being processed
+    content, protected_tex_content = _protect_tex_blocks(content)
+
     # CRITICAL: Process custom commands (Python/R execution) BEFORE any code protection
     # This ensures Python code can be extracted properly before LaTeX processing interferes
+    # NOTE: tex blocks are still protected at this point and will be handled specially
     content = process_custom_commands(content)
 
     # SECOND: Convert fenced code blocks AFTER Python execution
@@ -120,6 +125,7 @@ def convert_markdown_to_latex(content: MarkdownContent, is_supplementary: bool =
     protected_backtick_content: ProtectedContent = {}
     protected_tables: ProtectedContent = {}
     protected_markdown_tables: ProtectedContent = {}
+    # Note: protected_tex_content is already populated above
 
     # Protect backtick content and markdown tables BEFORE math protection
     content, protected_backtick_content = _protect_backtick_content(content)
@@ -208,6 +214,15 @@ def convert_markdown_to_latex(content: MarkdownContent, is_supplementary: bool =
     # Finally restore mathematical expressions
     content = restore_math_expressions(content, protected_math)
 
+    # FINAL STEP: Restore {{tex:...}} blocks after all markdown processing is complete
+    # This ensures tex blocks are processed at the very end
+    content = _restore_tex_blocks(content, protected_tex_content)
+
+    # Process only tex commands now that all markdown processing is done
+    from .custom_command_processor import _process_tex_commands
+
+    content = _process_tex_commands(content)
+
     return content
 
 
@@ -247,6 +262,94 @@ def _process_float_barrier_markers(content: MarkdownContent) -> LatexContent:
     content = re.sub(r"^\s*<float-barrier>\s*$", r"\\FloatBarrier", content, flags=re.MULTILINE)
     content = re.sub(r"<float-barrier>", r"\\FloatBarrier", content)
 
+    return content
+
+
+def _protect_tex_blocks(
+    content: MarkdownContent,
+) -> tuple[LatexContent, ProtectedContent]:
+    """Protect {{tex:...}} blocks from markdown processing, excluding those in backticks."""
+    protected_tex_content: ProtectedContent = {}
+
+    # First, identify all backtick spans to exclude from tex block protection
+    backtick_spans = []
+    i = 0
+    while i < len(content):
+        if content[i] == "`":
+            # Count opening backticks
+            start = i
+            backtick_count = 0
+            while i < len(content) and content[i] == "`":
+                backtick_count += 1
+                i += 1
+
+            # Find matching closing backticks
+            while i < len(content):
+                if content[i] == "`":
+                    # Count closing backticks
+                    closing_count = 0
+                    while i < len(content) and content[i] == "`":
+                        closing_count += 1
+                        i += 1
+
+                    if closing_count == backtick_count:
+                        # Found complete backtick span
+                        backtick_spans.append((start, i))
+                        break
+                else:
+                    i += 1
+            else:
+                # No matching closing backticks found
+                i = start + backtick_count
+        else:
+            i += 1
+
+    def is_inside_backticks(pos: int) -> bool:
+        """Check if position is inside any backtick span."""
+        for start, end in backtick_spans:
+            if start <= pos < end:
+                return True
+        return False
+
+    # Now scan for tex blocks, excluding those inside backtick spans
+    result = []
+    i = 0
+
+    while i < len(content):
+        if content[i : i + 6] == "{{tex:" and not is_inside_backticks(i):
+            # Found tex block outside of backticks
+            brace_count = 2  # Start with {{
+            start = i + 6  # length of "{{tex:"
+            j = start
+            while j < len(content) and brace_count > 0:
+                if content[j] == "{":
+                    brace_count += 1
+                elif content[j] == "}":
+                    brace_count -= 1
+                j += 1
+
+            if brace_count == 0:
+                # Found complete tex block
+                full_block = content[i:j]
+                placeholder = f"XXPROTECTEDTEXBLOCKXX{len(protected_tex_content)}XXPROTECTEDTEXBLOCKXX"
+                protected_tex_content[placeholder] = full_block
+                result.append(placeholder)
+                i = j
+            else:
+                # Incomplete block, treat as regular text
+                result.append(content[i])
+                i += 1
+        else:
+            result.append(content[i])
+            i += 1
+
+    return "".join(result), protected_tex_content
+
+
+def _restore_tex_blocks(content: LatexContent, protected_tex_content: ProtectedContent) -> LatexContent:
+    """Restore {{tex:...}} blocks from placeholders."""
+    for placeholder, original_content in protected_tex_content.items():
+        content = content.replace(placeholder, original_content)
     return content
 
 

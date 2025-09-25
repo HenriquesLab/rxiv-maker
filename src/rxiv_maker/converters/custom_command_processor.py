@@ -52,6 +52,13 @@ def process_custom_commands(text: MarkdownContent) -> LatexContent:
 
     text = re.sub(r"`[^`]+`", protect_inline_code, text)
 
+    # Protect tex block placeholders from being processed
+    def protect_tex_placeholder(match: re.Match[str]) -> str:
+        protected_blocks.append(match.group(0))
+        return f"__CUSTOM_CODE_BLOCK_{len(protected_blocks) - 1}__"
+
+    text = re.sub(r"XXPROTECTEDTEXBLOCKXX\d+XXPROTECTEDTEXBLOCKXX", protect_tex_placeholder, text)
+
     # Process custom commands with new 3-step Python execution model
     # Store original text for accurate line number calculation
     original_text_for_line_numbers = text
@@ -178,6 +185,17 @@ def _process_tex_commands(text: MarkdownContent) -> LatexContent:
         # Look for {{tex:
         start_marker = "{{tex:"
         if text[i : i + len(start_marker)] == start_marker:
+            # Check if this tex command is inside a texttt/detokenize block (should be left as literal)
+            context_start = max(0, i - 30)  # Look back for context
+            context = text[context_start:i]
+
+            # If we're inside \texttt{\detokenize{, don't process this as a tex command
+            if r"\texttt{\detokenize{" in context and context.count("{") > context.count("}"):
+                # This is inside a detokenize block - treat as literal text
+                result.append(text[i])
+                i += 1
+                continue
+
             # Found the start of a TeX command
             # Find the matching closing }}
             brace_count = 2  # Start with {{
