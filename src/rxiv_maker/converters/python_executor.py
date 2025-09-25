@@ -20,10 +20,16 @@ class PythonExecutionError(Exception):
     pass
 
 
+# Configuration constants for timeouts and limits
+DEFAULT_TIMEOUT = 10
+DEFAULT_MAX_OUTPUT_LENGTH = 10000
+LONG_LINE_THRESHOLD = 40
+
+
 class PythonExecutor:
     """Python code executor for markdown commands."""
 
-    def __init__(self, timeout: int = 10, max_output_length: int = 10000):
+    def __init__(self, timeout: int = DEFAULT_TIMEOUT, max_output_length: int = DEFAULT_MAX_OUTPUT_LENGTH):
         """Initialize Python executor.
 
         Args:
@@ -35,6 +41,8 @@ class PythonExecutor:
         self.execution_context: Dict[str, Any] = {}
         self.manuscript_dir: Optional[Path] = None
         self.initialization_imports = []  # Track imports from initialization blocks
+        self._manuscript_directory_cache: Optional[Path] = None
+        self._imports_cache: Dict[str, tuple[str, ...]] = {}
         self._detect_manuscript_directory()
 
         # Initialize execution reporter for tracking Python activities
@@ -45,8 +53,12 @@ class PythonExecutor:
         except ImportError:
             self.reporter = None
 
-    def _detect_manuscript_directory(self) -> None:
-        """Detect the manuscript directory structure for src/py path integration."""
+    def _detect_manuscript_directory_cached(self) -> Optional[Path]:
+        """Detect the manuscript directory structure for src/py path integration (cached)."""
+        # Return cached result if available
+        if self._manuscript_directory_cache is not None:
+            return self._manuscript_directory_cache
+
         try:
             # First check if manuscript path is set via environment variable
             from ..core.environment_manager import EnvironmentManager
@@ -55,8 +67,8 @@ class PythonExecutor:
             if env_manuscript_path:
                 env_path = Path(env_manuscript_path)
                 if env_path.exists() and env_path.is_dir():
-                    self.manuscript_dir = env_path
-                    return
+                    self._manuscript_directory_cache = env_path
+                    return env_path
 
             # Start from current working directory and look for manuscript markers
             current_dir = Path.cwd()
@@ -74,25 +86,36 @@ class PythonExecutor:
 
                 # Check if this directory has manuscript markers
                 if any((check_dir / marker).exists() for marker in manuscript_markers):
-                    self.manuscript_dir = check_dir
-                    return
+                    self._manuscript_directory_cache = check_dir
+                    return check_dir
 
             # If not found, assume current directory is the manuscript directory
-            self.manuscript_dir = current_dir
+            self._manuscript_directory_cache = current_dir
+            return current_dir
 
         except Exception:
             # If detection fails, use current directory
-            self.manuscript_dir = Path.cwd()
+            result = Path.cwd()
+            self._manuscript_directory_cache = result
+            return result
 
-    def _extract_imports(self, code: str) -> list[str]:
-        """Extract import statements from Python code.
+    def _detect_manuscript_directory(self) -> None:
+        """Detect the manuscript directory structure for src/py path integration."""
+        self.manuscript_dir = self._detect_manuscript_directory_cached()
+
+    def _extract_imports_cached(self, code: str) -> tuple[str, ...]:
+        """Extract import statements from Python code (cached).
 
         Args:
             code: Python code to analyze
 
         Returns:
-            List of import statement lines
+            Tuple of import statement lines (tuple for hashability)
         """
+        # Return cached result if available
+        if code in self._imports_cache:
+            return self._imports_cache[code]
+
         import ast
 
         try:
@@ -109,7 +132,9 @@ class PythonExecutor:
                     import_line = f"from {module} import {names}"
                     imports.append(import_line)
 
-            return imports
+            result = tuple(imports)
+            self._imports_cache[code] = result
+            return result
         except SyntaxError:
             # If parsing fails, fall back to simple text search
             lines = code.strip().split("\n")
@@ -118,7 +143,20 @@ class PythonExecutor:
                 stripped = line.strip()
                 if stripped.startswith("import ") or stripped.startswith("from "):
                     imports.append(stripped)
-            return imports
+            result = tuple(imports)
+            self._imports_cache[code] = result
+            return result
+
+    def _extract_imports(self, code: str) -> list[str]:
+        """Extract import statements from Python code.
+
+        Args:
+            code: Python code to analyze
+
+        Returns:
+            List of import statement lines
+        """
+        return list(self._extract_imports_cached(code))
 
     def _get_src_py_paths(self) -> list[str]:
         """Get the src/py paths to add to PYTHONPATH."""
@@ -569,8 +607,8 @@ print(json.dumps(result))
                     output_lines = output.split("\n")
                     wrapped_lines = []
                     for line in output_lines:
-                        if len(line) > 40:  # Wrap lines longer than 40 characters to prevent overfull hbox
-                            wrapped_lines.extend(textwrap.wrap(line, width=40))
+                        if len(line) > LONG_LINE_THRESHOLD:  # Wrap lines longer than threshold to prevent overfull hbox
+                            wrapped_lines.extend(textwrap.wrap(line, width=LONG_LINE_THRESHOLD))
                         else:
                             wrapped_lines.append(line)
                     wrapped_output = "\n".join(wrapped_lines)

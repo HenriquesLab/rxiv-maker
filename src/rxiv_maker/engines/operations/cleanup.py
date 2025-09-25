@@ -117,10 +117,10 @@ class CleanupManager:
                                 file.unlink()
                                 cleaned_files.append(str(file))
                                 if self.verbose:
-                                    self.log(f"Removed: {item.name}/{file.name}")
+                                    self.log(f"Removed: {item.name / file.name}")
                             except Exception as e:
                                 self.log(
-                                    f"Failed to remove {item.name}/{file.name}: {e}",
+                                    f"Failed to remove {item.name / file.name}: {e}",
                                     "WARNING",
                                 )
 

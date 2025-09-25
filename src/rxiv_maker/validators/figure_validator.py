@@ -2,6 +2,7 @@
 
 import os
 import re
+from pathlib import Path
 from typing import Any
 
 from ..core.error_codes import ErrorCode, create_validation_error
@@ -460,7 +461,7 @@ class FigureValidator(BaseValidator):
             subdir_outputs = []
             for output in expected_outputs:
                 # Add subdirectory version (e.g., SFigure__example/SFigure__example.svg)
-                subdir_path = f"{base_name}/{os.path.basename(output)}"
+                subdir_path = str(Path(base_name) / os.path.basename(output))
                 subdir_outputs.append(subdir_path)
             expected_outputs.extend(subdir_outputs)
 

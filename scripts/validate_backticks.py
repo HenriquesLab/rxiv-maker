@@ -16,6 +16,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
+# Configuration constants
+PDF_BUILD_TIMEOUT = 300  # 5 minutes for PDF generation
+PDF_TEXT_EXTRACTION_TIMEOUT = 60  # 1 minute for text extraction
+
 
 # Color codes for terminal output
 class Colors:
@@ -90,7 +94,9 @@ def extract_backticks_from_file(file_path: Path) -> List[BacktickItem]:
         # Find single backticks (but not those already captured by double)
         # Remove double backticks first to avoid interference
         line_no_doubles = re.sub(r"``[^`]+``", "", line)
-        single_backtick_pattern = r"`([^`]+)`"
+        # Updated pattern to handle escaped backticks and empty content
+        # Matches ` followed by any characters (including escaped backticks) followed by unescaped `
+        single_backtick_pattern = r"`((?:[^`\\]|\\.)*)(?<!\\)`"
         for match in re.finditer(single_backtick_pattern, line_no_doubles):
             content = match.group(1)
             context = line.strip()
@@ -138,7 +144,7 @@ def build_pdf(manuscript_dir: Path) -> bool:
             cwd=manuscript_dir,
             capture_output=True,
             text=True,
-            timeout=300,  # 5 minute timeout
+            timeout=PDF_BUILD_TIMEOUT,
         )
 
         if result.returncode == 0:
@@ -170,7 +176,9 @@ def extract_pdf_text(manuscript_dir: Path) -> Optional[str]:
 
     try:
         logging.info("Extracting text from PDF...")
-        result = subprocess.run(["pdftotext", str(pdf_path), "-"], capture_output=True, text=True, timeout=60)
+        result = subprocess.run(
+            ["pdftotext", str(pdf_path), "-"], capture_output=True, text=True, timeout=PDF_TEXT_EXTRACTION_TIMEOUT
+        )
 
         if result.returncode == 0:
             logging.info(f"Successfully extracted {len(result.stdout)} characters from PDF")

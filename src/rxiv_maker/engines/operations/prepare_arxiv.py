@@ -375,9 +375,9 @@ def test_arxiv_compilation(arxiv_path):
         )
 
         # Check if PDF was created
-        main_name = tex_file.replace(".tex", "")
-        pdf_file = f"{main_name}.pdf"
-        log_file = f"{main_name}.log"
+        main_name = Path(tex_file).stem
+        pdf_file = str(Path(tex_file).with_suffix(".pdf"))
+        log_file = str(Path(tex_file).with_suffix(".log"))
 
         if Path(pdf_file).exists():
             pdf_size = Path(pdf_file).stat().st_size
