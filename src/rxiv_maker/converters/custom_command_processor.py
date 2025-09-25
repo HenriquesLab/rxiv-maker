@@ -558,6 +558,15 @@ def _process_python_get_blocks(text: MarkdownContent, executor) -> LatexContent:
             logger = get_logger()
             logger.warning(f"Error retrieving variable '{variable_name}' at line {line_number}: {str(e)}")
             return f"[Error retrieving {variable_name}: {str(e)}]"
+        except Exception as e:
+            # Handle PythonExecutionError and other execution-related errors
+            from ..core.logging_config import get_logger
+
+            logger = get_logger()
+            logger.warning(
+                f"Python execution error retrieving variable '{variable_name}' at line {line_number}: {str(e)}"
+            )
+            return f"[Error retrieving {variable_name}: {str(e)}]"
 
     # Process {{py:get variable}} blocks
     text = re.sub(r"\{\{py:get\s+([^}]+)\}\}", process_get_command, text)

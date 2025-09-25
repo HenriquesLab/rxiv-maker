@@ -216,11 +216,12 @@ class TestRegressionTests:
         assert "PROTECTED_TEXTTT_SEQSPLIT_START" in result
 
     def test_hash_escaping_still_works(self):
-        """Test that hash character escaping still works."""
+        """Test that hash character handling works with detokenize."""
         input_text = "Code with `#hashtag` content"
         result = process_code_spans(input_text)
 
-        assert "\\#" in result
+        # With detokenize, hash characters are handled literally without escaping
+        assert "\\texttt{\\detokenize{#hashtag}}" in result
 
     def test_underscore_escaping_still_works(self):
         """Test that underscore escaping still works."""
