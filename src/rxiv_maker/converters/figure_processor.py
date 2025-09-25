@@ -420,14 +420,22 @@ def _process_new_figure_format(text: MarkdownContent, is_supplementary: bool = F
 
         try:
             attributes = parse_figure_attributes(attr_string)
-        except Exception:
-            # If attributes parsing fails, keep original block untouched
+        except (ValueError, KeyError, AttributeError) as e:
+            # If attributes parsing fails due to malformed attributes, log and keep original block
+            from ..core.logging_config import get_logger
+
+            logger = get_logger()
+            logger.warning(f"Failed to parse figure attributes '{attr_string}': {e}")
             return m.group(0)
 
         try:
             return create_latex_figure_environment(path, caption_text, attributes, is_supplementary)
-        except Exception:
-            # If LaTeX emission fails, keep original block untouched
+        except (ValueError, KeyError, TypeError) as e:
+            # If LaTeX emission fails due to invalid parameters, log and keep original block
+            from ..core.logging_config import get_logger
+
+            logger = get_logger()
+            logger.warning(f"Failed to create LaTeX figure environment for '{path}': {e}")
             return m.group(0)
 
     return pattern.sub(_repl, text)
@@ -484,14 +492,22 @@ def _process_figure_without_attributes(text: MarkdownContent, is_supplementary: 
         # Validate path before emitting LaTeX. If invalid, leave original markdown untouched.
         try:
             ok = validate_figure_path(path)
-        except Exception:
+        except (OSError, FileNotFoundError, ValueError) as e:
+            from ..core.logging_config import get_logger
+
+            logger = get_logger()
+            logger.warning(f"Figure path validation failed for '{path}': {e}")
             ok = False
         if not ok:
             return m.group(0)
 
         try:
             return create_latex_figure_environment(path, caption, None, is_supplementary)
-        except Exception:
+        except (ValueError, KeyError, TypeError) as e:
+            from ..core.logging_config import get_logger
+
+            logger = get_logger()
+            logger.warning(f"Failed to create LaTeX figure environment for '{path}': {e}")
             return m.group(0)
 
     return pattern.sub(_repl, text)

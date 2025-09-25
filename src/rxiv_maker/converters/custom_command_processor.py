@@ -469,8 +469,12 @@ def _process_python_block_commands(text: MarkdownContent, executor) -> LatexCont
                         output = executor.execute_block(code)
                         result.append(output)
                         i = j
-                    except Exception as e:
-                        # Handle execution errors
+                    except (ValueError, KeyError, AttributeError, TypeError) as e:
+                        # Handle specific execution errors with logging
+                        from ..core.logging_config import get_logger
+
+                        logger = get_logger()
+                        logger.warning(f"Python execution error in py:get command: {str(e)}")
                         error_msg = f"```\nPython execution error: {str(e)}\n```"
                         result.append(error_msg)
                         i = j
@@ -511,7 +515,12 @@ def _process_python_inline_commands(text: MarkdownContent, executor) -> LatexCon
             # Execute the expression as inline code
             result = executor.execute_inline(expression, line_number=line_number, file_path="manuscript")
             return result
-        except Exception as e:
+        except (ValueError, KeyError, AttributeError, TypeError, NameError, SyntaxError) as e:
+            # Handle specific Python execution errors with logging
+            from ..core.logging_config import get_logger
+
+            logger = get_logger()
+            logger.warning(f"Python inline execution error for '{expression}' at line {line_number}: {str(e)}")
             return f"[Error: {str(e)}]"
 
     # Process {py: expression} patterns (single braces, not double braces)
@@ -542,7 +551,12 @@ def _process_python_get_blocks(text: MarkdownContent, executor) -> LatexContent:
         try:
             result = executor.get_variable_value(variable_name, line_number=line_number, file_path="manuscript")
             return str(result) if result is not None else ""
-        except Exception as e:
+        except (ValueError, KeyError, AttributeError, NameError) as e:
+            # Handle specific variable retrieval errors with logging
+            from ..core.logging_config import get_logger
+
+            logger = get_logger()
+            logger.warning(f"Error retrieving variable '{variable_name}' at line {line_number}: {str(e)}")
             return f"[Error retrieving {variable_name}: {str(e)}]"
 
     # Process {{py:get variable}} blocks

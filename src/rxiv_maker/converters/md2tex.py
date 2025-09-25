@@ -89,15 +89,15 @@ def convert_markdown_to_latex(content: MarkdownContent, is_supplementary: bool =
         except ImportError:
             # Fallback for environments where core modules aren't available
             pass
-        except Exception as e:
-            # Graceful degradation on any error
+        except (AttributeError, ValueError, RuntimeError) as e:
+            # Graceful degradation on content processor errors
             try:
                 from ..core.logging_config import get_logger
 
                 logger = get_logger()
                 logger.warning(f"ContentProcessor failed: {e}, falling back to legacy conversion")
-            except Exception:
-                pass  # Continue silently if logging also fails
+            except ImportError:
+                pass  # Continue silently if logging is unavailable
 
     # Legacy conversion logic (original implementation)
     # CRITICAL FIRST STEP: Remove HTML comments to prevent any commented content

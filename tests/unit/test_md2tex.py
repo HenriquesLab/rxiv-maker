@@ -57,17 +57,21 @@ class TestMarkdownToLatexConversion:
     def test_markdown_inside_backticks_preserved(self):
         """Test that markdown syntax inside backticks is preserved literally."""
         # Test various markdown syntaxes inside backticks
+        # Updated to match improved detokenize implementation for special character handling
         test_cases = [
-            ("This is `*italic*` text.", r"\texttt{*italic*}"),
-            ("This is `**bold**` text.", r"\texttt{**bold**}"),
+            # Markdown syntax (*, **) gets detokenize treatment
+            ("This is `*italic*` text.", r"\texttt{\detokenize{*italic*}}"),
+            ("This is `**bold**` text.", r"\texttt{\detokenize{**bold**}}"),
             (
                 "Code: `*emphasis* and **strong**` here.",
-                r"\texttt{*emphasis* and **strong**}",
+                r"\texttt{\detokenize{*emphasis* and **strong**}}",
             ),
+            # Underscores get standard LaTeX escaping (not markdown syntax)
             ("Inline: `_underscore_` formatting.", r"\texttt{\_underscore\_}"),
+            # Mixed markdown syntax gets detokenize treatment
             (
                 "Complex: `**bold** and *italic* together`.",
-                r"\texttt{**bold** and *italic* together}",
+                r"\texttt{\detokenize{**bold** and *italic* together}}",
             ),
         ]
 
@@ -733,9 +737,9 @@ class TestSubscriptSuperscriptFormatting:
         markdown = "The code `H~2~O` and `x^2^` should remain unchanged."
         result = convert_markdown_to_latex(markdown, is_supplementary=False)
 
-        # Should contain code spans with original syntax
-        assert "\\texttt{H~2~O}" in result
-        assert "\\texttt{x^2^}" in result
+        # Should contain code spans with original syntax using detokenize (since ~ and ^ are markdown syntax)
+        assert "\\texttt{\\detokenize{H~2~O}}" in result
+        assert "\\texttt{\\detokenize{x^2^}}" in result
         # Should not be converted to LaTeX formatting
         assert "\\textsubscript{2}" not in result
         assert "\\textsuperscript{2}" not in result
