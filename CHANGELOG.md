@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.7.9] - 2025-01-18
+
+### Fixed
+- **🔧 Critical Figure Environment Protection**: Fixed text formatting corruption of LaTeX figure environments
+  - **Issue Resolution**: Resolved PDF generation errors where `\begin{figure}[t]` was corrupted to `\begin{figure\textit{}[t]`
+  - **Environment Protection**: Added figure environments (`figure`, `figure*`, `sfigure`, `sfigure*`, `sidewaysfigure`, `sidewaysfigure*`) to protected environments list
+  - **Impact**: Fixes malformed PDF output with overlapping text introduced in v1.7.8
+  - **Backward Compatibility**: Maintains all existing text formatting functionality without breaking changes
+
+### Enhanced
+- **📄 EXAMPLE_MANUSCRIPT Improvements**: Updated manuscript content with enhanced journal submission description
+- **📚 Documentation**: Fixed citation examples in supplementary documentation
+
 ## [v1.7.8] - 2025-01-16
 
 ### Added
