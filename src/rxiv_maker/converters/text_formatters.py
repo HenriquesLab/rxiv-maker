@@ -8,6 +8,121 @@ import re
 
 from .types import LatexContent, MarkdownContent
 
+# Pre-compiled regex patterns for performance optimization
+# Text formatting patterns
+BOLD_PATTERN = re.compile(r"\*\*(.+?)\*\*")
+ITALIC_PATTERN = re.compile(r"\*(.+?)\*")
+UNDERLINE_PATTERN = re.compile(r"__([^_\n]*(?:_[^_\n]*)*?)__")
+
+# Bold/italic patterns with constraints
+BOLD_CONSTRAINED_PATTERN = re.compile(r"\*\*([^*]+)\*\*")
+ITALIC_CONSTRAINED_PATTERN = re.compile(r"(?<!\*)\*([^*]+?)\*(?!\*)")
+
+# Header patterns
+H2_PATTERN = re.compile(r"^## (.+)$", re.MULTILINE)
+H3_PATTERN = re.compile(r"^### (.+)$", re.MULTILINE)
+H4_PATTERN = re.compile(r"^#### (.+)$", re.MULTILINE)
+
+# Code block patterns
+DOUBLE_BACKTICK_PATTERN = re.compile(r"``([^`]+)``")
+SINGLE_BACKTICK_PATTERN = re.compile(r"`([^`]+)`")
+
+# LaTeX command patterns
+LATEX_COMMAND_PATTERN = re.compile(r"(\\[a-zA-Z]+\{[^}]*\})")
+TEXTTT_PATTERN = re.compile(r"(\\texttt\{[^}]*\})")
+
+# Special character patterns
+PERCENT_PATTERN = re.compile(r"(?<!\\)(?<!^)%", re.MULTILINE)
+CARET_PATTERN = re.compile(r"(?<!\$)(?<!\\\$)\^(?!\^)(?![^$]*\$)")
+
+# File path patterns
+PARENS_PATTERN = re.compile(r"\(([^)]+)\)")
+UNDERSCORE_ID_PATTERN = re.compile(r"\b\d+_[A-Z_]+\b")
+
+# LaTeX cleanup patterns
+DOUBLE_BACKSLASH_SPACED_PATTERN = re.compile(r"\\textbackslash textbackslash\s+")
+DOUBLE_BACKSLASH_PATTERN = re.compile(r"\\textbackslash textbackslash")
+
+# Protected environment patterns (will be built dynamically)
+_PROTECTED_ENV_PATTERN = None
+
+
+def _get_protected_env_pattern():
+    """Get or create the protected environment pattern."""
+    global _PROTECTED_ENV_PATTERN
+    if _PROTECTED_ENV_PATTERN is None:
+        protected_environments = [
+            "equation",
+            "equation*",
+            "align",
+            "align*",
+            "gather",
+            "gather*",
+            "multiline",
+            "multiline*",
+            "split",
+            "verbatim",
+            "verbatim*",
+            "lstlisting",
+            "tabular",
+            "tabularx",
+            "longtable",
+            "array",
+            "minipage",
+        ]
+        env_pattern = "|".join(re.escape(env) for env in protected_environments)
+        # Fix regex to properly match begin/end pairs using backreference
+        pattern = f"(\\\\texttt\\{{[^}}]*\\}}|\\\\begin\\{{({env_pattern})\\*?\\}}.*?\\\\end\\{{\\2\\*?\\}})"
+        _PROTECTED_ENV_PATTERN = re.compile(pattern, re.DOTALL)
+    return _PROTECTED_ENV_PATTERN
+
+
+def _apply_formatting_outside_protected_environments(
+    text: MarkdownContent, formatting_pattern: re.Pattern[str], replacement: str, use_full_protection: bool = True
+) -> LatexContent:
+    r"""Generic function to apply text formatting outside protected environments.
+
+    Args:
+        text: Text to process
+        formatting_pattern: Pre-compiled regex pattern for the formatting
+        replacement: Replacement string (e.g., r"\\textbf{\1}")
+        use_full_protection: Whether to use full environment protection (True) or just texttt (False)
+
+    Returns:
+        Text with formatting applied outside protected environments
+    """
+    if use_full_protection:
+        # Split by both \texttt{} blocks and LaTeX environments
+        protection_pattern = _get_protected_env_pattern()
+        parts = protection_pattern.split(text)
+
+        result: list[str] = []
+        for part in parts:
+            if part is None:
+                continue
+            if part.startswith("\\texttt{") or part.startswith("\\begin{"):
+                # This is a protected block, don't process it
+                result.append(part)
+            else:
+                # This is regular text, apply formatting
+                part = formatting_pattern.sub(replacement, part)
+                result.append(part)
+        return "".join(result)
+    else:
+        # Split by \texttt{} blocks only
+        parts = TEXTTT_PATTERN.split(text)
+        result: list[str] = []
+
+        for part in parts:
+            if part.startswith("\\texttt{"):
+                # This is a texttt block, don't process it
+                result.append(part)
+            else:
+                # This is regular text, apply formatting
+                part = formatting_pattern.sub(replacement, part)
+                result.append(part)
+        return "".join(result)
+
 
 def convert_subscript_superscript_to_latex(text: LatexContent) -> LatexContent:
     r"""Convert subscript and superscript markdown syntax to LaTeX.
@@ -77,12 +192,12 @@ def convert_text_formatting_to_latex(text: MarkdownContent) -> LatexContent:
     Returns:
         LaTeX formatted text
     """
-    # Convert bold and italic
-    text = re.sub(r"\*\*(.+?)\*\*", r"\\textbf{\1}", text)
-    text = re.sub(r"\*(.+?)\*", r"\\textit{\1}", text)
+    # Convert bold and italic using pre-compiled patterns
+    text = BOLD_PATTERN.sub(r"\\textbf{\1}", text)
+    text = ITALIC_PATTERN.sub(r"\\textit{\1}", text)
 
     # Convert underlined text (single line only, don't match across line breaks)
-    text = re.sub(r"__([^_\n]+?)__", r"\\underline{\1}", text)
+    text = UNDERLINE_PATTERN.sub(r"\\underline{\1}", text)
 
     # Convert subscript and superscript
     text = convert_subscript_superscript_to_latex(text)
@@ -102,9 +217,9 @@ def convert_headers_to_latex(text: MarkdownContent) -> LatexContent:
     Returns:
         LaTeX text with section commands
     """
-    text = re.sub(r"^## (.+)$", r"\\section{\1}", text, flags=re.MULTILINE)
-    text = re.sub(r"^### (.+)$", r"\\subsection{\1}", text, flags=re.MULTILINE)
-    text = re.sub(r"^#### (.+)$", r"\\subsubsection{\1}", text, flags=re.MULTILINE)
+    text = H2_PATTERN.sub(r"\\section{\1}", text)
+    text = H3_PATTERN.sub(r"\\subsection{\1}", text)
+    text = H4_PATTERN.sub(r"\\subsubsection{\1}", text)
 
     return text
 
@@ -251,8 +366,8 @@ def process_code_spans(text: MarkdownContent) -> LatexContent:
                 return f"\\texttt{{{escaped_content}}}"
 
     # Process both double and single backticks
-    text = re.sub(r"``([^`]+)``", process_code_blocks, text)  # Double backticks first
-    text = re.sub(r"`([^`]+)`", process_code_blocks, text)  # Then single backticks
+    text = DOUBLE_BACKTICK_PATTERN.sub(process_code_blocks, text)  # Double backticks first
+    text = SINGLE_BACKTICK_PATTERN.sub(process_code_blocks, text)  # Then single backticks
 
     # Convert protected detokenize placeholders to actual LaTeX
     def replace_protected_detokenize(match: re.Match[str]) -> str:
@@ -349,7 +464,7 @@ def apply_bold_italic_formatting(text: MarkdownContent) -> LatexContent:
 
     # Replace bold/italic but skip if inside LaTeX commands
     # Split by LaTeX commands and only process text parts
-    parts = re.split(r"(\\[a-zA-Z]+\{[^}]*\})", text)
+    parts = LATEX_COMMAND_PATTERN.split(text)
     processed_parts: list[str] = []
 
     for i, part in enumerate(parts):
@@ -372,19 +487,9 @@ def protect_bold_outside_texttt(text: MarkdownContent) -> LatexContent:
     Returns:
         Text with bold formatting applied outside code blocks
     """
-    # Split by \texttt{} blocks and process only non-texttt parts
-    parts = re.split(r"(\\texttt\{[^}]*\})", text)
-    result: list[str] = []
-
-    for _i, part in enumerate(parts):
-        if part.startswith("\\texttt{"):
-            # This is a texttt block, don't process it
-            result.append(part)
-        else:
-            # This is regular text, apply bold formatting
-            part = re.sub(r"\*\*([^*]+)\*\*", r"\\textbf{\1}", part)
-            result.append(part)
-    return "".join(result)
+    return _apply_formatting_outside_protected_environments(
+        text, BOLD_CONSTRAINED_PATTERN, r"\\textbf{\1}", use_full_protection=False
+    )
 
 
 def protect_italic_outside_texttt(text: MarkdownContent) -> LatexContent:
@@ -396,26 +501,9 @@ def protect_italic_outside_texttt(text: MarkdownContent) -> LatexContent:
     Returns:
         Text with italic formatting applied outside code blocks and LaTeX environments
     """
-    # Split by both \texttt{} blocks and LaTeX environments
-    # This regex captures \texttt{} and LaTeX environments (\begin{...}...\end{...})
-    pattern = r"(\\texttt\{[^}]*\}|\\begin\{[^}]*\*?\}.*?\\end\{[^}]*\*?\})"
-    parts = re.split(pattern, text, flags=re.DOTALL)
-    result: list[str] = []
-
-    for _i, part in enumerate(parts):
-        if part.startswith("\\texttt{") or part.startswith("\\begin{"):
-            # This is a texttt block or LaTeX environment, don't process it
-            result.append(part)
-        else:
-            # This is regular text, apply italic formatting
-            # Process italic markers - handle various contexts including list items
-            part = re.sub(
-                r"(?<!\*)\*([^*]+?)\*(?!\*)",
-                r"\\textit{\1}",
-                part,
-            )
-            result.append(part)
-    return "".join(result)
+    return _apply_formatting_outside_protected_environments(
+        text, ITALIC_CONSTRAINED_PATTERN, r"\\textit{\1}", use_full_protection=True
+    )
 
 
 def protect_underline_outside_texttt(text: MarkdownContent) -> LatexContent:
@@ -427,46 +515,9 @@ def protect_underline_outside_texttt(text: MarkdownContent) -> LatexContent:
     Returns:
         Text with underline formatting applied outside code blocks and protected LaTeX environments
     """
-    # Define environments that should be protected from text formatting
-    # (math, code, and table environments - but NOT list environments)
-    protected_environments = [
-        "equation",
-        "equation*",
-        "align",
-        "align*",
-        "gather",
-        "gather*",
-        "multiline",
-        "multiline*",
-        "split",
-        "verbatim",
-        "verbatim*",
-        "lstlisting",
-        "tabular",
-        "tabularx",
-        "longtable",
-        "array",
-        "minipage",
-    ]
-
-    # Create pattern for protected environments
-    env_pattern = "|".join(re.escape(env) for env in protected_environments)
-    pattern = f"(\\\\texttt\\{{[^}}]*\\}}|\\\\begin\\{{({env_pattern})\\*?\\}}.*?\\\\end\\{{({env_pattern})\\*?\\}})"
-
-    parts = re.split(pattern, text, flags=re.DOTALL)
-    result: list[str] = []
-
-    for part in parts:
-        if part is None:
-            continue
-        if part.startswith("\\texttt{") or part.startswith("\\begin{"):
-            # This is a texttt block or protected LaTeX environment, don't process it
-            result.append(part)
-        else:
-            # This is regular text or list environment, apply underline formatting
-            part = re.sub(r"__([^_\n]+?)__", r"\\underline{\1}", part)
-            result.append(part)
-    return "".join(result)
+    return _apply_formatting_outside_protected_environments(
+        text, UNDERLINE_PATTERN, r"\\underline{\1}", use_full_protection=True
+    )
 
 
 def escape_special_characters(text: MarkdownContent) -> LatexContent:
@@ -674,7 +725,7 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
             return f"({paren_content.replace('_', 'XUNDERSCOREX')})"
         return match.group(0)
 
-    text = re.sub(r"\(([^)]+)\)", escape_file_paths_in_parens, text)
+    text = PARENS_PATTERN.sub(escape_file_paths_in_parens, text)
 
     # Handle remaining underscores in file names and paths
     # Match common filename patterns: WORD_WORD.ext, word_word.ext, etc.
@@ -691,11 +742,11 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
     )
 
     # Also match numbered files like 00_CONFIG, 01_MAIN, etc.
-    text = re.sub(r"\b\d+_[A-Z_]+\b", escape_filenames, text)
+    text = UNDERSCORE_ID_PATTERN.sub(escape_filenames, text)
 
     # Escape percent signs in text (but not in comments that start with %)
     # Use a regex to avoid escaping percent signs at the start of lines (which are comments)
-    text = re.sub(r"(?<!\\)(?<!^)%", r"\\%", text, flags=re.MULTILINE)
+    text = PERCENT_PATTERN.sub(r"\\%", text)
 
     # Final step: replace all placeholders with properly escaped underscores
     text = text.replace("XUNDERSCOREX", "\\_")
@@ -737,7 +788,7 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
             if not is_protected:
                 # Only escape carets in unprotected parts
                 # Only escape isolated carets that aren't already in math mode
-                part = re.sub(r"(?<!\$)(?<!\\\$)\^(?!\^)(?![^$]*\$)", r"\\textasciicircum{}", part)
+                part = CARET_PATTERN.sub(r"\\textasciicircum{}", part)
 
             result.append(part)
 
@@ -763,14 +814,12 @@ def _cleanup_double_escaping_textformatters(text: str) -> str:
 
     Fixes patterns like \\textbackslash{}textbackslash that break LaTeX parsing.
     """
-    import re
-
     # Fix the specific pattern of double-escaped backslashes
-    # Replace \\textbackslash textbackslash (with space) with just \\textbackslash
-    text = re.sub(r"\\textbackslash textbackslash\s+", r"\\textbackslash ", text)
+    # Replace \\textbackslash textbackslash (with space) with just \\textbackslash using pre-compiled patterns
+    text = DOUBLE_BACKSLASH_SPACED_PATTERN.sub(r"\\textbackslash ", text)
 
     # Also try without requiring space after
-    text = re.sub(r"\\textbackslash textbackslash", r"\\textbackslash ", text)
+    text = DOUBLE_BACKSLASH_PATTERN.sub(r"\\textbackslash ", text)
 
     return text
 

@@ -62,6 +62,9 @@ For complex table structures that require precise control over formatting, multi
 **bold text** & \textbackslash textbf\{bold text\} & Bold formatting \\
 *italic text* & \textbackslash textit\{italic text\} & Italic formatting \\
 \_\_underlined text\_\_ & \textbackslash underline\{underlined text\} & Underlined formatting for emphasis \\
+**\_\_bold and underlined\_\_** & \textbackslash textbf\{\textbackslash underline\{bold and underlined\}\} & Nested formatting: bold containing underline \\
+\_\_**underlined and bold**\_\_ & \textbackslash underline\{\textbackslash textbf\{underlined and bold\}\} & Nested formatting: underline containing bold \\
+*\_\_italic and underlined\_\_* & \textbackslash textit\{\textbackslash underline\{italic and underlined\}\} & Multiple formatting combinations \\
 \textasciitilde subscript\textasciitilde & \textbackslash textsubscript\{subscript\} & Subscript formatting, e.g., H\textsubscript{2}O, CO\textsubscript{2} \\
 \textasciicircum superscript\textasciicircum & \textbackslash textsuperscript\{superscript\} & Superscript formatting, e.g., E=mc\textsuperscript{2}, x\textsuperscript{n} \\
 \hline

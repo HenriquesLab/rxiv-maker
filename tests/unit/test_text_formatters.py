@@ -519,3 +519,83 @@ More __underlined content__ here.
 
         # Code block should preserve literal underscores
         assert "\\texttt{" in result
+
+    def test_nested_underscores_in_underlined_text(self):
+        """Test underlined text containing underscores within the content."""
+        input_text = "Variable __my_variable_name__ should be underlined."
+        result = convert_text_formatting_to_latex(input_text)
+
+        assert "\\underline{my_variable_name}" in result
+        assert "__my_variable_name__" not in result
+
+    def test_very_long_underlined_text_performance(self):
+        """Test underline processing with very long text for performance validation."""
+        # Create a 1000+ character underlined text
+        long_content = "a" * 1000
+        input_text = f"Start __{long_content}__ end"
+        result = convert_text_formatting_to_latex(input_text)
+
+        assert f"\\underline{{{long_content}}}" in result
+        assert f"__{long_content}__" not in result
+
+    def test_complex_nested_formatting_combinations(self):
+        """Test complex combinations of underline with other formatting."""
+        test_cases = [
+            # Underline containing bold
+            ("Text __with **bold inside** underline__ here.", "\\underline{with \\textbf{bold inside} underline}"),
+            # Bold containing underline
+            ("Text **with __underline inside__ bold** here.", "\\textbf{with \\underline{underline inside} bold}"),
+            # Multiple nested combinations
+            (
+                "Mix __underline *and italic*__ with **bold __and underline__** text.",
+                "\\underline{underline \\textit{and italic}} with \\textbf{bold \\underline{and underline}}",
+            ),
+        ]
+
+        for input_text, expected_pattern in test_cases:
+            result = convert_text_formatting_to_latex(input_text)
+            assert expected_pattern in result
+
+    def test_underline_regex_performance_benchmark(self):
+        """Test regex performance with multiple underlined sections."""
+        # Create text with many underlined sections
+        sections = ["__section{}__".format(i) for i in range(100)]
+        input_text = " ".join(sections)
+
+        import time
+
+        start_time = time.time()
+        result = convert_text_formatting_to_latex(input_text)
+        end_time = time.time()
+
+        # Should process quickly (less than 1 second for 100 sections)
+        assert (end_time - start_time) < 1.0
+
+        # Should convert all sections
+        underline_count = result.count("\\underline{")
+        assert underline_count == 100
+
+    def test_environment_protection_with_proper_matching(self):
+        """Test that the fixed regex properly matches begin/end environment pairs."""
+        input_text = """
+Regular __underlined__ text.
+
+\\begin{equation}
+x = __not_underlined__
+\\end{equation}
+
+\\begin{align}
+y = __also_not_underlined__
+\\end{align}
+
+More __underlined__ text.
+"""
+        result = protect_underline_outside_texttt(input_text)
+
+        # Should have 2 underlined sections (not the ones in math environments)
+        underline_count = result.count("\\underline{")
+        assert underline_count == 2
+
+        # Math environments should remain unchanged
+        assert "x = __not_underlined__" in result
+        assert "y = __also_not_underlined__" in result

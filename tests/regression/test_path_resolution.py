@@ -81,7 +81,7 @@ plt.savefig('Figure__test.png')
 plt.close()
 """)
 
-            FigureGenerator(figures_dir=str(figures_dir), output_dir=str(figures_dir), engine="local")
+            FigureGenerator(figures_dir=str(figures_dir), output_dir=str(figures_dir))
 
             # Should properly resolve paths without looking in parent directories
             python_files = list(figures_dir.glob("*.py"))
