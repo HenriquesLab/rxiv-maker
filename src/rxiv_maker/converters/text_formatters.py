@@ -81,6 +81,9 @@ def convert_text_formatting_to_latex(text: MarkdownContent) -> LatexContent:
     text = re.sub(r"\*\*(.+?)\*\*", r"\\textbf{\1}", text)
     text = re.sub(r"\*(.+?)\*", r"\\textit{\1}", text)
 
+    # Convert underlined text (single line only, don't match across line breaks)
+    text = re.sub(r"__([^_\n]+?)__", r"\\underline{\1}", text)
+
     # Convert subscript and superscript
     text = convert_subscript_superscript_to_latex(text)
 
@@ -411,6 +414,57 @@ def protect_italic_outside_texttt(text: MarkdownContent) -> LatexContent:
                 r"\\textit{\1}",
                 part,
             )
+            result.append(part)
+    return "".join(result)
+
+
+def protect_underline_outside_texttt(text: MarkdownContent) -> LatexContent:
+    """Apply underline formatting only outside texttt blocks and specific LaTeX environments.
+
+    Args:
+        text: Text to process
+
+    Returns:
+        Text with underline formatting applied outside code blocks and protected LaTeX environments
+    """
+    # Define environments that should be protected from text formatting
+    # (math, code, and table environments - but NOT list environments)
+    protected_environments = [
+        "equation",
+        "equation*",
+        "align",
+        "align*",
+        "gather",
+        "gather*",
+        "multiline",
+        "multiline*",
+        "split",
+        "verbatim",
+        "verbatim*",
+        "lstlisting",
+        "tabular",
+        "tabularx",
+        "longtable",
+        "array",
+        "minipage",
+    ]
+
+    # Create pattern for protected environments
+    env_pattern = "|".join(re.escape(env) for env in protected_environments)
+    pattern = f"(\\\\texttt\\{{[^}}]*\\}}|\\\\begin\\{{({env_pattern})\\*?\\}}.*?\\\\end\\{{({env_pattern})\\*?\\}})"
+
+    parts = re.split(pattern, text, flags=re.DOTALL)
+    result: list[str] = []
+
+    for part in parts:
+        if part is None:
+            continue
+        if part.startswith("\\texttt{") or part.startswith("\\begin{"):
+            # This is a texttt block or protected LaTeX environment, don't process it
+            result.append(part)
+        else:
+            # This is regular text or list environment, apply underline formatting
+            part = re.sub(r"__([^_\n]+?)__", r"\\underline{\1}", part)
             result.append(part)
     return "".join(result)
 

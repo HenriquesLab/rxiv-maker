@@ -61,6 +61,7 @@ For complex table structures that require precise control over formatting, multi
 \hline
 **bold text** & \textbackslash textbf\{bold text\} & Bold formatting \\
 *italic text* & \textbackslash textit\{italic text\} & Italic formatting \\
+\_\_underlined text\_\_ & \textbackslash underline\{underlined text\} & Underlined formatting for emphasis \\
 \textasciitilde subscript\textasciitilde & \textbackslash textsubscript\{subscript\} & Subscript formatting, e.g., H\textsubscript{2}O, CO\textsubscript{2} \\
 \textasciicircum superscript\textasciicircum & \textbackslash textsuperscript\{superscript\} & Superscript formatting, e.g., E=mc\textsuperscript{2}, x\textsuperscript{n} \\
 \hline
