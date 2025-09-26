@@ -93,16 +93,29 @@ class TestArxivCommand:
     @patch("rxiv_maker.engines.operations.prepare_arxiv.main")
     @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
     @patch("rxiv_maker.cli.framework.PathManager")
-    def test_custom_options(self, mock_path_manager, mock_build_manager, mock_prepare):
+    @patch("shutil.rmtree")
+    def test_custom_options(self, mock_rmtree, mock_path_manager, mock_build_manager, mock_prepare):
         """Test arXiv command with custom options."""
 
         # Create a mock PathManager instance that won't raise PathResolutionError
         from pathlib import Path
 
         mock_path_manager_instance = MagicMock()
-        mock_path_manager_instance.output_dir = Path("custom_output")
-        mock_path_manager_instance.manuscript_path = Path("test_manuscript")
-        mock_path_manager_instance.data_path = Path("test_data")
+
+        # Create mock Path objects for directories that will be accessed
+        mock_output_dir = MagicMock(spec=Path)
+        mock_output_dir.exists.return_value = False  # Directory doesn't exist initially
+        mock_output_dir.mkdir = MagicMock()
+        mock_output_dir.__truediv__ = lambda self, other: MagicMock(spec=Path)
+
+        mock_manuscript_path = MagicMock(spec=Path)
+        mock_manuscript_path.__truediv__ = lambda self, other: MagicMock(spec=Path)
+
+        mock_data_path = MagicMock(spec=Path)
+
+        mock_path_manager_instance.output_dir = mock_output_dir
+        mock_path_manager_instance.manuscript_path = mock_manuscript_path
+        mock_path_manager_instance.data_path = mock_data_path
         mock_path_manager_instance.manuscript_name = "test_manuscript"
 
         # The key is to ensure PathManager constructor doesn't raise an exception
@@ -140,10 +153,6 @@ class TestArxivCommand:
                     ],
                     obj={"verbose": False},  # Provide proper context object
                 )
-
-            print(f"Exit code: {result.exit_code}")
-            print(f"Output: {result.output}")
-            print(f"Exception: {result.exception}")
 
             # Remove debug output
             assert result.exit_code == 0
@@ -202,7 +211,8 @@ class TestArxivCommand:
 
     @patch("rxiv_maker.engines.operations.prepare_arxiv.main")
     @patch("rxiv_maker.cli.framework.PathManager")
-    def test_pdf_copying_to_manuscript(self, mock_path_manager, mock_prepare):
+    @patch("shutil.rmtree")
+    def test_pdf_copying_to_manuscript(self, mock_rmtree, mock_path_manager, mock_prepare):
         """Test copying PDF to manuscript directory with proper naming."""
         from pathlib import Path
 
@@ -212,11 +222,14 @@ class TestArxivCommand:
         mock_path_manager_instance.manuscript_name = "test_manuscript"
 
         # Mock output_dir and PDF exists check
-        mock_output_dir = MagicMock()
-        mock_pdf_path = MagicMock()
+        mock_output_dir = MagicMock(spec=Path)
+        mock_output_dir.exists.return_value = False  # Directory doesn't exist initially
+        mock_output_dir.mkdir = MagicMock()
+
+        mock_pdf_path = MagicMock(spec=Path)
         mock_pdf_path.exists.return_value = True
         mock_pdf_path.name = "test_manuscript.pdf"
-        mock_output_dir.__truediv__.return_value = mock_pdf_path
+        mock_output_dir.__truediv__ = lambda self, other: mock_pdf_path
         mock_path_manager_instance.output_dir = mock_output_dir
 
         mock_path_manager.return_value = mock_path_manager_instance
@@ -244,7 +257,8 @@ class TestArxivCommand:
 
     @patch("rxiv_maker.engines.operations.prepare_arxiv.main")
     @patch("rxiv_maker.cli.framework.PathManager")
-    def test_keyboard_interrupt(self, mock_path_manager, mock_prepare):
+    @patch("shutil.rmtree")
+    def test_keyboard_interrupt(self, mock_rmtree, mock_path_manager, mock_prepare):
         """Test handling of KeyboardInterrupt."""
         from pathlib import Path
 
@@ -254,11 +268,14 @@ class TestArxivCommand:
         mock_path_manager_instance.manuscript_name = "test_manuscript"
 
         # Mock output_dir and PDF exists check
-        mock_output_dir = MagicMock()
-        mock_pdf_path = MagicMock()
+        mock_output_dir = MagicMock(spec=Path)
+        mock_output_dir.exists.return_value = False  # Directory doesn't exist initially
+        mock_output_dir.mkdir = MagicMock()
+
+        mock_pdf_path = MagicMock(spec=Path)
         mock_pdf_path.exists.return_value = True
         mock_pdf_path.name = "test_manuscript.pdf"
-        mock_output_dir.__truediv__.return_value = mock_pdf_path
+        mock_output_dir.__truediv__ = lambda self, other: mock_pdf_path
         mock_path_manager_instance.output_dir = mock_output_dir
 
         mock_path_manager.return_value = mock_path_manager_instance
@@ -275,7 +292,8 @@ class TestArxivCommand:
 
     @patch("rxiv_maker.engines.operations.prepare_arxiv.main")
     @patch("rxiv_maker.cli.framework.PathManager")
-    def test_regression_build_manager_method_call(self, mock_path_manager, mock_prepare):
+    @patch("shutil.rmtree")
+    def test_regression_build_manager_method_call(self, mock_rmtree, mock_path_manager, mock_prepare):
         """Regression test: Ensure BuildManager.run() is called, not build()."""
         from pathlib import Path
 
@@ -285,11 +303,14 @@ class TestArxivCommand:
         mock_path_manager_instance.manuscript_name = "test_manuscript"
 
         # Mock output_dir and PDF doesn't exist - this will trigger BuildManager call
-        mock_output_dir = MagicMock()
-        mock_pdf_path = MagicMock()
+        mock_output_dir = MagicMock(spec=Path)
+        mock_output_dir.exists.return_value = False  # Directory doesn't exist initially
+        mock_output_dir.mkdir = MagicMock()
+
+        mock_pdf_path = MagicMock(spec=Path)
         mock_pdf_path.exists.return_value = False
         mock_pdf_path.name = "test_manuscript.pdf"
-        mock_output_dir.__truediv__.return_value = mock_pdf_path
+        mock_output_dir.__truediv__ = lambda self, other: mock_pdf_path
         mock_path_manager_instance.output_dir = mock_output_dir
 
         mock_path_manager.return_value = mock_path_manager_instance
@@ -311,7 +332,8 @@ class TestArxivCommand:
 
     @patch("rxiv_maker.engines.operations.prepare_arxiv.main")
     @patch("rxiv_maker.cli.framework.PathManager")
-    def test_create_zip_flag_regression(self, mock_path_manager, mock_prepare):
+    @patch("shutil.rmtree")
+    def test_create_zip_flag_regression(self, mock_rmtree, mock_path_manager, mock_prepare):
         """Regression test: Ensure --create-zip flag is used, not --zip."""
         from pathlib import Path
 
@@ -321,11 +343,14 @@ class TestArxivCommand:
         mock_path_manager_instance.manuscript_name = "test_manuscript"
 
         # Mock output_dir and PDF exists (so BuildManager won't be called)
-        mock_output_dir = MagicMock()
-        mock_pdf_path = MagicMock()
+        mock_output_dir = MagicMock(spec=Path)
+        mock_output_dir.exists.return_value = False  # Directory doesn't exist initially
+        mock_output_dir.mkdir = MagicMock()
+
+        mock_pdf_path = MagicMock(spec=Path)
         mock_pdf_path.exists.return_value = True
         mock_pdf_path.name = "test_manuscript.pdf"
-        mock_output_dir.__truediv__.return_value = mock_pdf_path
+        mock_output_dir.__truediv__ = lambda self, other: mock_pdf_path
         mock_path_manager_instance.output_dir = mock_output_dir
 
         mock_path_manager.return_value = mock_path_manager_instance
