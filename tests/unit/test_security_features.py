@@ -46,8 +46,11 @@ class TestPathManagerSecurity:
     def test_relative_paths_stay_within_working_dir(self):
         """Test that relative paths cannot escape working directory."""
         import tempfile
+        from pathlib import Path
 
         with tempfile.TemporaryDirectory() as temp_dir:
+            # Resolve both paths to handle macOS symlinks properly
+            resolved_temp_dir = str(Path(temp_dir).resolve())
             manager = PathManager(working_dir=temp_dir)
 
             # Valid relative paths
@@ -59,8 +62,9 @@ class TestPathManagerSecurity:
 
             for path in valid_paths:
                 result = manager.normalize_path(path)
-                # Should be within working directory
-                assert str(result).startswith(temp_dir)
+                # Should be within working directory (resolve both paths for comparison)
+                resolved_result = str(Path(result).resolve())
+                assert resolved_result.startswith(resolved_temp_dir)
 
     def test_path_escaping_working_directory_blocked(self):
         """Test that paths escaping working directory are blocked."""
