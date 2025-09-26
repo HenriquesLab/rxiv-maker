@@ -213,6 +213,44 @@ class PathManager:
 
         return copied_files
 
+    def copy_figures_to_output(self) -> list[Path]:
+        """Copy figures from FIGURES directory to output directory.
+
+        Returns:
+            List of paths to copied figure files
+
+        Raises:
+            PathResolutionError: If figures directory cannot be accessed
+        """
+        import shutil
+
+        # Source figures directory in manuscript
+        figures_source_dir = self.manuscript_path / "FIGURES"
+
+        # Destination figures directory in output
+        figures_dest_dir = self.output_dir / "FIGURES"
+
+        copied_files = []
+
+        # Check if source FIGURES directory exists
+        if not figures_source_dir.exists():
+            # No figures directory is not an error - just return empty list
+            return copied_files
+
+        # Create destination FIGURES directory
+        figures_dest_dir.mkdir(parents=True, exist_ok=True)
+
+        # Copy all figure files (PNG, PDF, JPG, SVG, etc.)
+        figure_extensions = {".png", ".pdf", ".jpg", ".jpeg", ".eps", ".svg", ".gif", ".tiff", ".tif"}
+
+        for figure_file in figures_source_dir.iterdir():
+            if figure_file.is_file() and figure_file.suffix.lower() in figure_extensions:
+                dest_path = figures_dest_dir / figure_file.name
+                shutil.copy2(figure_file, dest_path)
+                copied_files.append(dest_path)
+
+        return copied_files
+
     def get_config_file_path(self) -> Path:
         """Get path to configuration file (00_CONFIG.yml).
 

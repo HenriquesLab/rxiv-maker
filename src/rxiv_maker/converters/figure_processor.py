@@ -149,11 +149,11 @@ def create_latex_figure_environment(
         return None if v is None else str(v)
 
     # ---------- path ----------
-    # LaTeX compiles from output/ directory, so use relative path to parent FIGURES/
+    # LaTeX compiles from output/ directory, and figures are now copied to output/FIGURES/
     path_obj = Path(path)
     if path_obj.parts[0] == "FIGURES":
-        # Convert FIGURES/filename.pdf to ../FIGURES/filename.pdf for LaTeX
-        latex_path = str(Path("..") / path_obj)
+        # Use FIGURES/filename.pdf directly (figures are now in output/FIGURES/)
+        latex_path = str(path_obj)
     else:
         latex_path = path
 

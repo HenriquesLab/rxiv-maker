@@ -8,7 +8,6 @@ This module replaces the test-binary.sh script with Python-based tests for:
 - CI matrix compatibility tests
 """
 
-import json
 import subprocess
 import tempfile
 import unittest
@@ -142,38 +141,26 @@ class TestBinaryDistribution(unittest.TestCase):
                 except Exception as e:
                     self.fail(f"Error reading {workflow_file.name}: {e}")
 
-    def test_package_manager_configurations(self):
-        """Test package manager configuration files."""
-        # Test Homebrew formula
-        homebrew_formula = self.runner.project_root / "submodules/homebrew-rxiv-maker/Formula/rxiv-maker.rb"
-        if homebrew_formula.exists():
-            try:
-                # Basic syntax check
-                result = subprocess.run(["ruby", "-c", str(homebrew_formula)], capture_output=True, timeout=10)
-                if result.returncode == 0:
-                    self.runner.log_success("Homebrew formula syntax is valid")
-                else:
-                    self.runner.log_warning("Homebrew formula syntax check failed")
-            except FileNotFoundError:
-                self.runner.log_warning("Ruby not available for syntax check")
-            except Exception as e:
-                self.runner.log_warning(f"Homebrew formula check failed: {e}")
-        else:
-            self.runner.log_warning("Homebrew formula not found")
+    def test_pypi_distribution_configuration(self):
+        """Test PyPI distribution configuration files."""
+        # Test pyproject.toml exists and has required fields
+        pyproject_file = self.runner.project_root / "pyproject.toml"
+        self.assertTrue(pyproject_file.exists(), "pyproject.toml not found")
 
-        # Test Scoop manifest
-        scoop_manifest = self.runner.project_root / "submodules/scoop-rxiv-maker/bucket/rxiv-maker.json"
-        if scoop_manifest.exists():
-            try:
-                with open(scoop_manifest, "r") as f:
-                    json.load(f)
-                self.runner.log_success("Scoop manifest JSON is valid")
-            except json.JSONDecodeError as e:
-                self.fail(f"Invalid JSON in Scoop manifest: {e}")
-            except Exception as e:
-                self.runner.log_warning(f"Scoop manifest check failed: {e}")
-        else:
-            self.runner.log_warning("Scoop manifest not found")
+        try:
+            import tomllib
+
+            with open(pyproject_file, "rb") as f:
+                pyproject_data = tomllib.load(f)
+
+            # Check required fields for PyPI publishing
+            self.assertIn("project", pyproject_data, "Missing [project] section")
+            self.assertIn("name", pyproject_data["project"], "Missing project name")
+            self.assertIn("version", pyproject_data["project"], "Missing project version")
+            self.runner.log_success("PyPI configuration is valid")
+
+        except Exception as e:
+            self.runner.log_warning(f"PyPI configuration check failed: {e}")
 
     def test_python_package_structure(self):
         """Test Python package structure for binary building."""

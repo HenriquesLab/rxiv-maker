@@ -167,40 +167,23 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None, manuscript_path
             else:
                 print(f"✗ Required file not found: {filename}")
 
-    # Copy all figure files
-    figures_source = output_path / "Figures"
-    if figures_source.exists():
-        figures_dest = arxiv_path / "Figures"
+    # Copy figures from output directory (they should already be there from the build process)
+    output_figures_source = output_path / "FIGURES"
 
-        # Copy figure directories with PNG files (arXiv preferred format)
-        for figure_dir in figures_source.iterdir():
-            if figure_dir.is_dir() and not figure_dir.name.startswith("."):
-                dest_dir = figures_dest / figure_dir.name
-                dest_dir.mkdir(parents=True, exist_ok=True)
+    if output_figures_source.exists():
+        figures_dest = arxiv_path / "FIGURES"
 
-                # Copy PNG files
-                for png_file in figure_dir.glob("*.png"):
-                    shutil.copy2(png_file, dest_dir / png_file.name)
-                    print(f"✓ Copied {png_file.relative_to(output_path)}")
+        # Remove existing destination and copy entire directory
+        if figures_dest.exists():
+            shutil.rmtree(figures_dest)
+        shutil.copytree(output_figures_source, figures_dest)
 
-                # Also copy PDF files as backup
-                for pdf_file in figure_dir.glob("*.pdf"):
-                    shutil.copy2(pdf_file, dest_dir / pdf_file.name)
-                    print(f"✓ Copied {pdf_file.relative_to(output_path)}")
-
-                # Copy markdown files for tables (STable directories)
-                for md_file in figure_dir.glob("*.md"):
-                    shutil.copy2(md_file, dest_dir / md_file.name)
-                    print(f"✓ Copied {md_file.relative_to(output_path)}")
-
-        # Copy data files if they exist
-        data_dir = figures_source / "DATA"
-        if data_dir.exists():
-            data_dest = figures_dest / "DATA"
-            if data_dest.exists():
-                shutil.rmtree(data_dest)
-            shutil.copytree(data_dir, data_dest)
-            print("✓ Copied DATA directory")
+        # Count and report copied files
+        copied_count = len([f for f in figures_dest.rglob("*") if f.is_file()])
+        print(f"✓ Copied {copied_count} figure files from output directory")
+    else:
+        print(f"⚠️  Warning: No FIGURES directory found in output directory at {output_figures_source}")
+        print("   Make sure to run 'rxiv pdf' first to build the manuscript and copy figures.")
 
     print(f"\n📦 arXiv package prepared in {arxiv_path}")
 
@@ -256,9 +239,15 @@ def verify_package(arxiv_path, manuscript_path=None):
 
     # Dynamic figure detection - scan for actual figure directories
     required_figures = []
-    figures_dir = arxiv_path / "Figures"
+    figures_dir = arxiv_path / "FIGURES"
     if figures_dir.exists():
-        # Find all figure directories and check for PNG/PDF files
+        # First check for figure files directly in FIGURES directory
+        for figure_file in figures_dir.iterdir():
+            if figure_file.is_file() and not figure_file.name.startswith("."):
+                if figure_file.suffix.lower() in [".png", ".pdf", ".jpg", ".jpeg", ".eps", ".svg"]:
+                    required_figures.append(f"FIGURES/{figure_file.name}")
+
+        # Then check for figure directories and files within them
         for figure_dir in figures_dir.iterdir():
             if figure_dir.is_dir() and not figure_dir.name.startswith("."):
                 # Look for PNG files first (preferred by arXiv)
@@ -444,7 +433,7 @@ def create_zip_package(arxiv_path, zip_filename="for_arxiv.zip", manuscript_path
 
     # Define auxiliary files that should be excluded from arXiv submission
     # These are temporary build artifacts that arXiv regenerates automatically
-    auxiliary_extensions = {".aux", ".blg", ".log", ".pdf", ".out", ".fls", ".fdb_latexmk", ".synctex.gz"}
+    auxiliary_extensions = {".aux", ".blg", ".log", ".out", ".fls", ".fdb_latexmk", ".synctex.gz"}
 
     print(f"\n📁 Creating ZIP package: {zip_path}")
 
@@ -455,7 +444,18 @@ def create_zip_package(arxiv_path, zip_filename="for_arxiv.zip", manuscript_path
         for file_path in arxiv_path.rglob("*"):
             if file_path.is_file():
                 # Check if file should be excluded (auxiliary files)
-                if file_path.suffix.lower() in auxiliary_extensions:
+                should_exclude = file_path.suffix.lower() in auxiliary_extensions
+
+                # Special case: exclude PDF files ONLY if they're not in FIGURES directory
+                # Figure PDFs should be included, but manuscript PDFs should be excluded
+                if file_path.suffix.lower() == ".pdf":
+                    # Check if the PDF is in the FIGURES directory or subdirectory
+                    if "FIGURES" in file_path.parts:
+                        should_exclude = False  # Include figure PDFs
+                    else:
+                        should_exclude = True  # Exclude manuscript PDFs
+
+                if should_exclude:
                     excluded_files.append(file_path.name)
                     continue
 

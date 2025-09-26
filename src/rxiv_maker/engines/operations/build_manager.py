@@ -759,6 +759,27 @@ class BuildManager:
             self.log(f"Failed to copy style files: {e}", "ERROR")
             raise
 
+    def copy_figures(self):
+        """Copy figures to output directory using centralized PathManager."""
+        self.log("Copying figures to output directory...", "STEP")
+
+        try:
+            # Use centralized path manager method for figure copying
+            copied_files = self.path_manager.copy_figures_to_output()
+
+            if copied_files:
+                for copied_file in copied_files:
+                    self.log(f"Copied {copied_file.name} to output directory", "INFO")
+                self.log(f"Copied {len(copied_files)} figures to output directory", "INFO")
+            else:
+                self.log("No figures found to copy", "INFO")
+
+            return True
+
+        except Exception as e:
+            self.log(f"Failed to copy figures: {e}", "ERROR")
+            raise
+
     def generate_tex_files(self):
         """Generate LaTeX files (wrapper for backward compatibility)."""
         try:
@@ -818,6 +839,9 @@ class BuildManager:
                 # Step 7: Copy style files
                 self.copy_style_files()
 
+                # Step 7.5: Copy figures to output directory
+                self.copy_figures()
+
                 # Step 8: Compile LaTeX to PDF
                 if not self.compile_latex():
                     self.log("Build failed: LaTeX compilation failed", "ERROR")
@@ -863,3 +887,8 @@ class BuildManager:
                 op.add_metadata("build_successful", False)
                 op.add_metadata("error", str(e))
                 return False
+
+    # Alias for compatibility with CLI code
+    def run(self) -> bool:
+        """Run the build process (alias for build method)."""
+        return self.build()

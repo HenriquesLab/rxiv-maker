@@ -22,7 +22,7 @@ inputs:
     required: false
     default: 'true'
   install-latex:
-    description: 'Install LaTeX for local PDF generation (macOS/Windows only, Linux uses Docker)'
+    description: 'Install LaTeX for local PDF generation'
     required: false
     default: 'false'
 
@@ -362,13 +362,6 @@ runs:
           exit 1
         }
 
-    - name: Configure LaTeX engine preference (Linux - Docker)
-      if: inputs.install-latex == 'true' && runner.os == 'Linux'
-      shell: bash
-      run: |
-        echo "🐧 Configuring Docker engine for Linux LaTeX processing..."
-        echo "RXIV_ENGINE=DOCKER" >> $GITHUB_ENV
-        echo "✅ Linux configured to use Docker for LaTeX (henriqueslab/rxiv-maker-base)"
 
     - name: Install Python dependencies with enhanced retry
       if: inputs.install-python-deps == 'true'

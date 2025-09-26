@@ -7,8 +7,8 @@ set -euo pipefail
 
 # Configuration
 MAIN_REPO="${MAIN_REPO:-HenriquesLab/rxiv-maker}"
-HOMEBREW_REPO="${HOMEBREW_REPO:-HenriquesLab/homebrew-rxiv-maker}"
-APT_REPO="${APT_REPO:-HenriquesLab/apt-rxiv-maker}"
+DOCKER_REPO="${DOCKER_REPO:-HenriquesLab/docker-rxiv-maker}"
+VSCODE_REPO="${VSCODE_REPO:-HenriquesLab/vscode-rxiv-maker}"
 TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-30}"
 OUTPUT_FORMAT="${OUTPUT_FORMAT:-json}"  # json, summary, or github-actions
 
@@ -110,43 +110,39 @@ check_release_alignment() {
 
     log_info "Main repository version: $main_version"
 
-    # Check Homebrew formula version (if accessible)
-    local homebrew_version="unknown"
-    if gh api "repos/$HOMEBREW_REPO/contents/Formula/rxiv-maker.rb" >/dev/null 2>&1; then
-        homebrew_version=$(gh api "repos/$HOMEBREW_REPO/contents/Formula/rxiv-maker.rb" \
-            | jq -r '.content' \
-            | base64 -d \
-            | grep -o 'version "[^"]*"' \
-            | cut -d'"' -f2 2>/dev/null || echo "unknown")
+    # Check Docker repository latest release (if accessible)
+    local docker_version="unknown"
+    if gh release list --repo "$DOCKER_REPO" --limit 1 >/dev/null 2>&1; then
+        docker_version=$(gh release list --repo "$DOCKER_REPO" --limit 1 | head -1 | awk '{print $3}' | sed 's/v//' 2>/dev/null || echo "unknown")
     fi
 
-    log_info "Homebrew formula version: $homebrew_version"
+    log_info "Docker repository version: $docker_version"
 
     # Check version alignment
-    if [ "$main_version" != "unknown" ] && [ "$homebrew_version" != "unknown" ]; then
-        if [ "$main_version" == "$homebrew_version" ]; then
-            log_success "Version alignment: Main and Homebrew are aligned ($main_version)"
+    if [ "$main_version" != "unknown" ] && [ "$docker_version" != "unknown" ]; then
+        if [ "$main_version" == "$docker_version" ]; then
+            log_success "Version alignment: Main and Docker are aligned ($main_version)"
         else
-            log_warning "Version misalignment: Main ($main_version) != Homebrew ($homebrew_version)"
+            log_warning "Version misalignment: Main ($main_version) != Docker ($docker_version)"
         fi
     elif [ "$main_version" != "unknown" ]; then
-        log_warning "Cannot verify Homebrew version alignment"
+        log_warning "Cannot verify Docker version alignment"
     else
         log_warning "Cannot determine main repository version"
     fi
 
     # Return version info
-    echo "$main_version:$homebrew_version"
+    echo "$main_version:$docker_version"
 }
 
 generate_json_output() {
     local main_failures="$1"
-    local homebrew_failures="$2"
-    local apt_failures="$3"
+    local docker_failures="$2"
+    local vscode_failures="$3"
     local version_info="$4"
 
     local main_version="${version_info%%:*}"
-    local homebrew_version="${version_info##*:}"
+    local docker_version="${version_info##*:}"
 
     cat << EOF
 {
@@ -160,24 +156,24 @@ generate_json_output() {
       "version": "$main_version",
       "status": "$([ "$main_failures" -eq 0 ] && echo "healthy" || [ "$main_failures" -le 2 ] && echo "warning" || echo "critical")"
     },
-    "homebrew": {
-      "name": "$HOMEBREW_REPO",
+    "docker": {
+      "name": "$DOCKER_REPO",
       "accessible": true,
-      "recent_failures": $homebrew_failures,
-      "version": "$homebrew_version",
-      "status": "$([ "$homebrew_failures" -eq 0 ] && echo "healthy" || [ "$homebrew_failures" -le 2 ] && echo "warning" || echo "critical")"
+      "recent_failures": $docker_failures,
+      "version": "$docker_version",
+      "status": "$([ "$docker_failures" -eq 0 ] && echo "healthy" || [ "$docker_failures" -le 2 ] && echo "warning" || echo "critical")"
     },
-    "apt": {
-      "name": "$APT_REPO",
+    "vscode": {
+      "name": "$VSCODE_REPO",
       "accessible": true,
-      "recent_failures": $apt_failures,
-      "status": "$([ "$apt_failures" -eq 0 ] && echo "healthy" || [ "$apt_failures" -le 2 ] && echo "warning" || echo "critical")"
+      "recent_failures": $vscode_failures,
+      "status": "$([ "$vscode_failures" -eq 0 ] && echo "healthy" || [ "$vscode_failures" -le 2 ] && echo "warning" || echo "critical")"
     }
   },
   "issues": $(printf '%s\n' "${HEALTH_ISSUES[@]:-}" | jq -R -s -c 'split("\n") | map(select(length > 0))'),
   "warnings": $(printf '%s\n' "${HEALTH_WARNINGS[@]:-}" | jq -R -s -c 'split("\n") | map(select(length > 0))'),
   "summary": {
-    "total_failures": $(( main_failures + homebrew_failures + apt_failures )),
+    "total_failures": $(( main_failures + docker_failures + vscode_failures )),
     "critical_issues": ${#HEALTH_ISSUES[@]},
     "warnings": ${#HEALTH_WARNINGS[@]}
   }
@@ -187,15 +183,15 @@ EOF
 
 generate_github_actions_output() {
     local main_failures="$1"
-    local homebrew_failures="$2"
-    local apt_failures="$3"
+    local docker_failures="$2"
+    local vscode_failures="$3"
     local version_info="$4"
 
     echo "overall_health=$OVERALL_HEALTH"
     echo "main_failures=$main_failures"
-    echo "homebrew_failures=$homebrew_failures"
-    echo "apt_failures=$apt_failures"
-    echo "total_failures=$(( main_failures + homebrew_failures + apt_failures ))"
+    echo "docker_failures=$docker_failures"
+    echo "vscode_failures=$vscode_failures"
+    echo "total_failures=$(( main_failures + docker_failures + vscode_failures ))"
     echo "critical_issues=${#HEALTH_ISSUES[@]}"
     echo "warnings=${#HEALTH_WARNINGS[@]}"
     echo "version_info=$version_info"
@@ -214,55 +210,55 @@ main() {
 
     # Check repository access
     local main_accessible=1
-    local homebrew_accessible=1
-    local apt_accessible=1
+    local docker_accessible=1
+    local vscode_accessible=1
 
     check_repository_access "$MAIN_REPO" "main" || main_accessible=0
-    check_repository_access "$HOMEBREW_REPO" "homebrew" || homebrew_accessible=0
-    check_repository_access "$APT_REPO" "apt" || apt_accessible=0
+    check_repository_access "$DOCKER_REPO" "docker" || docker_accessible=0
+    check_repository_access "$VSCODE_REPO" "vscode" || vscode_accessible=0
 
     # Check workflow health for accessible repositories
     local main_failures=999
-    local homebrew_failures=999
-    local apt_failures=999
+    local docker_failures=999
+    local vscode_failures=999
 
     if [ $main_accessible -eq 1 ]; then
         main_failures=$(check_workflow_health "$MAIN_REPO" "main repository")
     fi
 
-    if [ $homebrew_accessible -eq 1 ]; then
-        homebrew_failures=$(check_workflow_health "$HOMEBREW_REPO" "homebrew repository")
+    if [ $docker_accessible -eq 1 ]; then
+        docker_failures=$(check_workflow_health "$DOCKER_REPO" "docker repository")
     else
-        homebrew_failures=0  # Don't count as failures if inaccessible
+        docker_failures=0  # Don't count as failures if inaccessible
     fi
 
-    if [ $apt_accessible -eq 1 ]; then
-        apt_failures=$(check_workflow_health "$APT_REPO" "apt repository")
+    if [ $vscode_accessible -eq 1 ]; then
+        vscode_failures=$(check_workflow_health "$VSCODE_REPO" "vscode repository")
     else
-        apt_failures=0  # Don't count as failures if inaccessible
+        vscode_failures=0  # Don't count as failures if inaccessible
     fi
 
     # Check release alignment
     local version_info="unknown:unknown"
-    if [ $main_accessible -eq 1 ] && [ $homebrew_accessible -eq 1 ]; then
+    if [ $main_accessible -eq 1 ] && [ $docker_accessible -eq 1 ]; then
         version_info=$(check_release_alignment)
     fi
 
     # Generate output based on format
     case "$OUTPUT_FORMAT" in
         "json")
-            generate_json_output "$main_failures" "$homebrew_failures" "$apt_failures" "$version_info"
+            generate_json_output "$main_failures" "$docker_failures" "$vscode_failures" "$version_info"
             ;;
         "github-actions")
-            generate_github_actions_output "$main_failures" "$homebrew_failures" "$apt_failures" "$version_info"
+            generate_github_actions_output "$main_failures" "$docker_failures" "$vscode_failures" "$version_info"
             ;;
         "summary"|*)
             echo ""
             echo "🎯 Health Check Summary:"
             echo "  Overall Health: $OVERALL_HEALTH"
             echo "  Main Repository: $main_failures recent failures"
-            echo "  Homebrew Repository: $homebrew_failures recent failures"
-            echo "  APT Repository: $apt_failures recent failures"
+            echo "  Docker Repository: $docker_failures recent failures"
+            echo "  VSCode Repository: $vscode_failures recent failures"
             echo "  Critical Issues: ${#HEALTH_ISSUES[@]}"
             echo "  Warnings: ${#HEALTH_WARNINGS[@]}"
             ;;

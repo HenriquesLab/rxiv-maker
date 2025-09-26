@@ -3,7 +3,7 @@ config:
   theme: base
   themeVariables:
     fontFamily: 'Arial, Helvetica, sans-serif'
-    fontSize: 14px
+    fontSize: 16px
     primaryColor: '#ffffff'
     primaryTextColor: '#333333'
     primaryBorderColor: '#cccccc'
@@ -12,137 +12,97 @@ config:
   layout: elk
 ---
 flowchart TD
- subgraph A[" "]
-    direction TB
-      A1["📄 Manuscript Files<br>• 01_MAIN.md<br>• 02_SUPPLEMENTARY.md<br>• 00_CONFIG.yml"]
-      A2["📚 References<br>• 03_REFERENCES.bib<br>• Citation Management"]
-      A3["🎨 Figure Sources<br>• Python Scripts (.py)<br>• Mermaid Diagrams (.mmd)<br>• Data Files (.csv, .json)<br>• Static Files (.png, .jpg, .svg)"]
+  subgraph INPUT["📝 Input Layer"]
+    direction LR
+    A1["📄 Manuscript<br>Markdown Files"]
+    A2["📚 References<br>BibTeX File"]
+    A3["🎨 Figure Sources<br>Scripts & Images"]
   end
 
- subgraph CORE["🔄 Core Processing Pipeline"]
+  subgraph PROCESS["🔄 Processing Engine"]
     direction TB
-    subgraph B1[Parsing Stage]
+    subgraph PARSE["Parse & Convert"]
       direction LR
-          B1A["📝 Markdown<br>Parser"]
-          B1B["📋 YAML<br>Parser"]
-          B1C["📚 BibTeX<br>Parser"]
+      B1["📝 Markdown<br>to LaTeX"]
+      B2["🎯 Process<br>Content"]
     end
-    subgraph B2[Conversion Stage]
+    subgraph GEN["Generate & Assemble"]
       direction LR
-          B2A["🔄 MD to LaTeX<br>Converter"]
-          B2B["🎯 Figure<br>Processor"]
-          B2C["📊 Table<br>Processor"]
-          B2D["🔗 Citation<br>Processor"]
-    end
-    subgraph B3[Generation Stage]
-      direction LR
-          B3A["🎨 Dynamic Figure<br>Generation"]
-          B3B["📐 Template<br>Assembly"]
-          B3C["🎭 Style<br>Application"]
-    end
-    subgraph C[Compilation Stage]
-      direction LR
-          C1["🔧 LaTeX Engine<br>pdflatex/xelatex"]
-          C2["📖 Bibliography<br>BibTeX"]
-          C3["🔍 Final<br>Processing"]
+      C1["🎨 Execute<br>Scripts"]
+      C2["📐 Build<br>Document"]
     end
   end
 
- subgraph D[" "]
-    direction TB
-        D1["📄 Publication PDF<br>• Camera-ready document<br>• Professional formatting<br>• Embedded figures"]
-        D2["📝 LaTeX Source<br>• Generated .tex files<br>• Style definitions<br>• Asset references"]
-        D3["📋 Build Artifacts<br>• Auxiliary files<br>• Build logs<br>• Debug information"]
+  subgraph COMPILE["⚙️ LaTeX Compilation"]
+    direction LR
+    D1["🔧 pdflatex"]
+    D2["📖 BibTeX"]
   end
 
- subgraph DEPLOY["🚀 Deployment Architecture"]
-    direction TB
-    subgraph PRIMARY["💻 Primary: Local-First Execution"]
-      direction TB
-      L1["🔧 Local Installation<br>• Direct system access<br>• Optimal performance<br>• Native development environment<br>• Intelligent caching system"]
-      L1_FEATURES["🎯 Modern CLI Experience<br>• Rich formatting & progress bars<br>• Shell completion (bash/zsh)<br>• Automated validation<br>• Content-based change detection"]
-    end
-    subgraph ALTERNATIVE["🐳 Alternative: Containerised"]
-      direction TB
-      L2["🐳 Docker (Separate Repo)<br>• docker-rxiv-maker repository<br>• Pre-configured environment<br>• Specialised deployment needs"]
-    end
-    subgraph SYSTEMS["⚙️ Intelligent Systems"]
-      direction TB
-      SYS1["📊 Caching Engine<br>• Content-based change detection<br>• File checksum tracking<br>• Selective regeneration"]
-      SYS2["✅ Validation Framework<br>• LaTeX error parsing<br>• Figure validation<br>• Citation checking with DOI"]
-    end
+  subgraph OUTPUT["📄 Output Layer"]
+    direction LR
+    E1["📄 Publication<br>PDF"]
+    E2["📝 LaTeX<br>Source"]
   end
 
-    A1 --> B1A & B1B
-    A2 --> B1C
-    A3 --> B3A
-    B1A --> B2A
-    B1B --> B2A
-    B1C --> B2D
-    B2A --> B3B
-    B2B --> B3B
-    B2C --> B3B
-    B2D --> B3B & C2
-    B3A --> B2B
-    B3B --> B3C
-    B3C --> C1
-    C1 --> C3 & D2 & D3
-    C2 --> C3
-    C3 --> D1
+  subgraph FEATURES["✨ Key Features"]
+    direction TB
+    F1["🚀 Local-First<br>Execution"]
+    F2["📊 Intelligent<br>Caching"]
+    F3["✅ Automated<br>Validation"]
+  end
 
-    %% Show that deployment environments execute the core pipeline
-    DEPLOY -.-> |"Executes"| CORE
-    A -.-> |"Input to"| DEPLOY
-    DEPLOY -.-> |"Produces"| D
+  %% Main flow
+  INPUT --> PROCESS
+  PROCESS --> COMPILE
+  COMPILE --> OUTPUT
 
-    %% Show intelligent systems integration
-    SYS1 -.-> |"Optimizes"| CORE
-    SYS2 -.-> |"Validates"| CORE
-    L1_FEATURES -.-> |"Enhances"| L1
+  %% Internal connections
+  A1 --> B1
+  A2 --> B2
+  A3 --> C1
+  B1 --> B2
+  B2 --> C2
+  C1 --> C2
+  C2 --> D1
+  D1 --> D2
+  D2 --> E1
+  D1 --> E2
 
-    A1:::componentBox
-    A2:::componentBox
-    A3:::componentBox
-    B1A:::componentBox
-    B1B:::componentBox
-    B1C:::componentBox
-    B2A:::componentBox
-    B2B:::componentBox
-    B2C:::componentBox
-    B2D:::componentBox
-    B3A:::componentBox
-    B3B:::componentBox
-    B3C:::componentBox
-    C1:::componentBox
-    C2:::componentBox
-    C3:::componentBox
-    D1:::componentBox
-    D2:::componentBox
-    D3:::componentBox
-    L1:::envBox
-    L1_FEATURES:::envBox
-    L2:::envBox
-    SYS1:::systemBox
-    SYS2:::systemBox
-    A:::inputBox
-    CORE:::processBox
-    D:::outputBox
-    DEPLOY:::deployBox
-    PRIMARY:::primaryBox
-    ALTERNATIVE:::alternativeBox
-    SYSTEMS:::systemsBox
-    B1:::stageBox
-    B2:::stageBox
-    B3:::stageBox
+  %% Feature integration
+  FEATURES -.-> PROCESS
+  F2 -.-> C1
+  F3 -.-> COMPILE
 
-    classDef inputBox fill:#e8f4fd,stroke:#1976d2,stroke-width:3px,color:#333
-    classDef processBox fill:#fff8e1,stroke:#f57c00,stroke-width:3px,color:#333
-    classDef outputBox fill:#fce4ec,stroke:#c2185b,stroke-width:3px,color:#333
-    classDef deployBox fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#333
-    classDef primaryBox fill:#e8f5e8,stroke:#388e3c,stroke-width:3px,color:#333
-    classDef alternativeBox fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#333
-    classDef systemsBox fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px,color:#333
-    classDef systemBox fill:#ffffff,stroke:#3f51b5,stroke-width:2px,color:#333
-    classDef envBox fill:#ffffff,stroke:#666666,stroke-width:2px,color:#333
-    classDef stageBox fill:#f5f5f5,stroke:#999999,stroke-width:2px,color:#333
-    classDef componentBox fill:#ffffff,stroke:#666666,stroke-width:2px,color:#333
+  %% Styling
+  INPUT:::inputBox
+  PROCESS:::processBox
+  COMPILE:::compileBox
+  OUTPUT:::outputBox
+  FEATURES:::featureBox
+  PARSE:::stageBox
+  GEN:::stageBox
+
+  A1:::componentBox
+  A2:::componentBox
+  A3:::componentBox
+  B1:::componentBox
+  B2:::componentBox
+  C1:::componentBox
+  C2:::componentBox
+  D1:::componentBox
+  D2:::componentBox
+  E1:::componentBox
+  E2:::componentBox
+  F1:::featureComponent
+  F2:::featureComponent
+  F3:::featureComponent
+
+  classDef inputBox fill:#e8f4fd,stroke:#1976d2,stroke-width:3px,color:#333
+  classDef processBox fill:#fff8e1,stroke:#f57c00,stroke-width:3px,color:#333
+  classDef compileBox fill:#e8f5e8,stroke:#388e3c,stroke-width:3px,color:#333
+  classDef outputBox fill:#fce4ec,stroke:#c2185b,stroke-width:3px,color:#333
+  classDef featureBox fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#333
+  classDef stageBox fill:#f5f5f5,stroke:#999999,stroke-width:2px,color:#333
+  classDef componentBox fill:#ffffff,stroke:#666666,stroke-width:2px,color:#333
+  classDef featureComponent fill:#ffffff,stroke:#7b1fa2,stroke-width:2px,color:#333

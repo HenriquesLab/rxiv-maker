@@ -2,7 +2,7 @@
 """
 Cross-Repository Health Monitor for rxiv-maker ecosystem.
 
-Monitors health across all repositories: main, homebrew-tap, scoop-bucket, apt-repository.
+Monitors health across active repositories: main, docker, vscode extension.
 Replaces complex workflow coordination with debuggable Python.
 """
 
@@ -28,9 +28,8 @@ class CrossRepoHealthMonitor:
         self.github_token = get_github_token()
         self.repositories = {
             "main": "HenriquesLab/rxiv-maker",
-            "homebrew": "HenriquesLab/homebrew-rxiv-maker",
-            "scoop": "HenriquesLab/scoop-rxiv-maker",
-            "apt": "HenriquesLab/apt-rxiv-maker",
+            "docker": "HenriquesLab/docker-rxiv-maker",
+            "vscode": "HenriquesLab/vscode-rxiv-maker",
         }
         self.health_status = {}
 
