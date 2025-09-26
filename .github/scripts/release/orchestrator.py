@@ -67,8 +67,6 @@ class ReleaseOrchestrator:
         self.release_state = {
             "github_release_created": False,
             "pypi_published": False,
-            "homebrew_triggered": False,
-            "apt_triggered": False,
         }
 
         log_section(self.logger, "Release Orchestrator Initialized")
@@ -108,13 +106,9 @@ class ReleaseOrchestrator:
             if not self.wait_for_pypi_propagation():
                 return False
 
-            # Step 5: Trigger cross-repository workflows
-            if not self.trigger_cross_repository_workflows():
-                return False
-
-            # Step 6: Monitor downstream success
-            if not self.monitor_downstream_workflows():
-                return False
+            # Step 5: Trigger downstream sync (Docker only)
+            if not self.trigger_downstream_sync():
+                self.logger.warning("Downstream sync failed, but continuing release")
 
             log_section(self.logger, "Release Pipeline Completed Successfully")
             return True
@@ -367,129 +361,40 @@ class ReleaseOrchestrator:
             log_step(self.logger, f"PyPI propagation timeout ({self.config.pypi_timeout}s)", "FAILURE")
             return False
 
-    def trigger_cross_repository_workflows(self) -> bool:
-        """Trigger workflows in homebrew and apt repositories."""
-        log_step(self.logger, "Triggering cross-repository workflows", "START")
+    def trigger_downstream_sync(self) -> bool:
+        """Trigger downstream repository sync (Docker only)."""
+        log_step(self.logger, "Triggering downstream sync", "START")
 
-        success = True
-
-        # Trigger homebrew workflow
-        if self.trigger_homebrew_workflow():
-            self.release_state["homebrew_triggered"] = True
-        else:
-            success = False
-
-        # Trigger APT workflow
-        if self.trigger_apt_workflow():
-            self.release_state["apt_triggered"] = True
-        else:
-            success = False
-
-        if success:
-            log_step(self.logger, "Cross-repository workflows triggered", "SUCCESS")
-        else:
-            log_step(self.logger, "Some cross-repository workflows failed to trigger", "FAILURE")
-
-        return success
-
-    def trigger_homebrew_workflow(self) -> bool:
-        """Trigger homebrew repository workflow."""
         if self.dry_run:
-            self.logger.info("Would trigger homebrew workflow (DRY RUN)")
+            log_step(self.logger, "Downstream sync (DRY RUN)", "SKIP")
             return True
 
         try:
-            # Use repository_dispatch approach for cross-repository triggers
-            import requests
+            import subprocess
 
-            headers = {
-                "Authorization": f"token {self.dispatch_token}",
-                "Accept": "application/vnd.github.v3+json",
-                "Content-Type": "application/json",
-            }
+            # Trigger the sync-downstream-repos workflow
+            sync_cmd = [
+                "gh",
+                "workflow",
+                "run",
+                "sync-downstream-repos.yml",
+                "--repo",
+                "henriqueslab/rxiv-maker",
+                "-f",
+                f"version={self.version}",
+                "-f",
+                "repositories=docker-rxiv-maker",
+            ]
 
-            data = {
-                "event_type": "update-formula",
-                "client_payload": {
-                    "version": self.version,
-                    "package_name": self.config.package_name,
-                    "triggered_by": "release-orchestrator",
-                },
-            }
-
-            url = f"https://api.github.com/repos/henriqueslab/{self.config.homebrew_repo}/dispatches"
-            response = requests.post(url, headers=headers, json=data, timeout=30)
-
-            if response.status_code == 204:
-                self.logger.info("Homebrew workflow triggered successfully via repository_dispatch")
-                return True
-            else:
-                self.logger.error(
-                    f"Failed to trigger homebrew workflow. Status: {response.status_code}, Response: {response.text}"
-                )
-                return False
-
-        except Exception as e:
-            self.logger.error(f"Error triggering homebrew workflow: {e}")
-            return False
-
-    def trigger_apt_workflow(self) -> bool:
-        """Trigger APT repository workflow."""
-        if self.dry_run:
-            self.logger.info("Would trigger APT workflow (DRY RUN)")
+            subprocess.run(sync_cmd, check=True, capture_output=True, text=True)
+            self.logger.info("Downstream sync workflow triggered successfully")
+            log_step(self.logger, "Downstream sync triggered", "SUCCESS")
             return True
 
-        try:
-            # Use repository_dispatch approach for cross-repository triggers
-            import requests
-
-            headers = {
-                "Authorization": f"token {self.dispatch_token}",
-                "Accept": "application/vnd.github.v3+json",
-                "Content-Type": "application/json",
-            }
-
-            data = {
-                "event_type": "update-package",
-                "client_payload": {
-                    "version": self.version,
-                    "package_name": self.config.package_name,
-                    "triggered_by": "release-orchestrator",
-                },
-            }
-
-            url = f"https://api.github.com/repos/henriqueslab/{self.config.apt_repo}/dispatches"
-            response = requests.post(url, headers=headers, json=data, timeout=30)
-
-            if response.status_code == 204:
-                self.logger.info("APT workflow triggered successfully via repository_dispatch")
-                return True
-            else:
-                self.logger.error(
-                    f"Failed to trigger APT workflow. Status: {response.status_code}, Response: {response.text}"
-                )
-                return False
-
         except Exception as e:
-            self.logger.error(f"Error triggering APT workflow: {e}")
+            self.logger.warning(f"Failed to trigger downstream sync: {e}")
+            log_step(self.logger, "Downstream sync failed", "WARNING")
             return False
-
-    def monitor_downstream_workflows(self) -> bool:
-        """Monitor downstream workflow success."""
-        log_step(self.logger, "Monitoring downstream workflows", "START")
-
-        if self.dry_run:
-            log_step(self.logger, "Downstream monitoring (DRY RUN)", "SKIP")
-            return True
-
-        # For now, we'll just return success
-        # In a real implementation, this would check workflow status via GitHub API
-
-        self.logger.info("Would monitor homebrew and APT workflow status...")
-        # TODO: Implement actual workflow monitoring
-
-        log_step(self.logger, "Downstream workflows completed", "SUCCESS")
-        return True
 
     def handle_release_failure(self, error: Exception) -> None:
         """Handle release failure and attempt rollback."""

@@ -51,18 +51,14 @@ def _get_protected_env_pattern():
     """Get or create the protected environment pattern."""
     global _PROTECTED_ENV_PATTERN
     if _PROTECTED_ENV_PATTERN is None:
-        protected_environments = [
+        # Separate non-starred and starred environments for proper backreference matching
+        base_environments = [
             "equation",
-            "equation*",
             "align",
-            "align*",
             "gather",
-            "gather*",
             "multiline",
-            "multiline*",
             "split",
             "verbatim",
-            "verbatim*",
             "lstlisting",
             "tabular",
             "tabularx",
@@ -70,15 +66,22 @@ def _get_protected_env_pattern():
             "array",
             "minipage",
             "figure",
-            "figure*",
             "sfigure",
-            "sfigure*",
             "sidewaysfigure",
-            "sidewaysfigure*",
         ]
-        env_pattern = "|".join(re.escape(env) for env in protected_environments)
-        # Fix regex to properly match begin/end pairs using backreference
-        pattern = f"(\\\\texttt\\{{[^}}]*\\}}|\\\\begin\\{{({env_pattern})\\*?\\}}.*?\\\\end\\{{\\2\\*?\\}})"
+
+        # Create patterns for both non-starred and starred versions
+        patterns = []
+        patterns.append("\\\\texttt\\{[^}]*\\}")  # texttt blocks
+
+        for env in base_environments:
+            # Non-starred version
+            patterns.append(f"\\\\begin\\{{{re.escape(env)}\\}}.*?\\\\end\\{{{re.escape(env)}\\}}")
+            # Starred version
+            patterns.append(f"\\\\begin\\{{{re.escape(env)}\\*\\}}.*?\\\\end\\{{{re.escape(env)}\\*\\}}")
+
+        # Combine all patterns into one with proper grouping
+        pattern = f"({'|'.join(patterns)})"
         _PROTECTED_ENV_PATTERN = re.compile(pattern, re.DOTALL)
     return _PROTECTED_ENV_PATTERN
 

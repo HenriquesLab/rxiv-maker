@@ -96,7 +96,7 @@ class ErrorCode(Enum):
     # Authentication Errors (6000-6999)
     API_KEY_MISSING = "E6001"
     API_KEY_INVALID = "E6002"
-    TOKEN_EXPIRED = "E6003"
+    TOKEN_EXPIRED = "E6003"  # nosec B105
     UNAUTHORIZED_ACCESS = "E6004"
     CREDENTIALS_ERROR = "E6005"
     GITHUB_AUTH_ERROR = "E6006"
@@ -229,7 +229,7 @@ class ErrorCode(Enum):
             self.WORKFLOW_CONFIG_ERROR: "Workflow configuration error",
             self.MANUSCRIPT_CONFIG_ERROR: "Manuscript configuration error",
             # Docker Errors
-            self.DOCKER_NOT_AVAILABLE: "Docker is not installed or accessible",
+            self.DOCKER_NOT_AVAILABLE: "Docker is not installed or accessible (container engines deprecated in v1.7.9)",
             self.DOCKER_IMAGE_ERROR: "Docker image pull or build failed",
             self.DOCKER_CONTAINER_ERROR: "Docker container operation failed",
             self.DOCKER_NETWORK_ERROR: "Docker networking error",
@@ -276,9 +276,9 @@ class ErrorCode(Enum):
             ],
             # Docker Errors
             self.DOCKER_NOT_AVAILABLE: [
-                "Install Docker Desktop",
-                "Start Docker daemon",
-                "Add user to docker group (Linux)",
+                "Docker engines deprecated in v1.7.9 - use docker-rxiv-maker repository for containers",
+                "For local development: Install LaTeX distribution (TeXLive, MacTeX, or MiKTeX)",
+                "Migration guide: https://github.com/HenriquesLab/rxiv-maker/blob/main/docs/migration-v1.7.9.md",
             ],
             self.DOCKER_PERMISSION_ERROR: [
                 "Add user to docker group",

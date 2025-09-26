@@ -1,4 +1,4 @@
-# Rxiv-Maker: An Automated Framework for Reproducible Manuscript Generation
+# Rxiv-Maker: an automated template engine for streamlined scientific publications
 <!-- note that this title is not rendered in the PDF, instead the one in the YAML metadata is used -->
 
 ## Abstract

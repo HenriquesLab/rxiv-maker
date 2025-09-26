@@ -77,19 +77,14 @@ class TestReleaseOrchestrator(unittest.TestCase):
         self.assertTrue(orchestrator.wait_for_pypi_propagation())
 
     @patch("orchestrator.trigger_workflow")
-    def test_trigger_cross_repository_workflows(self, mock_trigger):
-        """Test cross-repository workflow triggering."""
+    def test_trigger_downstream_sync(self, mock_trigger):
+        """Test downstream sync triggering."""
         mock_trigger.return_value = True
 
         orchestrator = self.ReleaseOrchestrator(dry_run=False)
-        result = orchestrator.trigger_cross_repository_workflows()
+        result = orchestrator.trigger_downstream_sync()
 
         self.assertTrue(result)
-        self.assertTrue(orchestrator.release_state["homebrew_triggered"])
-        self.assertTrue(orchestrator.release_state["apt_triggered"])
-
-        # Should be called twice (homebrew and apt)
-        self.assertEqual(mock_trigger.call_count, 2)
 
     def test_error_handling(self):
         """Test error handling and state tracking."""

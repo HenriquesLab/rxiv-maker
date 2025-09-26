@@ -1501,8 +1501,14 @@ class ArxivCommand(BaseCommand):
             zip_filename = str(Path(manuscript_output_dir) / "for_arxiv.zip")
 
         with self.create_progress() as progress:
+            # Clear output directory first (similar to PDF command)
+            task = progress.add_task("Clearing output directory...", total=None)
+            if self.path_manager.output_dir.exists():
+                shutil.rmtree(self.path_manager.output_dir)
+            self.path_manager.output_dir.mkdir(parents=True, exist_ok=True)
+
             # First, ensure PDF is built
-            task = progress.add_task("Checking PDF exists...", total=None)
+            progress.update(task, description="Checking PDF exists...")
             pdf_filename = f"{self.path_manager.manuscript_name}.pdf"
             pdf_path = self.path_manager.output_dir / pdf_filename
 
@@ -1621,7 +1627,12 @@ class ArxivCommand(BaseCommand):
                 if surname:
                     first_author = surname
                 elif name:
-                    first_author = name
+                    # Extract last name from full name
+                    name_parts = name.strip().split()
+                    if name_parts:
+                        first_author = name_parts[-1]
+                    else:
+                        first_author = name
             elif isinstance(first_author_entry, str):
                 # Handle simple string authors
                 # Extract last name (assume it's after the last space)
@@ -1629,8 +1640,8 @@ class ArxivCommand(BaseCommand):
                 if name_parts:
                     first_author = name_parts[-1]
 
-        # Clean up author name for filename
-        first_author = "".join(c for c in first_author if c.isalnum() or c in "._-")
+        # Clean up author name for filename and convert to lowercase
+        first_author = "".join(c for c in first_author if c.isalnum() or c in "._-").lower()
 
         return year, first_author
 

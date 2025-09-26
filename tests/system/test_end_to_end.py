@@ -58,43 +58,15 @@ class TestBinaryDistributionWorkflow:
             else:
                 assert expected_name.endswith(".tar.gz")
 
-    def test_version_synchronization_workflow(self):
-        """Test that version synchronization triggers are properly configured."""
+    def test_pypi_distribution_workflow(self):
+        """Test that PyPI distribution is properly configured."""
         # Check main release workflow
         workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
         content = workflow_path.read_text()
 
-        # Should trigger package manager updates (homebrew-update job exists)
-        has_package_updates = "homebrew-update:" in content
-        assert has_package_updates, "No package manager update mechanism found"
-
-        # Check package manager workflows exist
-        homebrew_workflow = (
-            Path(__file__).parent.parent.parent
-            / "submodules"
-            / "homebrew-rxiv-maker"
-            / ".github"
-            / "workflows"
-            / "update-formula.yml"
-        )
-        scoop_workflow = (
-            Path(__file__).parent.parent.parent
-            / "submodules"
-            / "scoop-rxiv-maker"
-            / ".github"
-            / "workflows"
-            / "update-manifest.yml"
-        )
-
-        if homebrew_workflow.exists():
-            homebrew_content = homebrew_workflow.read_text()
-            assert "repository_dispatch:" in homebrew_content
-            assert "update-formula" in homebrew_content
-
-        if scoop_workflow.exists():
-            scoop_content = scoop_workflow.read_text()
-            assert "repository_dispatch:" in scoop_content
-            assert "update-manifest" in scoop_content
+        # Should publish to PyPI
+        assert "pypi:" in content or "PyPI" in content, "No PyPI publishing found"
+        assert "upload" in content.lower(), "No upload mechanism found"
 
     @pytest.mark.slow
     @pytest.mark.timeout(90)  # GitHub API requests may be slow
@@ -152,20 +124,13 @@ class TestBinaryDistributionWorkflow:
 
         # Test passes if package building is configured
 
-    def test_package_manager_trigger_configuration(self):
-        """Test that package manager updates are properly triggered."""
+    def test_downstream_sync_configuration(self):
+        """Test that downstream repository sync is properly configured."""
         workflow_path = Path(__file__).parent.parent.parent / ".github" / "workflows" / "release-python.yml"
         content = workflow_path.read_text()
 
-        # Should trigger Homebrew updates
-        assert "HenriquesLab/homebrew-rxiv-maker" in content
-
-        # Should have homebrew-update job
-        assert "homebrew-update:" in content, "No homebrew update job found"
-
-        # Should mention formula updates
-        has_formula = "formula" in content.lower()
-        assert has_formula, "No formula workflow references found"
+        # Should trigger downstream sync for Docker repository
+        assert "sync" in content.lower() or "trigger" in content.lower(), "No downstream sync mechanism found"
 
 
 class TestBinaryFunctionality:

@@ -78,18 +78,15 @@ class TestErrorScenarios(unittest.TestCase):
         self.assertTrue(result)
 
     @patch("orchestrator.trigger_workflow")
-    def test_partial_cross_repo_failure(self, mock_trigger):
-        """Test handling when some cross-repo workflows fail."""
-        # First call (homebrew) succeeds, second (apt) fails
-        mock_trigger.side_effect = [True, False]
+    def test_downstream_sync_failure(self, mock_trigger):
+        """Test handling when downstream sync fails."""
+        mock_trigger.return_value = False
 
         orchestrator = self.ReleaseOrchestrator(dry_run=False)
-        result = orchestrator.trigger_cross_repository_workflows()
+        result = orchestrator.trigger_downstream_sync()
 
-        # Should return False due to APT failure
+        # Downstream sync failure should not block release
         self.assertFalse(result)
-        self.assertTrue(orchestrator.release_state["homebrew_triggered"])
-        self.assertFalse(orchestrator.release_state["apt_triggered"])
 
     def test_rollback_state_tracking(self):
         """Test that rollback properly tracks what was completed."""
@@ -98,7 +95,6 @@ class TestErrorScenarios(unittest.TestCase):
         # Simulate partial completion
         orchestrator.release_state["github_release_created"] = True
         orchestrator.release_state["pypi_published"] = False
-        orchestrator.release_state["homebrew_triggered"] = True
 
         # Test rollback handling
         test_error = Exception("Simulated failure")
@@ -292,8 +288,6 @@ class TestRealWorldScenarios(unittest.TestCase):
         expected_state = {
             "github_release_created": True,
             "pypi_published": True,
-            "homebrew_triggered": True,
-            "apt_triggered": True,
         }
         self.assertEqual(orchestrator.release_state, expected_state)
 

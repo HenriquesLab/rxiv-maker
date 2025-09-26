@@ -11,7 +11,7 @@ console = Console()
 
 
 @click.command()
-@click.argument("manuscript_path", type=click.Path(exists=True, file_okay=False), required=False)
+@click.argument("manuscript_path", required=False)
 @click.option("--force", "-f", is_flag=True, help="Force regeneration of all figures")
 @click.option("--figures-dir", "-d", help="Custom figures directory path")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
@@ -25,18 +25,36 @@ def figures(
 ) -> None:
     """Generate figures from scripts.
 
-    MANUSCRIPT_PATH: Path to manuscript directory (default: MANUSCRIPT)
+    MANUSCRIPT_PATH: Path to manuscript directory (default: auto-detect or current directory)
 
     This command generates figures from:
     - Python scripts (*.py)
     - R scripts (*.R)
     - Mermaid diagrams (*.mmd)
     """
-    # Direct figure generation - no framework overhead!
+    # Use the same path resolution logic as the build command
     if manuscript_path is None:
-        manuscript_path = "MANUSCRIPT"
+        # First check environment variable
+        from ...core.environment_manager import EnvironmentManager
 
-    manuscript_dir = Path(manuscript_path)
+        manuscript_path = EnvironmentManager.get_manuscript_path()
+
+        # If no environment variable, check if we're already in a manuscript directory
+        if manuscript_path is None:
+            from ...core.cache.cache_utils import find_manuscript_directory
+
+            manuscript_dir = find_manuscript_directory()
+            if manuscript_dir is not None:
+                manuscript_path = str(manuscript_dir)
+                if verbose or ctx.obj.get("verbose", False):
+                    console.print(f"🔍 Detected manuscript directory: {manuscript_path}", style="green")
+            else:
+                # Fall back to current directory
+                manuscript_path = "."
+                if verbose or ctx.obj.get("verbose", False):
+                    console.print(f"📁 Using current directory: {manuscript_path}", style="blue")
+
+    manuscript_dir = Path(manuscript_path).resolve()
     if not manuscript_dir.exists():
         console.print(f"❌ Manuscript directory not found: {manuscript_path}", style="red")
         ctx.exit(1)

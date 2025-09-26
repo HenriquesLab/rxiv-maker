@@ -21,9 +21,6 @@ class ReleaseConfig:
     pypi_timeout: int = 300  # 5 minutes
     pypi_check_interval: int = 30  # seconds
     github_timeout: int = 120  # 2 minutes
-    homebrew_repo: str = "homebrew-rxiv-maker"
-    apt_repo: str = "apt-rxiv-maker"
-    cross_repo_timeout: int = 600  # 10 minutes
 
     def __post_init__(self):
         """Validate configuration after initialization."""
@@ -43,7 +40,7 @@ class MonitoringConfig:
 
     def __post_init__(self):
         if self.repositories is None:
-            self.repositories = ["rxiv-maker", "homebrew-rxiv-maker", "apt-rxiv-maker", "docker-rxiv-maker"]
+            self.repositories = ["rxiv-maker", "docker-rxiv-maker", "vscode-rxiv-maker"]
 
 
 class ConfigLoader:
@@ -73,9 +70,6 @@ class ConfigLoader:
             "pypi_timeout": 300,
             "pypi_check_interval": 30,
             "github_timeout": 120,
-            "homebrew_repo": "homebrew-rxiv-maker",
-            "apt_repo": "apt-rxiv-maker",
-            "cross_repo_timeout": 600,
         }
 
         # Load from file if it exists
@@ -89,8 +83,6 @@ class ConfigLoader:
             "package_name": os.getenv("PACKAGE_NAME"),
             "pypi_timeout": self._get_env_int("PYPI_TIMEOUT"),
             "github_timeout": self._get_env_int("GITHUB_TIMEOUT"),
-            "homebrew_repo": os.getenv("HOMEBREW_REPO"),
-            "apt_repo": os.getenv("APT_REPO"),
         }
 
         for key, value in env_overrides.items():
@@ -107,7 +99,7 @@ class ConfigLoader:
         config_data = {
             "check_interval": 3600,
             "alert_threshold": 3,
-            "repositories": ["rxiv-maker", "homebrew-rxiv-maker", "apt-rxiv-maker", "docker-rxiv-maker"],
+            "repositories": ["rxiv-maker", "docker-rxiv-maker", "vscode-rxiv-maker"],
         }
 
         # Load from file if it exists

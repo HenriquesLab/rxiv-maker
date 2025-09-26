@@ -146,7 +146,6 @@ To accelerate compilation, Rxiv-Maker uses an intelligent caching system that av
 
 Complementing this is a powerful validation framework that acts as a quality-control mechanism. Running `rxiv validate` performs a multi-level check of your manuscript. Before compilation, it looks for missing figure files, broken cross-references, and malformed bibliography entries. During compilation, it parses LaTeX logs to provide clear, understandable error messages. After compilation, it even performs a lightweight scan of the PDF to flag potential rendering issues. This ensures your manuscript is technically sound at every stage.
 
-
 ## Supplementary Figures
 
 ![](FIGURES/SFigure__arxiv_growth.pdf)
