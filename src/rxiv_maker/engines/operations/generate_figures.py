@@ -12,7 +12,7 @@ Uses local execution only for better simplicity and reliability.
 import base64
 import os
 import re
-import subprocess
+import subprocess  # nosec # Required for executing Python/R scripts and Rscript
 import sys
 from pathlib import Path
 from typing import Optional
@@ -204,8 +204,12 @@ class FigureGenerator:
                 else:
                     if use_rich:
                         self.console.print(f"❌ [red]Failed to generate {output_file.name}[/red]")
+                        self.console.print(
+                            "💡 [blue]Tip: Check your Mermaid diagram syntax at https://www.mermaidchart.com/[/blue]"
+                        )
                     else:
                         print(f"❌ Failed to generate {output_file.name}")
+                        print("💡 Tip: Check your Mermaid diagram syntax at https://www.mermaidchart.com/")
 
             except Exception as e:
                 if use_rich:
@@ -247,6 +251,9 @@ class FigureGenerator:
                     return True
                 else:
                     print(f"mermaid.ink service returned status {response.status_code}")
+                    print(
+                        "💡 Tip: If this is a syntax error, check your Mermaid diagram at https://www.mermaidchart.com/"
+                    )
                     return self._create_fallback_mermaid_diagram(input_file, output_file)
             else:
                 print("requests library not available for Mermaid generation")
@@ -254,6 +261,7 @@ class FigureGenerator:
 
         except Exception as e:
             print(f"mermaid.ink service error: {e}")
+            print("💡 Tip: Check your Mermaid diagram syntax at https://www.mermaidchart.com/")
             return self._create_fallback_mermaid_diagram(input_file, output_file)
 
     def _create_fallback_mermaid_diagram(self, input_file: Path, output_file: Path) -> bool:
@@ -264,12 +272,15 @@ class FigureGenerator:
                 svg_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="800" height="400" viewBox="0 0 800 400">
   <rect width="800" height="400" fill="white" stroke="#ddd" stroke-width="2"/>
-  <text x="400" y="180" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#666">
+  <text x="400" y="160" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#666">
     <tspan x="400" dy="0">Mermaid Diagram</tspan>
     <tspan x="400" dy="30">(Service temporarily unavailable)</tspan>
   </text>
-  <text x="400" y="250" text-anchor="middle" font-family="monospace" font-size="12" fill="#999">
+  <text x="400" y="230" text-anchor="middle" font-family="monospace" font-size="12" fill="#999">
     Source: {input_file.name}
+  </text>
+  <text x="400" y="280" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#0066cc">
+    💡 Check syntax at https://www.mermaidchart.com/
   </text>
 </svg>"""
                 with open(output_file, "w", encoding="utf-8") as f:
@@ -280,6 +291,7 @@ class FigureGenerator:
                 with open(output_file.with_suffix(".txt"), "w", encoding="utf-8") as f:
                     f.write(f"Mermaid diagram placeholder for {input_file.name}\n")
                     f.write("mermaid.ink service unavailable - diagram generation failed\n")
+                    f.write("\n💡 Tip: Check your Mermaid diagram syntax at https://www.mermaidchart.com/\n")
                 return True
         except Exception:
             return False
@@ -315,7 +327,7 @@ class FigureGenerator:
                 else:
                     print(f"🐍 Executing Python script: {py_file.name}")
 
-                result = subprocess.run(
+                result = subprocess.run(  # nosec # Safe: executing user's own Python scripts
                     [sys.executable, str(py_file)],
                     cwd=str(self.figures_dir),
                     capture_output=True,
@@ -434,7 +446,7 @@ class FigureGenerator:
                 else:
                     print(f"📊 Executing R script: {r_file.name}")
 
-                result = subprocess.run(
+                result = subprocess.run(  # nosec # Safe: executing user's own R scripts with system Rscript
                     ["Rscript", str(r_file)],
                     cwd=str(self.figures_dir),
                     capture_output=True,
@@ -518,7 +530,7 @@ class FigureGenerator:
     def _check_rscript(self) -> bool:
         """Check if Rscript is available in the system."""
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec # Safe: checking Rscript version
                 ["Rscript", "--version"],
                 capture_output=True,
                 text=True,

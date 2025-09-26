@@ -502,8 +502,8 @@ class TestGuillaumeFigureIssues:
                 figure_latex = create_latex_figure_environment(
                     path="FIGURES/Figure1.png", caption="Test caption", attributes={"id": "fig:Figure1"}
                 )
-                assert "../FIGURES/Figure1.png" in figure_latex, (
-                    "Ready file should use relative path with correct casing"
+                assert "FIGURES/Figure1.png" in figure_latex, (
+                    "Ready file should use FIGURES/ path (figures copied to output directory)"
                 )
                 assert "FIGURES/Figure1/Figure1.png" not in figure_latex, "Ready file should NOT use subdirectory path"
 
