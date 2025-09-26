@@ -179,35 +179,37 @@ class TestArxivCommand:
 
     @patch("rxiv_maker.engines.operations.prepare_arxiv.main")
     @patch("rxiv_maker.cli.framework.PathManager")
-    def test_no_zip_option(self, mock_path_manager, mock_prepare):
+    @patch("shutil.rmtree")
+    def test_no_zip_option(self, mock_rmtree, mock_path_manager, mock_prepare):
         """Test --no-zip option."""
         # Mock PathManager to succeed
+        import tempfile
         from pathlib import Path
 
         mock_path_manager_instance = MagicMock()
         mock_path_manager_instance.manuscript_path = Path("test_manuscript")
         mock_path_manager_instance.manuscript_name = "test_manuscript"
 
-        # Create a real Path for output_dir to avoid mocking issues
-        mock_path_manager_instance.output_dir = Path("output")
+        # Use a temporary directory that actually exists to avoid filesystem errors
+        with tempfile.TemporaryDirectory() as temp_dir:
+            mock_path_manager_instance.output_dir = Path(temp_dir) / "output"
+            mock_path_manager_instance.output_dir.mkdir(exist_ok=True)
 
-        mock_path_manager.return_value = mock_path_manager_instance
+            mock_path_manager.return_value = mock_path_manager_instance
 
-        # Mock Progress context manager
+            # Mock prepare_arxiv_main to avoid actual execution
+            mock_prepare.return_value = None
 
-        # Mock prepare_arxiv_main to avoid actual execution
-        mock_prepare.return_value = None
+            # Patch Path.exists to return True for the PDF path to skip BuildManager
+            with patch.object(Path, "exists", return_value=True):
+                result = self.runner.invoke(arxiv, ["test_manuscript", "--no-zip"], obj={"verbose": False})
 
-        # Patch Path.exists to return True for the PDF path to skip BuildManager
-        with patch.object(Path, "exists", return_value=True):
-            result = self.runner.invoke(arxiv, ["test_manuscript", "--no-zip"], obj={"verbose": False})
+            print(f"Exit code: {result.exit_code}")
+            print(f"Output: {result.output}")
+            print(f"Exception: {result.exception}")
 
-        print(f"Exit code: {result.exit_code}")
-        print(f"Output: {result.output}")
-        print(f"Exception: {result.exception}")
-
-        assert result.exit_code == 0
-        mock_prepare.assert_called_once()
+            assert result.exit_code == 0
+            mock_prepare.assert_called_once()
 
     @patch("rxiv_maker.engines.operations.prepare_arxiv.main")
     @patch("rxiv_maker.cli.framework.PathManager")
