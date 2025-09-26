@@ -91,7 +91,7 @@ https://example.com & \textbackslash url\{https://example.com\} & Bare URL \\
 \multicolumn{3}{|c|}{\textbf{Citations}} \\
 \hline
 \texttt{@}mycitation & \textbackslash cite\{mycitation\} & Single citation \\
-{[}key1;key2{]} & \textbackslash cite\{key1,key2\} & Multiple citations \\
+{[}@himmelstein2019;@Overleaf2024{]} & \textbackslash cite\{himmelstein2019,Overleaf2024\} & Multiple citations \\
 \hline
 
 \multicolumn{3}{|c|}{\textbf{Cross-References}} \\

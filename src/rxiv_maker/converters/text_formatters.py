@@ -69,6 +69,12 @@ def _get_protected_env_pattern():
             "longtable",
             "array",
             "minipage",
+            "figure",
+            "figure*",
+            "sfigure",
+            "sfigure*",
+            "sidewaysfigure",
+            "sidewaysfigure*",
         ]
         env_pattern = "|".join(re.escape(env) for env in protected_environments)
         # Fix regex to properly match begin/end pairs using backreference
