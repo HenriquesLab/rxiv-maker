@@ -43,7 +43,7 @@ class MonitoringConfig:
 
     def __post_init__(self):
         if self.repositories is None:
-            self.repositories = ["rxiv-maker", "homebrew-rxiv-maker", "apt-rxiv-maker", "docker-rxiv-maker"]
+            self.repositories = ["rxiv-maker", "docker-rxiv-maker"]
 
 
 class ConfigLoader:
@@ -107,7 +107,7 @@ class ConfigLoader:
         config_data = {
             "check_interval": 3600,
             "alert_threshold": 3,
-            "repositories": ["rxiv-maker", "homebrew-rxiv-maker", "apt-rxiv-maker", "docker-rxiv-maker"],
+            "repositories": ["rxiv-maker", "docker-rxiv-maker"],
         }
 
         # Load from file if it exists

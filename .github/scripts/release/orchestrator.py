@@ -371,26 +371,28 @@ class ReleaseOrchestrator:
         """Trigger workflows in homebrew and apt repositories."""
         log_step(self.logger, "Triggering cross-repository workflows", "START")
 
-        success = True
+        # Check if repositories exist before trying to trigger workflows
+        homebrew_success = self.trigger_homebrew_workflow()
+        apt_success = self.trigger_apt_workflow()
 
-        # Trigger homebrew workflow
-        if self.trigger_homebrew_workflow():
+        if homebrew_success:
             self.release_state["homebrew_triggered"] = True
-        else:
-            success = False
-
-        # Trigger APT workflow
-        if self.trigger_apt_workflow():
+        if apt_success:
             self.release_state["apt_triggered"] = True
-        else:
-            success = False
 
-        if success:
+        # Log results but don't fail the release if repositories are missing
+        if homebrew_success and apt_success:
             log_step(self.logger, "Cross-repository workflows triggered", "SUCCESS")
+        elif homebrew_success or apt_success:
+            log_step(self.logger, "Some cross-repository workflows triggered", "SUCCESS")
         else:
-            log_step(self.logger, "Some cross-repository workflows failed to trigger", "FAILURE")
+            log_step(self.logger, "No cross-repository workflows triggered (repositories may not exist)", "SUCCESS")
+            self.logger.info(
+                "Cross-repository triggers skipped - this is expected if homebrew/apt repositories are deprecated"
+            )
 
-        return success
+        # Always return True since missing repositories shouldn't fail the release
+        return True
 
     def trigger_homebrew_workflow(self) -> bool:
         """Trigger homebrew repository workflow."""
@@ -423,14 +425,17 @@ class ReleaseOrchestrator:
             if response.status_code == 204:
                 self.logger.info("Homebrew workflow triggered successfully via repository_dispatch")
                 return True
+            elif response.status_code == 404:
+                self.logger.info(f"Homebrew repository ({self.config.homebrew_repo}) not found - skipping trigger")
+                return False
             else:
-                self.logger.error(
+                self.logger.warning(
                     f"Failed to trigger homebrew workflow. Status: {response.status_code}, Response: {response.text}"
                 )
                 return False
 
         except Exception as e:
-            self.logger.error(f"Error triggering homebrew workflow: {e}")
+            self.logger.warning(f"Error triggering homebrew workflow: {e}")
             return False
 
     def trigger_apt_workflow(self) -> bool:
@@ -464,14 +469,17 @@ class ReleaseOrchestrator:
             if response.status_code == 204:
                 self.logger.info("APT workflow triggered successfully via repository_dispatch")
                 return True
+            elif response.status_code == 404:
+                self.logger.info(f"APT repository ({self.config.apt_repo}) not found - skipping trigger")
+                return False
             else:
-                self.logger.error(
+                self.logger.warning(
                     f"Failed to trigger APT workflow. Status: {response.status_code}, Response: {response.text}"
                 )
                 return False
 
         except Exception as e:
-            self.logger.error(f"Error triggering APT workflow: {e}")
+            self.logger.warning(f"Error triggering APT workflow: {e}")
             return False
 
     def monitor_downstream_workflows(self) -> bool:
