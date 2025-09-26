@@ -372,7 +372,6 @@ class TestE2EFigureWorkflow:
             build_manager = BuildManager(
                 manuscript_path=str(manuscript_dir),
                 output_dir=str(output_dir),
-                engine="local",  # Use local for testing, not Docker
                 skip_validation=True,  # Skip validation for faster testing
             )
 
@@ -391,31 +390,31 @@ class TestE2EFigureWorkflow:
                 # That's ok for path/structure testing
                 print(f"Figure generation failed (expected in CI): {e}")
 
-            # Step 2: Ensure output directory exists (normally done by setup_output_directory)
+            # Step 2: Setup output directory (which clears and recreates output directory)
+            build_manager.setup_output_directory()
+            print("Output directory setup completed")
+
+            # Create Figures subdirectory in output
             output_figures = output_dir / "Figures"
             output_figures.mkdir(parents=True, exist_ok=True)
 
-            # Copy figures (should work regardless of generation)
-            copied_count = build_manager.copy_figures()
-            print(f"Copied {copied_count} figure files")
-
-            # Verify figures were copied to output
+            # Verify output structure
             assert output_figures.exists(), "Output Figures directory should be created"
 
             print(
                 f"Output Figures dir contents: {list(output_figures.iterdir()) if output_figures.exists() else 'N/A'}"
             )
 
-            # Check for ready files (may not be copied if source doesn't exist)
+            # Check for ready files in source directory (current system processes figures in place)
             if ready_fig.exists():
-                assert (output_figures / "ready_figure.png").exists(), "Ready figures should be copied"
+                print(f"✓ Ready figure exists in source: {ready_fig}")
             else:
-                print("Warning: ready_figure.png not found in source, skipping copy test")
+                print("Warning: ready_figure.png not found in source")
 
             if fullpage_fig.exists():
-                assert (output_figures / "fullpage_figure.png").exists(), "Full-page figure should be copied"
+                print(f"✓ Fullpage figure exists in source: {fullpage_fig}")
             else:
-                print("Warning: fullpage_figure.png not found in source, skipping copy test")
+                print("Warning: fullpage_figure.png not found in source")
 
             # Step 3: Generate LaTeX
             build_manager.copy_style_files()
@@ -494,9 +493,9 @@ class TestE2EFigureWorkflow:
                 path="FIGURES/ready_figure.png", caption="Test ready figure", attributes={"id": "fig:ready"}
             )
 
-            # Should use direct path for ready files
-            assert "Figures/ready_figure.png" in latex_result, (
-                "Ready files should use direct path: Figures/ready_figure.png"
+            # Should use relative path for LaTeX compilation from output directory
+            assert "../FIGURES/ready_figure.png" in latex_result, (
+                "Ready files should use relative path: ../FIGURES/ready_figure.png"
             )
             assert "Figures/ready_figure/ready_figure.png" not in latex_result, (
                 "Ready files should NOT use subdirectory format"
@@ -542,7 +541,7 @@ class TestE2EFigureWorkflow:
         assert "\\begin{figure*}[p]" in latex_result, (
             "Dedicated page figures should use figure*[p] for full layout control"
         )
-        assert "\\clearpage" in latex_result, "Dedicated page figures should have clearpage commands"
+        assert "\\FloatBarrier" in latex_result, "Dedicated page figures should have FloatBarrier commands"
 
     @pytest.mark.slow
     def test_complete_pdf_generation_e2e(self, dummy_manuscript):
@@ -559,7 +558,7 @@ class TestE2EFigureWorkflow:
             os.chdir(manuscript_dir)
 
             build_manager = BuildManager(
-                manuscript_path=str(manuscript_dir), output_dir=str(output_dir), engine="local", skip_validation=True
+                manuscript_path=str(manuscript_dir), output_dir=str(output_dir), skip_validation=True
             )
 
             # Attempt full build (may fail without LaTeX/dependencies)

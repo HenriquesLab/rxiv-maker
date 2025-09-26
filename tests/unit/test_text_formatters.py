@@ -3,7 +3,11 @@
 import pytest
 
 from rxiv_maker.converters.md2tex import convert_markdown_to_latex
-from rxiv_maker.converters.text_formatters import process_code_spans
+from rxiv_maker.converters.text_formatters import (
+    convert_text_formatting_to_latex,
+    process_code_spans,
+    protect_underline_outside_texttt,
+)
 
 
 class TestCodeSpanMathProcessing:
@@ -357,3 +361,241 @@ class TestLongTechnicalIdentifiers:
         assert "\\seqsplit{VERY_LONG_IDENTIFIER_ALREADY_WRAPPED}" in result
         # Should not be double-wrapped
         assert "\\seqsplit{\\seqsplit{" not in result
+
+
+class TestUnderlineFormatting:
+    """Test underline formatting functionality."""
+
+    def test_basic_underline_conversion(self):
+        """Test basic underline markdown to LaTeX conversion."""
+        input_text = "This is __underlined text__ in a sentence."
+        result = convert_text_formatting_to_latex(input_text)
+
+        assert "\\underline{underlined text}" in result
+        assert "__underlined text__" not in result
+
+    def test_multiple_underlines_in_text(self):
+        """Test multiple underlined sections in the same text."""
+        input_text = "Both __first__ and __second__ are underlined."
+        result = convert_text_formatting_to_latex(input_text)
+
+        assert "\\underline{first}" in result
+        assert "\\underline{second}" in result
+        assert "__" not in result
+
+    def test_underline_with_other_formatting(self):
+        """Test underline combined with bold and italic formatting."""
+        input_text = "Text with **bold**, *italic*, and __underlined__ formatting."
+        result = convert_text_formatting_to_latex(input_text)
+
+        assert "\\textbf{bold}" in result
+        assert "\\textit{italic}" in result
+        assert "\\underline{underlined}" in result
+
+    def test_nested_formatting_combinations(self):
+        """Test that formatting doesn't interfere with each other."""
+        input_text = "Mix __underlined text with *italic* inside__ and **bold**."
+        result = convert_text_formatting_to_latex(input_text)
+
+        # Should handle nested formatting properly
+        assert "\\underline{" in result
+        assert "\\textbf{bold}" in result
+
+    def test_single_underscore_not_converted(self):
+        """Test that single underscores are not converted to underlines."""
+        input_text = "Variables like _private_var and __underlined__ text."
+        result = convert_text_formatting_to_latex(input_text)
+
+        assert "_private_var" in result  # Single underscores preserved
+        assert "\\underline{underlined}" in result  # Double underscores converted
+
+    def test_underline_protection_in_code_blocks(self):
+        """Test that underlines inside code blocks are not converted."""
+        input_text = "Regular __underlined__ and code `__not_underlined__`."
+
+        # First apply underline conversion
+        result = convert_text_formatting_to_latex(input_text)
+        # Then apply code span processing
+        result = process_code_spans(result)
+
+        assert "\\underline{underlined}" in result
+        assert "\\texttt{" in result
+        # The code block should contain either literal underscores or underscore placeholders
+        assert "__not_underlined__" in result or "not\\_underlined" in result or "XUNDERSCOREX" in result
+
+    def test_protect_underline_outside_texttt_function(self):
+        """Test the protect_underline_outside_texttt function directly."""
+        input_text = "Normal __underlined__ and \\texttt{__not_converted__} text."
+        result = protect_underline_outside_texttt(input_text)
+
+        assert "\\underline{underlined}" in result
+        assert "\\texttt{__not_converted__}" in result  # Code block unchanged
+
+    def test_underline_in_different_contexts(self):
+        """Test underlines in various contexts like lists and quotes."""
+        input_text = """
+- List item with __underlined text__
+- Another item
+
+> Quote with __underlined content__ here
+
+Regular paragraph with __underlined words__.
+"""
+        result = convert_text_formatting_to_latex(input_text)
+
+        # All underlines should be converted regardless of context
+        underline_count = result.count("\\underline{")
+        assert underline_count == 3
+
+    def test_empty_underline_tags(self):
+        """Test handling of empty or malformed underline tags."""
+        input_text = "Empty __ __ tags and incomplete __text"
+        result = convert_text_formatting_to_latex(input_text)
+
+        # Should handle gracefully without breaking
+        assert "Empty" in result
+        assert "incomplete" in result
+
+    def test_underline_with_special_characters(self):
+        """Test underlines containing special characters."""
+        input_text = "Underline with __special #chars & symbols__ inside."
+        result = convert_text_formatting_to_latex(input_text)
+
+        assert "\\underline{special #chars & symbols}" in result
+
+    def test_underline_preservation_in_latex_environments(self):
+        """Test that underlines are not processed inside LaTeX environments."""
+        input_text = """
+Regular __underlined__ text.
+
+\\begin{equation}
+__not_processed__ = equation
+\\end{equation}
+
+More __underlined__ text.
+"""
+        result = protect_underline_outside_texttt(input_text)
+
+        # Should have 2 underlined sections (not the one in equation)
+        underline_count = result.count("\\underline{")
+        assert underline_count == 2
+
+    def test_long_underlined_text(self):
+        """Test underlines with long content."""
+        long_text = "This is a very long piece of text that should be underlined completely"
+        input_text = f"Here is __{long_text}__ for testing."
+        result = convert_text_formatting_to_latex(input_text)
+
+        assert f"\\underline{{{long_text}}}" in result
+
+    def test_underline_with_line_breaks(self):
+        """Test that underlines don't span across line breaks inappropriately."""
+        input_text = "Start __underlined\ntext continuing__ end"
+        result = convert_text_formatting_to_latex(input_text)
+
+        # Should NOT convert underlines that span line breaks (by design)
+        assert "\\underline{" not in result
+        assert "__underlined" in result  # Should remain unchanged
+
+    def test_full_pipeline_underline_processing(self):
+        """Test underline processing through the full markdown to LaTeX pipeline."""
+        markdown_content = """
+# Test Document
+
+This paragraph contains __underlined text__ for testing.
+
+- List with __underlined item__
+- Regular item
+
+Code example: `__this_should_not_be_underlined__`
+
+More __underlined content__ here.
+"""
+        result = convert_markdown_to_latex(markdown_content, is_supplementary=False)
+
+        # Should have 3 underlined sections (not the one in code)
+        underline_count = result.count("\\underline{")
+        assert underline_count == 3
+
+        # Code block should preserve literal underscores
+        assert "\\texttt{" in result
+
+    def test_nested_underscores_in_underlined_text(self):
+        """Test underlined text containing underscores within the content."""
+        input_text = "Variable __my_variable_name__ should be underlined."
+        result = convert_text_formatting_to_latex(input_text)
+
+        assert "\\underline{my_variable_name}" in result
+        assert "__my_variable_name__" not in result
+
+    def test_very_long_underlined_text_performance(self):
+        """Test underline processing with very long text for performance validation."""
+        # Create a 1000+ character underlined text
+        long_content = "a" * 1000
+        input_text = f"Start __{long_content}__ end"
+        result = convert_text_formatting_to_latex(input_text)
+
+        assert f"\\underline{{{long_content}}}" in result
+        assert f"__{long_content}__" not in result
+
+    def test_complex_nested_formatting_combinations(self):
+        """Test complex combinations of underline with other formatting."""
+        test_cases = [
+            # Underline containing bold
+            ("Text __with **bold inside** underline__ here.", "\\underline{with \\textbf{bold inside} underline}"),
+            # Bold containing underline
+            ("Text **with __underline inside__ bold** here.", "\\textbf{with \\underline{underline inside} bold}"),
+            # Multiple nested combinations
+            (
+                "Mix __underline *and italic*__ with **bold __and underline__** text.",
+                "\\underline{underline \\textit{and italic}} with \\textbf{bold \\underline{and underline}}",
+            ),
+        ]
+
+        for input_text, expected_pattern in test_cases:
+            result = convert_text_formatting_to_latex(input_text)
+            assert expected_pattern in result
+
+    def test_underline_regex_performance_benchmark(self):
+        """Test regex performance with multiple underlined sections."""
+        # Create text with many underlined sections
+        sections = ["__section{}__".format(i) for i in range(100)]
+        input_text = " ".join(sections)
+
+        import time
+
+        start_time = time.time()
+        result = convert_text_formatting_to_latex(input_text)
+        end_time = time.time()
+
+        # Should process quickly (less than 1 second for 100 sections)
+        assert (end_time - start_time) < 1.0
+
+        # Should convert all sections
+        underline_count = result.count("\\underline{")
+        assert underline_count == 100
+
+    def test_environment_protection_with_proper_matching(self):
+        """Test that the fixed regex properly matches begin/end environment pairs."""
+        input_text = """
+Regular __underlined__ text.
+
+\\begin{equation}
+x = __not_underlined__
+\\end{equation}
+
+\\begin{align}
+y = __also_not_underlined__
+\\end{align}
+
+More __underlined__ text.
+"""
+        result = protect_underline_outside_texttt(input_text)
+
+        # Should have 2 underlined sections (not the ones in math environments)
+        underline_count = result.count("\\underline{")
+        assert underline_count == 2
+
+        # Math environments should remain unchanged
+        assert "x = __not_underlined__" in result
+        assert "y = __also_not_underlined__" in result

@@ -60,7 +60,7 @@ class TestGoogleColabIntegration:
             from rxiv_maker.engines.operations.generate_figures import FigureGenerator
 
             with tempfile.TemporaryDirectory() as temp_dir:
-                generator = FigureGenerator(figures_dir=temp_dir, output_dir=temp_dir, engine="local")
+                generator = FigureGenerator(figures_dir=temp_dir, output_dir=temp_dir)
 
                 # Should handle timeout gracefully
                 try:

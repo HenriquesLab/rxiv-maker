@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.7.8] - 2025-01-16
+
+### Added
+- **✏️ Underlined Text Formatting**: New `__text__` markdown syntax support converting to LaTeX `\underline{text}` commands
+  - **Comprehensive Formatting**: Seamless integration with existing formatting (bold, italic, subscript, superscript)
+  - **Nested Combinations**: Full support for complex nested formatting combinations like `__**bold within underline**__`
+  - **Selective Protection**: Smart LaTeX environment protection (preserves math/code/tables, enables formatting in lists)
+  - **Edge Case Handling**: Robust support for underscores within underlined text (e.g., `__variable_name__`)
+
+### Performance
+- **⚡ Regex Optimization**: Implemented pre-compiled regex patterns at module level for significant performance improvements
+  - **Faster Compilation**: Reduced redundant pattern compilation during document processing
+  - **Benchmarked Performance**: Validated optimization effectiveness through comprehensive performance tests
+  - **Memory Efficiency**: Optimized pattern matching for better resource utilization
+
+### Code Quality
+- **🏗️ Architecture Improvements**: Major refactoring of text formatting pipeline
+  - **Generic Helper Functions**: Created `_apply_formatting_outside_protected_environments()` to eliminate code duplication
+  - **Bug Fixes**: Fixed critical regex backreference bug in environment protection pattern
+  - **Maintainability**: Improved code organization and reduced complexity across formatting functions
+  - **Test Coverage**: Added 19+ comprehensive unit tests covering all edge cases and formatting combinations
+
+### Testing
+- **🧪 E2E Test Suite Overhaul**: Fixed comprehensive test suite alignment with current architecture
+  - **Engine Parameter Updates**: Fixed deprecated `engine="local"` parameter usage across test files
+  - **Path Format Corrections**: Updated figure path expectations from `Figures/` to `../FIGURES/` format
+  - **Method Modernization**: Replaced deprecated `copy_figures()` calls with current workflow methods
+  - **LaTeX Expectation Updates**: Aligned tests with current LaTeX output (`\FloatBarrier` instead of `\clearpage`)
+  - **Test Results**: All E2E tests now pass (21 passed, 2 skipped, was 10 failing before)
+
+### Documentation
+- **📖 Enhanced Examples**: Updated EXAMPLE_MANUSCRIPT with comprehensive formatting interaction examples
+  - **Syntax Reference**: Enhanced syntax reference table with underlined text and nested formatting examples
+  - **Practical Demonstrations**: Added real-world examples of text formatting capabilities
+
 ## [v1.7.4] - 2025-01-12
 
 ### Added

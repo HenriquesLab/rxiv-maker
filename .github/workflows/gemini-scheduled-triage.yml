@@ -2,7 +2,7 @@ name: '📋 Gemini Scheduled Issue Triage'
 
 on:
   schedule:
-    - cron: '0 * * * *' # Runs every hour
+    - cron: '0 8 * * 1-5' # Runs once daily (8 AM UTC, weekdays)
   pull_request:
     branches:
       - 'main'

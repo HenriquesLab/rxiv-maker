@@ -40,6 +40,7 @@ from .text_formatters import (
     process_code_spans,
     protect_bold_outside_texttt,
     protect_italic_outside_texttt,
+    protect_underline_outside_texttt,
     restore_protected_seqsplit,
 )
 from .types import LatexContent, MarkdownContent, ProtectedContent
@@ -488,9 +489,10 @@ def _process_text_formatting(content: LatexContent, protected_backtick_content: 
     # Process protected Python color placeholders
     content = find_and_replace_python_color(content)
 
-    # Convert bold and italic AFTER processing backticks
+    # Convert bold, italic, and underline AFTER processing backticks
     content = protect_bold_outside_texttt(content)
     content = protect_italic_outside_texttt(content)
+    content = protect_underline_outside_texttt(content)
 
     # Convert subscript and superscript formatting
     content = convert_subscript_superscript_to_latex(content)

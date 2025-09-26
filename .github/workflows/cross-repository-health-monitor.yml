@@ -2,8 +2,8 @@ name: 📊 Cross-Repository Health Monitor
 
 on:
   schedule:
-    # Run every 2 hours during business hours UTC
-    - cron: '0 8-18/2 * * 1-5'
+    # Run once daily during business hours UTC (9 AM, weekdays)
+    - cron: '0 9 * * 1-5'
 
   workflow_dispatch:
     inputs:
@@ -561,7 +561,7 @@ jobs:
           # Next scheduled check
           echo "## 📅 Monitoring Schedule" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Automated Checks:** Every 2 hours (8 AM - 6 PM UTC, weekdays)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Automated Checks:** Once daily (9 AM UTC, weekdays)" >> $GITHUB_STEP_SUMMARY
           echo "- **Manual Trigger:** Use [workflow dispatch](${{ github.server_url }}/${{ env.MAIN_REPO }}/actions/workflows/cross-repository-health-monitor.yml)" >> $GITHUB_STEP_SUMMARY
           echo "- **Integration:** Health status affects release workflow decisions" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -606,7 +606,7 @@ jobs:
           EXISTING_ISSUES=$(gh issue list --repo "${{ env.MAIN_REPO }}" \
             --label "health-alert" \
             --state open \
-            --created "$(date -d '6 hours ago' -I)" \
+            --created "$(date -d '24 hours ago' -I)" \
             --limit 1 \
             --json number 2>/dev/null || echo "[]")
 
