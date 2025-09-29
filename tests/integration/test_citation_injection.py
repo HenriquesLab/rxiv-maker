@@ -99,7 +99,9 @@ Thanks to everyone.
         updated_bib_content = bib_file.read_text(encoding="utf-8")
         assert "saraiva_2025_rxivmaker" in updated_bib_content
         assert "Rxiv-Maker: an automated template engine" in updated_bib_content
-        assert "Bruno M. Saraiva and Guillaume Jaquemet and Ricardo Henriques" in updated_bib_content
+        assert (
+            "Bruno M. Saraiva and António D. Brito and Guillaume Jaquemet and Ricardo Henriques" in updated_bib_content
+        )
 
         # Verify original content is preserved
         assert "example2024" in updated_bib_content
@@ -259,7 +261,7 @@ Original acknowledgements.
         bib_content = """
 @misc{saraiva_2025_rxivmaker,
       title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
-      author={Bruno M. Saraiva and Guillaume Jaquemet and Ricardo Henriques},
+      author={Bruno M. Saraiva and António D. Brito and Guillaume Jaquemet and Ricardo Henriques},
       year={2025},
       eprint={2508.00836},
       archivePrefix={arXiv},
@@ -311,7 +313,7 @@ Original acknowledgements.
 
         # Verify content is correct
         assert "Rxiv-Maker: an automated template engine" in content
-        assert "Bruno M. Saraiva and Guillaume Jaquemet and Ricardo Henriques" in content
+        assert "Bruno M. Saraiva and António D. Brito and Guillaume Jaquemet and Ricardo Henriques" in content
 
     def test_acknowledgment_includes_version_in_generated_manuscript(self):
         """Test that acknowledgment text includes version in generated manuscript."""

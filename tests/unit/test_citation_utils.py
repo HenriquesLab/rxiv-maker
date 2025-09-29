@@ -61,7 +61,7 @@ class TestInjectRxivCitation:
         content = self.bib_file.read_text(encoding="utf-8")
         assert "saraiva_2025_rxivmaker" in content
         assert "Rxiv-Maker: an automated template engine" in content
-        assert "Bruno M. Saraiva and Guillaume Jaquemet and Ricardo Henriques" in content
+        assert "Bruno M. Saraiva and António D. Brito and Guillaume Jaquemet and Ricardo Henriques" in content
         assert "2025" in content
         assert "arxiv.org/abs/2508.00836" in content
 
@@ -91,12 +91,16 @@ class TestInjectRxivCitation:
         assert "Bruno M. Saraiva" in content
 
     def test_inject_citation_skips_if_already_exists(self, capsys):
-        """Test that citation injection is skipped if citation already exists."""
-        # Create bibliography with existing rxiv-maker citation
+        """Test that citation injection is skipped if citation already exists and is up-to-date."""
+        # Create bibliography with current, complete rxiv-maker citation
         existing_content = """@misc{saraiva_2025_rxivmaker,
-      title={Existing Rxiv-Maker Citation},
-      author={Bruno M. Saraiva},
-      year={2025}
+      title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
+      author={Bruno M. Saraiva and António D. Brito and Guillaume Jaquemet and Ricardo Henriques},
+      year={2025},
+      eprint={2508.00836},
+      archivePrefix={arXiv},
+      primaryClass={cs.DL},
+      url={https://arxiv.org/abs/2508.00836},
 }
 """
         self.bib_file.write_text(existing_content, encoding="utf-8")
@@ -109,7 +113,7 @@ class TestInjectRxivCitation:
 
         # Check that warning message was printed
         captured = capsys.readouterr()
-        assert "Rxiv-Maker citation already exists in bibliography" in captured.out
+        assert "Rxiv-Maker citation already exists and is up-to-date in bibliography" in captured.out
 
         # Content should remain unchanged
         content = self.bib_file.read_text(encoding="utf-8")
@@ -260,7 +264,7 @@ class TestInjectRxivCitation:
         # Validate required BibTeX fields
         assert "@misc{saraiva_2025_rxivmaker," in content
         assert "title={Rxiv-Maker: an automated template engine for streamlined scientific publications}" in content
-        assert "author={Bruno M. Saraiva and Guillaume Jaquemet and Ricardo Henriques}" in content
+        assert "author={Bruno M. Saraiva and António D. Brito and Guillaume Jaquemet and Ricardo Henriques}" in content
         assert "year={2025}" in content
         assert "eprint={2508.00836}" in content
         assert "archivePrefix={arXiv}" in content
@@ -280,3 +284,171 @@ class TestInjectRxivCitation:
         captured = capsys.readouterr()
         assert "✅ Rxiv-Maker citation injected into" in captured.out
         assert str(self.bib_file) in captured.out
+
+    def test_inject_citation_updates_outdated_citation(self, capsys):
+        """Test that outdated citations are updated to latest version."""
+        # Create bibliography with outdated rxiv-maker citation (missing António D. Brito)
+        outdated_content = """@misc{saraiva_2025_rxivmaker,
+      title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
+      author={Bruno M. Saraiva and Guillaume Jaquemet and Ricardo Henriques},
+      year={2025},
+      eprint={2508.00836},
+      archivePrefix={arXiv},
+      primaryClass={cs.DL},
+      url={https://arxiv.org/abs/2508.00836},
+}
+"""
+        self.bib_file.write_text(outdated_content, encoding="utf-8")
+
+        yaml_metadata = {"acknowledge_rxiv_maker": True}
+
+        with patch.dict(os.environ, {"MANUSCRIPT_PATH": str(self.manuscript_dir)}):
+            with patch("pathlib.Path.cwd", return_value=Path(self.temp_dir)):
+                inject_rxiv_citation(yaml_metadata)
+
+        # Check that update message was printed
+        captured = capsys.readouterr()
+        assert "✅ Rxiv-Maker citation updated to latest version" in captured.out
+
+        # Check content was updated with new author list
+        content = self.bib_file.read_text(encoding="utf-8")
+        assert "António D. Brito" in content
+        assert "Bruno M. Saraiva and António D. Brito and Guillaume Jaquemet and Ricardo Henriques" in content
+
+    def test_inject_citation_updates_malformed_citation(self, capsys):
+        """Test that malformed citations are updated correctly."""
+        # Create bibliography with malformed rxiv-maker citation
+        malformed_content = """@misc{saraiva_2025_rxivmaker,
+      title={Old Title},
+      author={Bruno M. Saraiva},
+      year={2024}
+}
+"""
+        self.bib_file.write_text(malformed_content, encoding="utf-8")
+
+        yaml_metadata = {"acknowledge_rxiv_maker": True}
+
+        with patch.dict(os.environ, {"MANUSCRIPT_PATH": str(self.manuscript_dir)}):
+            with patch("pathlib.Path.cwd", return_value=Path(self.temp_dir)):
+                inject_rxiv_citation(yaml_metadata)
+
+        # Check that update message was printed
+        captured = capsys.readouterr()
+        assert "✅ Rxiv-Maker citation updated to latest version" in captured.out
+
+        # Check content was completely replaced with correct version
+        content = self.bib_file.read_text(encoding="utf-8")
+        assert "António D. Brito" in content
+        assert "Rxiv-Maker: an automated template engine for streamlined scientific publications" in content
+        assert "2508.00836" in content
+        assert "Old Title" not in content
+
+    def test_inject_citation_preserves_surrounding_content(self, capsys):
+        """Test that updating citation preserves other bibliography entries."""
+        # Create bibliography with multiple entries including outdated rxiv-maker citation
+        complex_content = """@article{example2024,
+    title = {Example Article},
+    author = {Jane Doe},
+    year = {2024}
+}
+
+@misc{saraiva_2025_rxivmaker,
+      title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
+      author={Bruno M. Saraiva and Guillaume Jaquemet and Ricardo Henriques},
+      year={2025}
+}
+
+@book{another2023,
+    title = {Another Reference},
+    author = {John Smith},
+    year = {2023}
+}
+"""
+        self.bib_file.write_text(complex_content, encoding="utf-8")
+
+        yaml_metadata = {"acknowledge_rxiv_maker": True}
+
+        with patch.dict(os.environ, {"MANUSCRIPT_PATH": str(self.manuscript_dir)}):
+            with patch("pathlib.Path.cwd", return_value=Path(self.temp_dir)):
+                inject_rxiv_citation(yaml_metadata)
+
+        # Check that update message was printed
+        captured = capsys.readouterr()
+        assert "✅ Rxiv-Maker citation updated to latest version" in captured.out
+
+        # Check content preserved other entries but updated rxiv-maker citation
+        content = self.bib_file.read_text(encoding="utf-8")
+        assert "example2024" in content
+        assert "Jane Doe" in content
+        assert "another2023" in content
+        assert "John Smith" in content
+        assert "António D. Brito" in content
+        assert "Bruno M. Saraiva and António D. Brito and Guillaume Jaquemet and Ricardo Henriques" in content
+
+    def test_extract_existing_citation_function(self):
+        """Test the extract_existing_citation helper function."""
+        from rxiv_maker.utils.citation_utils import extract_existing_citation
+
+        # Test with existing citation
+        bib_content = """@article{example2024,
+    title = {Example Article},
+    author = {Jane Doe},
+    year = {2024}
+}
+
+@misc{saraiva_2025_rxivmaker,
+      title={Rxiv-Maker: test},
+      author={Test Author},
+      year={2025}
+}
+
+@book{another2023,
+    title = {Another Reference}
+}
+"""
+        result = extract_existing_citation(bib_content)
+        assert result is not None
+        citation_content, start_idx, end_idx = result
+        assert "saraiva_2025_rxivmaker" in citation_content
+        assert "Test Author" in citation_content
+        assert start_idx > 0
+        assert end_idx > start_idx
+
+        # Test with no existing citation
+        bib_content_no_citation = """@article{example2024,
+    title = {Example Article},
+    author = {Jane Doe},
+    year = {2024}
+}
+"""
+        result_none = extract_existing_citation(bib_content_no_citation)
+        assert result_none is None
+
+    def test_is_citation_outdated_function(self):
+        """Test the is_citation_outdated helper function."""
+        from rxiv_maker.utils.citation_utils import is_citation_outdated
+
+        # Test outdated citation (missing António D. Brito)
+        outdated_citation = """@misc{saraiva_2025_rxivmaker,
+      title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
+      author={Bruno M. Saraiva and Guillaume Jaquemet and Ricardo Henriques},
+      year={2025}
+}"""
+        assert is_citation_outdated(outdated_citation) is True
+
+        # Test current citation
+        current_citation = """@misc{saraiva_2025_rxivmaker,
+      title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
+      author={Bruno M. Saraiva and António D. Brito and Guillaume Jaquemet and Ricardo Henriques},
+      year={2025},
+      eprint={2508.00836}
+}"""
+        assert is_citation_outdated(current_citation) is False
+
+        # Test malformed citation
+        malformed_citation = """@misc{saraiva_2025_rxivmaker,
+      title={Old Title},
+      author={Bruno M. Saraiva},
+      year={2024}
+}"""
+        assert is_citation_outdated(malformed_citation) is True
