@@ -4,7 +4,7 @@
 
 # Rxiv-Maker
 
-<img src="src/logo/logo-rxiv-maker.svg" align="right" width="200" style="margin-left: 20px;"/>
+<img src="https://raw.githubusercontent.com/HenriquesLab/rxiv-maker/main/src/logo/logo-rxiv-maker.svg" align="right" width="200" style="margin-left: 20px;"/>
 
 **Write scientific preprints in Markdown. Generate publication-ready PDFs efficiently.**
 
