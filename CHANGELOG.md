@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.8.3] - 2025-09-29
+
+### Fixed
+- **🔧 Build Configuration**: Fixed `pyproject.toml` structure by correctly placing `dependencies` under `[project]` section instead of inside `[project.urls]`
+- **📦 PyPI Publishing**: Resolved build errors that prevented v1.8.1 and v1.8.2 from being published
+- **🖼️ Logo Display**: Ensures all logo and metadata improvements from v1.8.1 are now properly published to PyPI
+
+### Note
+This release ensures that all PyPI logo fixes and metadata enhancements are finally available to users.
+
 ## [v1.8.2] - 2025-09-29
 
 ### Fixed
