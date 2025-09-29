@@ -11,6 +11,7 @@ from .config import config_group as config
 
 # Removed: from .containers import containers_cmd (deprecated with container engine support)
 from .figures import figures
+from .get_rxiv_preprint import get_rxiv_preprint
 from .init import init
 from .install_deps import install_deps
 from .setup import setup
@@ -29,6 +30,7 @@ __all__ = [
     "completion_cmd",
     # Removed: "containers_cmd" (deprecated with container engine support)
     "figures",
+    "get_rxiv_preprint",
     "init",
     "install_deps",
     "setup",

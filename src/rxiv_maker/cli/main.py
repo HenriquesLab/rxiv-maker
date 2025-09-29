@@ -40,7 +40,7 @@ click.rich_click.COMMAND_GROUPS = {
         },
         {
             "name": "Workflow Commands",
-            "commands": ["arxiv", "track-changes", "setup"],
+            "commands": ["get-rxiv-preprint", "arxiv", "track-changes", "setup"],
         },
         {
             "name": "Configuration",
@@ -204,6 +204,7 @@ main.add_command(commands.pdf, name="pdf")
 main.add_command(commands.validate)
 main.add_command(commands.clean)
 main.add_command(commands.figures)
+main.add_command(commands.get_rxiv_preprint, name="get-rxiv-preprint")
 main.add_command(commands.arxiv)
 main.add_command(commands.init)
 main.add_command(commands.bibliography)
