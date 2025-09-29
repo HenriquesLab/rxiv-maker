@@ -513,13 +513,52 @@ def _process_figure_without_attributes(text: MarkdownContent, is_supplementary: 
     return pattern.sub(_repl, text)
 
 
+def _validate_url_domain(url: str) -> bool:
+    """Validate URL against trusted domains for security.
+
+    Args:
+        url: URL to validate
+
+    Returns:
+        True if URL is from a trusted domain, False otherwise
+    """
+    import urllib.parse
+
+    # Define trusted domains for figure URLs
+    trusted_domains = {
+        "raw.githubusercontent.com",  # GitHub raw content
+        "github.com",  # GitHub assets
+        "imgur.com",  # Popular image hosting
+        "i.imgur.com",  # Imgur direct images
+        "upload.wikimedia.org",  # Wikimedia images
+        "commons.wikimedia.org",  # Wikimedia commons
+        "via.placeholder.com",  # Placeholder images
+        "picsum.photos",  # Lorem picsum
+        "unsplash.com",  # Unsplash images
+        "images.unsplash.com",  # Unsplash direct
+    }
+
+    try:
+        parsed = urllib.parse.urlparse(url)
+        domain = parsed.netloc.lower()
+
+        # Remove www. prefix if present
+        if domain.startswith("www."):
+            domain = domain[4:]
+
+        return domain in trusted_domains
+    except Exception:
+        # If URL parsing fails, reject for security
+        return False
+
+
 def validate_figure_path(path: FigurePath) -> bool:
     r"""Validate a figure path for LaTeX inclusion.
 
     Rules:
       - Allow common image/vector formats (png, jpg, jpeg, pdf, svg, eps).
       - Allow extensionless paths (LaTeX can resolve via \DeclareGraphicsExtensions).
-      - Allow http/https in case an upstream step resolves/downloads.
+      - Allow http/https only from trusted domains for security.
     """
     if not isinstance(path, str):
         return False
@@ -527,9 +566,9 @@ def validate_figure_path(path: FigurePath) -> bool:
     if not s:
         return False
 
-    # Remote URLs are allowed (caller may prefetch/replace).
+    # Remote URLs are allowed only from trusted domains (security measure).
     if s.startswith(("http://", "https://")):
-        return True
+        return _validate_url_domain(s)
 
     # If extensionless, allow (LaTeX may infer extensions or your pipeline may add them).
     root, ext = os.path.splitext(s)

@@ -329,7 +329,20 @@ class PathManager:
 
         Returns:
             Normalized absolute path
+
+        Raises:
+            PathResolutionError: If path contains directory traversal patterns
         """
+        path_str = str(path)
+
+        # Security: Check for directory traversal patterns
+        if ".." in path_str or path_str.startswith("/"):
+            # Allow absolute paths that don't contain ..
+            if path_str.startswith("/") and ".." not in path_str:
+                pass  # Allow absolute paths without traversal
+            elif ".." in path_str:
+                raise PathResolutionError(f"Path traversal not allowed: {path}")
+
         path = Path(path)
 
         # Handle trailing slashes (fixes Issue #100)
@@ -342,7 +355,17 @@ class PathManager:
             path = self._working_dir / path
 
         # Use absolute() instead of resolve() to avoid symlink resolution on macOS
-        return path.absolute()
+        normalized = path.absolute()
+
+        # Additional security check: ensure normalized path doesn't escape working directory
+        # for relative paths
+        if not str(path).startswith("/"):  # Only check for relative paths
+            try:
+                normalized.relative_to(self._working_dir)
+            except ValueError:
+                raise PathResolutionError(f"Path escapes working directory: {path}") from None
+
+        return normalized
 
     def ensure_dir_exists(self, path: Union[str, Path]) -> Path:
         """Ensure directory exists, creating if necessary.

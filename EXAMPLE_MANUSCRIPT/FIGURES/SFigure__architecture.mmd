@@ -2,107 +2,94 @@
 config:
   theme: base
   themeVariables:
-    fontFamily: 'Arial, Helvetica, sans-serif'
+    fontFamily: ''
     fontSize: 16px
     primaryColor: '#ffffff'
     primaryTextColor: '#333333'
     primaryBorderColor: '#cccccc'
     lineColor: '#666666'
     background: '#ffffff'
-  layout: elk
+  layout: dagre
 ---
 flowchart TD
-  subgraph INPUT["📝 Input Layer"]
+ subgraph INPUT["📝 Input Layer"]
     direction LR
-    A1["📄 Manuscript<br>Markdown Files"]
-    A2["📚 References<br>BibTeX File"]
-    A3["🎨 Figure Sources<br>Scripts & Images"]
+        A1["📄 Manuscript<br>Markdown Files"]
+        A2["📚 References<br>BibTeX File"]
+        A3["🎨 Figure Sources<br>Scripts &amp; Images"]
   end
-
-  subgraph PROCESS["🔄 Processing Engine"]
+ subgraph PARSE["Parse & Convert"]
+    direction LR
+        B1["📝 Markdown<br>to LaTeX"]
+        B2["🎯 Process<br>Content"]
+  end
+ subgraph GEN["Generate & Assemble"]
+    direction LR
+        C1["🎨 Execute<br>Scripts"]
+        C2["📐 Build<br>Document"]
+  end
+ subgraph PROCESS["🔄 Processing Engine"]
     direction TB
-    subgraph PARSE["Parse & Convert"]
-      direction LR
-      B1["📝 Markdown<br>to LaTeX"]
-      B2["🎯 Process<br>Content"]
-    end
-    subgraph GEN["Generate & Assemble"]
-      direction LR
-      C1["🎨 Execute<br>Scripts"]
-      C2["📐 Build<br>Document"]
-    end
+        PARSE
+        GEN
   end
-
-  subgraph COMPILE["⚙️ LaTeX Compilation"]
+ subgraph COMPILE["⚙️ LaTeX Compilation"]
     direction LR
-    D1["🔧 pdflatex"]
-    D2["📖 BibTeX"]
+        D1["🔧 pdflatex"]
+        D2["📖 BibTeX"]
   end
-
-  subgraph OUTPUT["📄 Output Layer"]
+ subgraph OUTPUT["📄 Output Layer"]
     direction LR
-    E1["📄 Publication<br>PDF"]
-    E2["📝 LaTeX<br>Source"]
+        E1["📄 Publication<br>PDF"]
+        E2["📝 LaTeX<br>Source"]
   end
-
-  subgraph FEATURES["✨ Key Features"]
+ subgraph FEATURES["✨ Key Features"]
     direction TB
-    F1["🚀 Local-First<br>Execution"]
-    F2["📊 Intelligent<br>Caching"]
-    F3["✅ Automated<br>Validation"]
+        F1["🚀 Local-First<br>Execution"]
+        F2["📊 Intelligent<br>Caching"]
+        F3["✅ Automated<br>Validation"]
   end
-
-  %% Main flow
-  INPUT --> PROCESS
-  PROCESS --> COMPILE
-  COMPILE --> OUTPUT
-
-  %% Internal connections
-  A1 --> B1
-  A2 --> B2
-  A3 --> C1
-  B1 --> B2
-  B2 --> C2
-  C1 --> C2
-  C2 --> D1
-  D1 --> D2
-  D2 --> E1
-  D1 --> E2
-
-  %% Feature integration
-  FEATURES -.-> PROCESS
-  F2 -.-> C1
-  F3 -.-> COMPILE
-
-  %% Styling
-  INPUT:::inputBox
-  PROCESS:::processBox
-  COMPILE:::compileBox
-  OUTPUT:::outputBox
-  FEATURES:::featureBox
-  PARSE:::stageBox
-  GEN:::stageBox
-
-  A1:::componentBox
-  A2:::componentBox
-  A3:::componentBox
-  B1:::componentBox
-  B2:::componentBox
-  C1:::componentBox
-  C2:::componentBox
-  D1:::componentBox
-  D2:::componentBox
-  E1:::componentBox
-  E2:::componentBox
-  F1:::featureComponent
-  F2:::featureComponent
-  F3:::featureComponent
-
-  classDef inputBox fill:#e8f4fd,stroke:#1976d2,stroke-width:3px,color:#333
-  classDef processBox fill:#fff8e1,stroke:#f57c00,stroke-width:3px,color:#333
-  classDef compileBox fill:#e8f5e8,stroke:#388e3c,stroke-width:3px,color:#333
-  classDef outputBox fill:#fce4ec,stroke:#c2185b,stroke-width:3px,color:#333
-  classDef featureBox fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#333
-  classDef stageBox fill:#f5f5f5,stroke:#999999,stroke-width:2px,color:#333
-  classDef componentBox fill:#ffffff,stroke:#666666,stroke-width:2px,color:#333
-  classDef featureComponent fill:#ffffff,stroke:#7b1fa2,stroke-width:2px,color:#333
+    INPUT --> PROCESS
+    PROCESS --> COMPILE
+    COMPILE --> OUTPUT
+    A1 --> B1
+    A2 --> B2
+    A3 --> C1
+    B1 --> B2
+    B2 --> C2
+    C1 --> C2
+    C2 --> D1
+    D1 --> D2 & E2
+    D2 --> E1
+    FEATURES -.-> PROCESS
+    F2 -.-> C1
+    F3 -.-> COMPILE
+     A1:::componentBox
+     A2:::componentBox
+     A3:::componentBox
+     B1:::componentBox
+     B2:::componentBox
+     C1:::componentBox
+     C2:::componentBox
+     PARSE:::stageBox
+     GEN:::stageBox
+     D1:::componentBox
+     D2:::componentBox
+     E1:::componentBox
+     E2:::componentBox
+     F1:::featureComponent
+     F2:::featureComponent
+     F3:::featureComponent
+     INPUT:::inputBox
+     PROCESS:::processBox
+     COMPILE:::compileBox
+     OUTPUT:::outputBox
+     FEATURES:::featureBox
+    classDef inputBox fill:#e8f4fd,stroke:#1976d2,stroke-width:3px,color:#333
+    classDef processBox fill:#fff8e1,stroke:#f57c00,stroke-width:3px,color:#333
+    classDef compileBox fill:#e8f5e8,stroke:#388e3c,stroke-width:3px,color:#333
+    classDef outputBox fill:#fce4ec,stroke:#c2185b,stroke-width:3px,color:#333
+    classDef featureBox fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#333
+    classDef stageBox fill:#f5f5f5,stroke:#999999,stroke-width:2px,color:#333
+    classDef componentBox fill:#ffffff,stroke:#666666,stroke-width:2px,color:#333
+    classDef featureComponent fill:#ffffff,stroke:#7b1fa2,stroke-width:2px,color:#333

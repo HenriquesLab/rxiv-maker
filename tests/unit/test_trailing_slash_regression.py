@@ -2,6 +2,8 @@
 
 import os
 
+import pytest
+
 from rxiv_maker.engines.operations.build_manager import BuildManager
 
 
@@ -84,18 +86,24 @@ class TestTrailingSlashRegression:
 
         output_dir = temp_dir / "output"
 
-        edge_cases = [
+        # Test cases that should succeed
+        valid_edge_cases = [
             ("", "MANUSCRIPT"),  # Empty string
             (".", "MANUSCRIPT"),  # Current directory
-            ("..", "MANUSCRIPT"),  # Parent directory
         ]
 
-        for input_path, expected_name in edge_cases:
+        for input_path, expected_name in valid_edge_cases:
             build_manager = BuildManager(manuscript_path=input_path, output_dir=str(output_dir), skip_validation=True)
 
             assert build_manager.manuscript_name == expected_name, (
                 f"Failed for input '{input_path}': expected '{expected_name}', got '{build_manager.manuscript_name}'"
             )
+
+        # Test that ".." path is properly blocked for security
+        from rxiv_maker.core.path_manager import PathResolutionError
+
+        with pytest.raises(PathResolutionError, match="Path traversal not allowed"):
+            BuildManager(manuscript_path="..", output_dir=str(output_dir), skip_validation=True)
 
     def test_guillaume_exact_case(self, temp_dir):
         """Test Guillaume's exact use case: 'rxiv pdf CCT8_paper/'."""
