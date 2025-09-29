@@ -162,7 +162,7 @@ def build_pdf(manuscript_dir: Path) -> bool:
 
 def extract_pdf_text(manuscript_dir: Path) -> Optional[str]:
     """Extract text from the generated PDF."""
-    pdf_path = manuscript_dir / "output" / "EXAMPLE_MANUSCRIPT.pdf"
+    pdf_path = manuscript_dir / "output" / "../manuscript-rxiv-maker/MANUSCRIPT.pdf"
 
     if not pdf_path.exists():
         logging.error(f"PDF not found at {pdf_path}")

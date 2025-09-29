@@ -113,7 +113,7 @@ tips:
   # Community & Learning
   - id: "example_manuscript"
     title: "Learn from Examples"
-    message: "Check the EXAMPLE_MANUSCRIPT/ directory to see a complete working example with figures, citations, and formatting."
+    message: "Check out the example manuscript repository at https://github.com/HenriquesLab/manuscript-rxiv-maker to see a complete working example with figures, citations, and formatting."
     category: "learning"
     priority: 3
 

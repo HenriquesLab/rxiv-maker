@@ -30,7 +30,7 @@ class TestCodeSpanMathProcessing:
         assert "seqsplit" not in result
 
     def test_example_manuscript_problematic_text(self):
-        """Test the specific problematic text from EXAMPLE_MANUSCRIPT."""
+        """Test the specific problematic text from ../manuscript-rxiv-maker/MANUSCRIPT."""
         input_text = "Display equations utilise double dollar sign delimiters (`$$...$$`) for prominent expressions"
         result = process_code_spans(input_text)
 
@@ -144,7 +144,7 @@ Mathematical expressions are supported through (`$...$`) and (`$$...$$`) delimit
         assert len(lines_with_math_and_seqsplit) == 0, f"Found math in seqsplit: {lines_with_math_and_seqsplit}"
 
     def test_actual_example_manuscript_content(self):
-        """Test the actual problematic content from EXAMPLE_MANUSCRIPT."""
+        """Test the actual problematic content from ../manuscript-rxiv-maker/MANUSCRIPT."""
         markdown_content = """
 {#snote:mathematical-formulas} **Mathematical Formula Support**
 

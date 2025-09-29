@@ -243,10 +243,10 @@ class TestSecurityScanner(unittest.TestCase):
         import os
         import sys
 
-        # Change to EXAMPLE_MANUSCRIPT directory which has the required config
+        # Change to ../manuscript-rxiv-maker/MANUSCRIPT directory which has the required config
         original_cwd = os.getcwd()
         try:
-            example_path = os.path.join(os.getcwd(), "EXAMPLE_MANUSCRIPT")
+            example_path = os.path.join(os.getcwd(), "../manuscript-rxiv-maker/MANUSCRIPT")
             if os.path.exists(example_path):
                 os.chdir(example_path)
 

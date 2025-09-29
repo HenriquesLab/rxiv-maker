@@ -43,7 +43,7 @@ pip install -e ".[dev]"
 pre-commit install
 
 # Test changes
-rxiv pdf EXAMPLE_MANUSCRIPT/
+rxiv pdf ../manuscript-rxiv-maker/MANUSCRIPT/
 ```
 
 
@@ -107,11 +107,11 @@ docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
    ```bash
    # Test your setup with modern CLI
    rxiv --version                             # Check CLI installation
-   rxiv validate EXAMPLE_MANUSCRIPT/          # Validate example
-   rxiv pdf EXAMPLE_MANUSCRIPT/               # Build PDF
+   rxiv validate ../manuscript-rxiv-maker/MANUSCRIPT/          # Validate example
+   rxiv pdf ../manuscript-rxiv-maker/MANUSCRIPT/               # Build PDF
    
    # Or use legacy commands
-   MANUSCRIPT_PATH=EXAMPLE_MANUSCRIPT make pdf  # Legacy make interface
+   MANUSCRIPT_PATH=../manuscript-rxiv-maker/MANUSCRIPT make pdf  # Legacy make interface
    ```
 
 ### Development Workflow
@@ -154,8 +154,8 @@ docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
    nox -s build                               # Package build + validation
    
    # Test with manuscripts using modern CLI
-   rxiv validate EXAMPLE_MANUSCRIPT/          # Validate manuscript
-   rxiv pdf EXAMPLE_MANUSCRIPT/               # Build PDF
+   rxiv validate ../manuscript-rxiv-maker/MANUSCRIPT/          # Validate manuscript
+   rxiv pdf ../manuscript-rxiv-maker/MANUSCRIPT/               # Build PDF
    ```
 
 4. **Submit Your Contribution**

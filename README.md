@@ -113,7 +113,7 @@ sample_size = len(df)
 Our analysis of {{py:get sample_size}} samples in Figure @fig:results shows 
 significant improvement over previous methods [@smith2023; @jones2024].
 
-![Research Results](EXAMPLE_MANUSCRIPT/FIGURES/SFigure__arxiv_growth.py)
+![Research Results](https://github.com/HenriquesLab/manuscript-rxiv-maker/blob/main/MANUSCRIPT/FIGURES/SFigure__arxiv_growth.py)
 {#fig:results}
 
 The correlation coefficient was r = {{py:get correlation:.2f}} (p < 0.001).
@@ -184,7 +184,7 @@ rxiv track-changes v1 v2   # Visual version comparison
 
 - **💬 [GitHub Discussions](https://github.com/henriqueslab/rxiv-maker/discussions)** - Ask questions, share tips
 - **🐛 [Issues](https://github.com/henriqueslab/rxiv-maker/issues)** - Report bugs, request features  
-- **📚 [Example Manuscript](EXAMPLE_MANUSCRIPT/)** - Complete manuscript example
+- **📚 [Example Manuscript](https://github.com/HenriquesLab/manuscript-rxiv-maker)** - Complete manuscript example
 - **🧪 [Google Colab](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_colab.ipynb)** - Try without installing
 
 ## 🏗️ Contributing

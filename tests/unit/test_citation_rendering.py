@@ -175,11 +175,11 @@ class TestCitationProcessingIntegration:
     """Integration tests for the full citation processing pipeline."""
 
     def test_example_manuscript_citations_resolved(self):
-        """Test that EXAMPLE_MANUSCRIPT citations are properly resolved."""
+        """Test that ../manuscript-rxiv-maker/MANUSCRIPT citations are properly resolved."""
         # This test checks that the build process properly resolves citations
-        example_manuscript_path = Path("EXAMPLE_MANUSCRIPT")
+        example_manuscript_path = Path("../manuscript-rxiv-maker/MANUSCRIPT")
         if not example_manuscript_path.exists():
-            pytest.skip("EXAMPLE_MANUSCRIPT not found")
+            pytest.skip("../manuscript-rxiv-maker/MANUSCRIPT not found")
 
         # Check that the bibliography file has all needed entries
         bib_path = example_manuscript_path / "03_REFERENCES.bib"

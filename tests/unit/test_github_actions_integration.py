@@ -166,8 +166,8 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
             },
             {
                 "event_name": "push",
-                "env_path": "EXAMPLE_MANUSCRIPT",
-                "expected": "EXAMPLE_MANUSCRIPT",
+                "env_path": "../manuscript-rxiv-maker/MANUSCRIPT",
+                "expected": "../manuscript-rxiv-maker/MANUSCRIPT",
             },
         ]
 
@@ -177,7 +177,7 @@ class TestGitHubActionsWorkflow(unittest.TestCase):
                 if case.get("event_name") == "workflow_dispatch":
                     manuscript_path = case.get("input_path", "MANUSCRIPT")
                 else:
-                    manuscript_path = case.get("env_path", "EXAMPLE_MANUSCRIPT")
+                    manuscript_path = case.get("env_path", "../manuscript-rxiv-maker/MANUSCRIPT")
 
                 self.assertEqual(manuscript_path, case["expected"])
 
@@ -255,7 +255,7 @@ class TestWorkflowStepSimulation(unittest.TestCase):
     def test_build_configuration_logging(self):
         """Test build configuration logging."""
         config_info = {
-            "manuscript_path": "EXAMPLE_MANUSCRIPT",
+            "manuscript_path": "../manuscript-rxiv-maker/MANUSCRIPT",
             "python_version": "3.11.0",
             "latex_version": "pdfTeX 3.141592653",
             "current_directory": "/workspace",
@@ -470,7 +470,7 @@ class TestWorkflowIntegrationScenarios(unittest.TestCase):
         """Test multi-manuscript directory support."""
         supported_manuscripts = [
             "MANUSCRIPT",
-            "EXAMPLE_MANUSCRIPT",
+            "../manuscript-rxiv-maker/MANUSCRIPT",
             "custom/path/to/manuscript",
         ]
 
