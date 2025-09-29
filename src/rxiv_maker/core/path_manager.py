@@ -344,7 +344,7 @@ class PathManager:
                 # Allow paths that resolve to reasonable locations
                 # Block only if the path tries to escape to system directories
                 path_parts = str(resolved_path).split(os.sep)
-                suspicious_dirs = ['etc', 'root', 'home', 'usr', 'var', 'boot', 'sys', 'proc']
+                suspicious_dirs = ["etc", "root", "home", "usr", "var", "boot", "sys", "proc"]
 
                 # Check if trying to access system directories in suspicious ways
                 if len([p for p in path_parts if p in suspicious_dirs and path_parts.index(p) < 3]) > 0:
@@ -353,7 +353,7 @@ class PathManager:
                         raise PathResolutionError(f"Path traversal not allowed: {path}")
             except (OSError, ValueError):
                 # If path resolution fails, it might be malicious
-                raise PathResolutionError(f"Path traversal not allowed: {path}")
+                raise PathResolutionError(f"Path traversal not allowed: {path}") from None
 
         path = Path(path)
 
