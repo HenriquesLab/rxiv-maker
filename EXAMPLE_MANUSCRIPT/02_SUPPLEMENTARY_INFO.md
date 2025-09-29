@@ -47,7 +47,7 @@ For complex table structures that require precise control over formatting, multi
 
 {{tex:
 \small
-\begin{longtable}{|p{0.28\textwidth}|p{0.38\textwidth}|p{0.24\textwidth}|}
+\begin{longtable}{|p{0.28\textwidth}|p{0.3\textwidth}|p{0.34\textwidth}|}
 \hline
 \textbf{Markdown Input} & \textbf{LaTeX Output} & \textbf{Description} \\
 \hline
