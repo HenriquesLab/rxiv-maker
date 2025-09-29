@@ -335,12 +335,24 @@ class PathManager:
         """
         path_str = str(path)
 
-        # Security: Check for directory traversal patterns
-        if ".." in path_str or path_str.startswith("/"):
-            # Allow absolute paths that don't contain ..
-            if path_str.startswith("/") and ".." not in path_str:
-                pass  # Allow absolute paths without traversal
-            elif ".." in path_str:
+        # Security: Check for malicious directory traversal patterns
+        if ".." in path_str:
+            # Allow reasonable relative paths like ../manuscript-rxiv-maker/MANUSCRIPT
+            # but block suspicious patterns like ../../../../../../etc/passwd
+            resolved_path = Path(path).resolve()
+            try:
+                # Allow paths that resolve to reasonable locations
+                # Block only if the path tries to escape to system directories
+                path_parts = str(resolved_path).split(os.sep)
+                suspicious_dirs = ['etc', 'root', 'home', 'usr', 'var', 'boot', 'sys', 'proc']
+
+                # Check if trying to access system directories in suspicious ways
+                if len([p for p in path_parts if p in suspicious_dirs and path_parts.index(p) < 3]) > 0:
+                    # Only block if accessing system dirs near root
+                    if not str(resolved_path).startswith(str(Path.cwd().parent.parent)):
+                        raise PathResolutionError(f"Path traversal not allowed: {path}")
+            except (OSError, ValueError):
+                # If path resolution fails, it might be malicious
                 raise PathResolutionError(f"Path traversal not allowed: {path}")
 
         path = Path(path)
