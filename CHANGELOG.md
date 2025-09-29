@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.8.0] - 2025-01-29
+
+### Added
+- **🚀 New CLI Command**: Added `rxiv get-rxiv-preprint` command for easy manuscript setup
+  - **Quick Start**: Simple command to clone the official example manuscript repository
+  - **Smart Directory Handling**: Defaults to `manuscript-rxiv-maker/` or custom directory with conflict resolution
+  - **Rich User Experience**: Progress indicators, helpful guidance, and comprehensive error handling
+  - **Usage Modes**: Standard and quiet modes for different user preferences
+  - **Clear Onboarding**: Provides step-by-step instructions after cloning: `cd manuscript-rxiv-maker/MANUSCRIPT && rxiv pdf`
+  - **Workflow Integration**: Positioned in "Workflow Commands" group for logical organization
+
 ## [v1.7.9] - 2025-01-18
 
 ### Fixed
