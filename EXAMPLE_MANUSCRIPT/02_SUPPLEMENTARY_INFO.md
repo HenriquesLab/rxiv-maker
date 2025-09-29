@@ -84,7 +84,7 @@ For complex table structures that require precise control over formatting, multi
 
 \multicolumn{3}{|c|}{\textbf{Links and URLs}} \\
 \hline
-[link text](url) & \textbackslash href\{url\}\{link text\} & Hyperlink with custom text \\
+{[}link text{]}(url) & \textbackslash href\{url\}\{link text\} & Hyperlink with custom text \\
 https://example.com & \textbackslash url\{https://example.com\} & Bare URL \\
 \hline
 
