@@ -34,6 +34,7 @@ Issues = "https://github.com/HenriquesLab/rxiv-maker/issues"
 Changelog = "https://github.com/HenriquesLab/rxiv-maker/blob/main/CHANGELOG.md"
 "Bug Reports" = "https://github.com/HenriquesLab/rxiv-maker/issues"
 "Source Code" = "https://github.com/HenriquesLab/rxiv-maker"
+
 dependencies = [
     # Core scientific libraries for figure generation (optional for users who don't generate figures)
     "matplotlib>=3.7.0",
