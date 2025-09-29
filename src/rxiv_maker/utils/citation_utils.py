@@ -1,8 +1,61 @@
 """Citation handling utilities for Rxiv-Maker."""
 
 import os
+import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional, Tuple
+
+# Current canonical rxiv-maker citation
+CANONICAL_RXIV_CITATION = """@misc{saraiva_2025_rxivmaker,
+      title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
+      author={Bruno M. Saraiva and António D. Brito and Guillaume Jaquemet and Ricardo Henriques},
+      year={2025},
+      eprint={2508.00836},
+      archivePrefix={arXiv},
+      primaryClass={cs.DL},
+      url={https://arxiv.org/abs/2508.00836},
+}"""
+
+
+def extract_existing_citation(bib_content: str) -> Optional[Tuple[str, int, int]]:
+    """Extract existing rxiv-maker citation from bibliography content.
+
+    Args:
+        bib_content: The bibliography file content
+
+    Returns:
+        Tuple of (citation_content, start_index, end_index) if found, None otherwise
+    """
+    # Pattern to match the complete citation block for saraiva_2025_rxivmaker
+    pattern = r"@\w+\s*\{\s*saraiva_2025_rxivmaker\s*,.*?\n\s*\}"
+
+    match = re.search(pattern, bib_content, re.DOTALL | re.IGNORECASE)
+    if match:
+        return match.group(0), match.start(), match.end()
+    return None
+
+
+def is_citation_outdated(existing_citation: str) -> bool:
+    """Check if the existing citation is outdated compared to canonical version.
+
+    Args:
+        existing_citation: The existing citation content
+
+    Returns:
+        True if citation needs updating, False if it's current
+    """
+    # Extract key fields for comparison
+    current_authors = "Bruno M. Saraiva and António D. Brito and Guillaume Jaquemet and Ricardo Henriques"
+    current_title = "Rxiv-Maker: an automated template engine for streamlined scientific publications"
+    current_eprint = "2508.00836"
+
+    # Check if citation contains all current required elements
+    has_current_authors = current_authors in existing_citation
+    has_current_title = current_title in existing_citation
+    has_current_eprint = current_eprint in existing_citation
+
+    # Citation is outdated if any key element is missing
+    return not (has_current_authors and has_current_title and has_current_eprint)
 
 
 def inject_rxiv_citation(yaml_metadata: dict[str, Any]) -> None:
@@ -40,31 +93,39 @@ def inject_rxiv_citation(yaml_metadata: dict[str, Any]) -> None:
         print(f"Error reading bibliography file: {e}")
         return
 
-    # Check if citation already exists
-    if "saraiva_2025_rxivmaker" in bib_content:
-        print("Rxiv-Maker citation already exists in bibliography")
-        return
+    # Check if citation already exists and whether it needs updating
+    existing_citation_info = extract_existing_citation(bib_content)
 
-    # Define the Rxiv-Maker citation
-    rxiv_citation = """
-@misc{saraiva_2025_rxivmaker,
-      title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
-      author={Bruno M. Saraiva and Guillaume Jaquemet and Ricardo Henriques},
-      year={2025},
-      eprint={2508.00836},
-      archivePrefix={arXiv},
-      primaryClass={cs.DL},
-      url={https://arxiv.org/abs/2508.00836},
-}
-"""
+    if existing_citation_info:
+        existing_citation, start_idx, end_idx = existing_citation_info
 
-    # Append citation to bibliography file
+        if is_citation_outdated(existing_citation):
+            # Update existing outdated citation
+            try:
+                # Replace the outdated citation with the current version
+                updated_content = bib_content[:start_idx] + CANONICAL_RXIV_CITATION + bib_content[end_idx:]
+
+                with open(bib_file_path, "w", encoding="utf-8") as f:
+                    f.write(updated_content)
+
+                print(f"✅ Rxiv-Maker citation updated to latest version in {bib_file_path}")
+                return
+
+            except Exception as e:
+                print(f"Error updating citation in bibliography file: {e}")
+                return
+        else:
+            # Citation exists and is up-to-date
+            print("Rxiv-Maker citation already exists and is up-to-date in bibliography")
+            return
+
+    # No existing citation found, append new one
     try:
         with open(bib_file_path, "a", encoding="utf-8") as f:
             # Add newline if file doesn't end with one
             if bib_content and not bib_content.endswith("\n"):
                 f.write("\n")
-            f.write(rxiv_citation)
+            f.write("\n" + CANONICAL_RXIV_CITATION)
 
         print(f"✅ Rxiv-Maker citation injected into {bib_file_path}")
     except Exception as e:
