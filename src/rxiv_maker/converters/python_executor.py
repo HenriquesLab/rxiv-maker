@@ -135,8 +135,8 @@ class PythonExecutor:
             if manuscript_src_py.exists() and manuscript_src_py.is_dir():
                 paths.append(str(manuscript_src_py.absolute()))
 
-            # Also check for EXAMPLE_MANUSCRIPT/src/py structure
-            example_src_py = self.manuscript_dir / "EXAMPLE_MANUSCRIPT" / "src" / "py"
+            # Also check for ../manuscript-rxiv-maker/MANUSCRIPT/src/py structure
+            example_src_py = self.manuscript_dir / "../manuscript-rxiv-maker/MANUSCRIPT" / "src" / "py"
             if example_src_py.exists() and example_src_py.is_dir():
                 paths.append(str(example_src_py.absolute()))
 

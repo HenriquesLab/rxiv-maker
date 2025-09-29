@@ -14,7 +14,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # Configuration
-MANUSCRIPT_PATH="${1:-EXAMPLE_MANUSCRIPT}"
+MANUSCRIPT_PATH="${1:-../manuscript-rxiv-maker/MANUSCRIPT}"
 OUTPUT_DIR="${2:-output}"
 WORK_DIR="${OUTPUT_DIR}/track_changes_temp"
 

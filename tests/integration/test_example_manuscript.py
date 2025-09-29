@@ -47,17 +47,17 @@ class TestExampleManuscript:
 
     @pytest.fixture
     def example_manuscript_copy(self, execution_engine):
-        """Create a temporary copy of EXAMPLE_MANUSCRIPT for testing.
+        """Create a temporary copy of MANUSCRIPT for testing.
 
         CRITICAL: This copy includes the DATA directory and all Python execution
         will happen with the manuscript directory as the working directory.
         Paths like 'DATA/arxiv_monthly_submissions.csv' should work correctly.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
-            src_path = Path("EXAMPLE_MANUSCRIPT")
-            dst_path = Path(tmpdir) / "EXAMPLE_MANUSCRIPT"
+            src_path = Path("../manuscript-rxiv-maker/MANUSCRIPT")
+            dst_path = Path(tmpdir) / "MANUSCRIPT"
 
-            # Copy the entire EXAMPLE_MANUSCRIPT directory
+            # Copy the entire MANUSCRIPT directory
             shutil.copytree(src_path, dst_path, dirs_exist_ok=True)
 
             # Clean any existing output
@@ -175,7 +175,7 @@ class TestExampleManuscript:
 
         # Check output PDF was created
         if execution_engine.engine_type == "local":
-            output_pdf = example_manuscript_copy / "output" / "EXAMPLE_MANUSCRIPT.pdf"
+            output_pdf = example_manuscript_copy / "output" / "MANUSCRIPT.pdf"
             figures_dir = example_manuscript_copy / "FIGURES"
             output_dir = example_manuscript_copy / "output"
         else:
@@ -188,9 +188,9 @@ class TestExampleManuscript:
                 figures_dir = Path("TEMP_TEST_MANUSCRIPT") / "FIGURES"
                 output_dir = Path("TEMP_TEST_MANUSCRIPT") / "output"
             else:
-                output_pdf = Path("EXAMPLE_MANUSCRIPT") / "output" / "EXAMPLE_MANUSCRIPT.pdf"
-                figures_dir = Path("EXAMPLE_MANUSCRIPT") / "FIGURES"
-                output_dir = Path("EXAMPLE_MANUSCRIPT") / "output"
+                output_pdf = Path("MANUSCRIPT") / "output" / "MANUSCRIPT.pdf"
+                figures_dir = Path("MANUSCRIPT") / "FIGURES"
+                output_dir = Path("MANUSCRIPT") / "output"
 
         # Detailed diagnostics if output doesn't exist
         print(f"🔍 Checking output PDF at: {output_pdf}")
@@ -246,12 +246,12 @@ class TestExampleManuscript:
         assert success, "Build failed"
 
         # Check output
-        output_pdf = example_manuscript_copy / "output" / "EXAMPLE_MANUSCRIPT.pdf"
+        output_pdf = example_manuscript_copy / "output" / "MANUSCRIPT.pdf"
         assert output_pdf.exists(), "Output PDF was not created"
         assert output_pdf.stat().st_size > 1000, "Output PDF is too small"
 
     def test_rxiv_validate_example_manuscript(self, example_manuscript_copy, execution_engine):
-        """Test validation of EXAMPLE_MANUSCRIPT."""
+        """Test validation of MANUSCRIPT."""
         print(f"\n🔧 Running validation test with {execution_engine.engine_type} engine")
 
         # Run figure generation first to ensure all figure files exist
@@ -310,7 +310,7 @@ class TestExampleManuscript:
         assert "✅" in result.stdout or "passed" in result.stdout.lower()
 
     def test_rxiv_figures_example_manuscript(self, example_manuscript_copy, execution_engine):
-        """Test figure generation for EXAMPLE_MANUSCRIPT."""
+        """Test figure generation for MANUSCRIPT."""
         print(f"\n🔧 Running figure generation test with {execution_engine.engine_type} engine")
         print(f"📁 Test manuscript path: {example_manuscript_copy}")
 
@@ -423,14 +423,14 @@ class TestExampleManuscript:
 
         # PDF should exist
         if execution_engine.engine_type == "local":
-            output_pdf = example_manuscript_copy / "output" / "EXAMPLE_MANUSCRIPT.pdf"
+            output_pdf = example_manuscript_copy / "output" / "MANUSCRIPT.pdf"
         else:
             # Determine output path based on which manuscript was used
             container_path = self._get_container_manuscript_path(execution_engine)
             if "TEMP_TEST_MANUSCRIPT" in container_path:
                 output_pdf = Path("TEMP_TEST_MANUSCRIPT") / "output" / "TEMP_TEST_MANUSCRIPT.pdf"
             else:
-                output_pdf = Path("EXAMPLE_MANUSCRIPT") / "output" / "EXAMPLE_MANUSCRIPT.pdf"
+                output_pdf = Path("MANUSCRIPT") / "output" / "MANUSCRIPT.pdf"
 
         print(f"🔍 Checking for PDF at: {output_pdf}")
         print(f"📁 PDF exists: {output_pdf.exists()}")
@@ -462,7 +462,7 @@ class TestExampleManuscript:
 
         # Should succeed (or gracefully fail if Make not available)
         if result.returncode == 0:
-            output_pdf = example_manuscript_copy / "output" / "EXAMPLE_MANUSCRIPT.pdf"
+            output_pdf = example_manuscript_copy / "output" / "MANUSCRIPT.pdf"
             assert output_pdf.exists(), "Make pdf did not create output"
 
     def test_rxiv_clean(self, example_manuscript_copy, execution_engine):

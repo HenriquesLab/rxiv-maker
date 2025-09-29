@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Backward Compatibility**: Maintains all existing text formatting functionality without breaking changes
 
 ### Enhanced
-- **📄 EXAMPLE_MANUSCRIPT Improvements**: Updated manuscript content with enhanced journal submission description
+- **📄 Example Manuscript Improvements**: Updated manuscript content with enhanced journal submission description (now in separate repository)
 - **📚 Documentation**: Fixed citation examples in supplementary documentation
 
 ## [v1.7.8] - 2025-01-16
@@ -51,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Test Results**: All E2E tests now pass (21 passed, 2 skipped, was 10 failing before)
 
 ### Documentation
-- **📖 Enhanced Examples**: Updated EXAMPLE_MANUSCRIPT with comprehensive formatting interaction examples
+- **📖 Enhanced Examples**: Updated example manuscript with comprehensive formatting interaction examples
   - **Syntax Reference**: Enhanced syntax reference table with underlined text and nested formatting examples
   - **Practical Demonstrations**: Added real-world examples of text formatting capabilities
 

@@ -335,13 +335,44 @@ class PathManager:
         """
         path_str = str(path)
 
-        # Security: Check for directory traversal patterns
-        if ".." in path_str or path_str.startswith("/"):
-            # Allow absolute paths that don't contain ..
-            if path_str.startswith("/") and ".." not in path_str:
-                pass  # Allow absolute paths without traversal
-            elif ".." in path_str:
+        # Security: Check for malicious directory traversal patterns
+        if ".." in path_str:
+            # Handle both Unix and Windows separators
+            normalized_path = path_str.replace("\\", "/")
+
+            # Allow only simple cases like ../manuscript-dir/file
+            # Block anything that could be an attack vector
+            path_parts = normalized_path.split("/")
+            dot_dot_count = path_parts.count("..")
+
+            # Check for suspicious patterns
+            suspicious_conditions = [
+                dot_dot_count > 1,  # Multiple .. in path
+                any(
+                    part in ["etc", "root", "usr", "var", "boot", "sys", "proc", "windows", "system32"]
+                    for part in path_parts
+                ),  # System directories in path
+                normalized_path.startswith("../.."),  # Starts with multiple traversals
+                "secret" in path_str.lower(),  # Contains potentially sensitive names
+            ]
+
+            if any(suspicious_conditions):
                 raise PathResolutionError(f"Path traversal not allowed: {path}")
+
+            # Additional check - resolve and verify the path doesn't escape too far up
+            try:
+                resolved_path = Path(path).resolve()
+                # If it resolves outside of a reasonable boundary, block it
+                cwd_parts = len(Path.cwd().parts)
+                resolved_parts = len(resolved_path.parts)
+
+                # If the resolved path has significantly fewer parts than CWD, it might be traversing up too far
+                if resolved_parts < cwd_parts - 2:
+                    raise PathResolutionError(f"Path traversal not allowed: {path}")
+
+            except (OSError, ValueError):
+                # If path resolution fails, it might be malicious
+                raise PathResolutionError(f"Path traversal not allowed: {path}") from None
 
         path = Path(path)
 
