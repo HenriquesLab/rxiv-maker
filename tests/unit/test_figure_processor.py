@@ -314,8 +314,8 @@ class TestGuillaumeFigureIssues:
                 )
 
                 # Should use direct path, not subdirectory format
-                assert "../FIGURES/Fig1.png" in latex_result_with_ready, (
-                    "Should use ready file directly: ../FIGURES/Fig1.png"
+                assert "FIGURES/Fig1.png" in latex_result_with_ready, (
+                    "Should use ready file directly: FIGURES/Fig1.png (figures copied to output directory)"
                 )
                 assert "Figures/Fig1/Fig1.png" not in latex_result_with_ready, (
                     "Should NOT use subdirectory format when ready file exists"
@@ -358,8 +358,8 @@ class TestGuillaumeFigureIssues:
                 )
 
                 # Should use direct path when ready file exists
-                assert "../FIGURES/Fig1.png" in latex_result_with_ready, (
-                    "Should use ready file directly even without MANUSCRIPT_PATH"
+                assert "FIGURES/Fig1.png" in latex_result_with_ready, (
+                    "Should use ready file directly even without MANUSCRIPT_PATH (figures copied to output directory)"
                 )
 
             finally:
@@ -391,8 +391,8 @@ class TestGuillaumeFigureIssues:
                 )
 
                 # Should use direct format (Guillaume's implementation)
-                assert "../FIGURES/GeneratedFig.png" in latex_result_without_ready, (
-                    "Should use direct format for figure path"
+                assert "FIGURES/GeneratedFig.png" in latex_result_without_ready, (
+                    "Should use direct format for figure path (figures copied to output directory)"
                 )
 
                 # Test Case 2: With ready file - should use direct format
@@ -404,7 +404,9 @@ class TestGuillaumeFigureIssues:
                 )
 
                 # Should use direct path when ready file exists
-                assert "../FIGURES/ReadyFig.png" in latex_result_with_ready, "Should use ready file directly"
+                assert "FIGURES/ReadyFig.png" in latex_result_with_ready, (
+                    "Should use ready file directly (figures copied to output directory)"
+                )
                 assert "Figures/ReadyFig/ReadyFig.png" not in latex_result_with_ready, (
                     "Should NOT use subdirectory format for ready files"
                 )
@@ -502,8 +504,8 @@ class TestGuillaumeFigureIssues:
                 figure_latex = create_latex_figure_environment(
                     path="FIGURES/Figure1.png", caption="Test caption", attributes={"id": "fig:Figure1"}
                 )
-                assert "../FIGURES/Figure1.png" in figure_latex, (
-                    "Ready file should use relative path with correct casing"
+                assert "FIGURES/Figure1.png" in figure_latex, (
+                    "Ready file should use FIGURES/ path (figures copied to output directory)"
                 )
                 assert "FIGURES/Figure1/Figure1.png" not in figure_latex, "Ready file should NOT use subdirectory path"
 

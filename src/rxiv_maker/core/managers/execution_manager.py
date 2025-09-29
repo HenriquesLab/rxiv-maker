@@ -783,9 +783,10 @@ def create_execution_manager(
         if mode_str in ["docker", "podman"]:
             raise ValueError(
                 f"Container engine '{mode_str}' is no longer supported. "
-                "Docker and Podman engines have been deprecated. "
-                "For containerized execution, please run rxiv-maker from within a Docker container. "
-                "See the documentation for migration instructions."
+                "Docker and Podman engines have been deprecated in v1.7.9. "
+                "For containerized execution, use docker-rxiv-maker repository: "
+                "https://github.com/HenriquesLab/docker-rxiv-maker. "
+                "Migration guide: https://github.com/HenriquesLab/rxiv-maker/blob/main/docs/migration-v1.7.9.md"
             )
 
         # Convert to enum for local mode

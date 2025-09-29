@@ -132,7 +132,7 @@ class TestFigureConversion:
         result = convert_figures_to_latex(markdown)
 
         assert r"\begin{figure}[!htbp]" in result
-        assert r"\includegraphics[width=\linewidth,keepaspectratio,draft=false]{../FIGURES/simple.png}" in result
+        assert r"\includegraphics[width=\linewidth,keepaspectratio,draft=false]{FIGURES/simple.png}" in result
         assert r"\caption{Simple Caption}" in result
         assert r"\end{figure}" in result
 

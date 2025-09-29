@@ -41,6 +41,13 @@ pipx install rxiv-maker
 rxiv check-installation
 ```
 
+**📋 Requirements:**
+- **LaTeX Distribution**: Required for PDF generation
+  - **macOS**: MacTeX (recommended) or BasicTeX
+  - **Windows**: MiKTeX or TeX Live
+  - **Linux**: TeX Live (install via system package manager)
+- **Python 3.11+**: For rxiv-maker CLI and figure generation
+
 **Need help?** 📖 **[Installation Guide](docs/installation.md)**
 
 ## 🔥 Quick Start
@@ -142,13 +149,24 @@ The correlation coefficient was r = {{py:get correlation:.2f}} (p < 0.001).
 - **Collaborative preprint writing** with version control
 - **Supplementary materials** with automated generation
 
-## 🏃‍♀️ Alternative Workflows
+## 🏃‍♀️ Ecosystem & Workflows
 
-**Need specialized environments?**
+**The rxiv-maker ecosystem is streamlined around core tools:**
 
-- **🌐 Google Colab**: Browser-based editing and PDF generation  
-- **⚡ GitHub Actions**: Automated cloud builds for teams
-- **🐳 Docker**: Use [docker-rxiv-maker](https://github.com/HenriquesLab/docker-rxiv-maker) for containerized execution
+### 🔧 **Local Development**
+- **📝 VS Code Extension**: [vscode-rxiv-maker](https://github.com/HenriquesLab/vscode-rxiv-maker) for enhanced editing
+- **⚡ Local LaTeX**: Native system installation for fastest builds
+- **🔗 Git Integration**: Version control for manuscripts and figures
+
+### 🐳 **Containerized Execution**
+- **🐳 Docker**: [docker-rxiv-maker](https://github.com/HenriquesLab/docker-rxiv-maker) for isolated environments
+- **☁️ GitHub Actions**: Automated cloud builds and CI/CD
+- **🌐 Google Colab**: Browser-based editing and PDF generation
+
+### 📦 **Simplified Architecture**
+> **Note**: As of v1.7.9, we've streamlined the ecosystem by removing deprecated package manager integrations (Homebrew/APT repositories) and legacy container engines. The focus is now on docker-rxiv-maker for containerized workflows and local LaTeX for development.
+>
+> **📋 [Migration Guide](docs/migration-v1.7.9.md)** - For users upgrading from previous versions
 
 ## 🚀 Essential Commands
 

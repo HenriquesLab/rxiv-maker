@@ -44,7 +44,7 @@ class TestFigurePathValidation:
             "FIGURES/test.pdf",
             "images/photo.jpg",
             "diagram.png",
-            "https://example.com/image.png",
+            "https://raw.githubusercontent.com/test/repo/image.png",
             "extensionless_file",  # Should be valid
         ]
 

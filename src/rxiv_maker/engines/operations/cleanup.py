@@ -94,35 +94,69 @@ class CleanupManager:
         # Define patterns for generated figure files
         figure_patterns = ["*.pdf", "*.png", "*.svg", "*.eps"]
 
+        # Define source file patterns that should NEVER be deleted
+        source_patterns = ["*.py", "*.R", "*.mmd", "*.md", "*.txt", "*.yaml", "*.yml", "*.json"]
+
         cleaned_files = []
 
         try:
+            # Build set of source files to preserve
+            source_files = set()
+            for pattern in source_patterns:
+                for file in self.figures_dir.glob(pattern):
+                    source_files.add(file.stem)  # Get filename without extension
+
             # Clean files in the main FIGURES directory
             for pattern in figure_patterns:
                 for file in self.figures_dir.glob(pattern):
-                    try:
-                        file.unlink()
-                        cleaned_files.append(str(file))
-                        if self.verbose:
-                            self.log(f"Removed: {file.name}")
-                    except Exception as e:
-                        self.log(f"Failed to remove {file.name}: {e}", "WARNING")
+                    # Check if this file has a corresponding source file
+                    file_stem = file.stem
+                    has_source = any(file_stem == source_stem for source_stem in source_files)
+
+                    # Only delete if it has a corresponding source file (meaning it's generated)
+                    if has_source:
+                        try:
+                            file.unlink()
+                            cleaned_files.append(str(file))
+                            if self.verbose:
+                                self.log(f"Removed generated file: {file.name}")
+                        except Exception as e:
+                            self.log(f"Failed to remove {file.name}: {e}", "WARNING")
+                    elif self.verbose:
+                        self.log(f"Preserved static file: {file.name}")
 
             # Clean files in subdirectories (figure output directories)
             for item in self.figures_dir.iterdir():
                 if item.is_dir():
+                    # For subdirectories, we can be more aggressive since they're usually output dirs
+                    # but still check for source files in the subdirectory
+                    subdir_source_files = set()
+                    for pattern in source_patterns:
+                        for file in item.glob(pattern):
+                            subdir_source_files.add(file.stem)
+
                     for pattern in figure_patterns:
                         for file in item.glob(pattern):
-                            try:
-                                file.unlink()
-                                cleaned_files.append(str(file))
-                                if self.verbose:
-                                    self.log(f"Removed: {item.name}/{file.name}")
-                            except Exception as e:
-                                self.log(
-                                    f"Failed to remove {item.name}/{file.name}: {e}",
-                                    "WARNING",
-                                )
+                            # In subdirectories, if there's a source file OR it's a known output directory,
+                            # we can delete the generated files
+                            file_stem = file.stem
+                            has_source = any(file_stem == source_stem for source_stem in subdir_source_files)
+
+                            # For subdirectories, be more permissive about deletion
+                            # since they're typically output directories
+                            if has_source or item.name.lower() in ["output", "generated", "build"]:
+                                try:
+                                    file.unlink()
+                                    cleaned_files.append(str(file))
+                                    if self.verbose:
+                                        self.log(f"Removed: {item.name}/{file.name}")
+                                except Exception as e:
+                                    self.log(
+                                        f"Failed to remove {item.name}/{file.name}: {e}",
+                                        "WARNING",
+                                    )
+                            elif self.verbose:
+                                self.log(f"Preserved: {item.name}/{file.name}")
 
                     # Remove empty subdirectories
                     try:
