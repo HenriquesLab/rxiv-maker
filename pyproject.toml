@@ -22,9 +22,18 @@ classifiers = [
     "Topic :: Text Processing :: Markup :: LaTeX",
     "Topic :: Text Processing :: Markup :: Markdown",
 ]
-description = "Automated LaTeX article generation with modern CLI and figure creation capabilities"
+description = "Write scientific preprints in Markdown. Generate publication-ready PDFs efficiently."
 readme = "README.md"
 requires-python = ">=3.10"
+
+[project.urls]
+Homepage = "https://github.com/HenriquesLab/rxiv-maker"
+Documentation = "https://github.com/HenriquesLab/rxiv-maker#readme"
+Repository = "https://github.com/HenriquesLab/rxiv-maker"
+Issues = "https://github.com/HenriquesLab/rxiv-maker/issues"
+Changelog = "https://github.com/HenriquesLab/rxiv-maker/blob/main/CHANGELOG.md"
+"Bug Reports" = "https://github.com/HenriquesLab/rxiv-maker/issues"
+"Source Code" = "https://github.com/HenriquesLab/rxiv-maker"
 dependencies = [
     # Core scientific libraries for figure generation (optional for users who don't generate figures)
     "matplotlib>=3.7.0",
