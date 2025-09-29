@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.8.1] - 2025-09-29
+
+### Fixed
+- **🖼️ PyPI Logo Display**: Fixed logo rendering on PyPI by changing README logo path from relative to absolute GitHub URL
+- **📋 Enhanced PyPI Metadata**: Added project URLs to `pyproject.toml` for better PyPI sidebar with links to:
+  - Homepage, Documentation, Repository
+  - Issues, Changelog, Bug Reports, Source Code
+- **📝 Consistent Description**: Updated project description to match main tagline across all platforms
+
+### Changed
+- Logo URL in README now uses `https://raw.githubusercontent.com/HenriquesLab/rxiv-maker/main/src/logo/logo-rxiv-maker.svg`
+- Enhanced PyPI project page with rich metadata and functional sidebar links
+
 ## [v1.8.0] - 2025-01-29
 
 ### Added
