@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.8.2] - 2025-09-29
+
+### Fixed
+- **🔧 Build Configuration**: Fixed `pyproject.toml` structure where `dependencies` was incorrectly placed inside `[project.urls]` section, causing package build failures
+- **📦 PyPI Publishing**: Resolved build errors that prevented v1.8.1 from being published to PyPI
+
 ## [v1.8.1] - 2025-09-29
 
 ### Fixed
