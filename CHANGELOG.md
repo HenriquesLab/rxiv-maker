@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.8.4] - 2025-09-29
+
+### Fixed
+- **📁 Figure Directory Copying**: Fixed `copy_figures_to_output()` to recursively copy figure subdirectories, resolving issues where manuscripts with organized figure folders (e.g., `FIGURES/fig1/`, `FIGURES/fig2/`) had missing figures in the generated PDF
+- **🔧 Subdirectory Structure Support**: Enhanced figure copying to preserve directory organization while maintaining backward compatibility with flat file structures
+- **📖 LaTeX Compilation**: Eliminated "File not found" errors for figures organized in subdirectories, ensuring all figure references compile correctly
+
+### Changed
+- **♻️ Recursive Figure Processing**: Updated `PathManager.copy_figures_to_output()` to handle both individual figure files and nested directory structures
+- **🎯 Enhanced Compatibility**: Improved support for diverse manuscript organization patterns without breaking existing workflows
+
+### Technical Details
+This release addresses figure handling issues where manuscripts organize figures in subdirectories (like `FIGURES/fig1/fig1.pdf`) instead of the root FIGURES directory. The enhanced copying mechanism now recursively processes all subdirectories while preserving the original file organization, ensuring figures appear correctly in the generated PDF regardless of how they are organized.
+
 ## [v1.8.3] - 2025-09-29
 
 ### Fixed

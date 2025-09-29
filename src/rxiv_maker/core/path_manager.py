@@ -216,6 +216,9 @@ class PathManager:
     def copy_figures_to_output(self) -> list[Path]:
         """Copy figures from FIGURES directory to output directory.
 
+        Recursively copies all figure files while preserving directory structure.
+        Supports both flat files and subdirectory organization (e.g., fig1/, fig2/).
+
         Returns:
             List of paths to copied figure files
 
@@ -240,14 +243,25 @@ class PathManager:
         # Create destination FIGURES directory
         figures_dest_dir.mkdir(parents=True, exist_ok=True)
 
-        # Copy all figure files (PNG, PDF, JPG, SVG, etc.)
+        # Supported figure file extensions
         figure_extensions = {".png", ".pdf", ".jpg", ".jpeg", ".eps", ".svg", ".gif", ".tiff", ".tif"}
 
-        for figure_file in figures_source_dir.iterdir():
-            if figure_file.is_file() and figure_file.suffix.lower() in figure_extensions:
-                dest_path = figures_dest_dir / figure_file.name
-                shutil.copy2(figure_file, dest_path)
-                copied_files.append(dest_path)
+        def copy_figures_recursive(source_dir: Path, dest_dir: Path):
+            """Recursively copy figure files while preserving directory structure."""
+            for item in source_dir.iterdir():
+                if item.is_file() and item.suffix.lower() in figure_extensions:
+                    # Copy individual figure file
+                    dest_path = dest_dir / item.name
+                    shutil.copy2(item, dest_path)
+                    copied_files.append(dest_path)
+                elif item.is_dir():
+                    # Create corresponding subdirectory and recurse
+                    dest_subdir = dest_dir / item.name
+                    dest_subdir.mkdir(parents=True, exist_ok=True)
+                    copy_figures_recursive(item, dest_subdir)
+
+        # Start recursive copying
+        copy_figures_recursive(figures_source_dir, figures_dest_dir)
 
         return copied_files
 
