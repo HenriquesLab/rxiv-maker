@@ -67,6 +67,8 @@ class ReleaseOrchestrator:
         self.release_state = {
             "github_release_created": False,
             "pypi_published": False,
+            "github_release_exists": False,
+            "pypi_package_exists": False,
         }
 
         log_section(self.logger, "Release Orchestrator Initialized")
@@ -138,19 +140,31 @@ class ReleaseOrchestrator:
 
             # Check if release already exists (unless forcing)
             if not self.force:
-                if check_github_release_exists("henriqueslab", "rxiv-maker", self.version, self.github_token):
-                    self.logger.info(f"GitHub release {self.version} already exists - skipping release creation")
-                    log_step(self.logger, "Release already exists", "SUCCESS")
+                github_exists = check_github_release_exists(
+                    "henriqueslab", "rxiv-maker", self.version, self.github_token
+                )
+                clean_version = self.version.lstrip("v")
+                pypi_exists = check_pypi_package_available(self.config.package_name, clean_version)
+
+                # Store existence status in state
+                self.release_state["github_release_exists"] = github_exists
+                self.release_state["pypi_package_exists"] = pypi_exists
+
+                # Only skip if BOTH GitHub release and PyPI package exist
+                if github_exists and pypi_exists:
+                    self.logger.info(f"Release {self.version} already exists on both GitHub and PyPI - skipping")
+                    log_step(self.logger, "Release already exists on both platforms", "SUCCESS")
                     return "exists"
 
-                # Check PyPI (with clean version)
-                clean_version = self.version.lstrip("v")
-                if check_pypi_package_available(self.config.package_name, clean_version):
+                # Log partial completion status
+                if github_exists:
                     self.logger.info(
-                        f"PyPI package {self.config.package_name}=={clean_version} already exists - skipping PyPI upload"
+                        f"GitHub release {self.version} already exists - will skip GitHub release creation"
                     )
-                    log_step(self.logger, "PyPI package already exists", "SUCCESS")
-                    return "exists"
+                if pypi_exists:
+                    self.logger.info(
+                        f"PyPI package {self.config.package_name}=={clean_version} already exists - will skip PyPI upload"
+                    )
 
             # Additional validations (git status, changelog, etc.) can be added here
 
@@ -164,6 +178,12 @@ class ReleaseOrchestrator:
     def create_github_release(self) -> bool:
         """Create GitHub release."""
         log_step(self.logger, "Creating GitHub release", "START")
+
+        # Skip if already exists (from pre-condition check)
+        if self.release_state.get("github_release_exists", False):
+            log_step(self.logger, "GitHub release already exists", "SKIP")
+            self.release_state["github_release_created"] = True
+            return True
 
         if self.dry_run:
             log_step(self.logger, "Creating GitHub release (DRY RUN)", "SKIP")
@@ -254,6 +274,12 @@ class ReleaseOrchestrator:
         """Publish package to PyPI."""
         log_step(self.logger, "Publishing to PyPI", "START")
 
+        # Skip if already exists (from pre-condition check)
+        if self.release_state.get("pypi_package_exists", False):
+            log_step(self.logger, "PyPI package already exists", "SKIP")
+            self.release_state["pypi_published"] = True
+            return True
+
         if self.dry_run:
             log_step(self.logger, "Publishing to PyPI (DRY RUN)", "SKIP")
             self.release_state["pypi_published"] = True
@@ -337,6 +363,11 @@ class ReleaseOrchestrator:
     def wait_for_pypi_propagation(self) -> bool:
         """Wait for PyPI package to be available."""
         log_step(self.logger, "Waiting for PyPI propagation", "START")
+
+        # Skip if package already existed before this run
+        if self.release_state.get("pypi_package_exists", False):
+            log_step(self.logger, "PyPI package already existed", "SKIP")
+            return True
 
         if self.dry_run:
             log_step(self.logger, "PyPI propagation check (DRY RUN)", "SKIP")
