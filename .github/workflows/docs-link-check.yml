@@ -15,9 +15,10 @@ on:
       - '*.md'
       - '.github/workflows/docs-link-check.yml'
       - 'scripts/check-docs-links.py'
-  schedule:
+  # schedule:
     # Run weekly on Mondays at 9 AM UTC
-    - cron: '0 9 * * 1'
+    # Disabled until script is fixed to avoid false positives
+    # - cron: '0 9 * * 1'
   workflow_dispatch:
     inputs:
       verbose:
