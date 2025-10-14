@@ -213,7 +213,8 @@ class UpdateChecker:
         package_icon = get_safe_icon("📦", "[UPDATE]")
         notification_lines = [
             f"{package_icon} Update available: {self.package_name} v{current} → v{latest}",
-            f"   Run: pip install --upgrade {self.package_name}",
+            f"   Run: pip install --upgrade {self.package_name}  (or pip3)",
+            f"        uv tool upgrade {self.package_name}",
             f"   Release notes: https://github.com/henriqueslab/rxiv-maker/releases/tag/v{latest}",
         ]
 

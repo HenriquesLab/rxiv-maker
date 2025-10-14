@@ -29,7 +29,8 @@ def version(ctx: click.Context, detailed: bool, check_updates: bool) -> None:
 
             if update_available:
                 console.print(f"📦 Update available: {__version__} → {latest_version}", style="green")
-                console.print("   Run: pip install --upgrade rxiv-maker", style="blue")
+                console.print("   Run: pip install --upgrade rxiv-maker  (or pip3)", style="blue")
+                console.print("        uv tool upgrade rxiv-maker", style="blue")
             else:
                 console.print(f"✅ You have the latest version ({__version__})", style="green")
         except Exception as e:

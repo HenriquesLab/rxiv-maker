@@ -1283,7 +1283,8 @@ class VersionCommand(BaseCommand):
 
                 if update_available:
                     self.console.print(f"📦 Update available: {__version__} → {latest_version}", style="green")
-                    self.console.print("   Run: pip install --upgrade rxiv-maker", style="blue")
+                    self.console.print("   Run: pip install --upgrade rxiv-maker  (or pip3)", style="blue")
+                    self.console.print("        uv tool upgrade rxiv-maker", style="blue")
                 else:
                     self.console.print(f"✅ You have the latest version ({__version__})", style="green")
             except Exception as e:
