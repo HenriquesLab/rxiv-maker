@@ -39,7 +39,6 @@ ifdef MAKEFILE_FORCE_UNIX
     DETECTED_OS := GitHub-Actions-Unix
     SHELL_NULL := /dev/null
     VENV_PYTHON := .venv/bin/python
-    DOCKER_PLATFORM := linux/amd64
 else ifeq ($(OS),Windows_NT)
     DETECTED_OS := Windows
     SHELL_NULL := nul
@@ -136,7 +135,6 @@ setup-reinstall:
 .PHONY: test-platform
 test-platform:
 	@echo "Host machine: $(UNAME_M)"
-	@echo "Docker platform: $(DOCKER_PLATFORM)"
 
 # Install system dependencies (LaTeX, Node.js, R, etc.)
 .PHONY: install-deps
@@ -334,14 +332,6 @@ clean-temp:
 
 clean-cache:
 	$(RXIV_CLI) clean --cache-only
-
-# ======================================================================
-# 🚫 DOCKER ENGINE MODE DEPRECATED
-# ======================================================================
-
-# Note: Docker and Podman engine modes have been deprecated.
-# For containerized execution, use the separate docker-rxiv-maker repository:
-# https://github.com/HenriquesLab/docker-rxiv-maker
 
 # ======================================================================
 # 📖 HELP AND DOCUMENTATION
