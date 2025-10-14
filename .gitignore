@@ -366,6 +366,7 @@ dist/
 backup/
 
 # Environment files (local overrides only)
+.env
 .env.local
 .env.*.local
 

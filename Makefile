@@ -39,7 +39,6 @@ ifdef MAKEFILE_FORCE_UNIX
     DETECTED_OS := GitHub-Actions-Unix
     SHELL_NULL := /dev/null
     VENV_PYTHON := .venv/bin/python
-    DOCKER_PLATFORM := linux/amd64
 else ifeq ($(OS),Windows_NT)
     DETECTED_OS := Windows
     SHELL_NULL := nul
@@ -136,7 +135,6 @@ setup-reinstall:
 .PHONY: test-platform
 test-platform:
 	@echo "Host machine: $(UNAME_M)"
-	@echo "Docker platform: $(DOCKER_PLATFORM)"
 
 # Install system dependencies (LaTeX, Node.js, R, etc.)
 .PHONY: install-deps
@@ -260,40 +258,6 @@ check: lint typecheck
 	@echo "✅ All code quality checks passed!"
 
 # ======================================================================
-# � DOCKER-BASED CI REPRODUCTION SHORTCUTS
-# ======================================================================
-
-.PHONY: ci-build-image ci-fast-docker ci-integration-docker ci-build-validation-docker ci-coverage-docker ci-full-docker ci-shell-docker
-
-ci-build-image:
-	@./scripts/run-ci-locally.sh build-image
-
-ci-fast-docker: ci-build-image
-	@./scripts/run-ci-locally.sh fast
-
-ci-integration-docker: ci-build-image
-	@./scripts/run-ci-locally.sh integration
-
-ci-build-validation-docker: ci-build-image
-	@./scripts/run-ci-locally.sh build-validation
-
-ci-coverage-docker: ci-build-image
-	@./scripts/run-ci-locally.sh coverage
-
-ci-full-docker: ci-build-image
-	@./scripts/run-ci-locally.sh full
-
-ci-shell-docker: ci-build-image
-	@./scripts/run-ci-locally.sh shell
-
-.PHONY: ci-fast-logs ci-matrix-docker
-ci-fast-logs: ci-build-image
-	@./scripts/run-ci-locally.sh fast-logs
-
-ci-matrix-docker:
-	@./scripts/run-ci-locally.sh matrix
-
-# ======================================================================
 # �📚 BIBLIOGRAPHY MANAGEMENT
 # ======================================================================
 
@@ -368,14 +332,6 @@ clean-temp:
 
 clean-cache:
 	$(RXIV_CLI) clean --cache-only
-
-# ======================================================================
-# 🚫 DOCKER ENGINE MODE DEPRECATED
-# ======================================================================
-
-# Note: Docker and Podman engine modes have been deprecated.
-# For containerized execution, use the separate docker-rxiv-maker repository:
-# https://github.com/HenriquesLab/docker-rxiv-maker
 
 # ======================================================================
 # 📖 HELP AND DOCUMENTATION
