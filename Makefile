@@ -260,40 +260,6 @@ check: lint typecheck
 	@echo "✅ All code quality checks passed!"
 
 # ======================================================================
-# � DOCKER-BASED CI REPRODUCTION SHORTCUTS
-# ======================================================================
-
-.PHONY: ci-build-image ci-fast-docker ci-integration-docker ci-build-validation-docker ci-coverage-docker ci-full-docker ci-shell-docker
-
-ci-build-image:
-	@./scripts/run-ci-locally.sh build-image
-
-ci-fast-docker: ci-build-image
-	@./scripts/run-ci-locally.sh fast
-
-ci-integration-docker: ci-build-image
-	@./scripts/run-ci-locally.sh integration
-
-ci-build-validation-docker: ci-build-image
-	@./scripts/run-ci-locally.sh build-validation
-
-ci-coverage-docker: ci-build-image
-	@./scripts/run-ci-locally.sh coverage
-
-ci-full-docker: ci-build-image
-	@./scripts/run-ci-locally.sh full
-
-ci-shell-docker: ci-build-image
-	@./scripts/run-ci-locally.sh shell
-
-.PHONY: ci-fast-logs ci-matrix-docker
-ci-fast-logs: ci-build-image
-	@./scripts/run-ci-locally.sh fast-logs
-
-ci-matrix-docker:
-	@./scripts/run-ci-locally.sh matrix
-
-# ======================================================================
 # �📚 BIBLIOGRAPHY MANAGEMENT
 # ======================================================================
 
