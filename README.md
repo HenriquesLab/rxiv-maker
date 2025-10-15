@@ -55,9 +55,20 @@ rxiv check-installation
 **Get your first PDF quickly:**
 
 ```bash
-# Create manuscript 
+# Create manuscript
 rxiv init my-paper
 cd my-paper
+
+# Generate PDF
+rxiv pdf
+```
+
+**Or explore the complete example manuscript:**
+
+```bash
+# Clone the official example with one command
+rxiv get-rxiv-preprint
+cd manuscript-rxiv-maker/MANUSCRIPT
 
 # Generate PDF
 rxiv pdf
@@ -93,6 +104,12 @@ rxiv pdf
 - Comprehensive validation and error reporting
 
 ## 🌟 Example Manuscript
+
+> **💡 Get this complete example instantly:**
+> ```bash
+> rxiv get-rxiv-preprint
+> ```
+> This clones [manuscript-rxiv-maker](https://github.com/HenriquesLab/manuscript-rxiv-maker) with all features demonstrated.
 
 **Input Markdown:**
 ```markdown
@@ -172,7 +189,8 @@ The correlation coefficient was r = {{py:get correlation:.2f}} (p < 0.001).
 
 ```bash
 rxiv init my-paper          # Create new manuscript
-rxiv pdf                    # Generate PDF  
+rxiv get-rxiv-preprint     # Clone complete example manuscript
+rxiv pdf                    # Generate PDF
 rxiv validate              # Check manuscript quality
 rxiv arxiv                 # Prepare arXiv submission
 rxiv track-changes v1 v2   # Visual version comparison
@@ -184,7 +202,7 @@ rxiv track-changes v1 v2   # Visual version comparison
 
 - **💬 [GitHub Discussions](https://github.com/henriqueslab/rxiv-maker/discussions)** - Ask questions, share tips
 - **🐛 [Issues](https://github.com/henriqueslab/rxiv-maker/issues)** - Report bugs, request features  
-- **📚 [Example Manuscript](https://github.com/HenriquesLab/manuscript-rxiv-maker)** - Complete manuscript example
+- **📚 [Example Manuscript](https://github.com/HenriquesLab/manuscript-rxiv-maker)** - Clone instantly: `rxiv get-rxiv-preprint`
 - **🧪 [Google Colab](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_colab.ipynb)** - Try without installing
 
 ## 🏗️ Contributing
