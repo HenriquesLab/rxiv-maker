@@ -89,7 +89,7 @@ def _convert_bare_urls(text: MarkdownContent) -> LatexContent:
     text = re.sub(latex_href_pattern, protect_latex_command, text)
 
     # Now convert bare URLs
-    text = re.sub(r"https?://[^\s\}>\]]+", process_bare_url, text)
+    text = re.sub(r"https?://[^\s\}>\])]+", process_bare_url, text)
 
     # Restore protected LaTeX commands
     for i, cmd in enumerate(protected_commands):
@@ -129,7 +129,7 @@ def extract_urls_from_text(text: MarkdownContent) -> list[tuple[str, str]]:
         urls.append((link_text.strip(), url.strip()))
 
     # Find bare URLs
-    bare_urls = re.findall(r"https?://[^\s\}>\]]+", text)
+    bare_urls = re.findall(r"https?://[^\s\}>\])]+", text)
     for url in bare_urls:
         # For bare URLs, use the URL as both text and link
         urls.append((url, url))
