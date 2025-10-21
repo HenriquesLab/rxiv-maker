@@ -250,6 +250,28 @@ class TestURLEscaping:
         result = escape_url_for_latex(url)
         assert result == expected
 
+    def test_bare_url_in_parentheses(self):
+        """Test that bare URLs in parentheses don't include the closing parenthesis."""
+        from rxiv_maker.converters.url_processor import convert_links_to_latex
+
+        markdown = "(see https://example.com)"
+        result = convert_links_to_latex(markdown)
+        # The URL should be https://example.com, not https://example.com)
+        assert "\\url{https://example.com}" in result
+        assert "\\url{https://example.com)}" not in result
+        # The closing parenthesis should remain in the text
+        assert result == "(see \\url{https://example.com})"
+
+    def test_bare_url_in_parentheses_with_hash(self):
+        """Test that bare URLs with hash symbols in parentheses are handled correctly."""
+        from rxiv_maker.converters.url_processor import convert_links_to_latex
+
+        markdown = "(visit https://example.com/page#section for details)"
+        result = convert_links_to_latex(markdown)
+        # The URL should end at the closing parenthesis, not include it
+        assert "\\url{https://example.com/page\\#section}" in result
+        assert "\\url{https://example.com/page\\#section)}" not in result
+
 
 class TestListConversion:
     """Test markdown list conversion to LaTeX."""
