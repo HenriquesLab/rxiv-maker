@@ -142,12 +142,19 @@ The correlation coefficient was r = {{py:get correlation:.2f}} (p < 0.001).
 
 ## 📖 Documentation
 
-- **[Installation](docs/installation.md)** - Setup and dependencies
-- **[Getting Started](docs/first-manuscript.md)** - Your first manuscript
-- **[User Guide](docs/user_guide.md)** - Complete features and workflows
-- **[Python Execution](docs/python-execution-guide.md)** - Jupyter-like code blocks
-- **[CLI Reference](docs/cli-reference.md)** - All commands
-- **[Troubleshooting](docs/troubleshooting.md)** - Common issues
+### For Users
+Visit our **[official documentation website](https://rxiv-maker.henriqueslab.org)** for comprehensive guides:
+- **[Installation Guide](https://rxiv-maker.henriqueslab.org/getting-started/installation/)** - Setup for all platforms
+- **[First Manuscript Tutorial](https://rxiv-maker.henriqueslab.org/getting-started/first-manuscript/)** - 5-minute walkthrough
+- **[User Guide](https://rxiv-maker.henriqueslab.org/guides/)** - Complete features and workflows
+- **[CLI Reference](https://rxiv-maker.henriqueslab.org/api/)** - All commands and options
+- **[Troubleshooting](https://rxiv-maker.henriqueslab.org/community/troubleshooting/)** - Solutions to common issues
+
+### For Developers
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
+- **[CLAUDE.md](CLAUDE.md)** - AI assistant instructions & testing commands
+- **[CI-LOCAL-TESTING.md](CI-LOCAL-TESTING.md)** - Local CI workflow testing
+- **[Developer Docs](docs/)** - Technical documentation and API details
 
 ## 🎯 Use Cases
 
@@ -168,20 +175,47 @@ The correlation coefficient was r = {{py:get correlation:.2f}} (p < 0.001).
 
 ## 🏃‍♀️ Ecosystem & Workflows
 
-**The rxiv-maker ecosystem is streamlined around core tools:**
+**The rxiv-maker ecosystem consists of interconnected repositories:**
 
-### 🔧 **Local Development**
-- **📝 VS Code Extension**: [vscode-rxiv-maker](https://github.com/HenriquesLab/vscode-rxiv-maker) for enhanced editing
-- **⚡ Local LaTeX**: Native system installation for fastest builds
-- **🔗 Git Integration**: Version control for manuscripts and figures
+### 📦 **Core Repositories**
 
-### 🐳 **Containerized Execution**
-- **🐳 Docker**: [docker-rxiv-maker](https://github.com/HenriquesLab/docker-rxiv-maker) for isolated environments
+1. **[rxiv-maker](https://github.com/HenriquesLab/rxiv-maker)** (this repository)
+   - Main Python package and CLI tool
+   - Core processing engine
+   - Development and contribution hub
+
+2. **[website-rxiv-maker](https://github.com/HenriquesLab/website-rxiv-maker)**
+   - Official documentation website
+   - User guides and tutorials
+   - API reference and examples
+   - Visit: [rxiv-maker.henriqueslab.org](https://rxiv-maker.henriqueslab.org)
+
+3. **[manuscript-rxiv-maker](https://github.com/HenriquesLab/manuscript-rxiv-maker)**
+   - Official example manuscript (published as arXiv:2508.00836)
+   - Complete working example with all features
+   - Clone with: `rxiv get-rxiv-preprint`
+
+### 🔧 **Development Tools**
+
+- **📝 [VS Code Extension](https://github.com/HenriquesLab/vscode-rxiv-maker)**
+  - Syntax highlighting and autocompletion
+  - Integrated build commands
+  - Real-time validation
+
+- **🐳 [Docker Support](https://github.com/HenriquesLab/docker-rxiv-maker)**
+  - Containerized execution environment
+  - Pre-configured LaTeX and dependencies
+  - CI/CD integration
+
+### 🚀 **Deployment Options**
+
+- **⚡ Local Installation**: Native system setup (recommended for development)
 - **☁️ GitHub Actions**: Automated cloud builds and CI/CD
-- **🌐 Google Colab**: Browser-based editing and PDF generation
+- **🌐 Google Colab**: Browser-based editing without local installation
+- **🐳 Containers**: Docker for reproducible environments
 
 ### 📦 **Simplified Architecture**
-> **Note**: As of v1.7.9, we've streamlined the ecosystem by removing deprecated package manager integrations (Homebrew/APT repositories) and legacy container engines. The focus is now on docker-rxiv-maker for containerized workflows and local LaTeX for development.
+> **Note**: As of v1.7.9, we've streamlined the ecosystem by removing deprecated package manager integrations (Homebrew/APT repositories). The focus is now on pip/pipx installation with optional Docker support.
 >
 > **📋 [Migration Guide](docs/migration-v1.7.9.md)** - For users upgrading from previous versions
 
