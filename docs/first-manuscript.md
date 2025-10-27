@@ -1,16 +1,31 @@
-# First Manuscript - Quick Developer Reference
+# First Manuscript Guide
 
-*Developer-focused quick start for testing and contributing*
+> **📖 For the complete tutorial**, see the **[First Manuscript Guide](https://rxiv-maker.henriqueslab.org/getting-started/first-manuscript/)** on our website.
 
-> **👋 New User?** For the complete step-by-step walkthrough, see our **[First Manuscript Guide](https://rxiv-maker.henriqueslab.org/getting-started/first-manuscript/)** on the website.
-
-This guide provides **developer shortcuts** for quickly testing rxiv-maker functionality during development.
+This file provides developer shortcuts for testing rxiv-maker functionality.
 
 ---
 
-## 🚀 Quick Development Test
+## 👤 User Tutorial
 
-### Quick Setup
+**For new users**, please visit our step-by-step tutorial:
+
+**🔗 [rxiv-maker.henriqueslab.org/getting-started/first-manuscript](https://rxiv-maker.henriqueslab.org/getting-started/first-manuscript/)**
+
+The website guide includes:
+- Step-by-step walkthrough (5 minutes)
+- Sample content and examples
+- Troubleshooting tips
+- Next steps and learning path
+- Clear explanations of each step
+
+---
+
+## 🧪 Developer Quick Test
+
+For developers testing rxiv-maker functionality:
+
+### Quick Development Test
 ```bash
 # Quick development test
 rxiv init test-manuscript && cd test-manuscript

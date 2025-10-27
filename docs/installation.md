@@ -1,14 +1,29 @@
-# Developer Installation Guide
+# Installation Guide
 
-*Technical installation guide for contributors, developers, and advanced users*
+> **📖 For complete installation instructions**, see the **[Official Installation Guide](https://rxiv-maker.henriqueslab.org/getting-started/installation/)** on our website.
 
-> **👋 New User?** For standard installation, see the **[Complete Installation Guide](https://rxiv-maker.henriqueslab.org/getting-started/installation/)** on our website.
+This file provides developer-specific installation workflows for contributing to rxiv-maker.
 
-This guide covers **developer-specific installation workflows** for contributing to rxiv-maker or advanced customization.
+---
+
+## 👤 User Installation
+
+**For standard users**, please visit our comprehensive installation guide:
+
+**🔗 [rxiv-maker.henriqueslab.org/getting-started/installation](https://rxiv-maker.henriqueslab.org/getting-started/installation/)**
+
+The website guide includes:
+- Platform-specific instructions (macOS, Linux, Windows)
+- LaTeX distribution setup
+- Troubleshooting common issues
+- Verification steps
+- Quick start examples
 
 ---
 
 ## 🛠️ Developer Installation
+
+For contributors and developers working on rxiv-maker itself:
 
 ### Quick Developer Setup
 ```bash
@@ -16,10 +31,10 @@ This guide covers **developer-specific installation workflows** for contributing
 git clone https://github.com/henriqueslab/rxiv-maker.git
 cd rxiv-maker
 
-# Install in development mode
+# Install in development mode with dev dependencies
 pip install -e ".[dev]"
 
-# Setup pre-commit hooks
+# Setup pre-commit hooks (mandatory)
 pre-commit install
 
 # Verify development setup
