@@ -339,7 +339,7 @@ jobs:
           echo "✅ Documentation validation passed"
 
       - name: Upload documentation artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: api-documentation
           path: docs/api/
