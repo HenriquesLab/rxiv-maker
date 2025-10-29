@@ -180,13 +180,27 @@ class ReleaseOrchestrator:
         """Validate that CHANGELOG.md has an entry for the current version."""
         log_step(self.logger, "Validating CHANGELOG entry", "START")
 
-        changelog_path = Path("CHANGELOG.md")
+        # Get repository root and validate path security
+        repo_root = Path.cwd().resolve()
+        changelog_path = (repo_root / "CHANGELOG.md").resolve()
+
+        # Security: Ensure the resolved path is within the repository
+        try:
+            changelog_path.relative_to(repo_root)
+        except ValueError as e:
+            raise ValueError(
+                f"Security error: CHANGELOG.md path {changelog_path} is outside repository root {repo_root}"
+            ) from e
+
         if not changelog_path.exists():
             raise ValueError("CHANGELOG.md not found in repository root")
 
-        # Read CHANGELOG content
-        with open(changelog_path, "r", encoding="utf-8") as f:
-            changelog_content = f.read()
+        # Read CHANGELOG content with error handling
+        try:
+            with open(changelog_path, "r", encoding="utf-8") as f:
+                changelog_content = f.read()
+        except UnicodeDecodeError as e:
+            raise ValueError(f"Failed to read CHANGELOG.md: encoding error - {e}") from e
 
         # Check for version entry (format: ## [v1.2.3] or ## [1.2.3])
         clean_version = self.version.lstrip("v")
