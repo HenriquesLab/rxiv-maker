@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.8.7] - 2025-10-29
+
+### Added
+- **✅ CHANGELOG Validation**: Added automatic CHANGELOG validation to release workflow, ensuring every release has a corresponding CHANGELOG entry before publishing
+  - Supports both v-prefixed and non-prefixed version formats (## [v1.2.3] or ## [1.2.3])
+  - Comprehensive error messages guide users to fix missing entries
+  - Path traversal protection and encoding error handling
+  - 9 comprehensive unit tests with full coverage
+
 ### Changed
 - **📚 Documentation Consolidation**: Migrated installation and first-manuscript guides to [website-rxiv-maker](https://github.com/HenriquesLab/website-rxiv-maker) as single source of truth
 - **🔗 Redirect Stubs**: Converted `docs/installation.md` and `docs/first-manuscript.md` to redirect stubs pointing to website
@@ -17,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **📝 Comprehensive Review**: Added detailed `DOCUMENTATION_IMPROVEMENTS.md` summarizing 14 improvements across ecosystem
 - **✨ User Experience**: Improved onboarding by establishing website as primary documentation portal
 - **🔧 Maintainability**: Eliminated documentation duplication, reducing maintenance burden
+
+### Security
+- **🔒 Path Validation**: Enhanced CHANGELOG validation with path traversal protection
+- **🔒 Encoding Handling**: Added proper UTF-8 encoding error handling with meaningful error messages
 
 ## [v1.8.6] - 2025-10-29
 
