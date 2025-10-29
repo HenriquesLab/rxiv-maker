@@ -166,7 +166,8 @@ class ReleaseOrchestrator:
                         f"PyPI package {self.config.package_name}=={clean_version} already exists - will skip PyPI upload"
                     )
 
-            # Additional validations (git status, changelog, etc.) can be added here
+            # Additional validations
+            self._validate_changelog()
 
             log_step(self.logger, "Pre-conditions validation", "SUCCESS")
             return True
@@ -174,6 +175,38 @@ class ReleaseOrchestrator:
         except Exception as e:
             log_step(self.logger, f"Pre-conditions validation failed: {e}", "FAILURE")
             return False
+
+    def _validate_changelog(self) -> None:
+        """Validate that CHANGELOG.md has an entry for the current version."""
+        log_step(self.logger, "Validating CHANGELOG entry", "START")
+
+        changelog_path = Path("CHANGELOG.md")
+        if not changelog_path.exists():
+            raise ValueError("CHANGELOG.md not found in repository root")
+
+        # Read CHANGELOG content
+        with open(changelog_path, "r", encoding="utf-8") as f:
+            changelog_content = f.read()
+
+        # Check for version entry (format: ## [v1.2.3] or ## [1.2.3])
+        clean_version = self.version.lstrip("v")
+        version_patterns = [
+            f"## [{self.version}]",  # With 'v' prefix
+            f"## [{clean_version}]",  # Without 'v' prefix
+        ]
+
+        found = any(pattern in changelog_content for pattern in version_patterns)
+
+        if not found:
+            error_msg = (
+                f"No CHANGELOG entry found for version {self.version}\n"
+                f"Expected to find one of: {', '.join(version_patterns)}\n"
+                f"Please add a CHANGELOG entry before creating a release."
+            )
+            raise ValueError(error_msg)
+
+        self.logger.info(f"✅ CHANGELOG entry found for version {self.version}")
+        log_step(self.logger, "CHANGELOG validation", "SUCCESS")
 
     def create_github_release(self) -> bool:
         """Create GitHub release."""
