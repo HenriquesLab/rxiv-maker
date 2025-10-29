@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **📚 Documentation Consolidation**: Migrated installation and first-manuscript guides to [website-rxiv-maker](https://github.com/HenriquesLab/website-rxiv-maker) as single source of truth
+- **🔗 Redirect Stubs**: Converted `docs/installation.md` and `docs/first-manuscript.md` to redirect stubs pointing to website
+- **🎯 Enhanced README**: Improved documentation structure with clearer navigation between user guides and developer resources
+- **🏗️ Ecosystem Clarity**: Added cross-repository links to related projects (docker-rxiv-maker, vscode-rxiv-maker, website-rxiv-maker)
+
+### Documentation
+- **📝 Comprehensive Review**: Added detailed `DOCUMENTATION_IMPROVEMENTS.md` summarizing 14 improvements across ecosystem
+- **✨ User Experience**: Improved onboarding by establishing website as primary documentation portal
+- **🔧 Maintainability**: Eliminated documentation duplication, reducing maintenance burden
+
+## [v1.8.6] - 2025-10-29
+
+### Fixed
+- **🔗 URL Parsing**: Fixed bare URL regex to exclude closing parentheses, preventing malformed links in generated PDFs (#192)
+
+### Changed
+- **📝 Documentation**: Enhanced README with comprehensive coverage of `rxiv get-rxiv-preprint` command, improving discoverability for new users (#191)
+- **🧹 Infrastructure Cleanup**: Removed deprecated Docker infrastructure and performed comprehensive codebase cleanup, streamlining project maintenance (#190)
+
 ## [v1.8.4] - 2025-09-29
 
 ### Fixed
