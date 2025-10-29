@@ -18,6 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **✨ User Experience**: Improved onboarding by establishing website as primary documentation portal
 - **🔧 Maintainability**: Eliminated documentation duplication, reducing maintenance burden
 
+## [v1.8.6] - 2025-10-29
+
+### Fixed
+- **🔗 URL Parsing**: Fixed bare URL regex to exclude closing parentheses, preventing malformed links in generated PDFs (#192)
+
+### Changed
+- **📝 Documentation**: Enhanced README with comprehensive coverage of `rxiv get-rxiv-preprint` command, improving discoverability for new users (#191)
+- **🧹 Infrastructure Cleanup**: Removed deprecated Docker infrastructure and performed comprehensive codebase cleanup, streamlining project maintenance (#190)
+
 ## [v1.8.4] - 2025-09-29
 
 ### Fixed
