@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.8.8] - 2025-11-03
+
+### Fixed
+- **🔄 Mermaid Diagram Retry Logic**: Added automatic retry mechanism for mermaid.ink API calls with exponential backoff
+  - Uses `get_with_retry()` utility with up to 5 retry attempts
+  - Handles transient failures (503 Service Unavailable, timeouts, connection errors)
+  - Prevents build failures due to temporary service outages
+- **📄 Mermaid Fallback Placeholders**: Fixed fallback mechanism to create valid PDF/PNG files instead of .txt files
+  - PDF fallback: Creates minimal valid PDF with placeholder text
+  - PNG fallback: Creates valid 1x1 pixel PNG image
+  - SVG fallback: Already working correctly
+  - Ensures validation passes even when mermaid.ink is unavailable
+
+### Added
+- **✅ Comprehensive Mermaid Tests**: Added 6 new unit tests for mermaid diagram generation fallback behavior
+  - Tests for PDF, PNG, and SVG fallback creation
+  - Tests for retry mechanism and complete failure scenarios
+  - Validates correct file formats and structures
+
+### Changed
+- **🛡️ Build Resilience**: Improved manuscript build robustness against external service failures
+  - Builds succeed even when mermaid.ink service is temporarily down
+  - Clear warning messages when fallback placeholders are used
+  - Better user experience during service outages
+
 ## [v1.8.7] - 2025-10-29
 
 ### Added

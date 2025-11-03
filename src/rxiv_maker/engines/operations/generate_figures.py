@@ -242,9 +242,18 @@ class FigureGenerator:
             else:
                 mermaid_url = f"https://mermaid.ink/{mermaid_format}/{encoded_content}"
 
-            # Make request with timeout using GET method
+            # Make request with timeout and retry logic using GET method
             if requests:
-                response = requests.get(mermaid_url, timeout=30)
+                # Use retry logic to handle transient failures (503, timeouts, etc.)
+                try:
+                    if get_with_retry:
+                        response = get_with_retry(mermaid_url, max_attempts=5, timeout=30)
+                    else:
+                        response = requests.get(mermaid_url, timeout=30)
+                except Exception:
+                    # If retry fails, fall back to placeholder
+                    return self._create_fallback_mermaid_diagram(input_file, output_file)
+
                 if response.status_code == 200:
                     with open(output_file, "wb") as f:
                         f.write(response.content)
@@ -286,14 +295,97 @@ class FigureGenerator:
                 with open(output_file, "w", encoding="utf-8") as f:
                     f.write(svg_content)
                 return True
+            elif self.output_format.lower() == "png":
+                # Create minimal PNG placeholder (1x1 white pixel)
+                # PNG header for 1x1 white pixel
+                png_data = base64.b64decode(
+                    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+                )
+                with open(output_file, "wb") as f:
+                    f.write(png_data)
+                print(f"⚠️  Created placeholder PNG for {input_file.name} (mermaid.ink unavailable)")
+                return True
+            elif self.output_format.lower() == "pdf":
+                # Create minimal PDF placeholder
+                pdf_content = f"""%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+>>
+>>
+>>
+endobj
+4 0 obj
+<<
+/Length 200
+>>
+stream
+BT
+/F1 12 Tf
+50 700 Td
+(Mermaid Diagram Placeholder) Tj
+0 -20 Td
+(Service temporarily unavailable) Tj
+0 -40 Td
+(Source: {input_file.name}) Tj
+0 -20 Td
+(Check syntax at https://www.mermaidchart.com/) Tj
+ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f
+0000000009 00000 n
+0000000058 00000 n
+0000000115 00000 n
+0000000317 00000 n
+trailer
+<<
+/Size 5
+/Root 1 0 R
+>>
+startxref
+567
+%%EOF
+"""
+                with open(output_file, "w", encoding="utf-8") as f:
+                    f.write(pdf_content)
+                print(f"⚠️  Created placeholder PDF for {input_file.name} (mermaid.ink unavailable)")
+                return True
             else:
-                # For PNG/PDF, we'd need additional libraries, so just create a text file
+                # Fallback for other formats - create text file with warning
                 with open(output_file.with_suffix(".txt"), "w", encoding="utf-8") as f:
                     f.write(f"Mermaid diagram placeholder for {input_file.name}\n")
                     f.write("mermaid.ink service unavailable - diagram generation failed\n")
                     f.write("\n💡 Tip: Check your Mermaid diagram syntax at https://www.mermaidchart.com/\n")
+                print(f"⚠️  Created text placeholder for {input_file.name} (mermaid.ink unavailable)")
                 return True
-        except Exception:
+        except Exception as e:
+            print(f"Failed to create fallback diagram: {e}")
             return False
 
     def _execute_python_files(self, progress=None, task_id=None, use_rich: bool = True):
