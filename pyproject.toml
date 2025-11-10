@@ -60,7 +60,7 @@ Changelog = "https://github.com/HenriquesLab/rxiv-maker/blob/main/CHANGELOG.md"
 [project.optional-dependencies]
 dev = [
     # Core testing framework
-    "pytest>=7.4,<9.0",
+    "pytest>=7.4,<10.0",
     "pytest-cov>=4.0",
     "pytest-xdist>=3.8.0",
     # Testing utilities
