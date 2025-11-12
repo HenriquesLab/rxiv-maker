@@ -12,6 +12,8 @@ Welcome to the API documentation for rxiv-maker.
 - [manuscript_utils.figure_utils.py](manuscript_utils_figure_utils.py.md)
 - [utils.citation_utils.py](utils_citation_utils.py.md)
 - [utils.email_encoder.py](utils_email_encoder.py.md)
+- [utils.homebrew_checker.py](utils_homebrew_checker.py.md)
+- [utils.install_detector.py](utils_install_detector.py.md)
 - [utils.operation_ids.py](utils_operation_ids.py.md)
 - [utils.platform.py](utils_platform.py.md)
 - [utils.python_execution_reporter.py](utils_python_execution_reporter.py.md)

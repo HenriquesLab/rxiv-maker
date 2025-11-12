@@ -1,4 +1,5 @@
 """Main CLI entry point for rxiv-maker."""
+# ruff: noqa: D301
 
 import os
 
@@ -23,11 +24,21 @@ click.rich_click.STYLE_OPTION = "bold green"
 click.rich_click.STYLE_ARGUMENT = "bold blue"
 click.rich_click.STYLE_COMMAND = "bold cyan"
 click.rich_click.STYLE_SWITCH = "bold magenta"
-click.rich_click.STYLE_HELPTEXT = "dim"
+click.rich_click.STYLE_HELPTEXT = ""
 click.rich_click.STYLE_USAGE = "yellow"
 click.rich_click.STYLE_USAGE_COMMAND = "bold"
 click.rich_click.STYLE_HELP_HEADER = "bold blue"
 click.rich_click.STYLE_FOOTER_TEXT = "dim"
+click.rich_click.MAX_WIDTH = 100
+click.rich_click.HEADER_TEXT = None
+click.rich_click.FOOTER_TEXT = None
+click.rich_click.STYLE_COMMANDS_TABLE_SHOW_LINES = False
+click.rich_click.STYLE_COMMANDS_TABLE_PADDING = (0, 1)
+click.rich_click.STYLE_COMMANDS_TABLE_BOX = "SIMPLE"
+click.rich_click.STYLE_OPTIONS_TABLE_SHOW_LINES = False
+click.rich_click.STYLE_OPTIONS_TABLE_PADDING = (0, 1)
+click.rich_click.STYLE_OPTIONS_TABLE_BOX = "SIMPLE"
+click.rich_click.STYLE_COMMANDS_TABLE_COLUMN_WIDTH_RATIO = (1, 2)
 click.rich_click.COMMAND_GROUPS = {
     "rxiv": [
         {
@@ -48,7 +59,7 @@ click.rich_click.COMMAND_GROUPS = {
         },
         {
             "name": "Information",
-            "commands": ["version"],
+            "commands": ["version", "upgrade"],
         },
     ]
 }
@@ -137,55 +148,52 @@ def main(
     verbose: bool,
     no_update_check: bool,
 ) -> None:
-    """**rxiv-maker** converts Markdown manuscripts into publication-ready PDFs.
+    """rxiv-maker converts Markdown manuscripts into publication-ready PDFs.
 
-    Automated figure generation, professional LaTeX typesetting, and bibliography
-    management using local execution only.
+    \b
+    Automated figure generation, professional LaTeX typesetting, and
+    bibliography management using local execution only.
 
-    ## Examples
+    \b
+    QUICK START EXAMPLES
+    ────────────────────
 
-    **Get help:**
-
+    \b
+    Get help:
         $ rxiv --help
 
-    **Initialize a new manuscript:**
-
+    \b
+    Initialize a new manuscript:
         $ rxiv init MY_PAPER/
 
-    **Build PDF from manuscript:**
-
+    \b
+    Build PDF from manuscript:
         $ rxiv pdf                      # Build from MANUSCRIPT/
-
         $ rxiv pdf MY_PAPER/            # Build from custom directory
-
         $ rxiv pdf --force-figures      # Force regenerate figures
 
-    **Validate manuscript:**
-
+    \b
+    Validate manuscript:
         $ rxiv validate                 # Validate current manuscript
-
         $ rxiv validate --no-doi        # Skip DOI validation
 
-    **Prepare arXiv submission:**
-
+    \b
+    Prepare arXiv submission:
         $ rxiv arxiv                    # Prepare arXiv package
 
-    **Install system dependencies:**
+    \b
+    Install system dependencies:
+        $ rxiv setup                    # Full setup
+        $ rxiv setup --mode minimal     # Essential dependencies only
 
-        $ rxiv setup                     # Full setup including system and Python dependencies
+    \b
+    Enable shell completion:
+        $ rxiv completion zsh           # For zsh
+        $ rxiv completion bash          # For bash
 
-        $ rxiv setup --mode minimal     # Install only essential dependencies
-
-    **Enable shell completion:**
-
-        $ rxiv completion zsh           # Install for zsh
-
-        $ rxiv completion bash          # Install for bash
-
-    ## Note
-
-    Rxiv-maker now uses local-only execution for better simplicity and reliability.
-    For containerized execution, run rxiv-maker from within a Docker container.
+    \b
+    NOTE: Rxiv-maker uses local-only execution for simplicity and reliability.
+          For containerized execution, run rxiv-maker from within a Docker container.
     """
     # Initialize context
     ctx.ensure_object(dict)
@@ -211,6 +219,7 @@ main.add_command(commands.bibliography)
 main.add_command(commands.track_changes)
 main.add_command(commands.setup)
 main.add_command(commands.version)
+main.add_command(commands.upgrade)
 main.add_command(commands.cache, name="cache")
 main.add_command(commands.config, name="config")
 main.add_command(check_installation, name="check-installation")

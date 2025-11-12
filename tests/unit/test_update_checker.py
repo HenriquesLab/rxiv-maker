@@ -177,8 +177,11 @@ class TestUpdateChecker:
             assert checker._compare_versions("1.0.0", "1.1.0")  # Different = newer
             assert not checker._compare_versions("1.0.0", "1.0.0")  # Same = not newer
 
-    def test_get_update_notification_available(self):
+    @patch("src.rxiv_maker.utils.update_checker.detect_install_method")
+    def test_get_update_notification_available(self, mock_detect):
         """Test update notification when update is available."""
+        mock_detect.return_value = "pip"
+
         with tempfile.TemporaryDirectory() as tmpdir:
             cache_dir = Path(tmpdir) / ".rxiv"
             cache_dir.mkdir()
@@ -315,3 +318,177 @@ class TestGlobalFunctions:
 
         assert result == (True, "1.2.0")
         mock_checker.force_check.assert_called_once()
+
+
+class TestInstallDetectionIntegration:
+    """Test installation detection integration with update notifications."""
+
+    def setup_method(self):
+        """Set up test environment."""
+        self.package_name = "test-package"
+        self.current_version = "1.0.0"
+
+    @patch("src.rxiv_maker.utils.update_checker.detect_install_method")
+    def test_update_notification_pip(self, mock_detect):
+        """Test update notification for pip installation."""
+        mock_detect.return_value = "pip"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache_dir = Path(tmpdir) / ".rxiv"
+            cache_dir.mkdir()
+            cache_file = cache_dir / "update_cache.json"
+
+            checker = UpdateChecker(self.package_name, self.current_version)
+            checker.cache_dir = cache_dir
+            checker.cache_file = cache_file
+
+            cache_data = {
+                "last_check": datetime.now().isoformat(),
+                "latest_version": "1.2.0",
+                "current_version": "1.0.0",
+                "update_available": True,
+            }
+            with open(cache_file, "w") as f:
+                json.dump(cache_data, f)
+
+            notification = checker.get_update_notification()
+            assert notification is not None
+            assert "pip install --upgrade" in notification
+            assert "Installed via: pip" in notification
+
+    @patch("src.rxiv_maker.utils.update_checker.detect_install_method")
+    def test_update_notification_homebrew(self, mock_detect):
+        """Test update notification for Homebrew installation."""
+        mock_detect.return_value = "homebrew"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache_dir = Path(tmpdir) / ".rxiv"
+            cache_dir.mkdir()
+            cache_file = cache_dir / "update_cache.json"
+
+            checker = UpdateChecker(self.package_name, self.current_version)
+            checker.cache_dir = cache_dir
+            checker.cache_file = cache_file
+
+            cache_data = {
+                "last_check": datetime.now().isoformat(),
+                "latest_version": "1.2.0",
+                "current_version": "1.0.0",
+                "update_available": True,
+            }
+            with open(cache_file, "w") as f:
+                json.dump(cache_data, f)
+
+            notification = checker.get_update_notification()
+            assert notification is not None
+            assert "brew update && brew upgrade" in notification
+            assert "Installed via: Homebrew" in notification
+
+    @patch("src.rxiv_maker.utils.update_checker.detect_install_method")
+    def test_update_notification_uv(self, mock_detect):
+        """Test update notification for uv installation."""
+        mock_detect.return_value = "uv"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache_dir = Path(tmpdir) / ".rxiv"
+            cache_dir.mkdir()
+            cache_file = cache_dir / "update_cache.json"
+
+            checker = UpdateChecker(self.package_name, self.current_version)
+            checker.cache_dir = cache_dir
+            checker.cache_file = cache_file
+
+            cache_data = {
+                "last_check": datetime.now().isoformat(),
+                "latest_version": "1.2.0",
+                "current_version": "1.0.0",
+                "update_available": True,
+            }
+            with open(cache_file, "w") as f:
+                json.dump(cache_data, f)
+
+            notification = checker.get_update_notification()
+            assert notification is not None
+            assert "uv tool upgrade" in notification
+            assert "Installed via: uv tool" in notification
+
+    @patch("src.rxiv_maker.utils.update_checker.detect_install_method")
+    def test_update_notification_pipx(self, mock_detect):
+        """Test update notification for pipx installation."""
+        mock_detect.return_value = "pipx"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache_dir = Path(tmpdir) / ".rxiv"
+            cache_dir.mkdir()
+            cache_file = cache_dir / "update_cache.json"
+
+            checker = UpdateChecker(self.package_name, self.current_version)
+            checker.cache_dir = cache_dir
+            checker.cache_file = cache_file
+
+            cache_data = {
+                "last_check": datetime.now().isoformat(),
+                "latest_version": "1.2.0",
+                "current_version": "1.0.0",
+                "update_available": True,
+            }
+            with open(cache_file, "w") as f:
+                json.dump(cache_data, f)
+
+            notification = checker.get_update_notification()
+            assert notification is not None
+            assert "pipx upgrade" in notification
+            assert "Installed via: pipx" in notification
+
+    @patch("src.rxiv_maker.utils.update_checker.detect_install_method")
+    @patch("src.rxiv_maker.utils.update_checker.check_homebrew_update")
+    def test_homebrew_preferred_check(self, mock_homebrew_check, mock_detect):
+        """Test that Homebrew update checker is used for Homebrew installations."""
+        mock_detect.return_value = "homebrew"
+        mock_homebrew_check.return_value = (True, "1.2.0")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache_dir = Path(tmpdir) / ".rxiv"
+            cache_dir.mkdir()
+
+            checker = UpdateChecker(self.package_name, self.current_version)
+            checker.cache_dir = cache_dir
+            checker.cache_file = cache_dir / "update_cache.json"
+
+            checker._check_and_cache_update()
+
+            # Verify Homebrew checker was called
+            mock_homebrew_check.assert_called_once_with(self.current_version)
+
+            # Verify cache was updated with Homebrew results
+            cache_data = checker._load_cache()
+            assert cache_data["update_available"]
+            assert cache_data["latest_version"] == "1.2.0"
+
+    @patch("src.rxiv_maker.utils.update_checker.detect_install_method")
+    @patch("src.rxiv_maker.utils.update_checker.check_homebrew_update")
+    @patch("src.rxiv_maker.utils.update_checker.UpdateChecker._fetch_latest_version")
+    def test_fallback_to_pypi_for_non_homebrew(self, mock_fetch, mock_homebrew_check, mock_detect):
+        """Test that PyPI is used for non-Homebrew installations."""
+        mock_detect.return_value = "pip"
+        mock_fetch.return_value = "1.2.0"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache_dir = Path(tmpdir) / ".rxiv"
+            cache_dir.mkdir()
+
+            checker = UpdateChecker(self.package_name, self.current_version)
+            checker.cache_dir = cache_dir
+            checker.cache_file = cache_dir / "update_cache.json"
+
+            checker._check_and_cache_update()
+
+            # Verify Homebrew checker was NOT called
+            mock_homebrew_check.assert_not_called()
+
+            # Verify PyPI was called
+            mock_fetch.assert_called_once()
+
+            # Verify cache was updated
+            cache_data = checker._load_cache()
+            assert cache_data["latest_version"] == "1.2.0"

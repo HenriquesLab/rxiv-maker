@@ -17,6 +17,7 @@ Usage:
 
 import argparse
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -177,7 +178,34 @@ class ReleaseOrchestrator:
             return False
 
     def _validate_changelog(self) -> None:
-        """Validate that CHANGELOG.md has an entry for the current version."""
+        """
+        Validate that CHANGELOG.md has an entry for the current version.
+
+        This method performs comprehensive CHANGELOG validation including:
+        - File existence and accessibility
+        - Path traversal protection (ensures file is within repository)
+        - File size limits (max 10MB to prevent DoS)
+        - Version entry format validation using regex patterns
+        - Case-insensitive version matching
+
+        Accepted CHANGELOG formats:
+        - ## [v1.2.3] - YYYY-MM-DD (with 'v' prefix)
+        - ## [1.2.3] - YYYY-MM-DD (without 'v' prefix)
+        - ## [v1.2.3-beta.1] - YYYY-MM-DD (prerelease versions)
+
+        The version entry must be a level 2 heading (##) at the start of a line.
+        Whitespace variations are tolerated within the brackets.
+
+        Raises:
+            ValueError: If CHANGELOG.md is missing, inaccessible, exceeds size limits,
+                       contains invalid encoding, or lacks the required version entry.
+            SecurityError: If CHANGELOG.md path is outside repository root (path traversal).
+
+        Security considerations:
+        - Validates resolved path is within repository root
+        - Enforces maximum file size (10MB) before reading
+        - Handles encoding errors gracefully
+        """
         log_step(self.logger, "Validating CHANGELOG entry", "START")
 
         # Get repository root and validate path security
@@ -195,6 +223,15 @@ class ReleaseOrchestrator:
         if not changelog_path.exists():
             raise ValueError("CHANGELOG.md not found in repository root")
 
+        # File size validation to prevent DoS (max 10MB)
+        MAX_CHANGELOG_SIZE = 10 * 1024 * 1024  # 10MB in bytes
+        file_size = changelog_path.stat().st_size
+        if file_size > MAX_CHANGELOG_SIZE:
+            raise ValueError(
+                f"CHANGELOG.md exceeds maximum allowed size of {MAX_CHANGELOG_SIZE / (1024 * 1024):.1f}MB "
+                f"(actual: {file_size / (1024 * 1024):.2f}MB)"
+            )
+
         # Read CHANGELOG content with error handling
         try:
             with open(changelog_path, "r", encoding="utf-8") as f:
@@ -202,19 +239,30 @@ class ReleaseOrchestrator:
         except UnicodeDecodeError as e:
             raise ValueError(f"Failed to read CHANGELOG.md: encoding error - {e}") from e
 
-        # Check for version entry (format: ## [v1.2.3] or ## [1.2.3])
+        # Check for version entry using regex patterns (format: ## [v1.2.3] or ## [1.2.3])
+        # Regex ensures:
+        # - Match occurs at line start (^)
+        # - Proper level 2 heading (##)
+        # - Version enclosed in brackets with optional whitespace
+        # - Word boundary matching to prevent partial version matches
         clean_version = self.version.lstrip("v")
+
+        # Build regex patterns with proper escaping for version strings
+        # Allow optional whitespace within brackets for flexibility
         version_patterns = [
-            f"## [{self.version}]",  # With 'v' prefix
-            f"## [{clean_version}]",  # Without 'v' prefix
+            rf"^##\s+\[\s*{re.escape(self.version)}\s*\]",  # With 'v' prefix
+            rf"^##\s+\[\s*{re.escape(clean_version)}\s*\]",  # Without 'v' prefix
         ]
 
-        found = any(pattern in changelog_content for pattern in version_patterns)
+        # Search with case-insensitive matching and multiline mode
+        found = any(re.search(pattern, changelog_content, re.MULTILINE | re.IGNORECASE) for pattern in version_patterns)
 
         if not found:
             error_msg = (
                 f"No CHANGELOG entry found for version {self.version}\n"
-                f"Expected to find one of: {', '.join(version_patterns)}\n"
+                f"Expected format: '## [{self.version}]' or '## [{clean_version}]' at line start\n"
+                f"The entry must be a level 2 heading (##) followed by the version in brackets.\n"
+                f"Note: Matching is case-insensitive and allows optional whitespace within brackets.\n"
                 f"Please add a CHANGELOG entry before creating a release."
             )
             raise ValueError(error_msg)

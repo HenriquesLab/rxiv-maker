@@ -31,11 +31,21 @@ Rxiv-Maker converts enhanced Markdown into professional PDFs with automated figu
 
 ## 🚀 Installation
 
-**Quick Installation (All Platforms):**
+**Quick Installation:**
 
 ```bash
-# Using pipx (recommended)
+# macOS with Homebrew (recommended for macOS)
+brew tap henriqueslab/formulas
+brew install rxiv-maker
+
+# Using pipx (recommended for all platforms)
 pipx install rxiv-maker
+
+# Using pip
+pip install rxiv-maker
+
+# Using uv (modern package manager)
+uv tool install rxiv-maker
 
 # Verify installation
 rxiv check-installation
@@ -47,6 +57,18 @@ rxiv check-installation
   - **Windows**: MiKTeX or TeX Live
   - **Linux**: TeX Live (install via system package manager)
 - **Python 3.11+**: For rxiv-maker CLI and figure generation
+
+**Upgrading:**
+```bash
+# Automatic upgrade (detects installation method)
+rxiv upgrade
+
+# Or manually specify method
+brew upgrade rxiv-maker           # Homebrew
+pipx upgrade rxiv-maker            # pipx
+pip install --upgrade rxiv-maker   # pip
+uv tool upgrade rxiv-maker         # uv
+```
 
 **Need help?** 📖 **[Installation Guide](docs/installation.md)**
 
@@ -215,7 +237,7 @@ Visit our **[official documentation website](https://rxiv-maker.henriqueslab.org
 - **🐳 Containers**: Docker for reproducible environments
 
 ### 📦 **Simplified Architecture**
-> **Note**: As of v1.7.9, we've streamlined the ecosystem by removing deprecated package manager integrations (Homebrew/APT repositories). The focus is now on pip/pipx installation with optional Docker support.
+> **Note**: As of v1.8.4, we've streamlined the ecosystem while maintaining multiple installation options (Homebrew, pip, pipx, uv) with optional Docker support for containerized workflows.
 >
 > **📋 [Migration Guide](docs/migration-v1.7.9.md)** - For users upgrading from previous versions
 
@@ -228,6 +250,7 @@ rxiv pdf                    # Generate PDF
 rxiv validate              # Check manuscript quality
 rxiv arxiv                 # Prepare arXiv submission
 rxiv track-changes v1 v2   # Visual version comparison
+rxiv upgrade               # Upgrade to latest version
 ```
 
 **[📖 CLI Reference](docs/cli-reference.md)**
