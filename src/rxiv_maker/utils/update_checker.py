@@ -21,6 +21,8 @@ from rich.console import Console
 from rxiv_maker.utils.unicode_safe import get_safe_icon, safe_print
 
 from ..core.cache.cache_utils import get_manuscript_cache_dir
+from .homebrew_checker import check_homebrew_update
+from .install_detector import detect_install_method, get_friendly_install_name, get_upgrade_command
 
 console = Console()
 
@@ -178,6 +180,23 @@ class UpdateChecker:
 
     def _check_and_cache_update(self) -> None:
         """Check for updates and cache the result."""
+        # Try Homebrew first if installed via Homebrew
+        install_method = detect_install_method()
+        if install_method == "homebrew":
+            brew_result = check_homebrew_update(self.current_version)
+            if brew_result is not None:
+                has_update, latest_version = brew_result
+                now = datetime.now()
+                cache_data = {
+                    "last_check": now.isoformat(),
+                    "latest_version": latest_version,
+                    "current_version": self.current_version,
+                    "update_available": has_update,
+                }
+                self._save_cache(cache_data)
+                return
+
+        # Fall back to PyPI for all other methods
         latest_version = self._fetch_latest_version()
         now = datetime.now()
 
@@ -209,12 +228,17 @@ class UpdateChecker:
         if current == "unknown" or latest == "unknown":
             return None
 
+        # Detect installation method and get appropriate upgrade command
+        install_method = detect_install_method()
+        upgrade_cmd = get_upgrade_command(install_method)
+        install_name = get_friendly_install_name(install_method)
+
         # Format the notification message with safe icons
         package_icon = get_safe_icon("📦", "[UPDATE]")
         notification_lines = [
             f"{package_icon} Update available: {self.package_name} v{current} → v{latest}",
-            f"   Run: pip install --upgrade {self.package_name}  (or pip3)",
-            f"        uv tool upgrade {self.package_name}",
+            f"   Installed via: {install_name}",
+            f"   Run: {upgrade_cmd}",
             f"   Release notes: https://github.com/henriqueslab/rxiv-maker/releases/tag/v{latest}",
         ]
 

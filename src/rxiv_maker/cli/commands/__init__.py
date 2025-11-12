@@ -16,6 +16,7 @@ from .init import init
 from .install_deps import install_deps
 from .setup import setup
 from .track_changes import track_changes
+from .upgrade import upgrade
 from .validate import validate
 from .version import version
 
@@ -35,6 +36,7 @@ __all__ = [
     "install_deps",
     "setup",
     "track_changes",
+    "upgrade",
     "validate",
     "version",
 ]

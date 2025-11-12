@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.table import Table
 
 from ... import __version__
+from ...utils.install_detector import detect_install_method, get_friendly_install_name, get_upgrade_command
 from ...utils.platform import platform_detector
 
 console = Console()
@@ -28,9 +29,14 @@ def version(ctx: click.Context, detailed: bool, check_updates: bool) -> None:
             update_available, latest_version = force_update_check()
 
             if update_available:
+                # Detect installation method and show appropriate upgrade command
+                install_method = detect_install_method()
+                upgrade_cmd = get_upgrade_command(install_method)
+                install_name = get_friendly_install_name(install_method)
+
                 console.print(f"📦 Update available: {__version__} → {latest_version}", style="green")
-                console.print("   Run: pip install --upgrade rxiv-maker  (or pip3)", style="blue")
-                console.print("        uv tool upgrade rxiv-maker", style="blue")
+                console.print(f"   Installed via: {install_name}", style="blue")
+                console.print(f"   Run: {upgrade_cmd}", style="blue")
             else:
                 console.print(f"✅ You have the latest version ({__version__})", style="green")
         except Exception as e:
