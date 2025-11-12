@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.8.9] - 2025-11-12
+
+### Added
+- **🚀 Smart Upgrade Command**: New `rxiv upgrade` command with automatic detection of installation method (Homebrew, pipx, uv, pip, etc.)
+  - Auto-detects how rxiv-maker was installed using `install_detector` utility
+  - Runs appropriate upgrade command for each installation method
+  - Provides user-friendly confirmation prompts
+  - Supports `--yes` flag for automated upgrades and `--check-only` flag for update checking
+- **🔍 Install Method Detection**: Comprehensive `install_detector.py` utility that identifies installation methods
+  - Detects Homebrew (macOS/Linux), pipx, uv, pip-user, pip, and development installations
+  - Provides user-friendly names and appropriate upgrade commands for each method
+  - Robust detection using executable path analysis and system patterns
+- **🍺 Homebrew Update Checker**: New `homebrew_checker.py` utility for Homebrew-specific update checking
+  - Checks `brew outdated` to avoid PyPI version mismatches
+  - Prevents false positive update notifications for Homebrew users
+  - Parses Homebrew formula versions directly
+
+### Changed
+- **✨ Enhanced Version Command**: The `rxiv --version` command now shows installation method and method-specific upgrade instructions
+  - Displays detected installation method (e.g., "Installed via: Homebrew")
+  - Shows appropriate upgrade command (e.g., "Run: brew update && brew upgrade rxiv-maker")
+  - Provides clear, actionable guidance for users
+- **🔄 Homebrew-First Update Checking**: For Homebrew installations, check `brew outdated` first before falling back to PyPI
+  - Eliminates false positives when Homebrew formula lags behind PyPI releases
+  - Provides accurate update availability information
+  - Improves user experience for Homebrew users
+- **📚 Documentation**: Updated README with comprehensive Homebrew installation instructions and upgrade guidance
+- **♻️ Homebrew Support Restored**: Removed all deprecation notices and warnings for Homebrew installations
+  - Homebrew is now a first-class installation method again
+  - Full feature parity with other installation methods
+
+### Security
+- **🔒 Subprocess Safety**: Fixed security issue in upgrade command by replacing `shell=True` with `shlex.split()`
+  - Prevents shell injection vulnerabilities
+  - Safely handles compound commands with `&&` by splitting and executing sequentially
+  - Maintains functionality while improving security posture
+
+### Testing
+- **✅ Comprehensive Test Coverage**: Added extensive tests for new features
+  - Unit tests for install detection across all methods (Homebrew, pipx, uv, pip, dev)
+  - Unit tests for Homebrew checker functionality
+  - Unit tests for upgrade command with various scenarios
+  - Integration tests for update checker with install detection
+  - Mock-based testing for robust, isolated test execution
+
+### Documentation
+- **📖 API Documentation**: Added comprehensive API documentation for new utilities
+  - `install_detector.py` documentation with usage examples
+  - `homebrew_checker.py` documentation with API reference
+  - Updated module index and README
+
+### Technical Details
+This release addresses user feedback about false positive update notifications when using Homebrew installations. The root cause was that the update checker always queried PyPI, which might show newer versions before the Homebrew formula is updated. By checking `brew outdated` first for Homebrew installations, we ensure accurate update availability information and eliminate confusing notifications.
+
+The new `rxiv upgrade` command provides a seamless upgrade experience by automatically detecting the installation method and running the appropriate upgrade command, eliminating the need for users to remember method-specific commands.
+
 ## [v1.8.8] - 2025-11-03
 
 ### Fixed
