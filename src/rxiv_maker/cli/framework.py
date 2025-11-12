@@ -1808,6 +1808,121 @@ class BibliographyAddCommand(BaseCommand):
                 raise CommandExecutionError(f"Bibliography adding failed: {e}") from e
 
 
+class BibliographyListCommand(BaseCommand):
+    """Bibliography list command implementation using the framework."""
+
+    def execute_operation(self, format: str = "text", include_raw: bool = False) -> None:
+        """List all bibliography entries.
+
+        Args:
+            format: Output format ('text' or 'json')
+            include_raw: Include raw BibTeX entry in output (JSON only)
+        """
+        if self.path_manager is None:
+            raise CommandExecutionError("Path manager not initialized")
+
+        try:
+            import json
+
+            from rxiv_maker.utils.bibliography_parser import entry_to_dict, parse_bib_file
+
+            # Find bibliography file
+            bib_path = self.path_manager.manuscript_path / "03_REFERENCES.bib"
+
+            # Also check config for custom bibliography file name
+            config_path = self.path_manager.manuscript_path / "00_CONFIG.yml"
+            if config_path.exists():
+                try:
+                    import yaml
+
+                    config = yaml.safe_load(config_path.read_text())
+                    bib_filename = config.get("bibliography", "03_REFERENCES.bib")
+                    if not bib_filename.endswith(".bib"):
+                        bib_filename += ".bib"
+                    bib_path = self.path_manager.manuscript_path / bib_filename
+                except Exception:
+                    pass  # Fall back to default
+
+            if not bib_path.exists():
+                if format == "json":
+                    # Output empty JSON array for programmatic consumption
+                    import sys
+
+                    sys.stdout.write("[]\n")
+                    sys.stdout.flush()
+                else:
+                    self.error_message(f"Bibliography file not found: {bib_path}")
+                return
+
+            # Parse bibliography file
+            entries = parse_bib_file(bib_path)
+
+            if format == "json":
+                # Output JSON format for programmatic consumption
+                import sys
+
+                entries_dict = [entry_to_dict(entry, include_raw=include_raw) for entry in entries]
+                json_output = json.dumps(entries_dict, indent=2, ensure_ascii=False)
+                # Use sys.stdout directly to avoid Rich console formatting
+                sys.stdout.write(json_output)
+                sys.stdout.write("\n")
+                sys.stdout.flush()
+            else:
+                # Human-readable text format
+                if not entries:
+                    self.console.print("No bibliography entries found.", style="yellow")
+                else:
+                    self.console.print(f"\n📚 Found {len(entries)} bibliography entries:\n", style="bold blue")
+
+                    for entry in entries:
+                        self.console.print(f"  • [{entry.entry_type}] {entry.key}", style="cyan bold")
+
+                        # Display key fields
+                        if "title" in entry.fields:
+                            title = entry.fields["title"]
+                            if len(title) > 80:
+                                title = title[:77] + "..."
+                            self.console.print(f"    Title: {title}", style="dim")
+
+                        if "author" in entry.fields:
+                            author = entry.fields["author"]
+                            if len(author) > 80:
+                                author = author[:77] + "..."
+                            self.console.print(f"    Author: {author}", style="dim")
+
+                        if "year" in entry.fields:
+                            self.console.print(f"    Year: {entry.fields['year']}", style="dim")
+
+                        if "doi" in entry.fields:
+                            self.console.print(f"    DOI: {entry.fields['doi']}", style="dim")
+
+                        self.console.print()  # Blank line between entries
+
+                    self.console.print(f"Total entries: {len(entries)}", style="bold green")
+
+        except FileNotFoundError as e:
+            if format == "json":
+                # Output empty JSON array for programmatic consumption
+                import sys
+
+                sys.stdout.write("[]\n")
+                sys.stdout.flush()
+            else:
+                self.error_message(f"Bibliography file not found: {e}")
+        except Exception as e:
+            if format == "json":
+                # Output error as JSON for programmatic handling
+                import sys
+
+                error_output = json.dumps({"error": str(e)}, ensure_ascii=False)
+                sys.stdout.write(error_output)
+                sys.stdout.write("\n")
+                sys.stdout.flush()
+            else:
+                self.error_message(f"Failed to list bibliography entries: {e}")
+            raise CommandExecutionError(f"Bibliography listing failed: {e}") from e
+
+
 class SetupCommand(BaseCommand):
     """Setup command implementation using the framework."""
 

@@ -2,7 +2,7 @@
 
 import click
 
-from ..framework import BibliographyAddCommand, BibliographyFixCommand
+from ..framework import BibliographyAddCommand, BibliographyFixCommand, BibliographyListCommand
 
 
 @click.group()
@@ -54,3 +54,43 @@ def add(
     """
     command = BibliographyAddCommand()
     return command.run(ctx, manuscript_path=manuscript_path, dois=dois, overwrite=overwrite)
+
+
+@bibliography.command()
+@click.option(
+    "--manuscript-path",
+    "-m",
+    type=click.Path(exists=True, file_okay=False),
+    help="Path to manuscript directory (default: MANUSCRIPT)",
+)
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["text", "json"], case_sensitive=False),
+    default="text",
+    help="Output format (default: text)",
+)
+@click.option(
+    "--include-raw",
+    is_flag=True,
+    help="Include raw BibTeX entry in JSON output (ignored for text format)",
+)
+@click.pass_context
+def list(
+    ctx: click.Context,
+    manuscript_path: str | None,
+    format: str,
+    include_raw: bool,
+) -> None:
+    """List all bibliography entries.
+
+    MANUSCRIPT_PATH: Path to manuscript directory (default: MANUSCRIPT)
+
+    Examples:
+    rxiv bibliography list
+    rxiv bibliography list --format json
+    rxiv bibliography list --format json --include-raw
+    rxiv bibliography list --manuscript-path MY_PAPER/
+    """
+    command = BibliographyListCommand()
+    return command.run(ctx, manuscript_path=manuscript_path, format=format, include_raw=include_raw)
