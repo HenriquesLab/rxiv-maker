@@ -46,6 +46,9 @@ dependencies = [
     "tomli-w>=1.0.0",
     "requests>=2.28.0",
     "playwright>=1.54.0",
+    # Repository management dependencies
+    "GitPython>=3.1.0",
+    "prompt_toolkit>=3.0.0",
 ]
 
 [project.urls]

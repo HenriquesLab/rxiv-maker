@@ -11,12 +11,13 @@ Note: Before upgrading with Homebrew, always run 'brew update' first to fetch th
 
 **Global Variables**
 ---------------
+- **HOMEBREW_TAP**
 - **FORMULA_NAME**
 - **FORMULA_URL**
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/homebrew_checker.py#L19"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/homebrew_checker.py#L21"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_brew_outdated`
 
@@ -44,7 +45,35 @@ Check if package is outdated using `brew outdated` command.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/homebrew_checker.py#L61"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/homebrew_checker.py#L63"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `check_formula_github`
+
+```python
+check_formula_github(
+    formula_url: str = 'https://raw.githubusercontent.com/henriqueslab/homebrew-formulas/main/Formula/rxiv-maker.rb',
+    timeout: int = 5
+) → Optional[str]
+```
+
+Check the latest version from the GitHub formula file. 
+
+
+
+**Args:**
+ 
+ - <b>`formula_url`</b>:  URL to the formula Ruby file 
+ - <b>`timeout`</b>:  Request timeout in seconds 
+
+
+
+**Returns:**
+ Latest version string if found, None otherwise 
+
+
+---
+
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/homebrew_checker.py#L99"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_homebrew_update`
 
@@ -54,7 +83,7 @@ check_homebrew_update(current_version: str) → Optional[Tuple[bool, str]]
 
 Check if a Homebrew update is available. 
 
-Checks via the brew outdated command to see if a newer version is available in the Homebrew tap. 
+Tries brew outdated command first, falls back to GitHub formula. 
 
 
 

@@ -31,23 +31,30 @@ Rxiv-Maker converts enhanced Markdown into professional PDFs with automated figu
 
 ## 🚀 Installation
 
-**Quick Installation:**
+**⚠️ Choose ONE installation method below** (don't run all of them):
 
+**🍎 macOS (Recommended):**
 ```bash
-# macOS with Homebrew (recommended for macOS)
 brew tap henriqueslab/formulas
 brew install rxiv-maker
+rxiv check-installation
+```
 
-# Using pipx (recommended for all platforms)
+**🐧 Linux / 🪟 Windows WSL (Recommended):**
+```bash
 pipx install rxiv-maker
+rxiv check-installation
+```
 
-# Using pip
+**🔧 Alternative Methods:**
+```bash
+# Using pip (simpler, but may conflict with system packages)
 pip install rxiv-maker
 
-# Using uv (modern package manager)
+# Using uv (modern, fast package manager)
 uv tool install rxiv-maker
 
-# Verify installation
+# Verify any installation
 rxiv check-installation
 ```
 
@@ -60,14 +67,14 @@ rxiv check-installation
 
 **Upgrading:**
 ```bash
-# Automatic upgrade (detects installation method)
+# Automatic upgrade (detects your installation method)
 rxiv upgrade
 
-# Or manually specify method
-brew upgrade rxiv-maker           # Homebrew
-pipx upgrade rxiv-maker            # pipx
-pip install --upgrade rxiv-maker   # pip
-uv tool upgrade rxiv-maker         # uv
+# Or use the same method you used to install:
+brew upgrade rxiv-maker              # If you installed with Homebrew
+pipx upgrade rxiv-maker              # If you installed with pipx
+pip install --upgrade rxiv-maker     # If you installed with pip
+uv tool upgrade rxiv-maker           # If you installed with uv
 ```
 
 **Need help?** 📖 **[Installation Guide](docs/installation.md)**
@@ -244,13 +251,48 @@ Visit our **[official documentation website](https://rxiv-maker.henriqueslab.org
 ## 🚀 Essential Commands
 
 ```bash
+# Core Commands
 rxiv init my-paper          # Create new manuscript
 rxiv get-rxiv-preprint     # Clone complete example manuscript
 rxiv pdf                    # Generate PDF
 rxiv validate              # Check manuscript quality
 rxiv arxiv                 # Prepare arXiv submission
 rxiv track-changes v1 v2   # Visual version comparison
+
+# Repository Management
+rxiv create-repo           # Create new manuscript repository (with GitHub integration)
+rxiv repos                 # List all manuscript repositories
+rxiv repos-search          # Search and clone from GitHub
+rxiv config                # Interactive configuration menu
+
+# Maintenance
 rxiv upgrade               # Upgrade to latest version
+```
+
+### 📂 Repository Management
+
+Manage multiple manuscript repositories with GitHub integration:
+
+```bash
+# Initial setup (interactive)
+rxiv repo-init
+
+# Or configure manually
+rxiv config set-repo-parent-dir ~/manuscripts
+rxiv config set-repo-org YourGitHubOrg
+
+# Create new repository (manuscript-{name})
+rxiv create-repo my-paper
+
+# List all repositories with git status
+rxiv repos
+
+# Search and clone from GitHub
+rxiv repos-search my-paper
+
+# Interactive configuration
+rxiv config                 # Interactive menu
+rxiv config --non-interactive  # Show current settings
 ```
 
 **[📖 CLI Reference](docs/cli-reference.md)**

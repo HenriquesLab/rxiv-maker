@@ -2,7 +2,7 @@
 
 import click
 
-from ...engines.operations.cleanup import CleanupManager
+from ..framework import CleanCommand
 
 
 @click.command(context_settings={"help_option_names": ["-h", "--help"]})
@@ -13,8 +13,8 @@ from ...engines.operations.cleanup import CleanupManager
 @click.option("--arxiv-only", "-a", is_flag=True, help="Clean only arXiv files")
 @click.option("--temp-only", "-t", is_flag=True, help="Clean only temporary files")
 @click.option("--cache-only", "-c", is_flag=True, help="Clean only cache files")
-@click.option("--all", "-A", is_flag=True, help="Clean all generated files")
-@click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
+@click.option("--all", "all_files", is_flag=True, help="Clean all generated files")
+@click.option("--interactive", "-i", is_flag=True, help="Interactive mode - select what to clean")
 @click.pass_context
 def clean(
     ctx: click.Context,
@@ -25,8 +25,8 @@ def clean(
     arxiv_only: bool,
     temp_only: bool,
     cache_only: bool,
-    all: bool,
-    verbose: bool,
+    all_files: bool,
+    interactive: bool,
 ) -> None:
     """Clean generated files and directories.
 
@@ -52,29 +52,21 @@ def clean(
     **Clean specific manuscript:**
 
         $ rxiv clean MY_PAPER/
+
+    **Interactive mode (select what to clean):**
+
+        $ rxiv clean --interactive
     """
-    # Direct call - no framework overhead!
-    cleanup_manager = CleanupManager(
+    command = CleanCommand()
+    return command.run(
+        ctx,
         manuscript_path=manuscript_path,
         output_dir=output_dir,
-        verbose=verbose or ctx.obj.get("verbose", False),
+        figures_only=figures_only,
+        output_only=output_only,
+        arxiv_only=arxiv_only,
+        temp_only=temp_only,
+        cache_only=cache_only,
+        all_files=all_files,
+        interactive=interactive,
     )
-
-    try:
-        if all:
-            cleanup_manager.run_full_cleanup()
-        elif figures_only:
-            cleanup_manager.clean_generated_figures()
-        elif output_only:
-            cleanup_manager.clean_output_directory()
-        elif arxiv_only:
-            cleanup_manager.clean_arxiv_files()
-        elif temp_only:
-            cleanup_manager.clean_temporary_files()
-        elif cache_only:
-            cleanup_manager.clean_cache_files()
-        else:
-            cleanup_manager.run_full_cleanup()
-    except Exception as e:
-        click.echo(f"❌ Cleanup failed: {e}", err=True)
-        ctx.exit(1)
