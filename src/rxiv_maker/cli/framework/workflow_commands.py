@@ -239,7 +239,7 @@ class BuildCommand(BaseCommand):
     def _show_build_tips(self) -> None:
         """Show helpful tips after successful PDF build."""
         try:
-            from ..utils import get_build_success_tip
+            from ...utils.tips import get_build_success_tip
 
             # Always show tips - no configuration needed
             tip = get_build_success_tip(frequency="always")
