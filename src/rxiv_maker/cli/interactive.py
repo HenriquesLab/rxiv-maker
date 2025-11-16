@@ -114,7 +114,14 @@ class TemplateValidator(Validator):
 
 
 class RepositoryNameValidator(Validator):
-    """Validator for repository names."""
+    """Validator for repository names.
+
+    Validates repository names according to GitHub's naming rules:
+    - Only alphanumeric characters and hyphens allowed
+    - Cannot start or end with a hyphen
+    - Cannot contain consecutive hyphens
+    - Maximum 39 characters (leaving room for 'manuscript-' prefix)
+    """
 
     def __init__(self, existing_names: Optional[List[str]] = None):
         """Initialize repository name validator.
@@ -125,16 +132,30 @@ class RepositoryNameValidator(Validator):
         self.existing_names = existing_names or []
 
     def validate(self, document):
-        """Validate repository name."""
+        """Validate repository name according to GitHub rules."""
         text = document.text.strip()
         if not text:
             raise ValidationError(message="Repository name cannot be empty")
 
-        # Check for invalid characters
-        if not all(c.isalnum() or c in "-_" for c in text):
-            raise ValidationError(message="Repository name can only contain letters, numbers, hyphens, and underscores")
+        # Check length (GitHub limits: 1-39 characters, but we add 'manuscript-' prefix)
+        if len(text) > 39:
+            raise ValidationError(message="Repository name cannot exceed 39 characters")
 
-        # Check for spaces
+        # Check for invalid characters (only alphanumeric and hyphens, NO underscores)
+        if not all(c.isalnum() or c == "-" for c in text):
+            raise ValidationError(
+                message="Repository name can only contain letters, numbers, and hyphens (no underscores)"
+            )
+
+        # Check doesn't start or end with hyphen
+        if text.startswith("-") or text.endswith("-"):
+            raise ValidationError(message="Repository name cannot start or end with a hyphen")
+
+        # Check no consecutive hyphens
+        if "--" in text:
+            raise ValidationError(message="Repository name cannot contain consecutive hyphens")
+
+        # Check for spaces (redundant but explicit)
         if " " in text:
             raise ValidationError(message="Repository name cannot contain spaces")
 

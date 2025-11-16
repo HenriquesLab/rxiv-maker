@@ -10,7 +10,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from git import InvalidGitRepositoryError, Repo
+from git import GitCommandError, InvalidGitRepositoryError, Repo
+from git.exc import GitError
 
 from .repo_config import get_repo_config
 
@@ -100,8 +101,9 @@ class ManuscriptRepository:
                 try:
                     origin = repo.remote("origin")
                     status["remote_url"] = list(origin.urls)[0] if origin.urls else None
-                except Exception:
-                    pass
+                except (GitError, ValueError, IndexError) as e:
+                    # Remote might not exist or have no URLs
+                    logger.debug(f"Could not get remote URL: {e}")
 
             # Get ahead/behind counts if tracking remote
             try:
@@ -111,12 +113,13 @@ class ManuscriptRepository:
                     status["ahead"] = sum(1 for _ in commits)
                     commits = repo.iter_commits(f"HEAD..{tracking}")
                     status["behind"] = sum(1 for _ in commits)
-            except Exception:
-                pass
+            except (GitCommandError, GitError, ValueError) as e:
+                # Branch might not have tracking branch or commits might not be comparable
+                logger.debug(f"Could not get ahead/behind counts: {e}")
 
             return status
 
-        except Exception as e:
+        except (InvalidGitRepositoryError, GitError) as e:
             logger.debug(f"Error getting git status: {e}")
             return None
 
@@ -156,10 +159,25 @@ class ManuscriptRepository:
             self.git_repo = repo
 
             # Create initial commit if there are files
+            # Be explicit about what we add to avoid accidentally committing sensitive files
             if list(self.path.iterdir()):
-                # Use "." instead of "*" to respect .gitignore and avoid adding unintended files
-                repo.index.add(["."])
-                repo.index.commit(initial_commit_message)
+                # Ensure .gitignore exists before adding files
+                if not (self.path / ".gitignore").exists():
+                    self.create_gitignore()
+
+                # Add specific directories/files that are safe to commit
+                files_to_add = []
+                safe_paths = ["MANUSCRIPT/", ".gitignore", "README.md", "LICENSE"]
+
+                for safe_path in safe_paths:
+                    full_path = self.path / safe_path
+                    if full_path.exists():
+                        files_to_add.append(safe_path)
+
+                if files_to_add:
+                    repo.index.add(files_to_add)
+                    repo.index.commit(initial_commit_message)
+                    logger.info(f"Created initial commit with: {', '.join(files_to_add)}")
 
             logger.info(f"Initialized git repository: {self.path}")
 

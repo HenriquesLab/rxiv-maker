@@ -6,6 +6,7 @@ and managing manuscript repositories on GitHub.
 
 import json
 import logging
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -18,6 +19,44 @@ class GitHubError(Exception):
     """Exception for GitHub operation errors."""
 
     pass
+
+
+def validate_github_name(name: str, name_type: str = "name") -> None:
+    """Validate GitHub organization or repository name.
+
+    GitHub names (orgs and repos) can only contain alphanumeric characters
+    and hyphens, cannot start or end with a hyphen, and cannot contain
+    consecutive hyphens.
+
+    Args:
+        name: The name to validate
+        name_type: Type of name for error messages ("organization" or "repository")
+
+    Raises:
+        ValueError: If name is invalid
+    """
+    if not name:
+        raise ValueError(f"GitHub {name_type} name cannot be empty")
+
+    # Check length (GitHub limits: 1-39 characters)
+    if len(name) > 39:
+        raise ValueError(f"GitHub {name_type} name cannot exceed 39 characters")
+
+    # Check valid characters (alphanumeric and hyphens only)
+    if not re.match(r"^[a-zA-Z0-9-]+$", name):
+        raise ValueError(f"GitHub {name_type} name can only contain alphanumeric characters and hyphens")
+
+    # Check doesn't start or end with hyphen
+    if name.startswith("-") or name.endswith("-"):
+        raise ValueError(f"GitHub {name_type} name cannot start or end with a hyphen")
+
+    # Check no consecutive hyphens
+    if "--" in name:
+        raise ValueError(f"GitHub {name_type} name cannot contain consecutive hyphens")
+
+    # Check no path separators or other dangerous characters
+    if any(char in name for char in ["/", "\\", "..", ".", " "]):
+        raise ValueError(f"GitHub {name_type} name cannot contain path separators or special characters")
 
 
 def check_gh_cli_installed() -> bool:
@@ -71,7 +110,12 @@ def check_github_repo_exists(org: str, repo_name: str) -> bool:
 
     Raises:
         GitHubError: If gh CLI is not available or not authenticated
+        ValueError: If org or repo_name are invalid
     """
+    # Validate inputs
+    validate_github_name(org, "organization")
+    validate_github_name(repo_name, "repository")
+
     if not check_gh_cli_installed():
         raise GitHubError("GitHub CLI (gh) is not installed")
 
@@ -105,7 +149,12 @@ def create_github_repo(org: str, repo_name: str, visibility: str = "public") -> 
 
     Raises:
         GitHubError: If creation fails
+        ValueError: If org, repo_name, or visibility are invalid
     """
+    # Validate inputs
+    validate_github_name(org, "organization")
+    validate_github_name(repo_name, "repository")
+
     if not check_gh_cli_installed():
         raise GitHubError("GitHub CLI (gh) is not installed")
 
@@ -137,17 +186,23 @@ def create_github_repo(org: str, repo_name: str, visibility: str = "public") -> 
             error_msg = result.stderr.strip() or result.stdout.strip()
             raise GitHubError(f"Failed to create repository: {error_msg}")
 
-        # Extract repository URL from output
-        output = result.stdout.strip()
-        if "https://github.com" in output:
-            # Parse URL from output
-            for line in output.split("\n"):
-                if "https://github.com" in line:
-                    url = line.strip().split()[-1]
-                    if url.startswith("https://github.com"):
-                        return url
+        # Get URL via GitHub API for reliability (more robust than parsing text output)
+        try:
+            api_result = subprocess.run(
+                ["gh", "api", f"repos/{org}/{repo_name}", "--jq", ".html_url"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
 
-        # Fallback: construct URL
+            if api_result.returncode == 0 and api_result.stdout.strip():
+                return api_result.stdout.strip()
+
+        except subprocess.SubprocessError as e:
+            logger.warning(f"Could not retrieve URL via API: {e}")
+
+        # Fallback: construct URL (only if API call fails)
+        logger.info("Using constructed URL as API retrieval failed")
         return f"https://github.com/{org}/{repo_name}"
 
     except subprocess.TimeoutExpired:
@@ -166,7 +221,12 @@ def clone_github_repo(org: str, repo_name: str, target_path: Path) -> None:
 
     Raises:
         GitHubError: If cloning fails
+        ValueError: If org or repo_name are invalid
     """
+    # Validate inputs
+    validate_github_name(org, "organization")
+    validate_github_name(repo_name, "repository")
+
     if not check_gh_cli_installed():
         raise GitHubError("GitHub CLI (gh) is not installed")
 
@@ -208,7 +268,11 @@ def list_github_repos(org: str, pattern: str = "manuscript-") -> List[Dict[str, 
 
     Raises:
         GitHubError: If listing fails
+        ValueError: If org is invalid
     """
+    # Validate inputs
+    validate_github_name(org, "organization")
+
     if not check_gh_cli_installed():
         raise GitHubError("GitHub CLI (gh) is not installed")
 

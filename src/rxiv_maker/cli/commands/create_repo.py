@@ -180,10 +180,19 @@ def create_repo(
 
             # Add files to git
             if repo.is_git_repository():
-                # Use "." instead of "*" to respect .gitignore and avoid adding unintended files
-                repo.git_repo.index.add(["."])
-                repo.git_repo.index.commit("Initial commit with MANUSCRIPT structure")
-                console.print("[green]✓[/green] Created initial commit")
+                # Add only safe, expected files to avoid accidentally committing sensitive data
+                files_to_add = []
+                safe_paths = ["MANUSCRIPT/", ".gitignore", "README.md", "LICENSE"]
+
+                for safe_path in safe_paths:
+                    full_path = repo.path / safe_path
+                    if full_path.exists():
+                        files_to_add.append(safe_path)
+
+                if files_to_add:
+                    repo.git_repo.index.add(files_to_add)
+                    repo.git_repo.index.commit("Initial commit with MANUSCRIPT structure")
+                    console.print(f"[green]✓[/green] Created initial commit with: {', '.join(files_to_add)}")
 
         except Exception as e:
             console.print(f"[yellow]Warning: Failed to initialize MANUSCRIPT: {e}[/yellow]")

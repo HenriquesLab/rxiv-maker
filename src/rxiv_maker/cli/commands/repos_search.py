@@ -1,5 +1,6 @@
 """Repos-search command for rxiv-maker CLI."""
 
+import logging
 import sys
 
 import click
@@ -18,6 +19,7 @@ from ...utils.github import (
 from ..interactive import prompt_confirm, prompt_multi_select
 
 console = Console()
+logger = logging.getLogger(__name__)
 
 
 @click.command(name="repos-search", context_settings={"help_option_names": ["-h", "--help"]})
@@ -155,8 +157,12 @@ def repos_search(
                         else:
                             selected_repos = []
 
-                    except Exception:
-                        # Fallback if dialog doesn't work
+                    except KeyboardInterrupt:
+                        # Allow user to cancel with Ctrl+C
+                        raise
+                    except Exception as e:
+                        # Fallback if dialog doesn't work (terminal compatibility issues, etc.)
+                        logger.debug(f"Interactive dialog failed: {e}")
                         console.print("\n[yellow]Interactive selection unavailable, using simple prompts[/yellow]\n")
                         selected_repos = []
                         for repo in unclaimed_repos:
