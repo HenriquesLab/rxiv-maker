@@ -74,8 +74,9 @@ class TestUpgradeCommand:
         result = self.runner.invoke(upgrade, ["--yes"])
 
         assert result.exit_code == 0
-        mock_run.assert_called_once()
-        # Check that the command contains brew upgrade
+        # Homebrew calls run twice: first for 'brew update', then for 'brew upgrade'
+        assert mock_run.call_count == 2
+        # Check that the last command contains brew upgrade
         cmd = mock_run.call_args[0][0]
         if isinstance(cmd, list):
             assert "brew" in cmd and "upgrade" in cmd
@@ -138,13 +139,15 @@ class TestUpgradeCommand:
     @patch("src.rxiv_maker.cli.commands.upgrade.detect_install_method")
     @patch("src.rxiv_maker.cli.commands.upgrade.force_update_check")
     @patch("src.rxiv_maker.cli.commands.upgrade.subprocess.run")
-    def test_upgrade_user_cancels(self, mock_run, mock_check, mock_detect):
+    @patch("src.rxiv_maker.cli.commands.upgrade.prompt_confirm")
+    def test_upgrade_user_cancels(self, mock_confirm, mock_run, mock_check, mock_detect):
         """Test that user can cancel the upgrade."""
         mock_detect.return_value = "pip"
         mock_check.return_value = (True, "1.2.0")
+        mock_confirm.return_value = False  # User cancels
 
-        # Simulate user saying "no" to the confirmation
-        result = self.runner.invoke(upgrade, input="n\n")
+        # Run upgrade (no input needed as we're mocking the confirmation)
+        result = self.runner.invoke(upgrade)
 
         assert result.exit_code == 0
         assert "Upgrade cancelled" in result.output
