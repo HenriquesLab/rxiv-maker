@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.9.1] - 2025-11-16
+
+### Fixed
+- **Import Error**: Fixed `ModuleNotFoundError` in workflow commands when importing tips module
+  - Corrected import path from `from ..utils import` to `from ...utils.tips import` in `workflow_commands.py:242`
+  - Resolves error: "No module named 'rxiv_maker.cli.utils'"
+  - This hotfix ensures build success tips display correctly
+
 ## [v1.9.0] - 2025-11-16
 
 ### Added
