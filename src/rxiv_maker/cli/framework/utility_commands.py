@@ -405,6 +405,7 @@ class CheckInstallationCommand(BaseCommand):
             self.console.print("  2. Run this check again: rxiv check-installation")
             self.console.print("  3. Initialize a manuscript: rxiv init")
 
+
 class VersionCommand(BaseCommand):
     """Version command implementation using the framework."""
 
@@ -485,6 +486,7 @@ class VersionCommand(BaseCommand):
 
         self.console.print(table)
 
+
 class CompletionCommand(BaseCommand):
     """Completion command implementation using the framework."""
 
@@ -537,6 +539,7 @@ class CompletionCommand(BaseCommand):
         except Exception as e:
             self.error_message(f"Error installing completion: {e}")
             raise CommandExecutionError(f"Completion installation failed: {e}") from e
+
 
 class DeprecatedInstallDepsCommand(BaseCommand):
     """Deprecated install-deps command implementation using the framework."""
@@ -600,7 +603,6 @@ class DeprecatedInstallDepsCommand(BaseCommand):
         except Exception as e:
             self.error_message(f"Unexpected error during installation: {e}")
             raise CommandExecutionError(f"Installation failed: {e}") from e
-
 
 
 __all__ = [

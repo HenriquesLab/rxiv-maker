@@ -8,7 +8,7 @@ the standard rxiv-maker structure.
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from git import InvalidGitRepositoryError, Repo
 
@@ -74,7 +74,7 @@ class ManuscriptRepository:
         """
         return self.git_repo is not None
 
-    def get_git_status(self) -> Optional[Dict[str, any]]:
+    def get_git_status(self) -> Optional[Dict[str, Any]]:
         """Get git repository status.
 
         Returns:
@@ -157,7 +157,8 @@ class ManuscriptRepository:
 
             # Create initial commit if there are files
             if list(self.path.iterdir()):
-                repo.index.add("*")
+                # Use "." instead of "*" to respect .gitignore and avoid adding unintended files
+                repo.index.add(["."])
                 repo.index.commit(initial_commit_message)
 
             logger.info(f"Initialized git repository: {self.path}")
@@ -281,7 +282,7 @@ rxiv pdf MANUSCRIPT/
 class RepositoryManager:
     """Manager for discovering and managing manuscript repositories."""
 
-    def __init__(self, config: Optional[any] = None):
+    def __init__(self, config: Optional[Any] = None):
         """Initialize repository manager.
 
         Args:

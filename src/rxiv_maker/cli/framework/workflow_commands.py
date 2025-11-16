@@ -147,6 +147,7 @@ class InitCommand(BaseCommand):
                 self.error_message(f"Initialization failed: {e}")
                 raise CommandExecutionError(f"Initialization failed: {e}") from e
 
+
 class BuildCommand(BaseCommand):
     """Build/PDF command implementation using the framework."""
 
@@ -256,6 +257,7 @@ class BuildCommand(BaseCommand):
             import traceback
 
             self.console.print(f"Debug: Traceback: {traceback.format_exc()}", style="dim")
+
 
 class ArxivCommand(BaseCommand):
     """ArXiv command implementation using the framework."""
@@ -665,7 +667,6 @@ class SetupCommand(BaseCommand):
         except Exception as e:
             self.error_message(f"Unexpected error during setup: {e}")
             raise CommandExecutionError(f"Setup failed: {e}") from e
-
 
 
 __all__ = [

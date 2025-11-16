@@ -108,7 +108,7 @@ class TemplateRegistry:
     # Default template content methods
     def _get_default_config_template(self) -> str:
         """Get default configuration template."""
-        return '''# Manuscript Configuration
+        return """# Manuscript Configuration
 # See https://github.com/HenriquesLab/rxiv-maker for full documentation
 
 title: "{title}"
@@ -167,7 +167,7 @@ cache:
 acknowledge_rxiv_maker: true  # Include rxiv-maker acknowledgment
 
 version: "1.0"
-'''
+"""
 
     def _get_default_main_template(self) -> str:
         """Get default main manuscript template."""
@@ -333,7 +333,7 @@ temp/
     # Minimal template methods
     def _get_minimal_config_template(self) -> str:
         """Get minimal configuration template."""
-        return '''title: "{title}"
+        return """title: "{title}"
 
 authors:
   - name: "{author_name}"
@@ -346,7 +346,7 @@ bibliography:
   file: "03_REFERENCES.bib"
 
 version: "1.0"
-'''
+"""
 
     def _get_minimal_main_template(self) -> str:
         """Get minimal main manuscript template."""
@@ -394,7 +394,9 @@ Add supplementary materials here.
         config = self._get_default_config_template()
         # Modify for journal submission
         config = config.replace('format: "nature"', 'format: "nature"  # Change to target journal')
-        config = config.replace('line_spacing: "single"', 'line_spacing: "double"  # Most journals require double-spacing')
+        config = config.replace(
+            'line_spacing: "single"', 'line_spacing: "double"  # Most journals require double-spacing'
+        )
         return config
 
     def _get_journal_main_template(self) -> str:
@@ -453,7 +455,9 @@ Citations formatted per journal guidelines [@ref].
         """Get preprint-specific configuration template."""
         config = self._get_default_config_template()
         # Modify for preprint
-        config = config.replace('acknowledge_rxiv_maker: true', 'acknowledge_rxiv_maker: true  # Include software citation')
+        config = config.replace(
+            "acknowledge_rxiv_maker: true", "acknowledge_rxiv_maker: true  # Include software citation"
+        )
         return config
 
     def _get_preprint_main_template(self) -> str:

@@ -34,8 +34,9 @@ class TemplateManager:
 
         # Validate template type
         if template_type not in self.registry.list_template_types():
-            raise ValueError(f"Unknown template type: {template_type}. "
-                           f"Available: {', '.join(self.registry.list_template_types())}")
+            raise ValueError(
+                f"Unknown template type: {template_type}. Available: {', '.join(self.registry.list_template_types())}"
+            )
 
     def create_manuscript(
         self,
@@ -80,11 +81,7 @@ class TemplateManager:
         # Create each file from templates
         for file_type in TemplateFile:
             file_path = self._get_file_path(manuscript_dir, file_type)
-            content = self.registry.get_template(
-                self.template_type,
-                file_type,
-                **template_vars
-            )
+            content = self.registry.get_template(self.template_type, file_type, **template_vars)
 
             # Write file
             file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -124,11 +121,7 @@ class TemplateManager:
             "author_affiliation": author_affiliation,
         }
 
-        content = self.registry.get_template(
-            self.template_type,
-            TemplateFile.CONFIG,
-            **template_vars
-        )
+        content = self.registry.get_template(self.template_type, TemplateFile.CONFIG, **template_vars)
 
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -136,11 +129,7 @@ class TemplateManager:
 
         return output_path
 
-    def get_template_content(
-        self,
-        file_type: TemplateFile,
-        **kwargs
-    ) -> str:
+    def get_template_content(self, file_type: TemplateFile, **kwargs) -> str:
         """Get template content for a specific file type.
 
         Args:
@@ -150,11 +139,7 @@ class TemplateManager:
         Returns:
             Template content with variables substituted
         """
-        return self.registry.get_template(
-            self.template_type,
-            file_type,
-            **kwargs
-        )
+        return self.registry.get_template(self.template_type, file_type, **kwargs)
 
     def list_available_templates(self) -> list[str]:
         """List all available template types.

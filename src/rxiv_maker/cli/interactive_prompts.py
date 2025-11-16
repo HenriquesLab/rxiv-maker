@@ -105,9 +105,7 @@ class TemplateValidator(Validator):
         """Validate template name."""
         text = document.text.strip().lower()
         if text and text not in self.VALID_TEMPLATES:
-            raise ValidationError(
-                message=f"Invalid template. Choose from: {', '.join(self.VALID_TEMPLATES)}"
-            )
+            raise ValidationError(message=f"Invalid template. Choose from: {', '.join(self.VALID_TEMPLATES)}")
 
 
 class RepositoryNameValidator(Validator):

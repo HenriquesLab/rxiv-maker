@@ -279,9 +279,7 @@ def show_repo(ctx: click.Context, output_format: str = "table"):
 
         # Show configuration
         table.add_row("Parent Directory", str(config_data.get("repo_parent_dir", "Not set")))
-        table.add_row(
-            "Expanded Path", str(config_data.get("repo_parent_dir_expanded", "N/A"))
-        )
+        table.add_row("Expanded Path", str(config_data.get("repo_parent_dir_expanded", "N/A")))
 
         if config_data.get("repo_default_github_org"):
             table.add_row("Default GitHub Org", config_data["repo_default_github_org"])
@@ -458,6 +456,7 @@ def run_interactive_config_menu():
             display_config_menu()
 
             from prompt_toolkit.completion import WordCompleter
+
             max_choice = len(menu_actions) + 1  # +1 for exit option
             choice = prompt_text(
                 f"\nEnter choice (1-{max_choice}): ",
@@ -837,6 +836,7 @@ def handle_list_config_files():
 
     try:
         from pathlib import Path
+
         files = []
 
         # Check for global repository config first
@@ -846,21 +846,25 @@ def handle_list_config_files():
         repo_config_display = f"{repo_config_path}.yaml"
         if repo_config_path.exists():
             stat = repo_config_path.stat()
-            files.append({
-                "path": repo_config_display,
-                "exists": True,
-                "size": stat.st_size,
-                "type": "Repository",
-                "repo_name": "-",
-            })
+            files.append(
+                {
+                    "path": repo_config_display,
+                    "exists": True,
+                    "size": stat.st_size,
+                    "type": "Repository",
+                    "repo_name": "-",
+                }
+            )
         else:
-            files.append({
-                "path": repo_config_display,
-                "exists": False,
-                "size": 0,
-                "type": "Repository",
-                "repo_name": "-",
-            })
+            files.append(
+                {
+                    "path": repo_config_display,
+                    "exists": False,
+                    "size": 0,
+                    "type": "Repository",
+                    "repo_name": "-",
+                }
+            )
 
         # Discover all manuscript repositories
         repo_manager = RepositoryManager()
@@ -874,41 +878,49 @@ def handle_list_config_files():
                     manuscript_config = repo.manuscript_dir / "00_CONFIG.yml"
                     if manuscript_config.exists():
                         stat = manuscript_config.stat()
-                        files.append({
-                            "path": str(manuscript_config),
-                            "exists": True,
-                            "size": stat.st_size,
-                            "type": "Manuscript",
-                            "repo_name": repo.name,
-                        })
+                        files.append(
+                            {
+                                "path": str(manuscript_config),
+                                "exists": True,
+                                "size": stat.st_size,
+                                "type": "Manuscript",
+                                "repo_name": repo.name,
+                            }
+                        )
                     else:
-                        files.append({
-                            "path": str(manuscript_config),
-                            "exists": False,
-                            "size": 0,
-                            "type": "Manuscript",
-                            "repo_name": repo.name,
-                        })
+                        files.append(
+                            {
+                                "path": str(manuscript_config),
+                                "exists": False,
+                                "size": 0,
+                                "type": "Manuscript",
+                                "repo_name": repo.name,
+                            }
+                        )
         except Exception:
             # If no parent dir configured or error, just show current directory
             manuscript_config = Path.cwd() / "00_CONFIG.yml"
             if manuscript_config.exists():
                 stat = manuscript_config.stat()
-                files.append({
-                    "path": str(manuscript_config),
-                    "exists": True,
-                    "size": stat.st_size,
-                    "type": "Manuscript",
-                    "repo_name": "current",
-                })
+                files.append(
+                    {
+                        "path": str(manuscript_config),
+                        "exists": True,
+                        "size": stat.st_size,
+                        "type": "Manuscript",
+                        "repo_name": "current",
+                    }
+                )
             else:
-                files.append({
-                    "path": str(manuscript_config),
-                    "exists": False,
-                    "size": 0,
-                    "type": "Manuscript",
-                    "repo_name": "current",
-                })
+                files.append(
+                    {
+                        "path": str(manuscript_config),
+                        "exists": False,
+                        "size": 0,
+                        "type": "Manuscript",
+                        "repo_name": "current",
+                    }
+                )
 
         table = Table(title="Configuration Files", expand=True)
         table.add_column("Type", style="yellow", no_wrap=True)
@@ -920,13 +932,7 @@ def handle_list_config_files():
         for file_info in files:
             exists = "[green]✓[/green]" if file_info["exists"] else "[red]✗[/red]"
             size = f"{file_info.get('size', 0)} bytes" if file_info["exists"] else "-"
-            table.add_row(
-                file_info["type"],
-                file_info["repo_name"],
-                file_info["path"],
-                exists,
-                size
-            )
+            table.add_row(file_info["type"], file_info["repo_name"], file_info["path"], exists, size)
 
         console.print(table)
         console.print()

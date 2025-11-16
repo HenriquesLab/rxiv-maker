@@ -110,9 +110,7 @@ class TemplateValidator(Validator):
         """Validate template name."""
         text = document.text.strip().lower()
         if text and text not in self.VALID_TEMPLATES:
-            raise ValidationError(
-                message=f"Invalid template. Choose from: {', '.join(self.VALID_TEMPLATES)}"
-            )
+            raise ValidationError(message=f"Invalid template. Choose from: {', '.join(self.VALID_TEMPLATES)}")
 
 
 class RepositoryNameValidator(Validator):
@@ -374,14 +372,17 @@ def interactive_mode(default: bool = False):
     Args:
         default: Whether interactive mode is on by default
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
             # Check if interactive flag is in kwargs
-            is_interactive = kwargs.get('interactive', default)
-            kwargs['interactive'] = is_interactive
+            is_interactive = kwargs.get("interactive", default)
+            kwargs["interactive"] = is_interactive
             return func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -392,6 +393,7 @@ def confirm_action(message: str, default: bool = False):
         message: Confirmation message
         default: Default answer
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -400,7 +402,9 @@ def confirm_action(message: str, default: bool = False):
             else:
                 console.print("[yellow]Action cancelled[/yellow]")
                 return None
+
         return wrapper
+
     return decorator
 
 
@@ -411,22 +415,32 @@ def confirm_action(message: str, default: bool = False):
 # For backward compatibility with existing imports
 prompt_yes_no = prompt_confirm
 prompt_numbered_choice = prompt_choice
-def prompt_editor(prompt_text="Default editor: ", default=None):
-    return prompt_text(
-    prompt_text, default=default or "", completer=WordCompleter(
-        ["code", "vim", "nvim", "nano", "emacs", "subl", "atom"], ignore_case=True
+
+
+def prompt_editor(message="Default editor: ", default=None):
+    """Prompt for editor selection with autocompletion."""
+    return prompt(
+        message,
+        default=default or "",
+        completer=WordCompleter(["code", "vim", "nvim", "nano", "emacs", "subl", "atom"], ignore_case=True),
     )
-)
-def prompt_template_choice(prompt_text="Template: ", default="default"):
-    return prompt_text(
-    prompt_text, default=default, validator=TemplateValidator(),
-    completer=WordCompleter(TemplateValidator.VALID_TEMPLATES, ignore_case=True)
-)
-def prompt_repository_name(prompt_text="Repository name: ", existing_names=None, show_prefix=True):
-    return prompt_text(
-    prompt_text, validator=RepositoryNameValidator(existing_names=existing_names)
-)
-def prompt_config_key(available_keys, prompt_text="Configuration key: "):
-    return prompt_text(
-    prompt_text, completer=FuzzyWordCompleter(available_keys)
-)
+
+
+def prompt_template_choice(message="Template: ", default="default"):
+    """Prompt for template selection with validation and autocompletion."""
+    return prompt(
+        message,
+        default=default,
+        validator=TemplateValidator(),
+        completer=WordCompleter(TemplateValidator.VALID_TEMPLATES, ignore_case=True),
+    )
+
+
+def prompt_repository_name(message="Repository name: ", existing_names=None, show_prefix=True):
+    """Prompt for repository name with validation."""
+    return prompt(message, validator=RepositoryNameValidator(existing_names=existing_names))
+
+
+def prompt_config_key(available_keys, message="Configuration key: "):
+    """Prompt for configuration key with fuzzy autocompletion."""
+    return prompt(message, completer=FuzzyWordCompleter(available_keys))

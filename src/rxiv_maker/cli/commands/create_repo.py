@@ -77,7 +77,9 @@ def create_repo(
             if github_enabled:
                 # Check prerequisites
                 if not check_gh_cli_installed():
-                    console.print("[yellow]Warning: GitHub CLI (gh) is not installed. Skipping GitHub integration.[/yellow]")
+                    console.print(
+                        "[yellow]Warning: GitHub CLI (gh) is not installed. Skipping GitHub integration.[/yellow]"
+                    )
                     console.print("Install it with: brew install gh")
                     github_enabled = False
                 elif not check_gh_auth():
@@ -178,7 +180,8 @@ def create_repo(
 
             # Add files to git
             if repo.is_git_repository():
-                repo.git_repo.index.add("*")
+                # Use "." instead of "*" to respect .gitignore and avoid adding unintended files
+                repo.git_repo.index.add(["."])
                 repo.git_repo.index.commit("Initial commit with MANUSCRIPT structure")
                 console.print("[green]✓[/green] Created initial commit")
 

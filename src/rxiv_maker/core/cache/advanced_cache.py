@@ -64,6 +64,7 @@ class AdvancedCache:
             except RuntimeError:
                 # Not in manuscript directory - use user cache directory as fallback
                 from pathlib import Path
+
                 user_cache = Path.home() / ".cache" / "rxiv-maker" / "advanced" / name
                 self.cache_dir = user_cache
 

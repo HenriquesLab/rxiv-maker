@@ -8,9 +8,7 @@ from .base import BaseCommand, CommandExecutionError
 class ValidationCommand(BaseCommand):
     """Validation command implementation using the framework."""
 
-    def execute_operation(
-        self, detailed: bool = False, no_doi: bool = False, interactive: bool = False
-    ) -> bool:
+    def execute_operation(self, detailed: bool = False, no_doi: bool = False, interactive: bool = False) -> bool:
         """Execute manuscript validation.
 
         Args:
@@ -33,9 +31,7 @@ class ValidationCommand(BaseCommand):
                 ("doi", "Validate DOI references"),
             ]
 
-            selected = prompt_multi_select(
-                title="Validation Options", items=options, default_selected=["doi"]
-            )
+            selected = prompt_multi_select(title="Validation Options", items=options, default_selected=["doi"])
 
             if selected is not None:
                 detailed = "detailed" in selected
@@ -134,9 +130,7 @@ class CleanCommand(BaseCommand):
                 ("cache", "Cache files (.rxiv-cache/)"),
             ]
 
-            selected = prompt_multi_select(
-                title="Cleanup Options", items=options, default_selected=[]
-            )
+            selected = prompt_multi_select(title="Cleanup Options", items=options, default_selected=[])
 
             if selected is not None and len(selected) > 0:
                 # Map selections to flags
