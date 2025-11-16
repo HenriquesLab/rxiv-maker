@@ -86,8 +86,19 @@ class ManuscriptRepository:
 
         try:
             repo = self.git_repo
+
+            # Get branch name safely (handle edge cases like detached HEAD, corrupted repo)
+            try:
+                if repo.head.is_detached:
+                    branch_name = "detached"
+                else:
+                    branch_name = repo.active_branch.name
+            except (TypeError, AttributeError):
+                # Handle edge cases: corrupted repo, missing refs, etc.
+                branch_name = "unknown"
+
             status = {
-                "branch": repo.active_branch.name if not repo.head.is_detached else "detached",
+                "branch": branch_name,
                 "is_dirty": repo.is_dirty(),
                 "untracked_files": len(repo.untracked_files),
                 "has_remote": len(repo.remotes) > 0,

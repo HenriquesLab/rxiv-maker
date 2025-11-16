@@ -54,8 +54,8 @@ def validate_github_name(name: str, name_type: str = "name") -> None:
     if "--" in name:
         raise ValueError(f"GitHub {name_type} name cannot contain consecutive hyphens")
 
-    # Check no path separators or other dangerous characters
-    if any(char in name for char in ["/", "\\", "..", ".", " "]):
+    # Check no path separators, null bytes, or other dangerous characters
+    if "\x00" in name or ".." in name or any(char in name for char in ["/", "\\", ".", " "]):
         raise ValueError(f"GitHub {name_type} name cannot contain path separators or special characters")
 
 
@@ -83,6 +83,7 @@ def check_gh_auth() -> bool:
             capture_output=True,
             text=True,
             timeout=5,
+            check=False,
         )
         return result.returncode == 0
     except (subprocess.TimeoutExpired, subprocess.SubprocessError):
@@ -128,6 +129,7 @@ def check_github_repo_exists(org: str, repo_name: str) -> bool:
             capture_output=True,
             text=True,
             timeout=10,
+            check=False,
         )
         return result.returncode == 0
     except subprocess.TimeoutExpired:
@@ -180,10 +182,17 @@ def create_github_repo(org: str, repo_name: str, visibility: str = "public") -> 
             capture_output=True,
             text=True,
             timeout=30,
+            check=False,
         )
 
         if result.returncode != 0:
             error_msg = result.stderr.strip() or result.stdout.strip()
+            # Check for rate limiting
+            if "rate limit" in error_msg.lower() or "api rate limit exceeded" in error_msg.lower():
+                raise GitHubError(
+                    "GitHub API rate limit exceeded. Please wait a few minutes and try again, "
+                    "or check your rate limit status with: gh api rate_limit"
+                )
             raise GitHubError(f"Failed to create repository: {error_msg}")
 
         # Get URL via GitHub API for reliability (more robust than parsing text output)
@@ -193,6 +202,7 @@ def create_github_repo(org: str, repo_name: str, visibility: str = "public") -> 
                 capture_output=True,
                 text=True,
                 timeout=10,
+                check=False,
             )
 
             if api_result.returncode == 0 and api_result.stdout.strip():
@@ -242,10 +252,14 @@ def clone_github_repo(org: str, repo_name: str, target_path: Path) -> None:
             capture_output=True,
             text=True,
             timeout=60,
+            check=False,
         )
 
         if result.returncode != 0:
             error_msg = result.stderr.strip() or result.stdout.strip()
+            # Check for rate limiting
+            if "rate limit" in error_msg.lower():
+                raise GitHubError("GitHub API rate limit exceeded. Please wait and try again later.")
             raise GitHubError(f"Failed to clone repository: {error_msg}")
 
         logger.info(f"Cloned {org}/{repo_name} to {target_path}")
@@ -285,10 +299,14 @@ def list_github_repos(org: str, pattern: str = "manuscript-") -> List[Dict[str, 
             capture_output=True,
             text=True,
             timeout=30,
+            check=False,
         )
 
         if result.returncode != 0:
             error_msg = result.stderr.strip() or result.stdout.strip()
+            # Check for rate limiting
+            if "rate limit" in error_msg.lower():
+                raise GitHubError("GitHub API rate limit exceeded. Please wait and try again later.")
             raise GitHubError(f"Failed to list repositories: {error_msg}")
 
         # Parse JSON output
@@ -329,6 +347,7 @@ def setup_git_remote(repo_path: Path, remote_url: str, remote_name: str = "origi
             capture_output=True,
             text=True,
             timeout=5,
+            check=False,
         )
 
         if result.returncode == 0:
@@ -382,10 +401,14 @@ def push_to_remote(repo_path: Path, branch: str = "main", remote_name: str = "or
             capture_output=True,
             text=True,
             timeout=60,
+            check=False,
         )
 
         if result.returncode != 0:
             error_msg = result.stderr.strip() or result.stdout.strip()
+            # Check for rate limiting
+            if "rate limit" in error_msg.lower():
+                raise GitHubError("GitHub API rate limit exceeded. Please wait and try again later.")
             raise GitHubError(f"Failed to push to remote: {error_msg}")
 
         logger.info(f"Pushed to {remote_name}/{branch}")
@@ -418,9 +441,14 @@ def get_github_orgs() -> List[str]:
             capture_output=True,
             text=True,
             timeout=10,
+            check=False,
         )
 
         if result.returncode != 0:
+            # Check for rate limiting
+            error_msg = result.stderr.strip() if hasattr(result, "stderr") else ""
+            if error_msg and "rate limit" in error_msg.lower():
+                raise GitHubError("GitHub API rate limit exceeded. Please wait and try again later.")
             # If API call fails, return empty list (user might not be in any orgs)
             return []
 
@@ -432,6 +460,7 @@ def get_github_orgs() -> List[str]:
             capture_output=True,
             text=True,
             timeout=10,
+            check=False,
         )
 
         if user_result.returncode == 0:
