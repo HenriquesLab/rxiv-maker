@@ -102,8 +102,9 @@ class TestTrailingSlashRegression:
         # Test that ".." path is properly blocked for security
         from rxiv_maker.core.path_manager import PathResolutionError
 
+        # Don't skip validation for security checks
         with pytest.raises(PathResolutionError, match="Path traversal not allowed"):
-            BuildManager(manuscript_path="..", output_dir=str(output_dir), skip_validation=True)
+            BuildManager(manuscript_path="..", output_dir=str(output_dir), skip_validation=False)
 
     def test_guillaume_exact_case(self, temp_dir):
         """Test Guillaume's exact use case: 'rxiv pdf CCT8_paper/'."""

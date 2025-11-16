@@ -158,7 +158,13 @@ def prompt_confirm(question: str, default: bool = True) -> bool:
     Returns:
         True for yes, False for no
     """
-    return confirm(question, default=default)
+    # prompt_toolkit.shortcuts.confirm doesn't support default parameter in all versions
+    # Use the more flexible approach
+    try:
+        return confirm(question, default=default)
+    except TypeError:
+        # Fallback for older versions that don't support default
+        return confirm(question)
 
 
 def prompt_text(

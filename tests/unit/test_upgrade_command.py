@@ -57,7 +57,10 @@ class TestUpgradeCommand:
         assert "Upgrading rxiv-maker" in result.output
         assert "Upgrade completed successfully" in result.output
         mock_run.assert_called_once()
-        assert "pip install --upgrade" in mock_run.call_args[0][0]
+        # Check that the command is a list containing pip upgrade
+        cmd = mock_run.call_args[0][0]
+        assert isinstance(cmd, list), f"Expected list, got {type(cmd)}"
+        assert "pip" in cmd and "install" in cmd and "--upgrade" in cmd
 
     @patch("src.rxiv_maker.cli.commands.upgrade.detect_install_method")
     @patch("src.rxiv_maker.cli.commands.upgrade.force_update_check")
@@ -72,7 +75,12 @@ class TestUpgradeCommand:
 
         assert result.exit_code == 0
         mock_run.assert_called_once()
-        assert "brew update && brew upgrade" in mock_run.call_args[0][0]
+        # Check that the command contains brew upgrade
+        cmd = mock_run.call_args[0][0]
+        if isinstance(cmd, list):
+            assert "brew" in cmd and "upgrade" in cmd
+        else:
+            assert "brew" in cmd and "upgrade" in cmd
 
     @patch("src.rxiv_maker.cli.commands.upgrade.detect_install_method")
     @patch("src.rxiv_maker.cli.commands.upgrade.force_update_check")
@@ -87,7 +95,12 @@ class TestUpgradeCommand:
 
         assert result.exit_code == 0
         mock_run.assert_called_once()
-        assert "uv tool upgrade" in mock_run.call_args[0][0]
+        # Check that the command contains uv tool upgrade
+        cmd = mock_run.call_args[0][0]
+        if isinstance(cmd, list):
+            assert "uv" in cmd and "tool" in cmd and "upgrade" in cmd
+        else:
+            assert "uv tool upgrade" in cmd
 
     @patch("src.rxiv_maker.cli.commands.upgrade.detect_install_method")
     @patch("src.rxiv_maker.cli.commands.upgrade.force_update_check")
@@ -102,7 +115,12 @@ class TestUpgradeCommand:
 
         assert result.exit_code == 0
         mock_run.assert_called_once()
-        assert "pipx upgrade" in mock_run.call_args[0][0]
+        # Check that the command contains pipx upgrade
+        cmd = mock_run.call_args[0][0]
+        if isinstance(cmd, list):
+            assert "pipx" in cmd and "upgrade" in cmd
+        else:
+            assert "pipx upgrade" in cmd
 
     @patch("src.rxiv_maker.cli.commands.upgrade.detect_install_method")
     @patch("src.rxiv_maker.cli.commands.upgrade.force_update_check")

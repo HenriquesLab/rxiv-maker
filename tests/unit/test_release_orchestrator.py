@@ -249,9 +249,10 @@ class TestReleaseOrchestratorChangelogValidation:
     @patch("orchestrator.get_github_token")
     @patch("orchestrator.ConfigLoader")
     @patch("pathlib.Path.resolve")
+    @patch("pathlib.Path.stat")
     @patch("pathlib.Path.exists")
     def test_validate_changelog_path_traversal_protection(
-        self, mock_exists, mock_resolve, mock_config_loader, mock_github_token, mock_version
+        self, mock_exists, mock_stat, mock_resolve, mock_config_loader, mock_github_token, mock_version
     ):
         """Test CHANGELOG validation prevents path traversal attacks."""
         # Setup
@@ -262,6 +263,9 @@ class TestReleaseOrchestratorChangelogValidation:
         # Mock Path.resolve to return a path outside repository root
         repo_root = Path("/repo/root")
         outside_path = Path("/etc/passwd")
+
+        # Mock stat to avoid FileNotFoundError
+        mock_stat.return_value.st_size = 1024
 
         # Mock cwd to return repo_root
         with patch("pathlib.Path.cwd") as mock_cwd:
