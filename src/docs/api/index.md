@@ -13,6 +13,7 @@ Welcome to the API documentation for rxiv-maker.
 - [utils.bibliography_parser.py](utils_bibliography_parser.py.md)
 - [utils.citation_utils.py](utils_citation_utils.py.md)
 - [utils.email_encoder.py](utils_email_encoder.py.md)
+- [utils.github.py](utils_github.py.md)
 - [utils.homebrew_checker.py](utils_homebrew_checker.py.md)
 - [utils.install_detector.py](utils_install_detector.py.md)
 - [utils.operation_ids.py](utils_operation_ids.py.md)
