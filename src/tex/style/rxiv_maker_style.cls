@@ -69,7 +69,7 @@
 \RequirePackage[scaled]{helvet}
 \RequirePackage[T1]{fontenc}
 \RequirePackage{lettrine} % For dropped capitals
-\RequirePackage[rightcaption]{sidecap} % For sidecaptions
+% \RequirePackage[rightcaption]{sidecap} % REMOVED: Causes all figures to render tiny with captions on the side
 \RequirePackage[misc]{ifsym} % For the \Letter symbol
 \RequirePackage{bbding} % For the \Envelope symbol
 \RequirePackage[twoside,%
