@@ -376,7 +376,7 @@ class TestBuildCommandEdgeCases:
         # These messages should appear in the logs, not necessarily in CLI output
         # The test verifies the command completes successfully with these options
 
-    @patch("rxiv_maker.cli.framework.PathManager")
+    @patch("rxiv_maker.cli.framework.base.PathManager")
     def test_absolute_output_path_handling(self, mock_path_manager):
         """Test handling of absolute output paths through PathManager."""
         # Mock PathManager instance

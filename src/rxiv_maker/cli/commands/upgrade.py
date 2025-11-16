@@ -10,6 +10,7 @@ from rich.console import Console
 from ... import __version__
 from ...utils.install_detector import detect_install_method, get_friendly_install_name, get_upgrade_command
 from ...utils.update_checker import force_update_check
+from ..interactive import prompt_confirm
 
 console = Console()
 
@@ -64,7 +65,7 @@ def upgrade(ctx: click.Context, yes: bool, check_only: bool) -> None:
     # Show confirmation
     if not yes:
         console.print(f"\n📦 About to run: {upgrade_cmd}", style="blue")
-        if not click.confirm("Do you want to continue?", default=True):
+        if not prompt_confirm("Do you want to continue?", default=True):
             console.print("❌ Upgrade cancelled", style="yellow")
             sys.exit(0)
 

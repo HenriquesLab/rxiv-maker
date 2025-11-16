@@ -317,11 +317,20 @@ def create_latex_figure_environment(
     elif fit == "height":
         h_expr = h_expr or (r"0.95\textheight" if position == "[p]" else r"\textheight")
 
-    # Caption body for starred/page floats: use a top-aligned parbox WITHOUT centering.
-    # Note: cap_body is prepared but not used in current implementation
+    # Caption width: use \textwidth for two-column figures, \linewidth for single-column
+    # For [p] figures, only use full \textwidth if it's a two-column spanning figure (figure*)
+    is_twocol_fig = env_name.endswith("*")
+    is_singlecol_floatpage = (position == "[p]") and not is_twocol_fig
 
-    is_star_or_floatpage = env_name.endswith("*") or (position == "[p]")
-    cap_width_for_env = caption_width if is_star_or_floatpage else r"\linewidth"
+    if is_twocol_fig:
+        # Two-column spanning figure: use caption_width (default 0.95\textwidth)
+        cap_width_for_env = caption_width
+    elif is_singlecol_floatpage:
+        # Single-column dedicated page: use \linewidth to stay within column
+        cap_width_for_env = r"\linewidth"
+    else:
+        # Regular single-column figure: use \linewidth
+        cap_width_for_env = r"\linewidth"
 
     local_caption = (
         r"\begingroup"
@@ -345,8 +354,8 @@ def create_latex_figure_environment(
         inc.append(f"page={_s('page')}")
     opts = "[" + ",".join(inc) + "]"
 
-    # Wrapper width: \textwidth for starred or [p]; \linewidth otherwise
-    wrapper_width = r"\textwidth" if is_star_or_floatpage else r"\linewidth"
+    # Wrapper width: \textwidth for two-column spanning, \linewidth for single-column
+    wrapper_width = r"\textwidth" if is_twocol_fig else r"\linewidth"
     lines = [
         f"\n\\begin{{{env_name}}}{position}",
         r"\centering",

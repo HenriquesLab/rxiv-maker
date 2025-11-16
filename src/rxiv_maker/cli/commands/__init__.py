@@ -10,10 +10,14 @@ from .completion import completion_cmd
 from .config import config_group as config
 
 # Removed: from .containers import containers_cmd (deprecated with container engine support)
+from .create_repo import create_repo
 from .figures import figures
 from .get_rxiv_preprint import get_rxiv_preprint
 from .init import init
 from .install_deps import install_deps
+from .repo_init import repo_init
+from .repos import repos
+from .repos_search import repos_search
 from .setup import setup
 from .track_changes import track_changes
 from .upgrade import upgrade
@@ -30,10 +34,14 @@ __all__ = [
     "clean",
     "completion_cmd",
     # Removed: "containers_cmd" (deprecated with container engine support)
+    "create_repo",
     "figures",
     "get_rxiv_preprint",
     "init",
     "install_deps",
+    "repo_init",
+    "repos",
+    "repos_search",
     "setup",
     "track_changes",
     "upgrade",

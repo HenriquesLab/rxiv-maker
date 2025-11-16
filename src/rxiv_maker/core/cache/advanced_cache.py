@@ -59,7 +59,14 @@ class AdvancedCache:
         if cache_dir is not None:
             self.cache_dir = cache_dir / name
         else:
-            self.cache_dir = get_manuscript_cache_dir("advanced") / name
+            try:
+                self.cache_dir = get_manuscript_cache_dir("advanced") / name
+            except RuntimeError:
+                # Not in manuscript directory - use user cache directory as fallback
+                from pathlib import Path
+
+                user_cache = Path.home() / ".cache" / "rxiv-maker" / "advanced" / name
+                self.cache_dir = user_cache
 
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 

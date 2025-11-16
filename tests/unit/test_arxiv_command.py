@@ -23,7 +23,7 @@ class TestArxivCommand:
         """Set up test fixtures."""
         self.runner = CliRunner()
 
-    @patch("rxiv_maker.cli.framework.PathManager")
+    @patch("rxiv_maker.cli.framework.base.PathManager")
     def test_nonexistent_manuscript_directory(self, mock_path_manager):
         """Test handling of nonexistent manuscript directory."""
         # Mock PathManager to raise PathResolutionError
@@ -43,7 +43,7 @@ class TestArxivCommand:
 
     @patch("rxiv_maker.engines.operations.prepare_arxiv.main")
     @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
-    @patch("rxiv_maker.cli.framework.PathManager")
+    @patch("rxiv_maker.cli.framework.base.PathManager")
     def test_pdf_building_when_missing(self, mock_path_manager, mock_build_manager, mock_prepare_arxiv):
         """Test PDF building when PDF doesn't exist."""
 
@@ -69,7 +69,7 @@ class TestArxivCommand:
         mock_manager_instance.run.assert_called_once()
 
     @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
-    @patch("rxiv_maker.cli.framework.PathManager")
+    @patch("rxiv_maker.cli.framework.base.PathManager")
     def test_build_manager_failure(self, mock_path_manager, mock_build_manager):
         """Test handling of BuildManager failure."""
 
@@ -92,7 +92,7 @@ class TestArxivCommand:
 
     @patch("rxiv_maker.engines.operations.prepare_arxiv.main")
     @patch("rxiv_maker.engines.operations.build_manager.BuildManager")
-    @patch("rxiv_maker.cli.framework.PathManager")
+    @patch("rxiv_maker.cli.framework.base.PathManager")
     @patch("shutil.rmtree")
     def test_custom_options(self, mock_rmtree, mock_path_manager, mock_build_manager, mock_prepare):
         """Test arXiv command with custom options."""
@@ -161,7 +161,7 @@ class TestArxivCommand:
             # Verify sys.argv was restored
             assert sys.argv == original_argv
 
-    @patch("rxiv_maker.cli.framework.PathManager")
+    @patch("rxiv_maker.cli.framework.base.PathManager")
     def test_environment_variable_manuscript_path(self, mock_path_manager):
         """Test using MANUSCRIPT_PATH environment variable."""
         with patch.dict(os.environ, {"MANUSCRIPT_PATH": "env_manuscript"}):
@@ -178,7 +178,7 @@ class TestArxivCommand:
             assert "env_manuscript" in result.output
 
     @patch("rxiv_maker.engines.operations.prepare_arxiv.main")
-    @patch("rxiv_maker.cli.framework.PathManager")
+    @patch("rxiv_maker.cli.framework.base.PathManager")
     @patch("shutil.rmtree")
     def test_no_zip_option(self, mock_rmtree, mock_path_manager, mock_prepare):
         """Test --no-zip option."""
@@ -212,7 +212,7 @@ class TestArxivCommand:
             mock_prepare.assert_called_once()
 
     @patch("rxiv_maker.engines.operations.prepare_arxiv.main")
-    @patch("rxiv_maker.cli.framework.PathManager")
+    @patch("rxiv_maker.cli.framework.base.PathManager")
     @patch("shutil.rmtree")
     def test_pdf_copying_to_manuscript(self, mock_rmtree, mock_path_manager, mock_prepare):
         """Test copying PDF to manuscript directory with proper naming."""
@@ -258,7 +258,7 @@ class TestArxivCommand:
         mock_copy.assert_called_once()
 
     @patch("rxiv_maker.engines.operations.prepare_arxiv.main")
-    @patch("rxiv_maker.cli.framework.PathManager")
+    @patch("rxiv_maker.cli.framework.base.PathManager")
     @patch("shutil.rmtree")
     def test_keyboard_interrupt(self, mock_rmtree, mock_path_manager, mock_prepare):
         """Test handling of KeyboardInterrupt."""
@@ -293,7 +293,7 @@ class TestArxivCommand:
         assert "⏹️  arxiv interrupted by user" in result.output
 
     @patch("rxiv_maker.engines.operations.prepare_arxiv.main")
-    @patch("rxiv_maker.cli.framework.PathManager")
+    @patch("rxiv_maker.cli.framework.base.PathManager")
     @patch("shutil.rmtree")
     def test_regression_build_manager_method_call(self, mock_rmtree, mock_path_manager, mock_prepare):
         """Regression test: Ensure BuildManager.run() is called, not build()."""
@@ -333,7 +333,7 @@ class TestArxivCommand:
         mock_manager_instance.run.assert_called_once()
 
     @patch("rxiv_maker.engines.operations.prepare_arxiv.main")
-    @patch("rxiv_maker.cli.framework.PathManager")
+    @patch("rxiv_maker.cli.framework.base.PathManager")
     @patch("shutil.rmtree")
     def test_create_zip_flag_regression(self, mock_rmtree, mock_path_manager, mock_prepare):
         """Regression test: Ensure --create-zip flag is used, not --zip."""

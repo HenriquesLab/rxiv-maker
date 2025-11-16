@@ -248,27 +248,34 @@ class TestReleaseOrchestratorChangelogValidation:
     @patch("orchestrator.get_current_version")
     @patch("orchestrator.get_github_token")
     @patch("orchestrator.ConfigLoader")
-    @patch("pathlib.Path.resolve")
-    @patch("pathlib.Path.exists")
-    def test_validate_changelog_path_traversal_protection(
-        self, mock_exists, mock_resolve, mock_config_loader, mock_github_token, mock_version
-    ):
+    def test_validate_changelog_path_traversal_protection(self, mock_config_loader, mock_github_token, mock_version):
         """Test CHANGELOG validation prevents path traversal attacks."""
         # Setup
         mock_version.return_value = "v1.2.3"
         mock_github_token.return_value = "fake_token"
         mock_config_loader.return_value.load_release_config.return_value = MagicMock(package_name="rxiv-maker")
 
-        # Mock Path.resolve to return a path outside repository root
-        repo_root = Path("/repo/root")
-        outside_path = Path("/etc/passwd")
+        # Create mock paths
+        repo_root_mock = MagicMock(spec=Path)
+        repo_root_mock.__truediv__ = MagicMock(return_value=MagicMock())
+        repo_root_mock.__str__ = MagicMock(return_value="/repo/root")
 
-        # Mock cwd to return repo_root
+        outside_path_mock = MagicMock(spec=Path)
+        outside_path_mock.__str__ = MagicMock(return_value="/etc/passwd")
+        # Make relative_to raise ValueError to simulate path traversal
+        outside_path_mock.relative_to = MagicMock(side_effect=ValueError("not relative"))
+
+        # Mock cwd and resolve
         with patch("pathlib.Path.cwd") as mock_cwd:
-            mock_cwd.return_value.resolve.return_value = repo_root
+            # Setup cwd to return a mock that resolves to repo_root_mock
+            cwd_instance = MagicMock()
+            cwd_instance.resolve.return_value = repo_root_mock
+            mock_cwd.return_value = cwd_instance
 
-            # First resolve call returns repo_root, second returns outside_path
-            mock_resolve.side_effect = [repo_root, outside_path]
+            # Make repo_root / "CHANGELOG.md" return a mock that resolves to outside_path
+            changelog_mock = MagicMock()
+            changelog_mock.resolve.return_value = outside_path_mock
+            repo_root_mock.__truediv__.return_value = changelog_mock
 
             # Create orchestrator
             orchestrator = ReleaseOrchestrator(dry_run=True)

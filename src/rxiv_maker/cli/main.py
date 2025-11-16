@@ -50,6 +50,10 @@ click.rich_click.COMMAND_GROUPS = {
             "commands": ["figures", "bibliography", "clean"],
         },
         {
+            "name": "Repository Management",
+            "commands": ["repo-init", "create-repo", "repos", "repos-search"],
+        },
+        {
             "name": "Workflow Commands",
             "commands": ["get-rxiv-preprint", "arxiv", "track-changes", "setup"],
         },
@@ -224,6 +228,11 @@ main.add_command(commands.cache, name="cache")
 main.add_command(commands.config, name="config")
 main.add_command(check_installation, name="check-installation")
 main.add_command(commands.completion_cmd, name="completion")
+# Repository management commands
+main.add_command(commands.repo_init, name="repo-init")
+main.add_command(commands.create_repo, name="create-repo")
+main.add_command(commands.repos, name="repos")
+main.add_command(commands.repos_search, name="repos-search")
 # Removed: containers command (deprecated with container engine support)
 
 if __name__ == "__main__":

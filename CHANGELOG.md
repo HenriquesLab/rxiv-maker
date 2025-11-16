@@ -7,6 +7,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.9.0] - 2025-11-16
+
+### Added
+- **📂 Repository Management System**: Comprehensive manuscript repository management with GitHub integration
+  - New `rxiv create-repo` command for creating manuscript repositories with optional GitHub integration
+  - New `rxiv repos` command to list and browse all manuscript repositories with git status
+  - New `rxiv repos-search` command for interactive GitHub repository search and cloning
+  - New `rxiv repo-init` command for interactive repository configuration setup
+  - Automatic repository discovery and scanning in configured parent directory
+  - Git status tracking (branch, uncommitted changes, remote sync status)
+  - GitHub CLI (`gh`) integration for seamless repository creation and cloning
+- **⚙️ Repository Configuration**: Global and manuscript-level configuration management
+  - New `rxiv config` command with interactive menu and non-interactive mode
+  - Configuration for default GitHub organization, repository parent directory, and editor
+  - Support for both `~/.rxiv-maker/config` (global) and manuscript-level config
+  - Robust YAML-based configuration with defaults
+- **🎨 Enhanced CLI Framework**: Major architectural refactoring for better maintainability
+  - Modular CLI command structure with specialized frameworks (BuildCommand, ValidationCommand, CleanCommand, etc.)
+  - Consistent error handling and user experience across all commands
+  - Rich console output with progress indicators and formatted tables
+  - Interactive prompts with validation and autocompletion
+  - Backward compatibility maintained for all existing commands
+
+### Changed
+- **🏗️ CLI Architecture**: Refactored from monolithic structure to modular framework
+  - Split large `framework.py` into focused modules in `cli/framework/` directory
+  - Separated command implementations from CLI entry points
+  - Improved code organization and testability (net -1,888 lines of code)
+  - Better separation of concerns between core logic, utils, and CLI
+- **🔍 GitHub Utilities**: Enhanced GitHub integration with comprehensive error handling
+  - Added input validation for organization and repository names (prevents path traversal)
+  - Added null byte check for defense in depth against exotic attacks
+  - Added explicit `check=False` to all subprocess calls for clarity
+  - Improved rate limit detection with user-friendly error messages
+  - Better timeout handling and error messages for network operations
+
+### Security
+- **🔒 Path Traversal Protection**: Multiple layers of path validation
+  - GitHub name validation prevents path separators and special characters
+  - Null byte checks prevent exotic path traversal attacks
+  - Repository name validation ensures safe filesystem operations
+  - Path resolution checks prevent escaping repository boundaries
+- **🛡️ Subprocess Hardening**: Explicit error handling for all subprocess operations
+  - All subprocess calls use `check=False` for explicit error handling
+  - No use of `shell=True` - all commands use safe list format
+  - Comprehensive timeout protection (5-60s depending on operation)
+  - Input validation before any subprocess execution
+
+### Fixed
+- **✅ Test Fixes**: Resolved multiple test failures for CI/CD compatibility
+  - Fixed `test_invalid_visibility` by adding proper authentication mocks
+  - Fixed `test_validate_changelog_path_traversal_protection` with proper Path mocking
+  - Fixed `test_upgrade_homebrew` to expect brew update + upgrade calls
+  - Fixed `test_upgrade_user_cancels` to properly mock prompt_confirm
+  - Fixed `test_validate_command_fixed` for new ValidationCommand framework
+  - Fixed `test_upgrade_command_failure` for cross-platform compatibility
+- **🔧 Edge Case Handling**: Improved robustness for edge cases
+  - GitPython detached HEAD state handled gracefully (returns "unknown" branch)
+  - Corrupted repository handling without crashes
+  - Parameter shadowing fixed in `prompt_text` function (renamed to `message`)
+  - Better error messages for non-TTY environments
+
+### Documentation
+- **📚 Comprehensive Documentation**: Updated guides and references
+  - Added repository management section to README
+  - Documented non-interactive mode for CI/CD pipelines
+  - Updated CLI reference with new commands
+  - Added troubleshooting section for GitHub authentication
+  - Auto-generated API documentation for new modules
+
+### Testing
+- **✅ Extensive Test Coverage**: 59 new tests for repository management
+  - 31 tests for GitHub utilities (validation, creation, cloning, listing)
+  - 28 tests for repository manager (discovery, creation, git operations)
+  - All tests pass on macOS and Linux (1490 total fast tests passing)
+  - Mock-based testing for GitHub API interactions
+  - Integration tests for end-to-end workflows
+
+### Technical Details
+This major release introduces a comprehensive repository management system that addresses the need for better manuscript organization and GitHub integration. The new system provides:
+
+1. **Automatic Discovery**: Scans a configured parent directory for manuscript repositories
+2. **Git Integration**: Native Git operations via GitPython with status tracking
+3. **GitHub Integration**: Seamless creation, cloning, and searching via GitHub CLI
+4. **Configuration Management**: Flexible global and per-manuscript configuration
+5. **Interactive Workflows**: User-friendly prompts with validation and autocompletion
+
+The CLI framework refactoring improves code maintainability by breaking down the monolithic structure into focused modules, making it easier to add new commands and maintain existing ones. All changes maintain 100% backward compatibility with existing workflows.
+
 ## [v1.8.9] - 2025-11-12
 
 ### Added

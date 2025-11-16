@@ -361,12 +361,14 @@ class PathManager:
 
             # Check for suspicious patterns
             suspicious_conditions = [
-                dot_dot_count > 1,  # Multiple .. in path
+                dot_dot_count >= 1,  # Any .. in path (changed from > 1 to >= 1 for stricter security)
                 any(
                     part in ["etc", "root", "usr", "var", "boot", "sys", "proc", "windows", "system32"]
                     for part in path_parts
                 ),  # System directories in path
-                normalized_path.startswith("../.."),  # Starts with multiple traversals
+                normalized_path.startswith(
+                    ".."
+                ),  # Starts with parent traversal (changed from "../.." to ".." for stricter security)
                 "secret" in path_str.lower(),  # Contains potentially sensitive names
             ]
 
