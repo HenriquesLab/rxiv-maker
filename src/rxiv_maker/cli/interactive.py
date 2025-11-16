@@ -189,7 +189,7 @@ def prompt_confirm(question: str, default: bool = True) -> bool:
 
 
 def prompt_text(
-    prompt_text: str,
+    message: str,
     default: str = "",
     validator: Optional[Validator] = None,
     completer: Optional[Any] = None,
@@ -198,7 +198,7 @@ def prompt_text(
     """Standard text prompt with optional validation and completion.
 
     Args:
-        prompt_text: Text to display in prompt
+        message: Text to display in prompt
         default: Default value
         validator: Optional validator
         completer: Optional completer
@@ -208,7 +208,7 @@ def prompt_text(
         User input string
     """
     return prompt(
-        prompt_text,
+        message,
         default=default,
         validator=validator,
         completer=completer,

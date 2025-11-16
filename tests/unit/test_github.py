@@ -253,8 +253,13 @@ class TestCreateGithubRepo:
         with pytest.raises(GitHubError, match="GitHub CLI.*is not installed"):
             create_github_repo("test-org", "test-repo")
 
-    def test_invalid_visibility(self):
+    @patch("src.rxiv_maker.utils.github.check_gh_auth")
+    @patch("src.rxiv_maker.utils.github.check_gh_cli_installed")
+    def test_invalid_visibility(self, mock_installed, mock_auth):
         """Test error with invalid visibility."""
+        mock_installed.return_value = True
+        mock_auth.return_value = True
+
         with pytest.raises(ValueError, match="Invalid visibility"):
             create_github_repo("test-org", "test-repo", "invalid")
 
