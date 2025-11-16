@@ -17,6 +17,7 @@ from ...utils.github import (
     get_github_orgs,
     push_to_remote,
     setup_git_remote,
+    validate_github_name,
 )
 from ..interactive import prompt_confirm, prompt_text
 
@@ -135,6 +136,13 @@ def create_repo(
         # Non-interactive mode
         if not name:
             console.print("[red]Error: Repository name is required in non-interactive mode[/red]")
+            sys.exit(1)
+
+        # Validate repository name
+        try:
+            validate_github_name(name, "repository")
+        except ValueError as e:
+            console.print(f"[red]Error: Invalid repository name: {e}[/red]")
             sys.exit(1)
 
         # Check if repository already exists

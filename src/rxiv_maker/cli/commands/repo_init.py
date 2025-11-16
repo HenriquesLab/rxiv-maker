@@ -53,6 +53,9 @@ def repo_init(
 
     console.print("\n[bold cyan]Repository Management Setup[/bold cyan]\n")
 
+    # Create repository manager
+    repo_manager = RepositoryManager(config)
+
     # Interactive mode
     if not no_interactive:
         # Scan for existing repositories
@@ -65,8 +68,6 @@ def repo_init(
             potential_path = home / common_dir
             if potential_path.exists():
                 scan_locations.append(potential_path)
-
-        repo_manager = RepositoryManager(config)
         found_locations = {}
 
         for location in scan_locations:
