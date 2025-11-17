@@ -429,11 +429,12 @@ class TestGuillaumeFigureIssues:
         )
 
         # Should use figure* environment for dedicated page to allow full page width access
-        assert "\\begin{figure*}[p]" in latex_result, (
-            "Full-width dedicated page figures should use figure*[p] to prevent text overlay"
+        # Now uses [p!] for stronger placement control (improved in v1.9.3)
+        assert ("\\begin{figure*}[p]" in latex_result or "\\begin{figure*}[p!]" in latex_result), (
+            "Full-width dedicated page figures should use figure*[p] or figure*[p!] to prevent text overlay"
         )
-        assert "\\begin{figure}[p]" not in latex_result, (
-            "Should use figure*[p], not figure[p], for full-width figures to avoid overlay"
+        assert ("\\begin{figure}[p]" not in latex_result and "\\begin{figure}[p!]" not in latex_result), (
+            "Should use figure*[p] or figure*[p!], not figure[p] or figure[p!], for full-width figures to avoid overlay"
         )
 
     def test_full_page_vs_two_column_positioning(self):
@@ -469,8 +470,9 @@ class TestGuillaumeFigureIssues:
         )
 
         # Should use figure* for all dedicated page figures to allow full page width in two-column layouts
-        assert "\\begin{figure*}[p]" in latex_result_fullpage, (
-            "All dedicated page figures should use figure*[p] to allow full page width in two-column layouts"
+        # Now uses [p!] for stronger placement control (improved in v1.9.3)
+        assert ("\\begin{figure*}[p]" in latex_result_fullpage or "\\begin{figure*}[p!]" in latex_result_fullpage), (
+            "All dedicated page figures should use figure*[p] or figure*[p!] to allow full page width in two-column layouts"
         )
 
     def test_guillaume_integration_all_fixes_together(self):
@@ -515,11 +517,16 @@ class TestGuillaumeFigureIssues:
                     caption="Full page caption",
                     attributes={"width": "\\textwidth", "tex_position": "p", "id": "fig:fullpage"},
                 )
-                assert "\\begin{figure*}[p]" in fullpage_latex, (
-                    "Full-page textwidth should use figure*[p] to prevent overlay"
+                # Now uses [p!] for stronger placement control (improved in v1.9.3)
+                assert ("\\begin{figure*}[p]" in fullpage_latex or "\\begin{figure*}[p!]" in fullpage_latex), (
+                    "Full-page textwidth should use figure*[p] or figure*[p!] to prevent overlay"
                 )
-                # Guillaume's implementation doesn't use clearpage, relies on figure*[p] positioning
-                assert "\\begin{figure}[p]" not in fullpage_latex, "Full-page should use figure*[p], not figure[p]"
+                # v1.9.3: Now uses clearpage wrapper and [p!] positioning for proper text flow
+                assert ("\\begin{figure}[p]" not in fullpage_latex and "\\begin{figure}[p!]" not in fullpage_latex), (
+                    "Full-page should use figure*[p] or figure*[p!], not figure[p] or figure[p!]"
+                )
+                # v1.9.3: clearpage wrapper ensures proper text flow
+                assert "\\vfill\\clearpage" in fullpage_latex, "Should have clearpage wrapper for text flow"
 
             finally:
                 os.chdir(original_cwd)

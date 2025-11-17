@@ -103,14 +103,15 @@
 \crefname{section}{Sup. Note}{notes}
 \crefname{sfigure}{SFig.}{sfigures}
 
-%% Unified float parameters for consistent spacing
-\renewcommand{\topfraction}{0.85}          % Maximum fraction of page for top floats
-\renewcommand{\bottomfraction}{0.70}       % Maximum fraction of page for bottom floats
-\renewcommand{\textfraction}{0.15}         % Minimum fraction of page for text
-\renewcommand{\floatpagefraction}{0.70}    % Minimum fraction for float-only pages
-\setcounter{topnumber}{3}                   % Max floats at top of page
-\setcounter{bottomnumber}{2}               % Max floats at bottom of page
-\setcounter{totalnumber}{5}                % Max floats per page total
+%% Unified float parameters for consistent spacing and text flow
+%% More permissive values help LaTeX's float algorithm manage dedicated page figures better
+\renewcommand{\topfraction}{0.90}          % Maximum fraction of page for top floats (was 0.85)
+\renewcommand{\bottomfraction}{0.90}       % Maximum fraction of page for bottom floats (was 0.70)
+\renewcommand{\textfraction}{0.05}         % Minimum fraction of page for text (was 0.15, more permissive)
+\renewcommand{\floatpagefraction}{0.80}    % Minimum fraction for float-only pages (was 0.70)
+\setcounter{topnumber}{50}                  % Max floats at top of page (was 3, very permissive)
+\setcounter{bottomnumber}{50}              % Max floats at bottom of page (was 2, very permissive)
+\setcounter{totalnumber}{50}               % Max floats per page total (was 5, very permissive)
 
 %% Consistent spacing around floats
 \setlength{\floatsep}{10pt plus 2pt minus 2pt}        % Between consecutive floats

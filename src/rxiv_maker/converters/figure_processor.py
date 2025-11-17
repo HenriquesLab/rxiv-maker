@@ -281,6 +281,9 @@ def create_latex_figure_environment(
     figure_env, rel_unit, position = "figure", r"\linewidth", _pos_single(user_pos)
     w_expr, w_kind = _parse_len(user_width, rel_unit)
 
+    # Track original position to determine if user requested dedicated page
+    original_position = _strip_br(user_pos)
+
     # Upgrade to two-column if requested or width ties to \textwidth
     if is_span_req or r"\textwidth" in (user_width or "") or r"\textwidth" in w_expr:
         figure_env, rel_unit, position = "figure*", r"\textwidth", _pos_star(user_pos)
@@ -289,16 +292,17 @@ def create_latex_figure_environment(
     # Full-page: dedicated page positioning with tex_position="p"
     # In two-column documents, figure*[p] (two-column spanning) works better than
     # figure[p] (single-column) for LaTeX's float placement algorithm.
-    # Default behavior: use figure*[p] for all dedicated page figures
+    # Default behavior: use figure*[p!] for all dedicated page figures
+    # The ! gives LaTeX stronger guidance to place on dedicated page
     # Opt-out: set singlecol_floatpage=True to force single-column figure[p]
-    if _strip_br(user_pos) == "p":
+    if original_position == "p":
         if singlecol_p:
             # Explicitly requested single-column [p] figure (rare use case)
-            figure_env, rel_unit, position = "figure", r"\linewidth", "[p]"
+            figure_env, rel_unit, position = "figure", r"\linewidth", "[p!]"
         else:
             # Default: use two-column spanning for dedicated page figures
             # This ensures LaTeX can properly place figures on dedicated pages
-            figure_env, rel_unit, position = "figure*", r"\textwidth", "[p]"
+            figure_env, rel_unit, position = "figure*", r"\textwidth", "[p!]"
         w_expr, w_kind = _parse_len(user_width, rel_unit)
         # Auto-enable barrier for [p] figures to ensure one figure per page
         barrier = True
@@ -373,7 +377,15 @@ def create_latex_figure_environment(
     if barrier:
         lines.append(r"\FloatBarrier")
     lines.append("")
-    return "\n".join(lines)
+    latex_figure = "\n".join(lines)
+
+    # Add clearpage wrapper for dedicated page figures to ensure proper text flow
+    # \vfill fills current page with text, first \clearpage ends current page,
+    # figure gets dedicated page, second \clearpage ensures text resumes after figure
+    if original_position == "p":
+        latex_figure = f"\\vfill\\clearpage\n{latex_figure}\n\\clearpage"
+
+    return latex_figure
 
 
 def _process_new_figure_format(text: MarkdownContent, is_supplementary: bool = False) -> LatexContent:

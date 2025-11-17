@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.9.3] - 2025-11-17
+
+### Fixed
+- **Text Flow with Dedicated Page Figures**: Restored clearpage wrapper logic from August 2024 fixes
+  - Added `\vfill\clearpage` wrapper before dedicated page figures to fill current page with text
+  - Added `\clearpage` after figures to ensure text resumes properly after figure page
+  - Changed positioning from `[p]` to `[p!]` for stronger LaTeX placement control
+  - More permissive float parameters: `floatpagefraction=0.80` (was 0.70), `topfraction=0.90` (was 0.85), `bottomfraction=0.90` (was 0.70), `textfraction=0.05` (was 0.15)
+  - Resolves text flow disruption issue reported by Guillaume after v1.9.2
+  - Fixes the "suite of issues" from August: figures now on dedicated pages WITH proper text flow
+  - All 35 figure processor tests pass
+
 ## [v1.9.2] - 2025-11-17
 
 ### Fixed
