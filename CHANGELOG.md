@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.9.2] - 2025-11-17
+
+### Fixed
+- **Figure Positioning**: Fixed `tex_position="p"` figures not appearing on dedicated pages
+  - Changed default behavior: `tex_position="p"` now uses `figure*[p]` (two-column spanning) instead of `figure[p]`
+  - This ensures LaTeX's float placement algorithm can properly place figures on dedicated pages in two-column documents
+  - User-specified widths (e.g., `width="0.8"`) are now respected correctly with `figure*[p]`
+  - Opt-out available: Use `singlecol_floatpage=True` to force single-column `figure[p]` if needed
+  - Resolves issue reported by Guillaume where figures appeared in text flow instead of on dedicated pages
+  - All figure processor tests (35/35) and regression tests pass
+
 ## [v1.9.1] - 2025-11-16
 
 ### Fixed
