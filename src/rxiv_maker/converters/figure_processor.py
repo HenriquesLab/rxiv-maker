@@ -286,14 +286,18 @@ def create_latex_figure_environment(
         figure_env, rel_unit, position = "figure*", r"\textwidth", _pos_star(user_pos)
         w_expr, w_kind = _parse_len(user_width, rel_unit)
 
-    # Full-page: respect user's positioning choice for tex_position="p"
-    # Only upgrade to figure* if explicitly requested or width indicates two-column need
+    # Full-page: dedicated page positioning with tex_position="p"
+    # In two-column documents, figure*[p] (two-column spanning) works better than
+    # figure[p] (single-column) for LaTeX's float placement algorithm.
+    # Default behavior: use figure*[p] for all dedicated page figures
+    # Opt-out: set singlecol_floatpage=True to force single-column figure[p]
     if _strip_br(user_pos) == "p":
-        if singlecol_p or not (is_span_req or r"\textwidth" in (user_width or "")):
-            # Keep single-column figure with [p] positioning
+        if singlecol_p:
+            # Explicitly requested single-column [p] figure (rare use case)
             figure_env, rel_unit, position = "figure", r"\linewidth", "[p]"
         else:
-            # Upgrade to two-column only when explicitly requested or width requires it
+            # Default: use two-column spanning for dedicated page figures
+            # This ensures LaTeX can properly place figures on dedicated pages
             figure_env, rel_unit, position = "figure*", r"\textwidth", "[p]"
         w_expr, w_kind = _parse_len(user_width, rel_unit)
         # Auto-enable barrier for [p] figures to ensure one figure per page
