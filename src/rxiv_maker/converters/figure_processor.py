@@ -284,14 +284,14 @@ def create_latex_figure_environment(
     # Track original position to determine if user requested dedicated page
     original_position = _strip_br(user_pos)
 
-    # Upgrade to two-column only if explicitly requested (span/twocolumn), not just width
-    if is_span_req:
+    # Upgrade to two-column if explicitly requested OR width ties to \textwidth (non-p)
+    if is_span_req or r"\textwidth" in (user_width or "") or r"\textwidth" in w_expr:
         figure_env, rel_unit, position = "figure*", r"\textwidth", _pos_star(user_pos)
         w_expr, w_kind = _parse_len(user_width, rel_unit)
 
-    # Dedicated page: always single-column per visual tests unless span explicitly requested
+    # Dedicated page: use two-column spanning figure* to avoid single-column constraint in 2-col docs
     if original_position == "p":
-        figure_env, rel_unit, position = "figure", r"\linewidth", "[p]"
+        figure_env, rel_unit, position = "figure*", r"\textwidth", "[p]"
         w_expr, w_kind = _parse_len(user_width, rel_unit)
         barrier = True
 
