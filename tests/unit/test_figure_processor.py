@@ -517,16 +517,14 @@ class TestGuillaumeFigureIssues:
                     caption="Full page caption",
                     attributes={"width": "\\textwidth", "tex_position": "p", "id": "fig:fullpage"},
                 )
-                # Now uses [p!] for stronger placement control (improved in v1.9.3)
+                # Now uses [p] for proper placement control (v1.9.4)
                 assert "\\begin{figure*}[p]" in fullpage_latex or "\\begin{figure*}[p!]" in fullpage_latex, (
                     "Full-page textwidth should use figure*[p] or figure*[p!] to prevent overlay"
                 )
-                # v1.9.3: Now uses clearpage wrapper and [p!] positioning for proper text flow
+                # v1.9.4: Removed clearpage wrapper; relies on figure*[p] for proper text flow
                 assert "\\begin{figure}[p]" not in fullpage_latex and "\\begin{figure}[p!]" not in fullpage_latex, (
                     "Full-page should use figure*[p] or figure*[p!], not figure[p] or figure[p!]"
                 )
-                # v1.9.3: clearpage wrapper ensures proper text flow
-                assert "\\vfill\\clearpage" in fullpage_latex, "Should have clearpage wrapper for text flow"
 
             finally:
                 os.chdir(original_cwd)

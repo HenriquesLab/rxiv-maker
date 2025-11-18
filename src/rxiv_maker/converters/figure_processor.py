@@ -175,7 +175,7 @@ def create_latex_figure_environment(
     fit = (_s("fit") or "").lower()
     if _b("fullpage", False):
         fit = "page"
-    singlecol_p = _b("singlecol_floatpage", False)  # keep 1-col [p] only if you *really* want it
+    # singlecol_floatpage deprecated after visual spec update; kept for backward compat (ignored)
 
     # ---------- caption markdown -> LaTeX ----------
     processed_caption = re.sub(r"\*\*([^*]+)\*\*", r"\\textbf{\1}", caption)
@@ -284,27 +284,15 @@ def create_latex_figure_environment(
     # Track original position to determine if user requested dedicated page
     original_position = _strip_br(user_pos)
 
-    # Upgrade to two-column if requested or width ties to \textwidth
+    # Upgrade to two-column if explicitly requested OR width ties to \textwidth (non-p)
     if is_span_req or r"\textwidth" in (user_width or "") or r"\textwidth" in w_expr:
         figure_env, rel_unit, position = "figure*", r"\textwidth", _pos_star(user_pos)
         w_expr, w_kind = _parse_len(user_width, rel_unit)
 
-    # Full-page: dedicated page positioning with tex_position="p"
-    # In two-column documents, figure*[p] (two-column spanning) works better than
-    # figure[p] (single-column) for LaTeX's float placement algorithm.
-    # Default behavior: use figure*[p!] for all dedicated page figures
-    # The ! gives LaTeX stronger guidance to place on dedicated page
-    # Opt-out: set singlecol_floatpage=True to force single-column figure[p]
+    # Dedicated page: use two-column spanning figure* to avoid single-column constraint in 2-col docs
     if original_position == "p":
-        if singlecol_p:
-            # Explicitly requested single-column [p] figure (rare use case)
-            figure_env, rel_unit, position = "figure", r"\linewidth", "[p!]"
-        else:
-            # Default: use two-column spanning for dedicated page figures
-            # This ensures LaTeX can properly place figures on dedicated pages
-            figure_env, rel_unit, position = "figure*", r"\textwidth", "[p!]"
+        figure_env, rel_unit, position = "figure*", r"\textwidth", "[p]"
         w_expr, w_kind = _parse_len(user_width, rel_unit)
-        # Auto-enable barrier for [p] figures to ensure one figure per page
         barrier = True
 
     # Landscape
@@ -328,12 +316,12 @@ def create_latex_figure_environment(
     # Caption width: use \textwidth for two-column figures, \linewidth for single-column
     # For [p] figures, only use full \textwidth if it's a two-column spanning figure (figure*)
     is_twocol_fig = env_name.endswith("*")
-    is_singlecol_floatpage = (position == "[p]") and not is_twocol_fig
+    # is_singlecol_floatpage deprecated
 
     if is_twocol_fig:
         # Two-column spanning figure: use caption_width (default 0.95\textwidth)
         cap_width_for_env = caption_width
-    elif is_singlecol_floatpage:
+    elif False:  # deprecated floatpage branch
         # Single-column dedicated page: use \linewidth to stay within column
         cap_width_for_env = r"\linewidth"
     else:
@@ -379,11 +367,7 @@ def create_latex_figure_environment(
     lines.append("")
     latex_figure = "\n".join(lines)
 
-    # Add clearpage wrapper for dedicated page figures to ensure proper text flow
-    # \vfill fills current page with text, first \clearpage ends current page,
-    # figure gets dedicated page, second \clearpage ensures text resumes after figure
-    if original_position == "p":
-        latex_figure = f"\\vfill\\clearpage\n{latex_figure}\n\\clearpage"
+    # Remove previous clearpage wrapper logic for dedicated page figures per new visual spec
 
     return latex_figure
 
