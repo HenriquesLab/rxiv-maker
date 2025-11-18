@@ -167,7 +167,7 @@ cache:
 acknowledge_rxiv_maker: true  # Include rxiv-maker acknowledgment
 
 # Section ordering
-methods_after_bibliography: false  # If true, Methods appears after Bibliography (Nature Methods style); if false, Methods before Bibliography (traditional)
+methods_placement: "inline"  # Options: inline (Methods wherever you write it), after_results (Methods after Results, before Discussion), after_bibliography (Methods after Bibliography)
 
 version: "1.0"
 """
