@@ -289,9 +289,14 @@ def create_latex_figure_environment(
         figure_env, rel_unit, position = "figure*", r"\textwidth", _pos_star(user_pos)
         w_expr, w_kind = _parse_len(user_width, rel_unit)
 
-    # Dedicated page: use two-column spanning figure* to avoid single-column constraint in 2-col docs
+    # Dedicated page: use figure* only if width is \textwidth or span requested
     if original_position == "p":
-        figure_env, rel_unit, position = "figure*", r"\textwidth", "[p]"
+        if is_span_req or user_width == r"\textwidth":
+            # Full-width dedicated page (spans both columns)
+            figure_env, rel_unit, position = "figure*", r"\textwidth", "[p]"
+        else:
+            # Single-column dedicated page with custom width
+            figure_env, rel_unit, position = "figure", r"\linewidth", "[p]"
         w_expr, w_kind = _parse_len(user_width, rel_unit)
         barrier = True
 

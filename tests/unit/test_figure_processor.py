@@ -475,6 +475,52 @@ class TestGuillaumeFigureIssues:
             "All dedicated page figures should use figure*[p] or figure*[p!] to allow full page width in two-column layouts"
         )
 
+    def test_dedicated_page_custom_width_uses_single_column(self):
+        """Test that tex_position="p" with custom widths uses figure (single-column) not figure*."""
+
+        # Test Case 1: Custom width 0.8 with position p should use figure[p] (single column)
+        latex_result_custom = create_latex_figure_environment(
+            path="FIGURES/test.svg",
+            caption="Dedicated page figure with custom width",
+            attributes={"width": "0.8", "tex_position": "p", "id": "fig:test"},
+        )
+
+        # Should use single-column figure[p] for custom widths
+        assert "\\begin{figure}[p]" in latex_result_custom, (
+            "Dedicated page figures with custom widths should use figure[p] (single-column)"
+        )
+        assert "\\begin{figure*}[p]" not in latex_result_custom, (
+            "Should NOT use figure*[p] for custom widths - that forces two-column spanning"
+        )
+        # Width should be relative to \linewidth for single-column figures
+        assert "width=0.800\\linewidth" in latex_result_custom, (
+            "Custom width should be relative to \\linewidth in single-column figures"
+        )
+
+        # Test Case 2: Percentage width with position p should also use figure[p]
+        latex_result_percent = create_latex_figure_environment(
+            path="FIGURES/test.svg",
+            caption="Dedicated page figure with percentage width",
+            attributes={"width": "90%", "tex_position": "p", "id": "fig:test2"},
+        )
+
+        assert "\\begin{figure}[p]" in latex_result_percent, (
+            "Dedicated page figures with percentage widths should use figure[p] (single-column)"
+        )
+        assert "\\begin{figure*}[p]" not in latex_result_percent, "Should NOT use figure*[p] for percentage widths"
+
+        # Test Case 3: Explicit \textwidth with position p should use figure*[p] (full width)
+        latex_result_textwidth = create_latex_figure_environment(
+            path="FIGURES/test.svg",
+            caption="Dedicated page figure with textwidth",
+            attributes={"width": "\\textwidth", "tex_position": "p", "id": "fig:test3"},
+        )
+
+        assert "\\begin{figure*}[p]" in latex_result_textwidth, (
+            "Dedicated page figures with \\textwidth should use figure*[p] (full width)"
+        )
+        assert "width=\\textwidth" in latex_result_textwidth, "Width should be \\textwidth for full-width figures"
+
     def test_guillaume_integration_all_fixes_together(self):
         """Integration test that all Guillaume's fixes work together."""
 

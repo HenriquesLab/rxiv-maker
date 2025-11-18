@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.9.5] - 2025-11-18
+
+### Fixed
+- **Figure Positioning with Custom Widths**: Fixed `tex_position="p"` to respect custom width specifications
+  - `tex_position="p"` with `width="\textwidth"` now correctly uses `figure*[p]` (full-width spanning both columns)
+  - `tex_position="p"` with custom widths (e.g., `width="0.8"` or `width="300%"`) now correctly uses `figure[p]` (single-column dedicated page)
+  - Resolves issue where all dedicated page figures were forced to span both columns regardless of width specification
+  - This restores v1.7.4 behavior while maintaining the improvements from v1.9.4
+  - Updated tests to cover both single-column and two-column dedicated page scenarios
+  - Reported by Guillaume Jacquemet
+
 ## [v1.9.4] - 2025-11-18
 
 ### Fixed
