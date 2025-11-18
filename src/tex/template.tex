@@ -5,6 +5,10 @@
 <PY-RPL:DATE>
 <PY-RPL:LEAD-AUTHOR>
 
+% Define conditional for methods/bibliography ordering
+\newif\ifmethodsafterbib
+<PY-RPL:METHODS-AFTER-BIB-FLAG>
+
 \begin{document}
 <PY-RPL:LONG-TITLE-STR>
 <PY-RPL:SHORT-TITLE-STR>
@@ -47,12 +51,22 @@
 <PY-RPL:EXTENDED-AUTHOR-INFO>
 \end{exauthor}
 
-% Main Bibliography (includes SI citations)
-\section*{Bibliography}
-<PY-RPL:BIBLIOGRAPHY>
+% Main Bibliography and Methods sections - order controlled by config
+\ifmethodsafterbib
+  % Nature Methods style: Bibliography before Methods
+  \section*{Bibliography}
+  <PY-RPL:BIBLIOGRAPHY>
 
-\section*{Methods}
-<PY-RPL:METHODS>
+  \section*{Methods}
+  <PY-RPL:METHODS>
+\else
+  % Traditional style: Methods before Bibliography
+  \section*{Methods}
+  <PY-RPL:METHODS>
+
+  \section*{Bibliography}
+  <PY-RPL:BIBLIOGRAPHY>
+\fi
 
 \onecolumn
 \newpage

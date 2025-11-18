@@ -371,6 +371,7 @@ class ConfigValidator:
                     "pages": {"type": "string"},
                     "year": {"type": "integer", "minimum": 1900, "maximum": 2100},
                     "acknowledge_rxiv_maker": {"type": "boolean"},
+                    "methods_after_bibliography": {"type": "boolean"},
                     "bibliography": {"type": "string"},
                     "style": {"type": "string", "enum": ["nature", "science", "plos", "ieee"]},
                     "language": {"type": "string", "enum": ["en", "es", "pt", "fr", "de"]},
