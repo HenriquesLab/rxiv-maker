@@ -4,11 +4,11 @@ This test manuscript verifies the `methods_placement` configuration option intro
 
 ## Test Configuration
 
-**Config**: `methods_placement: "inline"`
+**Config**: `methods_placement: 2` (numeric value, maps to `"after_results"`)
 
 ## Expected Behavior
 
-When using `methods_placement: "inline"` (the default), the Methods section should appear exactly where the author writes it in the markdown file.
+When using `methods_placement: 2` (maps to `"after_results"`), the Methods section should appear after the Results section, before Discussion.
 
 ## Test Verification
 
@@ -16,19 +16,20 @@ When using `methods_placement: "inline"` (the default), the Methods section shou
 The manuscript sections should appear in this order:
 
 1. **Introduction**
-2. **Methods** ← Appears inline between Introduction and Results
-3. **Results**
+2. **Results**
+3. **Methods** ← Appears after Results, before Discussion
 4. **Discussion**
 5. **Conclusions**
 6. **Bibliography**
 
 ### What This Tests
 
-- ✅ Methods section appears in authored position (inline)
-- ✅ Methods is NOT moved to after Results
-- ✅ Methods is NOT moved to after Bibliography
-- ✅ Section ordering matches markdown file structure
-- ✅ Placeholders correctly replaced (`<PY-RPL:METHODS-AFTER-RESULTS>` and `<PY-RPL:METHODS-AFTER-BIBLIOGRAPHY>` are empty)
+- ✅ Numeric value mapping (2 → "after_results")
+- ✅ Methods section appears after Results
+- ✅ Methods appears before Discussion
+- ✅ Methods is NOT inline (not between Introduction and Results)
+- ✅ Methods is NOT after Bibliography
+- ✅ Placeholders correctly replaced (`<PY-RPL:METHODS-AFTER-RESULTS>` contains Methods content)
 
 ## How to Run
 
@@ -51,8 +52,8 @@ grep "^\\section" tests/visual/methods-placement/output/methods-placement.tex
 Expected output:
 ```
 \section*{Introduction}
-\section*{Methods}
 \section*{Results}
+\section*{Methods}
 \section*{Discussion}
 \section*{Conclusions}
 \section*{Bibliography}
@@ -62,11 +63,19 @@ Expected output:
 
 To test other placement options, modify `00_CONFIG.yml`:
 
-- **After Results**: `methods_placement: "after_results"`
+- **Inline** (default): `methods_placement: "inline"` or `methods_placement: 1`
+  - Expected: Introduction → Methods → Results → Discussion
+
+- **After Results** (current test): `methods_placement: "after_results"` or `methods_placement: 2`
   - Expected: Introduction → Results → Methods → Discussion
 
-- **After Bibliography**: `methods_placement: "after_bibliography"`
+- **After Bibliography**: `methods_placement: "after_bibliography"` or `methods_placement: 3`
   - Expected: Introduction → Results → Discussion → Conclusions → Bibliography → Methods
+
+### Numeric Value Mapping
+- `1` → `"inline"`
+- `2` → `"after_results"`
+- `3` → `"after_bibliography"`
 
 ## Version
 

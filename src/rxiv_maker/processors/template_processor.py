@@ -458,6 +458,16 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
     methods_placement = yaml_metadata.get("methods_placement", "inline")
     methods_content = content_sections.get("methods", "").strip()
 
+    # Map numeric values to string options for backward compatibility
+    numeric_mapping = {
+        1: "inline",
+        2: "after_results",
+        3: "after_bibliography",
+    }
+
+    if isinstance(methods_placement, int) and methods_placement in numeric_mapping:
+        methods_placement = numeric_mapping[methods_placement]
+
     # Validate methods_placement value and fallback to "inline" if invalid
     valid_placements = ["inline", "after_results", "after_bibliography"]
     if methods_placement not in valid_placements:
@@ -465,7 +475,7 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
 
         print(
             f'⚠️  Warning: Invalid methods_placement value "{methods_placement}". '
-            f'Using "inline" as fallback. Valid options: {", ".join(valid_placements)}',
+            f'Using "inline" as fallback. Valid options: {", ".join(valid_placements)} or numeric values 1-3',
             file=sys.stderr,
         )
         methods_placement = "inline"
