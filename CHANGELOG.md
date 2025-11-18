@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.9.4] - 2025-11-18
+
+### Fixed
+- Figure positioning: tex_position="p" now uses figure*[p] consistently; removed clearpage wrappers; ensures dedicated pages in two-column layouts without cutting prior text. Updated visual tests and unit tests accordingly.
+
 ## [v1.9.3] - 2025-11-17
 
 ### Fixed
