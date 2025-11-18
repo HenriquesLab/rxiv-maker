@@ -458,6 +458,18 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
     methods_placement = yaml_metadata.get("methods_placement", "inline")
     methods_content = content_sections.get("methods", "").strip()
 
+    # Validate methods_placement value and fallback to "inline" if invalid
+    valid_placements = ["inline", "after_results", "after_bibliography"]
+    if methods_placement not in valid_placements:
+        import sys
+
+        print(
+            f'⚠️  Warning: Invalid methods_placement value "{methods_placement}". '
+            f'Using "inline" as fallback. Valid options: {", ".join(valid_placements)}',
+            file=sys.stderr,
+        )
+        methods_placement = "inline"
+
     if methods_placement == "inline" and methods_content:
         # Methods should appear inline in content - add it to main section with header
         main_section_parts.append(f"\\section*{{Methods}}\n{methods_content}")
