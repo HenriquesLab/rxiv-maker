@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.10.0] - 2025-11-18
+
+### Fixed
+- **Critical**: Fixed white space issue in two-column layouts with `tex_position="p"` figures
+  - **Issue**: Text in second column would cut off early, leaving white space before dedicated page figures
+  - **Root cause**: Code was setting `barrier=True` for dedicated page figures, adding `\FloatBarrier` after the figure, which prevented subsequent text from flowing to fill the current page
+  - **Solution**: Remove `barrier=True` to allow subsequent text (e.g., Results section) to flow naturally and fill the current page
+  - Upgraded position specifier from `[p]` to `[p!]` for stronger LaTeX placement guidance
+  - Resolves issue reported by Guillaume Jacquemet
+  - Verified with Zebrafish manuscript: Results section text now fills page 1 completely, figure appears on page 2
+
+### Technical Details
+- Dedicated page figures use: `\begin{figure*}[p!]...\end{figure*}` (no FloatBarrier after)
+- Changed from `[p]` to `[p!]` for stronger placement control
+- Removed `barrier = True` line that was preventing text flow
+- LaTeX's float algorithm correctly handles dedicated pages without manual barriers or clearpage wrappers
+
 ## [v1.9.4] - 2025-11-18
 
 ### Fixed
