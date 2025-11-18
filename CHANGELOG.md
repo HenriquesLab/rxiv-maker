@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.11.1] - 2025-11-18
+
+### Changed
+- **BREAKING**: Replaced `methods_after_bibliography` boolean config with `methods_placement` enum
+  - **Old config** (removed): `methods_after_bibliography: true/false`
+  - **New config**: `methods_placement: "inline" | "after_results" | "after_bibliography"`
+  - **Three placement options**:
+    - `"inline"` (default): Methods appears wherever you write it in the manuscript (most flexible)
+    - `"after_results"`: Methods appears after Results section, before Discussion
+    - `"after_bibliography"`: Methods appears after Bibliography (Nature Methods style)
+  - No backward compatibility - old config will be ignored
+  - Requested by user for more flexible Methods section positioning
+
+### Migration Guide
+Update your `00_CONFIG.yml`:
+- **Was**: `methods_after_bibliography: false` → **Now**: `methods_placement: "inline"`
+- **Was**: `methods_after_bibliography: true` → **Now**: `methods_placement: "after_bibliography"`
+- **New option**: `methods_placement: "after_results"` (Methods after Results, before Discussion)
+
+### Technical Details
+- Config key: `methods_placement` (enum: `["inline", "after_results", "after_bibliography"]`, default: `"inline"`)
+- Implementation changes:
+  - `src/rxiv_maker/config/validator.py:374` - Changed from boolean to enum validation
+  - `src/tex/template.tex` - Replaced conditional logic with placeholder system
+  - `src/rxiv_maker/processors/template_processor.py:457-506` - Clean 3-way switch logic
+  - `src/rxiv_maker/templates/registry.py:170` - Updated init template
+- Template placeholders: `<PY-RPL:METHODS-AFTER-RESULTS>`, `<PY-RPL:METHODS-AFTER-BIBLIOGRAPHY>`
+- Test coverage: `tests/unit/test_template_processor.py` (4 tests replacing 5 old tests)
+
 ## [v1.11.0] - 2025-11-18
 
 ### Added
