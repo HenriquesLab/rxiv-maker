@@ -137,3 +137,91 @@ Custom manuscript preparation content here.
         # Should contain the custom content, not the default acknowledgment
         assert "Custom manuscript preparation content here" in result
         assert "This manuscript was prepared using" not in result
+
+    def test_methods_after_bibliography_true(self):
+        """Test that Methods appears in METHODS placeholder when methods_after_bibliography is true."""
+        template_content = """<PY-RPL:METHODS-AFTER-BIB-FLAG>
+<PY-RPL:MAIN-SECTION>
+<PY-RPL:METHODS>"""
+        yaml_metadata = {"methods_after_bibliography": True}
+        article_md = """# Introduction
+
+This is the introduction.
+
+# Methods
+
+This is the methods section.
+"""
+
+        result = process_template_replacements(template_content, yaml_metadata, article_md)
+
+        # Methods should be in the METHODS placeholder (not in MAIN-SECTION)
+        # The MAIN-SECTION should contain Introduction but not Methods
+        assert "\\methodsafterbibtrue" in result
+        # Methods content should appear after placeholder replacement
+        assert "This is the methods section" in result
+
+    def test_methods_after_bibliography_false(self):
+        """Test that Methods appears inline when methods_after_bibliography is false."""
+        template_content = """<PY-RPL:METHODS-AFTER-BIB-FLAG>
+<PY-RPL:MAIN-SECTION>
+<PY-RPL:METHODS>"""
+        yaml_metadata = {"methods_after_bibliography": False}
+        article_md = """# Introduction
+
+This is the introduction.
+
+# Methods
+
+This is the methods section.
+"""
+
+        result = process_template_replacements(template_content, yaml_metadata, article_md)
+
+        # Flag should be set to false
+        assert "\\methodsafterbibfalse" in result
+        # Methods should appear in MAIN-SECTION (converted from markdown)
+        # The markdown conversion creates \section{Methods} not \section*{Methods}
+        assert ("\\section{Methods}" in result or "\\section*{Methods}" in result)
+        assert "This is the methods section" in result
+
+    def test_methods_after_bibliography_default(self):
+        """Test that default behavior is methods inline (false) when config is omitted."""
+        template_content = """<PY-RPL:METHODS-AFTER-BIB-FLAG>
+<PY-RPL:MAIN-SECTION>
+<PY-RPL:METHODS>"""
+        yaml_metadata = {}  # No methods_after_bibliography setting
+        article_md = """# Introduction
+
+This is the introduction.
+
+# Methods
+
+This is the methods section.
+"""
+
+        result = process_template_replacements(template_content, yaml_metadata, article_md)
+
+        # Default should be false (methods inline)
+        assert "\\methodsafterbibfalse" in result
+        assert ("\\section{Methods}" in result or "\\section*{Methods}" in result)
+
+    def test_methods_after_bibliography_string_true(self):
+        """Test that string 'true' is handled correctly."""
+        template_content = """<PY-RPL:METHODS-AFTER-BIB-FLAG>"""
+        yaml_metadata = {"methods_after_bibliography": "true"}
+        article_md = "# Test Content"
+
+        result = process_template_replacements(template_content, yaml_metadata, article_md)
+
+        assert "\\methodsafterbibtrue" in result
+
+    def test_methods_after_bibliography_string_false(self):
+        """Test that string 'false' is handled correctly."""
+        template_content = """<PY-RPL:METHODS-AFTER-BIB-FLAG>"""
+        yaml_metadata = {"methods_after_bibliography": "false"}
+        article_md = "# Test Content"
+
+        result = process_template_replacements(template_content, yaml_metadata, article_md)
+
+        assert "\\methodsafterbibfalse" in result

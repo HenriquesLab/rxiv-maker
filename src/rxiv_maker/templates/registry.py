@@ -166,6 +166,9 @@ cache:
 # Acknowledgment
 acknowledge_rxiv_maker: true  # Include rxiv-maker acknowledgment
 
+# Section ordering
+methods_after_bibliography: false  # If true, Methods appears after Bibliography (Nature Methods style); if false, Methods before Bibliography (traditional)
+
 version: "1.0"
 """
 
