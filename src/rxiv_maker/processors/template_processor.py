@@ -331,6 +331,13 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
             txt = "% Add number to the lines\n\\usepackage{lineno}\n\\linenumbers\n"
     template_content = template_content.replace("<PY-RPL:USE-LINE-NUMBERS>", txt)
 
+    # Process methods/bibliography ordering
+    methods_after_bib = yaml_metadata.get("methods_after_bibliography", False)
+    if isinstance(methods_after_bib, str):
+        methods_after_bib = methods_after_bib.lower() in ("true", "yes", "1", "on")
+    methods_after_bib_flag = "\\methodsafterbibtrue" if methods_after_bib else "\\methodsafterbibfalse"
+    template_content = template_content.replace("<PY-RPL:METHODS-AFTER-BIB-FLAG>", methods_after_bib_flag)
+
     # Process date
     date_str = yaml_metadata.get("date", "")
     txt = f"\\renewcommand{{\\today}}{{{date_str}}}\n" if date_str else ""
@@ -454,11 +461,27 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
     if custom_sections:
         main_section_parts.extend(custom_sections)
 
+    # Handle Methods section based on configuration
+    methods_after_bib = yaml_metadata.get("methods_after_bibliography", False)
+    if isinstance(methods_after_bib, str):
+        methods_after_bib = methods_after_bib.lower() in ("true", "yes", "1", "on")
+
+    if not methods_after_bib:
+        # Methods should appear inline in content - add it to main section with header
+        methods_content = content_sections.get("methods", "").strip()
+        if methods_content:
+            main_section_parts.append(f"\\section*{{Methods}}\n{methods_content}")
+
     # Combine all parts into the final main section
     main_section = "\n\n".join(main_section_parts) if main_section_parts else ""
 
     template_content = template_content.replace("<PY-RPL:MAIN-SECTION>", main_section)
-    template_content = template_content.replace("<PY-RPL:METHODS>", content_sections.get("methods", ""))
+
+    # Only populate METHODS placeholder if methods_after_bibliography is true
+    if methods_after_bib:
+        template_content = template_content.replace("<PY-RPL:METHODS>", content_sections.get("methods", ""))
+    else:
+        template_content = template_content.replace("<PY-RPL:METHODS>", "")
 
     # Handle main content sections conditionally
     # Results section

@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.11.0] - 2025-11-18
+
+### Added
+- **Section Ordering Configuration**: New `methods_after_bibliography` config option for flexible section placement
+  - When `true`: Methods appears after Bibliography (Nature Methods style - online methods)
+  - When `false` (default): Methods appears inline in content where authored (traditional academic style)
+  - Addresses different journal requirements for methods placement
+  - Added to config schema with full validation support
+  - Updated init command template to include the new option with helpful comment
+  - LaTeX template uses conditional logic (`\ifmethodsafterbib`) for dynamic section ordering
+  - Comprehensive unit tests added (5 new tests, all 16 template processor tests passing)
+  - Requested by Guillaume Jacquemet for Nature Methods compatibility
+
+### Technical Details
+- Config key: `methods_after_bibliography` (boolean, default: `false`)
+- Implementation files:
+  - `src/rxiv_maker/config/validator.py:374` - Schema validation
+  - `src/tex/template.tex` - LaTeX conditional logic
+  - `src/rxiv_maker/processors/template_processor.py:334-484` - Processing logic
+  - `src/rxiv_maker/templates/registry.py:170` - Init template
+- Test coverage: `tests/unit/test_template_processor.py` (5 new tests)
+
 ## [v1.10.0] - 2025-11-18
 
 ### Fixed
