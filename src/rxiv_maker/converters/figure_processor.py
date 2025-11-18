@@ -290,10 +290,12 @@ def create_latex_figure_environment(
         w_expr, w_kind = _parse_len(user_width, rel_unit)
 
     # Dedicated page: use two-column spanning figure* to avoid single-column constraint in 2-col docs
+    # Use [p!] with ! modifier for stronger LaTeX placement guidance
+    # Do NOT set barrier=True - this prevents text from flowing to fill the current page
     if original_position == "p":
-        figure_env, rel_unit, position = "figure*", r"\textwidth", "[p]"
+        figure_env, rel_unit, position = "figure*", r"\textwidth", "[p!]"
         w_expr, w_kind = _parse_len(user_width, rel_unit)
-        barrier = True
+        # barrier remains False - allows subsequent text to flow and fill current page
 
     # Landscape
     env_name = ("sidewaysfigure*" if figure_env == "figure*" else "sidewaysfigure") if landscape else figure_env
@@ -367,7 +369,8 @@ def create_latex_figure_environment(
     lines.append("")
     latex_figure = "\n".join(lines)
 
-    # Remove previous clearpage wrapper logic for dedicated page figures per new visual spec
+    # No wrapper needed - LaTeX's float algorithm with [p!] handles dedicated pages correctly
+    # Any clearpage/FloatBarrier wrapper creates white space by preventing subsequent text flow
 
     return latex_figure
 
