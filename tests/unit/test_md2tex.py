@@ -213,7 +213,7 @@ class TestSectionExtraction:
         markdown_file = temp_dir / "test.md"
         markdown_file.write_text(sample_markdown)
 
-        sections = extract_content_sections(str(markdown_file))
+        sections, _ = extract_content_sections(str(markdown_file))
 
         assert "main" in sections
         assert "methods" in sections

@@ -609,7 +609,7 @@ class BuildManager:
                 return
 
             # Extract content sections from markdown
-            content_sections = extract_content_sections(str(manuscript_md))
+            content_sections, _ = extract_content_sections(str(manuscript_md))
 
             # Analyze word counts with improved section mapping
             self._analyze_improved_section_word_counts(content_sections)

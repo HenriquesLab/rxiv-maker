@@ -6,17 +6,17 @@ and mapping of section titles to standardized keys.
 
 import re
 
-from .types import MarkdownContent, SectionDict, SectionKey, SectionTitle
+from .types import MarkdownContent, SectionDict, SectionKey, SectionOrder, SectionTitle
 
 
-def extract_content_sections(article_md: MarkdownContent) -> SectionDict:
+def extract_content_sections(article_md: MarkdownContent) -> tuple[SectionDict, SectionOrder]:
     """Extract content sections from markdown file and convert to LaTeX.
 
     Args:
         article_md: Either markdown content as string or path to markdown file
 
     Returns:
-        Dictionary mapping section keys to LaTeX content
+        Tuple of (dictionary mapping section keys to LaTeX content, ordered list of section keys)
 
     Raises:
         FileNotFoundError: If article_md is a file path that doesn't exist
@@ -36,8 +36,9 @@ def extract_content_sections(article_md: MarkdownContent) -> SectionDict:
     # Remove YAML front matter
     content = re.sub(r"^---\n.*?\n---\n", "", content, flags=re.DOTALL)
 
-    # Dictionary to store extracted sections
+    # Dictionary to store extracted sections and list to preserve order
     sections: SectionDict = {}
+    section_order: SectionOrder = []
 
     # Split content by ## headers to find sections
     section_pattern = r"^## (.+?)$"
@@ -48,7 +49,8 @@ def extract_content_sections(article_md: MarkdownContent) -> SectionDict:
         # Check if entire content is supplementary
         is_supplementary = "supplementary" in content.lower()
         sections["main"] = convert_markdown_to_latex(content, is_supplementary)
-        return sections
+        section_order.append("main")
+        return sections, section_order
 
     # Extract main content (everything before first ## header)
     first_section_start = section_matches[0].start()
@@ -57,6 +59,7 @@ def extract_content_sections(article_md: MarkdownContent) -> SectionDict:
         # Check if main content is supplementary
         is_main_supplementary = "supplementary" in main_content.lower()
         sections["main"] = convert_markdown_to_latex(main_content, is_main_supplementary)
+        section_order.append("main")
 
     # Extract each section
     for i, match in enumerate(section_matches):
@@ -80,8 +83,9 @@ def extract_content_sections(article_md: MarkdownContent) -> SectionDict:
         section_key = map_section_title_to_key(section_title)
         if section_key:
             sections[section_key] = section_content_latex
+            section_order.append(section_key)
 
-    return sections
+    return sections, section_order
 
 
 def map_section_title_to_key(title: SectionTitle) -> SectionKey:

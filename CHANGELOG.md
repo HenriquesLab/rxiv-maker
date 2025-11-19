@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.12.0] - 2025-11-19
+
+### Changed
+- **BREAKING**: Method placement feature completely redesigned with 5 options and true inline support
+  - **New default**: `"after_bibliography"` (was `"inline"` in v1.11.x)
+  - **Numeric mapping updated**: Now 1-5 (was 1-3 in v1.11.2)
+    - `1` → `"inline"` (TRUE inline - preserves exact authoring order)
+    - `2` → `"after_intro"` (NEW - Methods after Introduction, classic paper style)
+    - `3` → `"after_results"` (Methods after Results, before Discussion)
+    - `4` → `"after_discussion"` (NEW - Methods after Discussion, before Bibliography)
+    - `5` → `"after_bibliography"` (Methods after Bibliography - Nature Methods style - **DEFAULT**)
+  - **True inline behavior**: `"inline"` now preserves exact authoring order from markdown
+    - Old `"inline"` behavior (after intro + custom sections) is now `"after_intro"`
+  - **No backward compatibility**: Old numeric values (1-3) map to different options
+  - Fallback changed from `"inline"` to `"after_bibliography"` for invalid values
+
+### Added
+- **New placement option**: `"after_intro"` - Places Methods after Introduction section
+- **New placement option**: `"after_discussion"` - Places Methods after Discussion, before Bibliography
+- **Section order preservation**: Markdown sections now maintain their authoring order for true inline placement
+- **New template placeholder**: `<PY-RPL:METHODS-AFTER-DISCUSSION>` for after_discussion mode
+
+### Fixed
+- **Inline placement behavior**: `"inline"` now correctly preserves authoring order instead of forcing Methods after Introduction
+  - Previously: `"inline"` placed Methods after Introduction + custom sections
+  - Now: `"inline"` places Methods exactly where authored in markdown
+  - For old behavior, use `"after_intro"`
+
+### Migration Guide
+Update your `00_CONFIG.yml` if using `methods_placement`:
+
+**If you used numeric values:**
+- **Was**: `1` (inline after intro) → **Now**: Use `2` (`"after_intro"`)
+- **Was**: `2` (after_results) → **Now**: Use `3` (`"after_results"`)
+- **Was**: `3` (after_bibliography) → **Now**: Use `5` (`"after_bibliography"`)
+
+**If you relied on default behavior:**
+- **Was**: Default `"inline"` (Methods after Introduction)
+- **Now**: Default `"after_bibliography"` (Methods after Bibliography)
+- **Action**: Explicitly set `methods_placement: "after_intro"` or `methods_placement: 2` for old behavior
+
+**If you want TRUE inline behavior:**
+- Set `methods_placement: "inline"` or `methods_placement: 1`
+- Methods will appear exactly where authored in your markdown
+
+### Technical Details
+- Section order tracking: `src/rxiv_maker/converters/section_processor.py` now returns tuple `(sections, section_order)`
+- True inline implementation: `src/rxiv_maker/processors/template_processor.py:464-480`
+- New placeholder: `src/tex/template.tex:36` added `<PY-RPL:METHODS-AFTER-DISCUSSION>`
+- Updated config validation: `src/rxiv_maker/config/validator.py:374-379` (oneOf with 5 string values or numeric 1-5)
+- Updated init template: `src/rxiv_maker/templates/registry.py:136-139` with new default and documentation
+- Test coverage: 6 tests in `tests/unit/test_template_processor.py` (added `after_intro` and `after_discussion` tests)
+- Visual test: `tests/visual/methods-placement/` updated with comprehensive documentation
+- All callers updated: 3 files updated to handle tuple return from `extract_content_sections()`
+- All unit tests passing: 79/79 (template_processor + md2tex)
+
 ## [v1.11.3] - 2025-11-19
 
 ### Added

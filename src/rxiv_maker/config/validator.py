@@ -371,7 +371,21 @@ class ConfigValidator:
                     "pages": {"type": "string"},
                     "year": {"type": "integer", "minimum": 1900, "maximum": 2100},
                     "acknowledge_rxiv_maker": {"type": "boolean"},
-                    "methods_placement": {"type": "string", "enum": ["inline", "after_results", "after_bibliography"]},
+                    "methods_placement": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "enum": [
+                                    "inline",
+                                    "after_intro",
+                                    "after_results",
+                                    "after_discussion",
+                                    "after_bibliography",
+                                ],
+                            },
+                            {"type": "integer", "minimum": 1, "maximum": 5},
+                        ]
+                    },
                     "bibliography": {"type": "string"},
                     "style": {"type": "string", "enum": ["nature", "science", "plos", "ieee"]},
                     "language": {"type": "string", "enum": ["en", "es", "pt", "fr", "de"]},

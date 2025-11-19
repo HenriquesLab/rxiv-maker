@@ -134,7 +134,9 @@ keywords:
 bibliography: "03_REFERENCES.bib"
 
 # Methods section placement
-methods_placement: "inline"  # Options: inline (Methods wherever you write it), after_results (Methods after Results, before Discussion), after_bibliography (Methods after Bibliography)
+# Options: inline (preserve authoring order) | after_intro (after Introduction) | after_results (after Results) | after_discussion (after Discussion) | after_bibliography (after Bibliography, Nature Methods style)
+# Can use string values or numeric: 1=inline, 2=after_intro, 3=after_results, 4=after_discussion, 5=after_bibliography
+methods_placement: "after_bibliography"
 
 # Acknowledgment
 acknowledge_rxiv_maker: true  # Include rxiv-maker acknowledgment

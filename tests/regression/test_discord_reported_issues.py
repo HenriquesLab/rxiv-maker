@@ -152,7 +152,7 @@ This is the introduction content.
 This is the methods content.
 """
 
-        sections = extract_content_sections(test_markdown)
+        sections, _ = extract_content_sections(test_markdown)
 
         # Should have introduction as a separate key, not mapped to main
         assert "introduction" in sections, "Should extract introduction section"
