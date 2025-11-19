@@ -91,9 +91,16 @@ class TemplateRegistry:
         if kwargs:
             try:
                 return template.format(**kwargs)
-            except KeyError:
+            except KeyError as e:
                 # If key missing, return template as-is
-                return template
+                raise ValueError(
+                    f"Template variable missing in {file_type.value}: {e}. Available: {list(kwargs.keys())}"
+                ) from e
+            except (ValueError, IndexError) as e:
+                # Format string syntax error
+                raise ValueError(
+                    f"Template formatting error in {file_type.value}: {e}. Check for unescaped {{}} braces or malformed format fields."
+                ) from e
 
         return template
 
@@ -119,123 +126,58 @@ authors:
     orcid: "{author_orcid}"
     affiliation: "{author_affiliation}"
 
-abstract: |
-  Your manuscript abstract goes here. Provide a comprehensive summary of your research work,
-  methodology, key findings, and conclusions. This should give readers a clear understanding
-  of your research contribution and its significance to the field.
-
 keywords:
   - keyword1
   - keyword2
   - keyword3
 
-# Style configuration
-style:
-  format: "nature"           # Journal style: nature, cell, science, pnas, etc.
-  font_size: "11pt"          # Font size for the manuscript
-  line_spacing: "single"     # Line spacing: single, onehalf, double
+bibliography: "03_REFERENCES.bib"
 
-# Output configuration
-output:
-  format: "pdf"              # Output format
-  directory: "output"        # Output directory name
-  filename: "manuscript"     # Base filename for outputs
-
-# Figures configuration
-figures:
-  directory: "FIGURES"       # Directory containing figure scripts
-  generate: true            # Whether to generate figures automatically
-  formats: ["png", "svg"]   # Figure output formats
-
-# Bibliography configuration
-bibliography:
-  file: "03_REFERENCES.bib"  # Bibliography file name
-  style: "nature"           # Citation style
-
-# Validation configuration
-validation:
-  enabled: true             # Enable manuscript validation
-  strict: false            # Strict validation mode
-  skip_doi_check: false    # Skip DOI validation (useful for drafts)
-
-# Cache configuration (improves build speed)
-cache:
-  enabled: true            # Enable caching
-  ttl_hours: 24           # Cache time-to-live in hours
+# Methods section placement
+methods_placement: "inline"  # Options: inline (Methods wherever you write it), after_results (Methods after Results, before Discussion), after_bibliography (Methods after Bibliography)
 
 # Acknowledgment
 acknowledge_rxiv_maker: true  # Include rxiv-maker acknowledgment
-
-# Section ordering
-methods_placement: "inline"  # Options: inline (Methods wherever you write it), after_results (Methods after Results, before Discussion), after_bibliography (Methods after Bibliography)
 
 version: "1.0"
 """
 
     def _get_default_main_template(self) -> str:
         """Get default main manuscript template."""
-        return """# Introduction
+        return """## Abstract
 
-Your manuscript introduction goes here. This should provide background information,
-context for your research, and clearly state the objectives and significance of your work.
+Your manuscript abstract goes here. Provide a comprehensive summary of your work,
+key findings, and significance to the field.
 
-# Methods
+## Introduction
 
-Describe your experimental methods, computational approaches, data collection procedures,
-and analysis techniques. Provide sufficient detail for reproducibility.
+Introduce your topic, provide background, and state your objectives.
 
-## Data Collection
+## Methods
 
-Detail your data collection methodology.
+Describe your methods, approaches, and techniques.
+(For reviews, you can remove this section or describe your literature search strategy)
 
-## Analysis
+## Results
 
-Explain your analysis approach and statistical methods.
+Present your findings with supporting figures and tables.
+(For reviews, you can remove this section or rename it to organize your discussion)
 
-# Results
+![](FIGURES/Figure__example.mmd)
+{{#fig:example}} **Example Figure.** This is an example Mermaid diagram that will be automatically converted to PDF during build.
 
-Present your key findings with supporting figures and tables. Use clear section
-headers to organize your results logically.
+## Discussion
 
-## Primary Findings
+Interpret your findings, discuss implications, and acknowledge limitations.
 
-Describe your main results.
+## Conclusions
 
-## Additional Analysis
+Summarize your key conclusions and broader impact.
 
-Present supporting analysis and secondary findings.
-
-# Discussion
-
-Interpret your results in the context of existing literature. Discuss the implications
-of your findings, acknowledge limitations, and suggest future research directions.
-
-# Conclusions
-
-Summarize the key conclusions of your study and their broader impact.
-
-# Figures
-
-Figure references will be automatically generated. Place your figure scripts in the
-FIGURES/ directory and reference them using standard markdown syntax:
-
-![Figure 1: Example figure caption](FIGURES/Figure__example.mmd)
-
-# Tables
-
-Create tables using standard markdown syntax:
-
-| Column 1 | Column 2 | Column 3 |
-|----------|----------|----------|
-| Data 1   | Data 2   | Data 3   |
-| Data 4   | Data 5   | Data 6   |
-
-# References
+## References
 
 Citations will be automatically formatted. Add entries to 03_REFERENCES.bib and
-reference them in your text.
-
-This is an important finding [@smith2023; @johnson2022].
+reference them in your text: [@smith2023; @johnson2022]
 """
 
     def _get_default_supplementary_template(self) -> str:
@@ -265,31 +207,31 @@ Information about code repositories, data availability, and reproducibility reso
 
     def _get_default_bibliography_template(self) -> str:
         """Get default bibliography template."""
-        return """@article{smith2023,
-    title = {Example Research Article},
-    author = {Smith, John and Doe, Jane},
-    journal = {Nature},
-    volume = {123},
-    pages = {456-789},
-    year = {2023},
-    doi = {10.1038/nature12345}
-}
+        return """@article{{smith2023,
+    title = {{Example Research Article}},
+    author = {{Smith, John and Doe, Jane}},
+    journal = {{Nature}},
+    volume = {{123}},
+    pages = {{456-789}},
+    year = {{2023}},
+    doi = {{10.1038/nature12345}}
+}}
 
-@article{johnson2022,
-    title = {Another Important Study},
-    author = {Johnson, Alice and Brown, Bob},
-    journal = {Cell},
-    volume = {185},
-    pages = {1234-1245},
-    year = {2022},
-    doi = {10.1016/j.cell.2022.01.001}
-}
+@article{{johnson2022,
+    title = {{Another Important Study}},
+    author = {{Johnson, Alice and Brown, Bob}},
+    journal = {{Cell}},
+    volume = {{185}},
+    pages = {{1234-1245}},
+    year = {{2022}},
+    doi = {{10.1016/j.cell.2022.01.001}}
+}}
 """
 
     def _get_default_figure_template(self) -> str:
         """Get default figure template (Mermaid diagram)."""
         return """graph TD
-    A[Start] --> B{Decision}
+    A[Start] --> B{{Decision}}
     B -->|Yes| C[Process 1]
     B -->|No| D[Process 2]
     C --> E[End]
@@ -342,34 +284,30 @@ authors:
   - name: "{author_name}"
     email: "{author_email}"
 
-output:
-  format: "pdf"
-
-bibliography:
-  file: "03_REFERENCES.bib"
+bibliography: "03_REFERENCES.bib"
 
 version: "1.0"
 """
 
     def _get_minimal_main_template(self) -> str:
         """Get minimal main manuscript template."""
-        return """# Introduction
+        return """## Abstract
 
-Write your introduction here.
+Write your abstract here.
 
-# Methods
+## Introduction
 
-Describe your methods.
+Introduce your topic.
 
-# Results
+## Main Content
 
-Present your results.
+Organize your content with additional sections as needed.
 
-# Discussion
+## Conclusions
 
-Discuss your findings.
+Summarize your conclusions.
 
-# References
+## References
 
 Add citations using [@ref_key].
 """
@@ -383,131 +321,128 @@ Add supplementary materials here.
 
     def _get_minimal_bibliography_template(self) -> str:
         """Get minimal bibliography template."""
-        return """@article{example2023,
-    title = {Example Article},
-    author = {Author, First},
-    journal = {Journal Name},
-    year = {2023}
-}
+        return """@article{{example2023,
+    title = {{Example Article}},
+    author = {{Author, First}},
+    journal = {{Journal Name}},
+    year = {{2023}}
+}}
 """
 
     # Journal template methods
     def _get_journal_config_template(self) -> str:
         """Get journal-specific configuration template."""
-        config = self._get_default_config_template()
-        # Modify for journal submission
-        config = config.replace('format: "nature"', 'format: "nature"  # Change to target journal')
-        config = config.replace(
-            'line_spacing: "single"', 'line_spacing: "double"  # Most journals require double-spacing'
-        )
-        return config
+        # Use the same config as default for journal submissions
+        return self._get_default_config_template()
 
     def _get_journal_main_template(self) -> str:
-        """Get journal-specific main template."""
-        return """# Abstract
+        """Get detailed manuscript template (for comprehensive research papers)."""
+        return """## Abstract
 
-Structured abstract as required by the target journal.
+Comprehensive abstract summarizing your research.
 
-# Introduction
+## Introduction
 
-Comprehensive introduction with literature review.
+Detailed introduction with literature review and clear objectives.
 
-# Materials and Methods
+## Methods
 
-Detailed methods section with subsections.
+Detailed methods with subsections for clarity.
 
-## Study Design
+### Experimental Design
 
-## Experimental Procedures
+Describe your study design.
 
-## Statistical Analysis
+### Data Analysis
 
-# Results
+Explain your analysis approach.
 
-Results organized by research question.
+## Results
 
-## Result 1
+Present your findings organized by research question.
 
-## Result 2
+### Finding 1
 
-# Discussion
+First key result.
+
+### Finding 2
+
+Second key result.
+
+## Discussion
 
 In-depth discussion relating findings to existing literature.
 
-## Implications
+### Implications
 
-## Limitations
+Discuss the implications of your work.
 
-## Future Directions
+### Limitations
 
-# Conclusions
+Acknowledge limitations.
 
-Brief conclusions summarizing key findings.
+### Future Directions
 
-# Acknowledgments
+Suggest future research directions.
 
-Funding sources, contributions, and acknowledgments.
+## Conclusions
 
-# References
+Summarize key conclusions.
 
-Citations formatted per journal guidelines [@ref].
+## References
+
+[@ref]
 """
 
     # Preprint template methods
     def _get_preprint_config_template(self) -> str:
         """Get preprint-specific configuration template."""
-        config = self._get_default_config_template()
-        # Modify for preprint
-        config = config.replace(
-            "acknowledge_rxiv_maker: true", "acknowledge_rxiv_maker: true  # Include software citation"
-        )
-        return config
+        # Use the same config as default for preprints
+        return self._get_default_config_template()
 
     def _get_preprint_main_template(self) -> str:
-        """Get preprint-specific main template."""
-        return """# Abstract
+        """Get preprint template with open science focus."""
+        return """## Abstract
 
 Clear, accessible abstract for broad readership.
 
-# Introduction
+## Introduction
 
 Introduction with clear motivation and objectives.
 
-# Results
+## Results
 
-Results-first organization common in preprints.
+Present your key findings.
 
-## Key Finding 1
+### Key Finding 1
 
-## Key Finding 2
+### Key Finding 2
 
-## Additional Results
-
-# Discussion
+## Discussion
 
 Discussion of implications and significance.
 
-# Methods
+## Methods
 
-Detailed methods at the end (common for preprints).
+Detailed methods (you can move this before Results if preferred).
 
-## Experimental Design
+### Experimental Design
 
-## Data Analysis
+### Data Analysis
 
-# Data and Code Availability
+## Data and Code Availability
 
-Links to data repositories and code (required for preprints).
+Links to data repositories, code, and protocols for reproducibility.
 
-# Author Contributions
+## Author Contributions
 
 Detailed author contribution statements.
 
-# Competing Interests
+## Competing Interests
 
 Declaration of competing interests.
 
-# References
+## References
 
 [@ref]
 """

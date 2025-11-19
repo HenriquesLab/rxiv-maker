@@ -18,6 +18,44 @@ from .types import (
 )
 
 
+def resolve_generated_figure_path(figure_path: str) -> str:
+    """Convert generated figure source paths to their output format.
+
+    For figures that are generated during the build process (.mmd, .py, .R),
+    convert the source file extension to the output format (.pdf).
+    This allows users to reference source files in markdown while LaTeX
+    uses the generated output files.
+
+    Args:
+        figure_path: Original figure path from markdown (e.g., "FIGURES/diagram.mmd")
+
+    Returns:
+        Resolved path with output extension (e.g., "FIGURES/diagram.pdf")
+
+    Examples:
+        >>> resolve_generated_figure_path("FIGURES/diagram.mmd")
+        'FIGURES/diagram.pdf'
+        >>> resolve_generated_figure_path("FIGURES/plot.py")
+        'FIGURES/plot.pdf'
+        >>> resolve_generated_figure_path("FIGURES/existing.pdf")
+        'FIGURES/existing.pdf'
+    """
+    # Mapping from source extensions to output extensions
+    GENERATED_EXTENSIONS = {
+        ".mmd": ".pdf",  # Mermaid diagrams → PDF
+        ".py": ".pdf",  # Python scripts → PDF
+        ".R": ".pdf",  # R scripts → PDF
+        ".r": ".pdf",  # R scripts (lowercase) → PDF
+    }
+
+    path = Path(figure_path)
+    if path.suffix in GENERATED_EXTENSIONS:
+        output_ext = GENERATED_EXTENSIONS[path.suffix]
+        return str(path.with_suffix(output_ext))
+
+    return figure_path
+
+
 def convert_figures_to_latex(text: MarkdownContent, is_supplementary: bool = False) -> LatexContent:
     r"""Convert markdown figures to LaTeX figure environments.
 
@@ -441,7 +479,9 @@ def _process_new_figure_format(text: MarkdownContent, is_supplementary: bool = F
             return m.group(0)
 
         try:
-            return create_latex_figure_environment(path, caption_text, attributes, is_supplementary)
+            # Resolve generated figure paths (.mmd, .py, .R) to output format (.pdf)
+            resolved_path = resolve_generated_figure_path(path)
+            return create_latex_figure_environment(resolved_path, caption_text, attributes, is_supplementary)
         except (ValueError, KeyError, TypeError) as e:
             # If LaTeX emission fails due to invalid parameters, log and keep original block
             from ..core.logging_config import get_logger
@@ -514,7 +554,9 @@ def _process_figure_without_attributes(text: MarkdownContent, is_supplementary: 
             return m.group(0)
 
         try:
-            return create_latex_figure_environment(path, caption, None, is_supplementary)
+            # Resolve generated figure paths (.mmd, .py, .R) to output format (.pdf)
+            resolved_path = resolve_generated_figure_path(path)
+            return create_latex_figure_environment(resolved_path, caption, None, is_supplementary)
         except (ValueError, KeyError, TypeError) as e:
             from ..core.logging_config import get_logger
 
@@ -601,7 +643,9 @@ def _process_figure_with_attributes(text: MarkdownContent, is_supplementary: boo
 
         # Parse attributes
         attributes = parse_figure_attributes(attr_string)
-        return create_latex_figure_environment(path, caption, attributes, is_supplementary)
+        # Resolve generated figure paths (.mmd, .py, .R) to output format (.pdf)
+        resolved_path = resolve_generated_figure_path(path)
+        return create_latex_figure_environment(resolved_path, caption, attributes, is_supplementary)
 
     # Handle figures with attributes (old format) - both inline and with newlines
     # First try inline format: ![caption](path){attributes}
@@ -624,7 +668,9 @@ def _process_figure_with_attributes(text: MarkdownContent, is_supplementary: boo
 
         # Parse attributes
         attributes = parse_figure_attributes(attr_string)
-        return create_latex_figure_environment(path, combined_caption, attributes, is_supplementary)
+        # Resolve generated figure paths (.mmd, .py, .R) to output format (.pdf)
+        resolved_path = resolve_generated_figure_path(path)
+        return create_latex_figure_environment(resolved_path, combined_caption, attributes, is_supplementary)
 
     text = re.sub(
         r"!\[([^\]]*)\]\(([^)]+)\)\s*\n\s*\{([^}]+)\}\s*(.*?)(?=\n\n|\Z)",
