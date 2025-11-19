@@ -1,0 +1,26 @@
+# Test with INVALID value to verify fallback works
+
+title: "Testing Invalid Methods Placement Value"
+
+authors:
+  - name: "Test Author"
+    email: "test@example.com"
+    affiliation: "Test University"
+
+affiliations:
+  - shortname: "Test University"
+    full_name: "Test University"
+    location: "Test City, Test Country"
+
+keywords:
+  - testing
+
+# Test with invalid numeric value (should fallback to "inline" with warning)
+methods_placement: 2
+
+acknowledge_rxiv_maker: false
+
+bibliography:
+  file: "03_REFERENCES.bib"
+
+version: "1.0"

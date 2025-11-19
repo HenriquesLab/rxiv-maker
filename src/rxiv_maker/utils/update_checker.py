@@ -222,7 +222,8 @@ class UpdateChecker:
         if not cache_data or not cache_data.get("update_available"):
             return None
 
-        current = cache_data.get("current_version", "unknown")
+        # Always use the current runtime version, not cached version
+        current = self.current_version
         latest = cache_data.get("latest_version", "unknown")
 
         if current == "unknown" or latest == "unknown":

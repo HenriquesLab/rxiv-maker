@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.11.2] - 2025-11-18
+
+### Added
+- **Numeric Value Mapping**: `methods_placement` now accepts both strings and numeric values for better UX
+  - `1` → `"inline"` (Methods appears where authored - default)
+  - `2` → `"after_results"` (Methods after Results, before Discussion)
+  - `3` → `"after_bibliography"` (Methods after Bibliography - Nature Methods style)
+  - Original string values still work: `"inline"`, `"after_results"`, `"after_bibliography"`
+  - Backward compatible - all existing configs continue to work
+
+### Fixed
+- **Validation with Fallback**: Invalid `methods_placement` values now show clear warning and fallback to `"inline"`
+  - Prevents Methods section from disappearing with invalid config values
+  - Warning message guides users to correct syntax: `⚠️  Warning: Invalid methods_placement value "X". Using "inline" as fallback. Valid options: inline, after_results, after_bibliography or numeric values 1-3`
+- **Version Display**: Update checker now shows correct runtime version instead of stale cached version
+  - Fixed development mode showing `v1.9.1 → v1.9.4` when actual version is v1.11.2
+  - Now always uses `__version__.py` for current version display
+
+### Technical Details
+- Numeric mapping implemented in `src/rxiv_maker/processors/template_processor.py:461-469`
+- Validation logic in `src/rxiv_maker/processors/template_processor.py:471-481`
+- Version fix in `src/rxiv_maker/utils/update_checker.py:225-226`
+- All 4 methods placement unit tests passing
+- Visual test updated to demonstrate numeric value (2 = after_results)
+
 ## [v1.11.1] - 2025-11-18
 
 ### Changed
