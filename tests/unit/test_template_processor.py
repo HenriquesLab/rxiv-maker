@@ -139,8 +139,9 @@ Custom manuscript preparation content here.
         assert "This manuscript was prepared using" not in result
 
     def test_methods_placement_inline(self):
-        """Test that Methods appears inline when methods_placement is inline."""
+        """Test that Methods appears inline (preserves authoring order) when methods_placement is inline."""
         template_content = """<PY-RPL:MAIN-SECTION>
+<PY-RPL:RESULTS-SECTION>
 <PY-RPL:METHODS-AFTER-RESULTS>
 <PY-RPL:METHODS-AFTER-BIBLIOGRAPHY>"""
         yaml_metadata = {"methods_placement": "inline"}
@@ -151,15 +152,25 @@ This is the introduction.
 ## Methods
 
 This is the methods section.
+
+## Results
+
+This is the results section.
 """
 
         result = process_template_replacements(template_content, yaml_metadata, article_md)
 
-        # Methods should appear in MAIN-SECTION with header
+        # Methods should appear in MAIN-SECTION in authoring order (between Introduction and Results)
         assert "\\section*{Methods}" in result
         assert "This is the methods section" in result
-        # Other placeholders should be empty
-        # The result should not have Methods appearing twice
+
+        # Verify order: Introduction should come before Methods in MAIN-SECTION
+        main_section_match = result.find("\\section*{Introduction}")
+        methods_match = result.find("\\section*{Methods}")
+        assert main_section_match < methods_match, "Introduction should appear before Methods in inline mode"
+
+        # Results should be in its own placeholder, not in MAIN-SECTION
+        assert "<PY-RPL:RESULTS-SECTION>" not in result or "\\section*{Results}" in result
 
     def test_methods_placement_after_results(self):
         """Test that Methods appears after Results when methods_placement is after_results."""
@@ -206,7 +217,7 @@ This is the methods section.
         assert "This is the methods section" in result
 
     def test_methods_placement_default(self):
-        """Test that default behavior is inline when methods_placement is omitted."""
+        """Test that default behavior is after_bibliography when methods_placement is omitted."""
         template_content = """<PY-RPL:MAIN-SECTION>
 <PY-RPL:METHODS-AFTER-RESULTS>
 <PY-RPL:METHODS-AFTER-BIBLIOGRAPHY>"""
@@ -222,6 +233,79 @@ This is the methods section.
 
         result = process_template_replacements(template_content, yaml_metadata, article_md)
 
-        # Default should be inline (Methods in MAIN-SECTION)
+        # Default should be after_bibliography (Methods in METHODS-AFTER-BIBLIOGRAPHY placeholder)
         assert "\\section*{Methods}" in result
         assert "This is the methods section" in result
+
+        # Verify Methods is not in MAIN-SECTION (only Introduction should be there)
+        assert "\\section*{Introduction}" in result
+
+    def test_methods_placement_after_intro(self):
+        """Test that Methods appears after Introduction when methods_placement is after_intro."""
+        template_content = """<PY-RPL:MAIN-SECTION>
+<PY-RPL:RESULTS-SECTION>
+<PY-RPL:METHODS-AFTER-RESULTS>
+<PY-RPL:METHODS-AFTER-BIBLIOGRAPHY>"""
+        yaml_metadata = {"methods_placement": "after_intro"}
+        article_md = """## Introduction
+
+This is the introduction.
+
+## Results
+
+This is the results section.
+
+## Methods
+
+This is the methods section.
+"""
+
+        result = process_template_replacements(template_content, yaml_metadata, article_md)
+
+        # Methods should appear in MAIN-SECTION right after Introduction
+        assert "\\section*{Methods}" in result
+        assert "This is the methods section" in result
+        assert "\\section*{Introduction}" in result
+
+        # Verify order: Introduction should come before Methods in MAIN-SECTION
+        intro_match = result.find("\\section*{Introduction}")
+        methods_match = result.find("\\section*{Methods}")
+        assert intro_match < methods_match, "Introduction should appear before Methods in after_intro mode"
+
+        # Results should be in its own placeholder, not in MAIN-SECTION
+        assert "\\section*{Results}" in result
+
+    def test_methods_placement_after_discussion(self):
+        """Test that Methods appears after Discussion when methods_placement is after_discussion."""
+        template_content = """<PY-RPL:MAIN-SECTION>
+<PY-RPL:DISCUSSION-SECTION>
+<PY-RPL:CONCLUSIONS-SECTION>
+<PY-RPL:METHODS-AFTER-DISCUSSION>
+<PY-RPL:METHODS-AFTER-BIBLIOGRAPHY>"""
+        yaml_metadata = {"methods_placement": "after_discussion"}
+        article_md = """## Introduction
+
+This is the introduction.
+
+## Discussion
+
+This is the discussion section.
+
+## Methods
+
+This is the methods section.
+"""
+
+        result = process_template_replacements(template_content, yaml_metadata, article_md)
+
+        # Methods should appear in the METHODS-AFTER-DISCUSSION placeholder
+        assert "\\section*{Methods}" in result
+        assert "This is the methods section" in result
+
+        # Verify Discussion appears before Methods section
+        discussion_match = result.find("\\section*{Discussion}")
+        methods_match = result.find("\\section*{Methods}")
+        assert discussion_match < methods_match, "Discussion should appear before Methods in after_discussion mode"
+
+        # Verify Methods is not in MAIN-SECTION
+        assert "\\section*{Introduction}" in result

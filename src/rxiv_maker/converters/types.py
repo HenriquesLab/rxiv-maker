@@ -14,6 +14,7 @@ Placeholder = str
 
 # Dictionary types
 SectionDict = dict[SectionKey, LatexContent]
+SectionOrder = list[SectionKey]
 ProtectedContent = dict[Placeholder, str]
 FigureAttributes = dict[str, str]
 TableAttributes = dict[str, str]

@@ -411,29 +411,42 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
     template_content = template_content.replace("<PY-RPL:BIBLIOGRAPHY>", bibliography_section)
 
     # Extract content sections from markdown
-    content_sections = extract_content_sections(article_md)
+    content_sections, section_order = extract_content_sections(article_md)
 
     # Replace content placeholders with extracted sections
     template_content = template_content.replace("<PY-RPL:ABSTRACT>", content_sections.get("abstract", ""))
 
-    # Handle main/introduction section with proper header and include all custom sections
-    main_section_parts = []
+    # Handle Methods section based on methods_placement configuration
+    methods_placement = yaml_metadata.get("methods_placement", "after_bibliography")
+    methods_content = content_sections.get("methods", "").strip()
 
-    if content_sections.get("introduction"):
-        # If there's an introduction section, use it with "Introduction" header
-        main_section_content = content_sections["introduction"]
-        main_section_parts.append(f"\\section*{{Introduction}}\n{main_section_content}")
-    elif content_sections.get("main"):
-        # If there's a main section (but no introduction), use it with "Main" header
-        main_section_content = content_sections["main"]
-        main_section_parts.append(f"\\section*{{Main}}\n{main_section_content}")
+    # Map numeric values to string options for backward compatibility
+    numeric_mapping = {
+        1: "inline",
+        2: "after_intro",
+        3: "after_results",
+        4: "after_discussion",
+        5: "after_bibliography",
+    }
 
-    # Include all custom sections (sections that don't map to standard academic paper sections)
-    standard_sections = {
+    if isinstance(methods_placement, int) and methods_placement in numeric_mapping:
+        methods_placement = numeric_mapping[methods_placement]
+
+    # Validate methods_placement value and fallback to "after_bibliography" if invalid
+    valid_placements = ["inline", "after_intro", "after_results", "after_discussion", "after_bibliography"]
+    if methods_placement not in valid_placements:
+        import sys
+
+        print(
+            f'⚠️  Warning: Invalid methods_placement value "{methods_placement}". '
+            f'Using "after_bibliography" as fallback. Valid options: {", ".join(valid_placements)} or numeric values 1-5',
+            file=sys.stderr,
+        )
+        methods_placement = "after_bibliography"
+
+    # Sections that have dedicated placeholders elsewhere in the template
+    sections_with_placeholders = {
         "abstract",
-        "introduction",
-        "main",
-        "methods",
         "results",
         "discussion",
         "conclusion",
@@ -445,44 +458,71 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
         "funding",
     }
 
-    custom_sections = []
-    for section_key, section_content in content_sections.items():
-        if section_key not in standard_sections and section_content.strip():
-            custom_sections.append(section_content)
+    # Handle main/introduction section with proper header and include all custom sections
+    main_section_parts = []
 
-    # Add all custom sections to the main section
-    if custom_sections:
-        main_section_parts.extend(custom_sections)
+    if methods_placement == "inline":
+        # True inline: preserve authoring order from markdown
+        for section_key in section_order:
+            if section_key in sections_with_placeholders:
+                # These sections go in their own placeholders, skip them here
+                continue
+            elif section_key == "introduction":
+                main_section_parts.append(f"\\section*{{Introduction}}\n{content_sections[section_key]}")
+            elif section_key == "main":
+                main_section_parts.append(f"\\section*{{Main}}\n{content_sections[section_key]}")
+            elif section_key == "methods":
+                if methods_content:
+                    main_section_parts.append(f"\\section*{{Methods}}\n{methods_content}")
+            else:
+                # Custom section - include without adding a header
+                if content_sections[section_key].strip():
+                    main_section_parts.append(content_sections[section_key])
+    else:
+        # For all other placement modes: build main section in standard order
+        if content_sections.get("introduction"):
+            # If there's an introduction section, use it with "Introduction" header
+            main_section_content = content_sections["introduction"]
+            main_section_parts.append(f"\\section*{{Introduction}}\n{main_section_content}")
 
-    # Handle Methods section based on methods_placement configuration
-    methods_placement = yaml_metadata.get("methods_placement", "inline")
-    methods_content = content_sections.get("methods", "").strip()
+            # after_intro mode: insert Methods right after Introduction
+            if methods_placement == "after_intro" and methods_content:
+                main_section_parts.append(f"\\section*{{Methods}}\n{methods_content}")
 
-    # Map numeric values to string options for backward compatibility
-    numeric_mapping = {
-        1: "inline",
-        2: "after_results",
-        3: "after_bibliography",
-    }
+        elif content_sections.get("main"):
+            # If there's a main section (but no introduction), use it with "Main" header
+            main_section_content = content_sections["main"]
+            main_section_parts.append(f"\\section*{{Main}}\n{main_section_content}")
 
-    if isinstance(methods_placement, int) and methods_placement in numeric_mapping:
-        methods_placement = numeric_mapping[methods_placement]
+            # after_intro mode: insert Methods after Main section if no Introduction exists
+            if methods_placement == "after_intro" and methods_content:
+                main_section_parts.append(f"\\section*{{Methods}}\n{methods_content}")
 
-    # Validate methods_placement value and fallback to "inline" if invalid
-    valid_placements = ["inline", "after_results", "after_bibliography"]
-    if methods_placement not in valid_placements:
-        import sys
+        # Include all custom sections (sections that don't map to standard academic paper sections)
+        standard_sections = {
+            "abstract",
+            "introduction",
+            "main",
+            "methods",
+            "results",
+            "discussion",
+            "conclusion",
+            "data_availability",
+            "code_availability",
+            "manuscript_preparation",
+            "author_contributions",
+            "acknowledgements",
+            "funding",
+        }
 
-        print(
-            f'⚠️  Warning: Invalid methods_placement value "{methods_placement}". '
-            f'Using "inline" as fallback. Valid options: {", ".join(valid_placements)} or numeric values 1-3',
-            file=sys.stderr,
-        )
-        methods_placement = "inline"
+        custom_sections = []
+        for section_key, section_content in content_sections.items():
+            if section_key not in standard_sections and section_content.strip():
+                custom_sections.append(section_content)
 
-    if methods_placement == "inline" and methods_content:
-        # Methods should appear inline in content - add it to main section with header
-        main_section_parts.append(f"\\section*{{Methods}}\n{methods_content}")
+        # Add all custom sections to the main section
+        if custom_sections:
+            main_section_parts.extend(custom_sections)
 
     # Combine all parts into the final main section
     main_section = "\n\n".join(main_section_parts) if main_section_parts else ""
@@ -520,6 +560,12 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
         template_content = template_content.replace("<PY-RPL:METHODS-AFTER-RESULTS>", methods_section)
     else:
         template_content = template_content.replace("<PY-RPL:METHODS-AFTER-RESULTS>", "")
+
+    if methods_placement == "after_discussion" and methods_content:
+        methods_section = f"\\section*{{Methods}}\n{methods_content}"
+        template_content = template_content.replace("<PY-RPL:METHODS-AFTER-DISCUSSION>", methods_section)
+    else:
+        template_content = template_content.replace("<PY-RPL:METHODS-AFTER-DISCUSSION>", "")
 
     if methods_placement == "after_bibliography" and methods_content:
         methods_section = f"\\section*{{Methods}}\n{methods_content}"

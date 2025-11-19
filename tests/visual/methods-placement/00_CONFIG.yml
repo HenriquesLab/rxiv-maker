@@ -1,6 +1,6 @@
-# Test with INVALID value to verify fallback works
+# Test methods placement configuration (v1.12.0)
 
-title: "Testing Invalid Methods Placement Value"
+title: "Testing Methods Placement: After Results"
 
 authors:
   - name: "Test Author"
@@ -15,8 +15,9 @@ affiliations:
 keywords:
   - testing
 
-# Test with invalid numeric value (should fallback to "inline" with warning)
-methods_placement: 2
+# Test with numeric value: 3 = "after_results"
+# Change this value to test different placements: 1=inline, 2=after_intro, 3=after_results, 4=after_discussion, 5=after_bibliography
+methods_placement: 3
 
 acknowledge_rxiv_maker: false
 
