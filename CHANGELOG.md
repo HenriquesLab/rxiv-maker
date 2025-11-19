@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.11.3] - 2025-11-19
+
+### Added
+- **Automatic Figure Extension Mapping**: Generated figure sources (`.mmd`, `.py`, `.R`) now automatically convert to output format (`.pdf`) in LaTeX
+  - Users can now reference source files in markdown: `![](FIGURES/diagram.mmd)`
+  - Figure processor automatically resolves to output format: `FIGURES/diagram.pdf`
+  - Works for Mermaid diagrams (`.mmd`), Python scripts (`.py`), and R scripts (`.R`, `.r`)
+  - Validation passes immediately after `rxiv init` (source file exists)
+  - Auto-conversion happens during build via mermaid.ink cloud service
+
+### Fixed
+- **Init Template Figure Example**: Template now includes working `.mmd` figure reference out-of-the-box
+  - Previously: No figure example (removed due to validation errors)
+  - Now: `![](FIGURES/Figure__example.mmd)` with proper pandoc syntax
+  - Example Mermaid diagram automatically converts to PDF on first build
+  - Provides immediate working example for new users
+
+### Changed
+- **Template Structure Improvements**:
+  - Removed `abstract` field from config (belongs in `01_MAIN.md` only)
+  - Simplified config to essential fields matching real manuscripts
+  - Templates now journal-agnostic and preprint-focused
+  - Flexible section structure supporting both research papers and reviews
+  - Config uses consistent `bibliography: "03_REFERENCES.bib"` format
+
+### Technical Details
+- Extension mapping in `src/rxiv_maker/converters/figure_processor.py:21-56`
+- Applied to all 4 figure format processing functions
+- BibTeX and Mermaid templates properly escaped for Python `.format()`
+- Template updates in `src/rxiv_maker/templates/registry.py`
+- All init/build workflow tests passing (4/4)
+- All figure processor unit tests passing (35/35)
+
 ## [v1.11.2] - 2025-11-18
 
 ### Added

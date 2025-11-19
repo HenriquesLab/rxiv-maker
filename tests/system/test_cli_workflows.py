@@ -43,8 +43,8 @@ class TestCLIIntegration:
             assert (manuscript_dir / "FIGURES").exists()
 
             # Test validate command
-            with patch("rxiv_maker.engines.operations.validate.main") as mock_validate:
-                mock_validate.return_value = None  # Success
+            with patch("rxiv_maker.engines.operations.validate.validate_manuscript") as mock_validate:
+                mock_validate.return_value = True  # Validation passed
 
                 self.runner.invoke(
                     main,
@@ -55,8 +55,9 @@ class TestCLIIntegration:
                 mock_validate.assert_called_once()
 
             # Test build command (mocked)
-            with patch("rxiv_maker.cli.commands.build.BuildManager") as mock_build_manager:
-                mock_build_manager.return_value.run_full_build.return_value = True
+            with patch("rxiv_maker.engines.operations.build_manager.BuildManager") as mock_build_manager:
+                mock_build_manager.return_value.build.return_value = True
+                mock_build_manager.return_value.output_pdf = Path(manuscript_dir) / "output" / "test.pdf"
 
                 self.runner.invoke(
                     main,

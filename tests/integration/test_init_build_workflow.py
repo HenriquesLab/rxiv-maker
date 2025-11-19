@@ -47,11 +47,10 @@ class TestInitBuildWorkflow:
         assert (manuscript_dir / "FIGURES").exists(), "FIGURES directory not created"
         assert (manuscript_dir / "FIGURES" / "Figure__example.mmd").exists(), "Example figure not created"
 
-        # Step 2: Verify the figure reference is correct
+        # Step 2: Verify the figure reference uses .mmd (source) not .pdf (output)
         main_content = (manuscript_dir / "01_MAIN.md").read_text()
-        assert "![Figure 1: Example figure caption](FIGURES/Figure__example.mmd)" in main_content, (
-            "Figure reference path incorrect"
-        )
+        assert "![](FIGURES/Figure__example.mmd)" in main_content, "Figure should reference .mmd source file"
+        assert "{#fig:example}" in main_content, "Figure label missing"
 
         # Step 3: Build the manuscript (this should succeed without errors)
         build_result = subprocess.run(
