@@ -15,9 +15,9 @@ affiliations:
 keywords:
   - testing
 
-# Test with numeric value: 3 = "after_results"
-# Change this value to test different placements: 1=inline, 2=after_intro, 3=after_results, 4=after_discussion, 5=after_bibliography
-methods_placement: 3
+# Test with numeric value: 2 = "after_results"
+# Change this value to test different placements: 1=after_intro, 2=after_results, 3=after_discussion, 4=after_bibliography
+methods_placement: 2
 
 acknowledge_rxiv_maker: false
 

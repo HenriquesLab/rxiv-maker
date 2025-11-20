@@ -1,14 +1,14 @@
 # Methods Placement Test
 
-This test manuscript verifies the `methods_placement` configuration option redesigned in rxiv-maker v1.12.0.
+This test manuscript verifies the `methods_placement` configuration option in rxiv-maker v1.12.1.
 
 ## Test Configuration
 
-**Config**: `methods_placement: 3` (numeric value, maps to `"after_results"`)
+**Config**: `methods_placement: 2` (numeric value, maps to `"after_results"`)
 
 ## Expected Behavior
 
-When using `methods_placement: 3` (maps to `"after_results"`), the Methods section should appear after the Results section, before Discussion.
+When using `methods_placement: 2` (maps to `"after_results"`), the Methods section should appear after the Results section, before Discussion.
 
 ## Test Verification
 
@@ -24,10 +24,9 @@ The manuscript sections should appear in this order:
 
 ### What This Tests
 
-- ✅ Numeric value mapping (3 → "after_results")
+- ✅ Numeric value mapping (2 → "after_results")
 - ✅ Methods section appears after Results
 - ✅ Methods appears before Discussion
-- ✅ Methods is NOT inline (not preserving authoring order)
 - ✅ Methods is NOT after Introduction
 - ✅ Methods is NOT after Discussion
 - ✅ Methods is NOT after Bibliography
@@ -65,37 +64,37 @@ Expected output:
 
 To test other placement options, modify `00_CONFIG.yml`:
 
-- **Inline** (preserve authoring order): `methods_placement: "inline"` or `methods_placement: 1`
-  - Expected: Methods appears exactly where authored in markdown (e.g., Introduction → Methods → Results → Discussion if authored in that order)
-
-- **After Introduction**: `methods_placement: "after_intro"` or `methods_placement: 2`
+- **After Introduction**: `methods_placement: "after_intro"` or `methods_placement: 1`
   - Expected: Introduction → Methods → Results → Discussion (classic paper style)
 
-- **After Results** (current test): `methods_placement: "after_results"` or `methods_placement: 3`
+- **After Results** (current test): `methods_placement: "after_results"` or `methods_placement: 2`
   - Expected: Introduction → Results → Methods → Discussion
 
-- **After Discussion**: `methods_placement: "after_discussion"` or `methods_placement: 4`
+- **After Discussion**: `methods_placement: "after_discussion"` or `methods_placement: 3`
   - Expected: Introduction → Results → Discussion → Methods → Conclusions → Bibliography
 
-- **After Bibliography** (default): `methods_placement: "after_bibliography"` or `methods_placement: 5`
+- **After Bibliography** (default): `methods_placement: "after_bibliography"` or `methods_placement: 4`
   - Expected: Introduction → Results → Discussion → Conclusions → Bibliography → Methods (Nature Methods style)
 
 ### Numeric Value Mapping
-- `1` → `"inline"` (preserve authoring order)
-- `2` → `"after_intro"` (after Introduction)
-- `3` → `"after_results"` (after Results)
-- `4` → `"after_discussion"` (after Discussion)
-- `5` → `"after_bibliography"` (after Bibliography - **default**)
+- `1` → `"after_intro"` (after Introduction)
+- `2` → `"after_results"` (after Results)
+- `3` → `"after_discussion"` (after Discussion)
+- `4` → `"after_bibliography"` (after Bibliography - **default**)
 
 ## Version
 
-Redesigned in: **v1.12.0** (BREAKING CHANGE)
+**v1.12.1** (BREAKING CHANGE from v1.12.0)
+- Removed "inline" option (not working reliably)
+- New numeric mapping: 1-4 (was 1-5 in v1.12.0)
+- 4 placement options (was 5 in v1.12.0)
+- Numeric values shifted down by 1 for most users
 
+**v1.12.0** (BREAKING CHANGE)
+- Redesigned with 5 options including "inline"
 - New numeric mapping (1-5 instead of 1-3)
 - New default: `"after_bibliography"` (was `"inline"`)
 - New options: `"after_intro"` and `"after_discussion"`
-- True inline now preserves authoring order
-- Removed backward compatibility for old `"inline"` value
 
 Previous versions:
 - Introduced in: **v1.11.1**

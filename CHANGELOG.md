@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.12.1] - 2025-11-20
+
+### Changed
+- **BREAKING**: Removed "inline" method placement option based on user testing feedback
+  - **New numeric mapping**: Now 1-4 (was 1-5 in v1.12.0)
+    - `1` → `"after_intro"` (Methods after Introduction, classic paper style)
+    - `2` → `"after_results"` (Methods after Results, before Discussion)
+    - `3` → `"after_discussion"` (Methods after Discussion, before Bibliography)
+    - `4` → `"after_bibliography"` (Methods after Bibliography - Nature Methods style - **DEFAULT**)
+  - **Removed option**: `"inline"` (true inline placement) - not working reliably based on testing
+  - **Numeric values shifted**: Users with numeric values 2-5 in v1.12.0 need to update to 1-4 in v1.12.1
+  - **String values unchanged**: `"after_intro"`, `"after_results"`, `"after_discussion"`, `"after_bibliography"` still work
+
+### Removed
+- **"inline" placement option**: Complete removal of inline mode due to reliability issues
+  - Removed from numeric mapping (was option 1 in v1.12.0)
+  - Removed from validation schema enum
+  - Removed from template documentation
+  - Removed inline-specific logic block in template processor
+  - Removed test_methods_placement_inline unit test
+
+### Migration Guide from v1.12.0
+Update your `00_CONFIG.yml` if using `methods_placement`:
+
+**If you used numeric values in v1.12.0:**
+- **Was**: `1` (inline) → **Now**: Use `1` (`"after_intro"`) or remove for default behavior
+- **Was**: `2` (after_intro) → **Now**: Use `1` (`"after_intro"`)
+- **Was**: `3` (after_results) → **Now**: Use `2` (`"after_results"`)
+- **Was**: `4` (after_discussion) → **Now**: Use `3` (`"after_discussion"`)
+- **Was**: `5` (after_bibliography) → **Now**: Use `4` (`"after_bibliography"`)
+
+**If you used string "inline" in v1.12.0:**
+- **Was**: `methods_placement: "inline"`
+- **Now**: Use `methods_placement: "after_intro"` or `methods_placement: 1` for similar behavior
+- **Note**: True inline behavior (preserving authoring order) is no longer supported
+
+**If you used string values (not "inline"):**
+- No changes needed - string values remain the same
+- `"after_intro"`, `"after_results"`, `"after_discussion"`, `"after_bibliography"` unchanged
+
+### Technical Details
+- Updated numeric mapping: `src/rxiv_maker/processors/template_processor.py:424-429` (1-4 instead of 1-5)
+- Updated validation schema: `src/rxiv_maker/config/validator.py:374-387` (enum without "inline", max 4 instead of 5)
+- Updated init template: `src/rxiv_maker/templates/registry.py:136-139` (documentation updated)
+- Removed inline logic block: `src/rxiv_maker/processors/template_processor.py:464-480` (deleted)
+- Removed unit test: `tests/unit/test_template_processor.py:141-174` (test_methods_placement_inline deleted)
+- Updated visual tests: `tests/visual/methods-placement/` (README.md, 01_MAIN.md, 00_CONFIG.yml updated)
+- All 5 remaining methods placement tests passing (inline test removed)
+- Section order preservation code retained but no longer used (future-proofing)
+
 ## [v1.12.0] - 2025-11-19
 
 ### Changed

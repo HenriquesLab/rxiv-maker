@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from rxiv_maker.processors.template_processor import (
     generate_bibliography,
     generate_keywords,
@@ -137,40 +139,6 @@ Custom manuscript preparation content here.
         # Should contain the custom content, not the default acknowledgment
         assert "Custom manuscript preparation content here" in result
         assert "This manuscript was prepared using" not in result
-
-    def test_methods_placement_inline(self):
-        """Test that Methods appears inline (preserves authoring order) when methods_placement is inline."""
-        template_content = """<PY-RPL:MAIN-SECTION>
-<PY-RPL:RESULTS-SECTION>
-<PY-RPL:METHODS-AFTER-RESULTS>
-<PY-RPL:METHODS-AFTER-BIBLIOGRAPHY>"""
-        yaml_metadata = {"methods_placement": "inline"}
-        article_md = """## Introduction
-
-This is the introduction.
-
-## Methods
-
-This is the methods section.
-
-## Results
-
-This is the results section.
-"""
-
-        result = process_template_replacements(template_content, yaml_metadata, article_md)
-
-        # Methods should appear in MAIN-SECTION in authoring order (between Introduction and Results)
-        assert "\\section*{Methods}" in result
-        assert "This is the methods section" in result
-
-        # Verify order: Introduction should come before Methods in MAIN-SECTION
-        main_section_match = result.find("\\section*{Introduction}")
-        methods_match = result.find("\\section*{Methods}")
-        assert main_section_match < methods_match, "Introduction should appear before Methods in inline mode"
-
-        # Results should be in its own placeholder, not in MAIN-SECTION
-        assert "<PY-RPL:RESULTS-SECTION>" not in result or "\\section*{Results}" in result
 
     def test_methods_placement_after_results(self):
         """Test that Methods appears after Results when methods_placement is after_results."""
@@ -309,3 +277,101 @@ This is the methods section.
 
         # Verify Methods is not in MAIN-SECTION
         assert "\\section*{Introduction}" in result
+
+    @pytest.mark.parametrize(
+        "numeric_value,expected_string_value",
+        [
+            (1, "after_intro"),
+            (2, "after_results"),
+            (3, "after_discussion"),
+            (4, "after_bibliography"),
+        ],
+    )
+    def test_methods_placement_numeric_mapping(self, numeric_value, expected_string_value):
+        """Test that numeric values 1-4 correctly map to their string equivalents.
+
+        This test verifies the numeric mapping defined in template_processor.py:
+        - 1 → "after_intro"
+        - 2 → "after_results"
+        - 3 → "after_discussion"
+        - 4 → "after_bibliography"
+        """
+        # Test that numeric value produces same result as string value
+        template_content = """<PY-RPL:MAIN-SECTION>
+<PY-RPL:RESULTS-SECTION>
+<PY-RPL:METHODS-AFTER-RESULTS>
+<PY-RPL:METHODS-AFTER-DISCUSSION>
+<PY-RPL:METHODS-AFTER-BIBLIOGRAPHY>"""
+
+        yaml_metadata_numeric = {"methods_placement": numeric_value}
+        yaml_metadata_string = {"methods_placement": expected_string_value}
+
+        article_md = """## Introduction
+
+This is the introduction.
+
+## Methods
+
+This is the methods section.
+"""
+
+        result_numeric = process_template_replacements(template_content, yaml_metadata_numeric, article_md)
+        result_string = process_template_replacements(template_content, yaml_metadata_string, article_md)
+
+        # The numeric value should produce identical output to the string value
+        assert result_numeric == result_string, (
+            f"Numeric value {numeric_value} should map to '{expected_string_value}' and produce identical output"
+        )
+
+        # Both should contain the Methods section
+        assert "\\section*{Methods}" in result_numeric
+        assert "This is the methods section" in result_numeric
+
+    @pytest.mark.parametrize(
+        "invalid_value,expected_fallback",
+        [
+            (0, "after_bibliography"),  # Below valid range
+            (5, "after_bibliography"),  # Above valid range (was valid in v1.12.0)
+            (-1, "after_bibliography"),  # Negative value
+            (100, "after_bibliography"),  # Large invalid value
+            ("inline", "after_bibliography"),  # Removed option from v1.12.0
+            ("invalid", "after_bibliography"),  # Random invalid string
+        ],
+    )
+    def test_methods_placement_invalid_values_fallback(self, invalid_value, expected_fallback):
+        """Test that invalid methods_placement values fall back to after_bibliography with warning."""
+        template_content = """<PY-RPL:MAIN-SECTION>
+<PY-RPL:METHODS-AFTER-RESULTS>
+<PY-RPL:METHODS-AFTER-BIBLIOGRAPHY>"""
+        yaml_metadata = {"methods_placement": invalid_value}
+        article_md = """## Introduction
+
+This is the introduction.
+
+## Methods
+
+This is the methods section.
+"""
+
+        # Capture stderr to verify warning is emitted
+        import io
+        import sys
+
+        stderr_capture = io.StringIO()
+        old_stderr = sys.stderr
+        sys.stderr = stderr_capture
+
+        try:
+            result = process_template_replacements(template_content, yaml_metadata, article_md)
+
+            # Should fall back to after_bibliography (methods at the end)
+            assert "\\section*{Methods}" in result
+            assert "This is the methods section" in result
+
+            # Verify warning was emitted
+            warning_output = stderr_capture.getvalue()
+            assert "Warning: Invalid methods_placement value" in warning_output
+            assert "after_bibliography" in warning_output
+
+        finally:
+            sys.stderr = old_stderr

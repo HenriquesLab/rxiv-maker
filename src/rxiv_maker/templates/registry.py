@@ -134,8 +134,8 @@ keywords:
 bibliography: "03_REFERENCES.bib"
 
 # Methods section placement
-# Options: inline (preserve authoring order) | after_intro (after Introduction) | after_results (after Results) | after_discussion (after Discussion) | after_bibliography (after Bibliography, Nature Methods style)
-# Can use string values or numeric: 1=inline, 2=after_intro, 3=after_results, 4=after_discussion, 5=after_bibliography
+# Options: after_intro (after Introduction) | after_results (after Results) | after_discussion (after Discussion) | after_bibliography (after Bibliography, Nature Methods style)
+# Can use string values or numeric: 1=after_intro, 2=after_results, 3=after_discussion, 4=after_bibliography
 methods_placement: "after_bibliography"
 
 # Acknowledgment

@@ -1,13 +1,12 @@
 ## Introduction
 
-This is a test manuscript to verify the **methods_placement** configuration option in rxiv-maker v1.12.0.
+This is a test manuscript to verify the **methods_placement** configuration option in rxiv-maker v1.12.1.
 
-The five placement options are:
-1. **inline** (1) - Methods appears exactly where authored (preserves authoring order)
-2. **after_intro** (2) - Methods after Introduction (classic paper style)
-3. **after_results** (3) - Methods after Results, before Discussion
-4. **after_discussion** (4) - Methods after Discussion, before Bibliography
-5. **after_bibliography** (5) - Methods after Bibliography (Nature Methods style - **default**)
+The four placement options are:
+1. **after_intro** (1) - Methods after Introduction (classic paper style)
+2. **after_results** (2) - Methods after Results, before Discussion
+3. **after_discussion** (3) - Methods after Discussion, before Bibliography
+4. **after_bibliography** (4) - Methods after Bibliography (Nature Methods style - **default**)
 
 This manuscript has Methods authored between Introduction and Results. The placement in the final PDF depends on the `methods_placement` configuration setting.
 

@@ -376,14 +376,13 @@ class ConfigValidator:
                             {
                                 "type": "string",
                                 "enum": [
-                                    "inline",
                                     "after_intro",
                                     "after_results",
                                     "after_discussion",
                                     "after_bibliography",
                                 ],
                             },
-                            {"type": "integer", "minimum": 1, "maximum": 5},
+                            {"type": "integer", "minimum": 1, "maximum": 4},
                         ]
                     },
                     "bibliography": {"type": "string"},
