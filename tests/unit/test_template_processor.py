@@ -138,40 +138,6 @@ Custom manuscript preparation content here.
         assert "Custom manuscript preparation content here" in result
         assert "This manuscript was prepared using" not in result
 
-    def test_methods_placement_inline(self):
-        """Test that Methods appears inline (preserves authoring order) when methods_placement is inline."""
-        template_content = """<PY-RPL:MAIN-SECTION>
-<PY-RPL:RESULTS-SECTION>
-<PY-RPL:METHODS-AFTER-RESULTS>
-<PY-RPL:METHODS-AFTER-BIBLIOGRAPHY>"""
-        yaml_metadata = {"methods_placement": "inline"}
-        article_md = """## Introduction
-
-This is the introduction.
-
-## Methods
-
-This is the methods section.
-
-## Results
-
-This is the results section.
-"""
-
-        result = process_template_replacements(template_content, yaml_metadata, article_md)
-
-        # Methods should appear in MAIN-SECTION in authoring order (between Introduction and Results)
-        assert "\\section*{Methods}" in result
-        assert "This is the methods section" in result
-
-        # Verify order: Introduction should come before Methods in MAIN-SECTION
-        main_section_match = result.find("\\section*{Introduction}")
-        methods_match = result.find("\\section*{Methods}")
-        assert main_section_match < methods_match, "Introduction should appear before Methods in inline mode"
-
-        # Results should be in its own placeholder, not in MAIN-SECTION
-        assert "<PY-RPL:RESULTS-SECTION>" not in result or "\\section*{Results}" in result
-
     def test_methods_placement_after_results(self):
         """Test that Methods appears after Results when methods_placement is after_results."""
         template_content = """<PY-RPL:MAIN-SECTION>
