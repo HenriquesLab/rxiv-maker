@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.12.2] - 2025-11-21
+
+### Fixed
+- **Competing interests placement**: Fixed bug where competing interests/conflicts of interest sections were appearing at end of Introduction instead of in proper location
+  - Competing interests now correctly appears after Acknowledgements and before Bibliography
+  - Both "Competing Interests" and "Conflicts of Interest" section titles are recognized
+  - Added section mapping in `src/rxiv_maker/converters/section_processor.py`
+  - Added template placeholder `<PY-RPL:COMPETING-INTERESTS-BLOCK>` in `src/tex/template.tex`
+  - Content wrapped in LaTeX `\begin{interests}...\end{interests}` environment
+  - Added 3 new tests in `tests/unit/test_template_processor.py` to verify proper placement
+- **DOI hyperlinks in bibliography**: Fixed bug where DOIs were not being converted to clickable hyperlinks
+  - Changed BST file to use `\href` command from hyperref package instead of undefined `\Url` command
+  - DOIs now display as clickable links that resolve to https://doi.org/{DOI}
+  - Fixed in `src/tex/style/rxiv_maker_style.bst:1294`
+
 ## [v1.12.1] - 2025-11-20
 
 ### Changed

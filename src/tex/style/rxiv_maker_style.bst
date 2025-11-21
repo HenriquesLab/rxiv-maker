@@ -1291,7 +1291,7 @@ FUNCTION {begin.bib}
   write$ newline$
   "  \providecommand{\doi}[1]{doi: #1}\else"
   write$ newline$
-  "  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi"
+  "  \providecommand{\doi}[1]{doi: \href{https://doi.org/#1}{#1}}\fi"
   write$ newline$
 }
 

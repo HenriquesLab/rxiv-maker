@@ -375,3 +375,77 @@ This is the methods section.
 
         finally:
             sys.stderr = old_stderr
+
+    def test_competing_interests_placement(self):
+        """Test that competing interests section appears in correct location."""
+        template_content = """<PY-RPL:MAIN-SECTION>
+<PY-RPL:ACKNOWLEDGEMENTS-BLOCK>
+<PY-RPL:COMPETING-INTERESTS-BLOCK>
+Bibliography goes here"""
+        yaml_metadata = {}
+        article_md = """## Introduction
+
+This is the introduction.
+
+## Acknowledgements
+
+We thank our funding sources.
+
+## Competing Interests
+
+The authors declare no competing interests.
+"""
+
+        result = process_template_replacements(template_content, yaml_metadata, article_md)
+
+        # Should contain competing interests section
+        assert "\\begin{interests}" in result
+        assert "The authors declare no competing interests" in result
+        assert "\\end{interests}" in result
+
+        # Verify it appears after acknowledgements and before bibliography
+        ack_pos = result.find("We thank our funding sources")
+        interests_pos = result.find("The authors declare no competing interests")
+        bib_pos = result.find("Bibliography goes here")
+
+        assert ack_pos < interests_pos, "Competing interests should appear after acknowledgements"
+        assert interests_pos < bib_pos, "Competing interests should appear before bibliography"
+
+    def test_competing_interests_alternative_title(self):
+        """Test that 'Conflicts of Interest' section title is also recognized."""
+        template_content = "<PY-RPL:MAIN-SECTION>\n<PY-RPL:COMPETING-INTERESTS-BLOCK>"
+        yaml_metadata = {}
+        article_md = """## Introduction
+
+This is the introduction.
+
+## Conflicts of Interest
+
+No conflicts of interest to declare.
+"""
+
+        result = process_template_replacements(template_content, yaml_metadata, article_md)
+
+        # Should contain competing interests section
+        assert "\\begin{interests}" in result
+        assert "No conflicts of interest to declare" in result
+        assert "\\end{interests}" in result
+
+    def test_competing_interests_empty(self):
+        """Test that template handles missing competing interests section gracefully."""
+        template_content = """<PY-RPL:MAIN-SECTION>
+<PY-RPL:COMPETING-INTERESTS-BLOCK>
+End of document"""
+        yaml_metadata = {}
+        article_md = """## Introduction
+
+This is the introduction.
+"""
+
+        result = process_template_replacements(template_content, yaml_metadata, article_md)
+
+        # Should not contain competing interests block when section is missing
+        assert "\\begin{interests}" not in result
+        assert "\\end{interests}" not in result
+        # But template should still be processed without errors
+        assert "End of document" in result
