@@ -479,6 +479,7 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
         "manuscript_preparation",
         "author_contributions",
         "acknowledgements",
+        "competing_interests",
         "funding",
     }
 
@@ -580,6 +581,16 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
     else:
         acknowledgements_block = ""
     template_content = template_content.replace("<PY-RPL:ACKNOWLEDGEMENTS-BLOCK>", acknowledgements_block)
+
+    # Competing Interests
+    competing_interests = content_sections.get("competing_interests", "").strip()
+    if competing_interests:
+        competing_interests_block = f"""\\begin{{interests}}
+{competing_interests}
+\\end{{interests}}"""
+    else:
+        competing_interests_block = ""
+    template_content = template_content.replace("<PY-RPL:COMPETING-INTERESTS-BLOCK>", competing_interests_block)
 
     template_content = template_content.replace("<PY-RPL:FUNDING>", content_sections.get("funding", ""))
     # Generate manuscript preparation content
