@@ -125,7 +125,7 @@ def map_section_title_to_key(title: SectionTitle) -> SectionKey:
         return "acknowledgements"
     elif "funding" in title_lower or "financial support" in title_lower or "grant" in title_lower:
         return "funding"
-    elif "competing interest" in title_lower or "conflict" in title_lower:
+    elif "competing interest" in title_lower or "conflict of interest" in title_lower or "conflicts of interest" in title_lower:
         return "competing_interests"
     else:
         # For other sections, return as lowercase with spaces replaced by underscores

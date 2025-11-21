@@ -449,3 +449,25 @@ This is the introduction.
         assert "\\end{interests}" not in result
         # But template should still be processed without errors
         assert "End of document" in result
+
+    def test_conflict_word_not_misidentified(self):
+        """Test that sections with 'conflict' but not 'conflict of interest' are not misidentified."""
+        template_content = """<PY-RPL:MAIN-SECTION>
+<PY-RPL:COMPETING-INTERESTS-BLOCK>"""
+        yaml_metadata = {}
+        article_md = """## Introduction
+
+This is the introduction.
+
+## Addressing Resource Conflicts
+
+This discusses resource conflicts in the study area.
+"""
+
+        result = process_template_replacements(template_content, yaml_metadata, article_md)
+
+        # "Addressing Resource Conflicts" should NOT be identified as competing interests
+        # It should appear in the main section instead (as a custom section)
+        assert "\\begin{interests}" not in result
+        assert "\\end{interests}" not in result
+        assert "resource conflicts in the study area" in result
