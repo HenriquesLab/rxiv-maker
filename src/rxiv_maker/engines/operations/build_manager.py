@@ -788,6 +788,60 @@ class BuildManager:
         except Exception:
             return False
 
+    def resolve_inline_dois(self) -> bool:
+        """Resolve inline DOIs in markdown files if enabled in config."""
+        try:
+            # Check if DOI resolution is enabled in manuscript config (00_CONFIG.yml)
+            import yaml
+
+            config_path = self.manuscript_dir / "00_CONFIG.yml"
+            if not config_path.exists():
+                self.log("No manuscript config found (00_CONFIG.yml), skipping DOI resolution", "DEBUG")
+                return True
+
+            with open(config_path, encoding="utf-8") as f:
+                config = yaml.safe_load(f)
+
+            enable_doi_resolution = config.get("enable_inline_doi_resolution", False)
+
+            if not enable_doi_resolution:
+                self.log("Inline DOI resolution disabled in config", "DEBUG")
+                return True
+
+            self.log("Resolving inline DOIs in markdown files...", "STEP")
+
+            # Import and use DOI resolver
+            from ...utils.doi_resolver import resolve_inline_dois
+
+            results = resolve_inline_dois(str(self.manuscript_dir), update_files=True)
+
+            # Log results
+            if results["total_dois_found"] > 0:
+                self.log(
+                    f"Found {results['total_dois_found']} DOI(s), "
+                    f"resolved {results['total_dois_resolved']}, "
+                    f"failed {results['total_dois_failed']}",
+                    "INFO",
+                )
+
+                if results["files_updated"] > 0:
+                    self.log(f"Updated {results['files_updated']} markdown file(s) with resolved citations", "INFO")
+
+                if results["total_dois_failed"] > 0:
+                    self.log(
+                        f"Warning: {results['total_dois_failed']} DOI(s) could not be resolved",
+                        "WARNING",
+                    )
+            else:
+                self.log("No inline DOIs found in markdown files", "DEBUG")
+
+            return True
+
+        except Exception as e:
+            # DOI resolution failure should not stop the build - just warn
+            self.log(f"DOI resolution failed (continuing anyway): {e}", "WARNING")
+            return True  # Return True to continue build
+
     def build(self) -> bool:
         """Execute the complete build process."""
         with create_operation("pdf_build", manuscript=self.manuscript_path) as op:
@@ -820,7 +874,10 @@ class BuildManager:
                 # Step 3: Execute manuscript code blocks (if any)
                 self.execute_manuscript_code()
 
-                # Step 4: Validation (after figures and code execution)
+                # Step 3.5: Resolve inline DOIs (if enabled)
+                self.resolve_inline_dois()
+
+                # Step 4: Validation (after figures, code execution, and DOI resolution)
                 if not self.validate_manuscript():
                     self.log("Build failed: Manuscript validation failed", "ERROR")
                     op.add_metadata("validation_passed", False)

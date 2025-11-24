@@ -348,8 +348,17 @@ class BibliographyAdder:
                 if date_parts:
                     year = str(date_parts[0])
 
-        # Clean and format
-        first_author = re.sub(r"[^\w]", "", first_author.lower())
+        # Clean and format - convert to ASCII-safe citation key
+        # First, normalize Unicode characters (convert é to e, etc.)
+        import unicodedata
+
+        first_author = first_author.lower()
+        # Normalize Unicode: NFD splits accented characters into base + accent
+        first_author = unicodedata.normalize("NFD", first_author)
+        # Remove accent marks (combining characters)
+        first_author = first_author.encode("ascii", "ignore").decode("ascii")
+        # Remove any remaining non-alphanumeric characters
+        first_author = re.sub(r"[^a-z0-9]", "", first_author)
 
         return f"{first_author}{year}"
 

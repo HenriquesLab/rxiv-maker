@@ -20,6 +20,8 @@ keywords:
 methods_placement: 2
 
 acknowledge_rxiv_maker: false
+citation_style: "numbered"
+enable_inline_doi_resolution: false
 
 bibliography:
   file: "03_REFERENCES.bib"

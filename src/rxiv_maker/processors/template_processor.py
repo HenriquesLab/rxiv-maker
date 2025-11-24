@@ -323,6 +323,16 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
             r"\documentclass[times, twoside, watermark]{rxiv_maker_style}",
         )
 
+    # Process citation style
+    # Note: Must use \def (not \renewcommand) since this runs BEFORE \documentclass loads the class
+    citation_style = yaml_metadata.get("citation_style", "numbered")
+    if citation_style == "author-date":
+        citation_style_cmd = "\\def\\rxivcitationstyle{author-date}\n"
+    else:
+        # Default to numbered (no need to set explicitly as it's the default)
+        citation_style_cmd = ""
+    template_content = template_content.replace("<PY-RPL:CITATION-STYLE>", citation_style_cmd)
+
     # Process line numbers
     txt = ""
     if "use_line_numbers" in yaml_metadata:

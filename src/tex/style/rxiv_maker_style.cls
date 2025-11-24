@@ -480,7 +480,25 @@
 
 % %% bibliography
 \RequirePackage{chapterbib}
-\RequirePackage[sectionbib,numbers,sort&compress,merge,round]{natbib}
+
+% Citation style configuration
+% Can be overridden by defining \rxivcitationstyle before loading the class
+\providecommand{\rxivcitationstyle}{numbers}
+
+% Conditionally load natbib with appropriate citation style
+% Need to expand \rxivcitationstyle and compare with string
+\def\tempauthoryear{author-date}
+
+\edef\expandedstyle{\rxivcitationstyle}
+
+\ifx\expandedstyle\tempauthoryear
+  % Author-date citation style
+  \RequirePackage[sectionbib,authoryear,sort&compress,merge,round]{natbib}
+\else
+  % Numbered citation style (default)
+  \RequirePackage[sectionbib,numbers,sort&compress,merge,round]{natbib}
+\fi
+
 \setlength{\bibsep}{0.0pt}
 \bibliographystyle{rxiv_maker_style}
 \renewcommand{\bibsection}{} % Remove header

@@ -386,6 +386,8 @@ class ConfigValidator:
                         ]
                     },
                     "bibliography": {"type": "string"},
+                    "citation_style": {"type": "string", "enum": ["numbered", "author-date"]},
+                    "enable_inline_doi_resolution": {"type": "boolean"},
                     "style": {"type": "string", "enum": ["nature", "science", "plos", "ieee"]},
                     "language": {"type": "string", "enum": ["en", "es", "pt", "fr", "de"]},
                     "license": {"type": "string"},

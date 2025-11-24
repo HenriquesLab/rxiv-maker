@@ -49,5 +49,7 @@ affiliations:
     full_name: "Second Institution Name"
     location: "City, Country"
 
-# Bibliography file reference
+# Bibliography and citation configuration
 bibliography: 03_REFERENCES.bib        # Path to BibTeX bibliography file
+citation_style: "numbered"             # Citation style: "numbered" or "author-date"
+enable_inline_doi_resolution: false    # Auto-resolve inline DOIs to citations (replaces DOIs with @citationkey in markdown)

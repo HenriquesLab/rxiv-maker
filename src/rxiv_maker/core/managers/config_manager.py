@@ -340,6 +340,8 @@ class ConfigManager:
             "validation": {"enabled": True, "strict": False, "skip_doi_check": False},
             "figures": {"directory": "FIGURES", "generate": True, "formats": ["png", "svg"]},
             "bibliography": {"file": "03_REFERENCES.bib", "style": "nature"},
+            "citation_style": "numbered",
+            "enable_inline_doi_resolution": False,
             "cache": {"enabled": True, "ttl_hours": 24, "directory": None},
             "version": "1.0",
             "acknowledge_rxiv_maker": True,
