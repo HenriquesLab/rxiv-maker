@@ -63,7 +63,7 @@ click.rich_click.COMMAND_GROUPS = {
         },
         {
             "name": "Information",
-            "commands": ["version", "upgrade"],
+            "commands": ["version", "changelog", "upgrade"],
         },
     ]
 }
@@ -223,6 +223,7 @@ main.add_command(commands.bibliography)
 main.add_command(commands.track_changes)
 main.add_command(commands.setup)
 main.add_command(commands.version)
+main.add_command(commands.changelog)
 main.add_command(commands.upgrade)
 main.add_command(commands.cache, name="cache")
 main.add_command(commands.config, name="config")

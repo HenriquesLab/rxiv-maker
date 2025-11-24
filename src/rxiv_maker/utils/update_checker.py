@@ -21,6 +21,7 @@ from rich.console import Console
 from rxiv_maker.utils.unicode_safe import get_safe_icon, safe_print
 
 from ..core.cache.cache_utils import get_manuscript_cache_dir
+from .changelog_parser import fetch_and_format_changelog
 from .homebrew_checker import check_homebrew_update
 from .install_detector import detect_install_method, get_friendly_install_name, get_upgrade_command
 
@@ -238,12 +239,60 @@ class UpdateChecker:
         package_icon = get_safe_icon("📦", "[UPDATE]")
         notification_lines = [
             f"{package_icon} Update available: {self.package_name} v{current} → v{latest}",
-            f"   Installed via: {install_name}",
-            f"   Run: {upgrade_cmd}",
-            f"   Release notes: https://github.com/henriqueslab/rxiv-maker/releases/tag/v{latest}",
         ]
 
+        # Try to fetch and add changelog summary
+        changelog_summary = self._get_changelog_summary(current, latest)
+        if changelog_summary:
+            notification_lines.append("")  # Blank line
+            notification_lines.append(changelog_summary)
+
+        # Add installation and upgrade instructions
+        notification_lines.extend([
+            "",  # Blank line
+            f"Installed via: {install_name}",
+            f"Run: {upgrade_cmd}",
+            "",
+            f"Full details: https://github.com/henriqueslab/rxiv-maker/releases/tag/v{latest}",
+        ])
+
         return "\n".join(notification_lines)
+
+    def _get_changelog_summary(self, current: str, latest: str) -> str | None:
+        """Fetch and format changelog summary for version range.
+
+        Args:
+            current: Current version
+            latest: Latest version
+
+        Returns:
+            Formatted changelog summary or None if unavailable
+        """
+        # Check if we have a cached changelog summary
+        cache_data = self._load_cache()
+        changelog_cache_key = f"changelog_{current}_{latest}"
+
+        if cache_data and changelog_cache_key in cache_data:
+            return cache_data[changelog_cache_key]
+
+        # Fetch changelog summary (with highlights_per_version=3 for brief summary)
+        summary, error = fetch_and_format_changelog(
+            current_version=current,
+            latest_version=latest,
+            highlights_per_version=3,
+        )
+
+        # Cache the result (even if None/error, to avoid repeated failed attempts)
+        if cache_data:
+            cache_data[changelog_cache_key] = summary
+            self._save_cache(cache_data)
+
+        if error:
+            # Log debug info but don't show error to user
+            # Gracefully degrade to basic notification
+            return None
+
+        return summary
 
     def show_update_notification(self) -> None:
         """Show update notification if available."""

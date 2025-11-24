@@ -9,11 +9,14 @@ import re
 from .types import MarkdownContent, SectionDict, SectionKey, SectionOrder, SectionTitle
 
 
-def extract_content_sections(article_md: MarkdownContent) -> tuple[SectionDict, SectionOrder]:
+def extract_content_sections(
+    article_md: MarkdownContent, citation_style: str = "numbered"
+) -> tuple[SectionDict, SectionOrder]:
     """Extract content sections from markdown file and convert to LaTeX.
 
     Args:
         article_md: Either markdown content as string or path to markdown file
+        citation_style: Citation style to use ("numbered" or "author-date")
 
     Returns:
         Tuple of (dictionary mapping section keys to LaTeX content, ordered list of section keys)
@@ -48,7 +51,7 @@ def extract_content_sections(article_md: MarkdownContent) -> tuple[SectionDict, 
     if not section_matches:
         # Check if entire content is supplementary
         is_supplementary = "supplementary" in content.lower()
-        sections["main"] = convert_markdown_to_latex(content, is_supplementary)
+        sections["main"] = convert_markdown_to_latex(content, is_supplementary, citation_style)
         section_order.append("main")
         return sections, section_order
 
@@ -58,7 +61,7 @@ def extract_content_sections(article_md: MarkdownContent) -> tuple[SectionDict, 
     if main_content:
         # Check if main content is supplementary
         is_main_supplementary = "supplementary" in main_content.lower()
-        sections["main"] = convert_markdown_to_latex(main_content, is_main_supplementary)
+        sections["main"] = convert_markdown_to_latex(main_content, is_main_supplementary, citation_style)
         section_order.append("main")
 
     # Extract each section
@@ -77,7 +80,7 @@ def extract_content_sections(article_md: MarkdownContent) -> tuple[SectionDict, 
         # Check if this is supplementary content (check both title and content)
         is_supplementary = "supplementary" in section_title.lower() or "supplementary" in section_content.lower()
 
-        section_content_latex = convert_markdown_to_latex(section_content, is_supplementary)
+        section_content_latex = convert_markdown_to_latex(section_content, is_supplementary, citation_style)
 
         # Map section titles to our standard keys
         section_key = map_section_title_to_key(section_title)

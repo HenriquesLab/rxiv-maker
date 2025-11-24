@@ -4,6 +4,7 @@ from .arxiv import arxiv
 from .bibliography import bibliography
 from .build import build as pdf
 from .cache_management import cache_group as cache
+from .changelog import changelog
 from .check_installation import check_installation
 from .clean import clean
 from .completion import completion_cmd
@@ -28,6 +29,7 @@ __all__ = [
     "arxiv",
     "bibliography",
     "cache",
+    "changelog",
     "config",
     "pdf",
     "check_installation",

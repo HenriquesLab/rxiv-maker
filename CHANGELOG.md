@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.13.1] - 2025-11-24
+
+### Fixed
+- **Author-date citation formatting**: Fixed missing parentheses in author-date citations
+  - Citations now correctly display as "(Author, year)" instead of "Author year"
+  - Bracketed citations `[@cite]` use `\citep{}` command (parenthetical format)
+  - Inline citations `@cite` use `\citet{}` command (textual format)
+  - Updated citation processor to pass citation style through entire conversion pipeline
+  - Modified `src/rxiv_maker/converters/citation_processor.py` to use appropriate natbib commands
+  - Fixed in `src/rxiv_maker/converters/md2tex.py`, `table_processor.py`, and `section_processor.py`
+
 ## [v1.13.0] - 2025-11-24
 
 ### Added

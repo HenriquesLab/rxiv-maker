@@ -42,6 +42,7 @@ def convert_tables_to_latex(
     text: MarkdownContent,
     protected_backtick_content: ProtectedContent | None = None,
     is_supplementary: bool = False,
+    citation_style: str = "numbered",
 ) -> LatexContent:
     r"""Convert markdown tables to LaTeX table environments.
 
@@ -49,6 +50,7 @@ def convert_tables_to_latex(
         text: The text containing markdown tables
         protected_backtick_content: Dict of protected backtick content
         is_supplementary: If True, enables supplementary content processing
+        citation_style: Citation style to use ("numbered" or "author-date")
 
     Returns:
         Text with tables converted to LaTeX format
@@ -151,6 +153,7 @@ def convert_tables_to_latex(
                 protected_backtick_content,
                 rotation_angle,
                 is_supplementary,
+                citation_style,
             )
             result_lines.extend(latex_table.split("\n"))
 
@@ -188,6 +191,7 @@ def generate_latex_table(
     protected_backtick_content: ProtectedContent | None = None,
     rotation_angle: int | None = None,
     is_supplementary: bool = False,
+    citation_style: str = "numbered",
 ) -> LatexContent:
     """Generate LaTeX table from headers and data rows.
 
@@ -202,6 +206,7 @@ def generate_latex_table(
         protected_backtick_content: Protected backtick content dictionary
         rotation_angle: Optional rotation angle for table
         is_supplementary: Whether this is a supplementary table
+        citation_style: Citation style to use ("numbered" or "author-date")
 
     Returns:
         Complete LaTeX table environment as string
@@ -260,6 +265,7 @@ def generate_latex_table(
                 is_code_example_column,
                 is_header=True,
                 protected_backtick_content=protected_backtick_content,
+                citation_style=citation_style,
             )
         )
 
@@ -276,6 +282,7 @@ def generate_latex_table(
                     is_code_example_column,
                     is_header=False,
                     protected_backtick_content=protected_backtick_content,
+                    citation_style=citation_style,
                 )
             )
         # For Markdown Syntax table, ensure the LaTeX Equivalent column (index 1)
@@ -384,6 +391,7 @@ def _format_table_cell(
     is_markdown_example_column: bool = False,
     is_header: bool = False,
     protected_backtick_content: ProtectedContent | None = None,
+    citation_style: str = "numbered",
 ) -> str:
     """Format a table cell for LaTeX output.
 
@@ -392,6 +400,7 @@ def _format_table_cell(
         is_markdown_example_column: Whether this is a markdown syntax example column
         is_header: Whether this is a header cell
         protected_backtick_content: Protected backtick content dictionary
+        citation_style: Citation style to use ("numbered" or "author-date")
 
     Returns:
         Formatted cell content for LaTeX
@@ -408,7 +417,7 @@ def _format_table_cell(
         return _format_markdown_syntax_cell(cell)
 
     # Regular cell formatting (including headers)
-    return _format_regular_table_cell(cell)
+    return _format_regular_table_cell(cell, citation_style)
 
 
 def _format_markdown_syntax_cell(cell: str) -> str:
@@ -459,8 +468,16 @@ def _format_markdown_syntax_cell(cell: str) -> str:
     return "".join(parts)
 
 
-def _format_regular_table_cell(cell: str) -> str:
-    """Format a regular table cell with markdown processing."""
+def _format_regular_table_cell(cell: str, citation_style: str = "numbered") -> str:
+    """Format a regular table cell with markdown processing.
+
+    Args:
+        cell: Table cell content
+        citation_style: Citation style to use ("numbered" or "author-date")
+
+    Returns:
+        Formatted cell content
+    """
 
     # First, process code blocks to protect them from markdown formatting
     def process_code_in_table(match: re.Match[str]) -> str:
@@ -501,7 +518,7 @@ def _format_regular_table_cell(cell: str) -> str:
     cell = _apply_formatting_outside_texttt(cell)
 
     # Process citations after formatting but before escaping
-    cell = convert_citations_to_latex(cell)
+    cell = convert_citations_to_latex(cell, citation_style)
 
     # Escape remaining special characters outside LaTeX commands
     cell = _escape_outside_latex_commands(cell)

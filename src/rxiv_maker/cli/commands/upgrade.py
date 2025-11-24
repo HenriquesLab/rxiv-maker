@@ -8,11 +8,60 @@ import click
 from rich.console import Console
 
 from ... import __version__
+from ...utils.changelog_parser import fetch_and_format_changelog
 from ...utils.install_detector import detect_install_method, get_friendly_install_name, get_upgrade_command
 from ...utils.update_checker import force_update_check
 from ..interactive import prompt_confirm
 
 console = Console()
+
+
+def _display_changelog(console: Console, current_version: str, latest_version: str) -> None:
+    """Display changelog summary for version range.
+
+    Args:
+        console: Rich console for output
+        current_version: Current installed version
+        latest_version: Latest available version
+    """
+    console.print("\n📋 What's changing:", style="bold blue")
+
+    # Fetch changelog summary
+    summary, error = fetch_and_format_changelog(
+        current_version=current_version,
+        latest_version=latest_version,
+        highlights_per_version=3,
+    )
+
+    if error:
+        console.print("   Unable to fetch changelog details", style="dim yellow")
+        console.print(
+            f"   View online: https://github.com/henriqueslab/rxiv-maker/releases/tag/v{latest_version}",
+            style="dim blue",
+        )
+        return
+
+    if summary:
+        # Display the changelog with proper formatting
+        for line in summary.split("\n"):
+            if line.startswith("⚠️"):
+                # Highlight breaking changes prominently
+                console.print(line, style="bold red")
+            elif line.startswith("What's New:"):
+                console.print(line, style="bold cyan")
+            elif line.startswith("  v"):
+                # Version headers
+                console.print(line, style="bold yellow")
+            elif line.strip().startswith(("✨", "🔄", "🐛", "🗑️", "🔒", "📝")):
+                # Change items
+                console.print(f"   {line.strip()}", style="white")
+            elif line.strip().startswith("•"):
+                # Breaking change items
+                console.print(f"   {line.strip()}", style="yellow")
+            elif line.strip():
+                console.print(f"   {line}", style="dim")
+    else:
+        console.print("   No detailed changelog available", style="dim")
 
 
 @click.command()
@@ -49,9 +98,12 @@ def upgrade(ctx: click.Context, yes: bool, check_only: bool) -> None:
 
         console.print(f"📦 Update available: {__version__} → {latest_version}", style="green")
 
+        # Fetch and display changelog
+        _display_changelog(console, __version__, latest_version)
+
         if check_only:
             upgrade_cmd = get_upgrade_command(install_method)
-            console.print(f"   Run: {upgrade_cmd}", style="blue")
+            console.print(f"\n   Run: {upgrade_cmd}", style="blue")
             sys.exit(0)
 
     except Exception as e:
@@ -109,6 +161,14 @@ def upgrade(ctx: click.Context, yes: bool, check_only: bool) -> None:
 
         console.print("\n✅ Upgrade completed successfully!", style="green")
         console.print("   Run 'rxiv --version' to verify the installation", style="blue")
+
+        # Show what's new in the upgraded version
+        if latest_version != "latest":
+            console.print(f"\n🎉 What's new in v{latest_version}:", style="bold green")
+            console.print(
+                f"   View full changelog: https://github.com/henriqueslab/rxiv-maker/releases/tag/v{latest_version}",
+                style="blue",
+            )
 
     except subprocess.CalledProcessError as e:
         console.print(f"\n❌ Upgrade failed: {e}", style="red")

@@ -305,3 +305,37 @@ For maintainers doing their first release:
 
 **Last Updated**: November 2025
 **Maintainer**: Rxiv-Maker Team
+
+
+## 📋 CHANGELOG.md Format Requirements
+
+The changelog parser (used by `rxiv changelog` and update notifications) requires a specific format:
+
+**Version Header Format:**
+```markdown
+## [vX.Y.Z] - YYYY-MM-DD
+```
+
+**Section Headers (must be level 3):**
+- `### Added`
+- `### Changed` 
+- `### Fixed`
+- `### Removed`
+- `### Documentation`
+- `### Security`
+
+**Breaking Changes:**
+Mark breaking changes prominently:
+```markdown
+### Changed
+- **BREAKING**: Description of breaking change
+```
+
+Or use warning emoji:
+```markdown
+### Security
+- ⚠️ Description of security issue
+```
+
+**Important:** The parser depends on this format to extract and display changelog information to users. Changes to the format may break the `rxiv changelog` command and update notifications.
+

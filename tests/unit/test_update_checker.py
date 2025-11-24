@@ -492,3 +492,213 @@ class TestInstallDetectionIntegration:
             # Verify cache was updated
             cache_data = checker._load_cache()
             assert cache_data["latest_version"] == "1.2.0"
+
+
+class TestUpdateCheckerChangelogIntegration:
+    """Tests for changelog integration in update notifications."""
+
+    package_name = "rxiv-maker"
+    current_version = "1.12.0"
+
+    @patch("rxiv_maker.utils.update_checker.fetch_and_format_changelog")
+    @patch("rxiv_maker.utils.update_checker.detect_install_method")
+    def test_update_notification_includes_changelog(
+        self, mock_detect, mock_changelog, tmp_path
+    ):
+        """Test that update notification includes changelog summary."""
+        from rxiv_maker.utils.update_checker import UpdateChecker
+
+        mock_detect.return_value = "pip"
+        mock_changelog.return_value = (
+            "⚠️  BREAKING CHANGES:\n  • Config format changed\n\nWhat's New:\n  ✨ New feature",
+            None,
+        )
+
+        cache_dir = tmp_path / "cache"
+        cache_dir.mkdir()
+
+        checker = UpdateChecker(self.package_name, self.current_version)
+        checker.cache_dir = cache_dir
+        checker.cache_file = cache_dir / "update_cache.json"
+
+        # Set up cache with update available
+        cache_data = {
+            "last_check": datetime.now().isoformat(),
+            "latest_version": "1.13.0",
+            "current_version": self.current_version,
+            "update_available": True,
+        }
+        checker._save_cache(cache_data)
+
+        # Get notification
+        notification = checker.get_update_notification()
+
+        assert notification is not None
+        assert "v1.12.0 → v1.13.0" in notification
+        assert "BREAKING CHANGES" in notification
+        assert "New feature" in notification
+        mock_changelog.assert_called_once()
+
+    @patch("rxiv_maker.utils.update_checker.fetch_and_format_changelog")
+    @patch("rxiv_maker.utils.update_checker.detect_install_method")
+    def test_update_notification_without_changelog_on_error(
+        self, mock_detect, mock_changelog, tmp_path
+    ):
+        """Test that notification works even if changelog fetch fails."""
+        from rxiv_maker.utils.update_checker import UpdateChecker
+
+        mock_detect.return_value = "pip"
+        mock_changelog.return_value = (None, "Network error")
+
+        cache_dir = tmp_path / "cache"
+        cache_dir.mkdir()
+
+        checker = UpdateChecker(self.package_name, self.current_version)
+        checker.cache_dir = cache_dir
+        checker.cache_file = cache_dir / "update_cache.json"
+
+        # Set up cache with update available
+        cache_data = {
+            "last_check": datetime.now().isoformat(),
+            "latest_version": "1.13.0",
+            "current_version": self.current_version,
+            "update_available": True,
+        }
+        checker._save_cache(cache_data)
+
+        # Get notification
+        notification = checker.get_update_notification()
+
+        assert notification is not None
+        assert "v1.12.0 → v1.13.0" in notification
+        # Should still show basic notification without changelog
+        assert "pip install --upgrade" in notification
+
+    @patch("rxiv_maker.utils.update_checker.fetch_and_format_changelog")
+    @patch("rxiv_maker.utils.update_checker.detect_install_method")
+    def test_changelog_caching(self, mock_detect, mock_changelog, tmp_path):
+        """Test that changelog is cached to avoid repeated fetches."""
+        from rxiv_maker.utils.update_checker import UpdateChecker
+
+        mock_detect.return_value = "pip"
+        mock_changelog.return_value = ("What's New:\n  ✨ Feature", None)
+
+        cache_dir = tmp_path / "cache"
+        cache_dir.mkdir()
+
+        checker = UpdateChecker(self.package_name, self.current_version)
+        checker.cache_dir = cache_dir
+        checker.cache_file = cache_dir / "update_cache.json"
+
+        # Set up cache with update available
+        cache_data = {
+            "last_check": datetime.now().isoformat(),
+            "latest_version": "1.13.0",
+            "current_version": self.current_version,
+            "update_available": True,
+        }
+        checker._save_cache(cache_data)
+
+        # First call should fetch changelog
+        notification1 = checker.get_update_notification()
+        assert mock_changelog.call_count == 1
+
+        # Second call should use cached changelog
+        notification2 = checker.get_update_notification()
+        # Should still be 1, not 2, because it's cached
+        assert mock_changelog.call_count == 1
+
+        # Both notifications should be identical
+        assert notification1 == notification2
+
+    @patch("rxiv_maker.utils.update_checker.fetch_and_format_changelog")
+    @patch("rxiv_maker.utils.update_checker.detect_install_method")
+    def test_changelog_multi_version_update(
+        self, mock_detect, mock_changelog, tmp_path
+    ):
+        """Test changelog for multi-version updates."""
+        from rxiv_maker.utils.update_checker import UpdateChecker
+
+        mock_detect.return_value = "pip"
+        # Simulate multi-version changelog
+        multi_version_summary = """⚠️  BREAKING CHANGES:
+  • Breaking change in v1.12.0
+
+What's New:
+
+  v1.13.0 (2025-11-24):
+    ✨ Citation styles
+    ✨ DOI resolution
+
+  v1.12.1 (2025-11-20):
+    🐛 Bug fixes
+
+  v1.12.0 (2025-11-19):
+    ✨ New features
+"""
+        mock_changelog.return_value = (multi_version_summary, None)
+
+        cache_dir = tmp_path / "cache"
+        cache_dir.mkdir()
+
+        checker = UpdateChecker(self.package_name, "1.11.0")  # Older version
+        checker.cache_dir = cache_dir
+        checker.cache_file = cache_dir / "update_cache.json"
+
+        # Set up cache with update available
+        cache_data = {
+            "last_check": datetime.now().isoformat(),
+            "latest_version": "1.13.0",
+            "current_version": "1.11.0",
+            "update_available": True,
+        }
+        checker._save_cache(cache_data)
+
+        # Get notification
+        notification = checker.get_update_notification()
+
+        assert notification is not None
+        assert "v1.11.0 → v1.13.0" in notification
+        assert "v1.13.0" in notification
+        assert "v1.12.1" in notification
+        assert "v1.12.0" in notification
+        assert "BREAKING CHANGES" in notification
+
+    @patch("rxiv_maker.utils.update_checker.fetch_and_format_changelog")
+    @patch("rxiv_maker.utils.update_checker.detect_install_method")
+    def test_changelog_with_breaking_changes_prominence(
+        self, mock_detect, mock_changelog, tmp_path
+    ):
+        """Test that breaking changes are prominently displayed."""
+        from rxiv_maker.utils.update_checker import UpdateChecker
+
+        mock_detect.return_value = "pip"
+        mock_changelog.return_value = (
+            "⚠️  BREAKING CHANGES:\n  • API changed\n  • Config format changed\n\nWhat's New:\n  ✨ Features",
+            None,
+        )
+
+        cache_dir = tmp_path / "cache"
+        cache_dir.mkdir()
+
+        checker = UpdateChecker(self.package_name, self.current_version)
+        checker.cache_dir = cache_dir
+        checker.cache_file = cache_dir / "update_cache.json"
+
+        # Set up cache with update available
+        cache_data = {
+            "last_check": datetime.now().isoformat(),
+            "latest_version": "1.13.0",
+            "current_version": self.current_version,
+            "update_available": True,
+        }
+        checker._save_cache(cache_data)
+
+        # Get notification
+        notification = checker.get_update_notification()
+
+        assert notification is not None
+        # Breaking changes should appear before "What's New"
+        breaking_pos = notification.index("BREAKING")
+        whats_new_pos = notification.index("What's New")
+        assert breaking_pos < whats_new_pos

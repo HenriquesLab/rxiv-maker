@@ -159,6 +159,9 @@ def generate_supplementary_tex(output_dir, yaml_metadata=None, manuscript_path=N
     # Parse and separate content into sections
     sections = parse_supplementary_sections(supplementary_content)
 
+    # Get citation style from metadata (default to "numbered")
+    citation_style = yaml_metadata.get("citation_style", "numbered") if yaml_metadata else "numbered"
+
     # Convert each section to LaTeX separately
     tables_latex = ""
     notes_latex = ""
@@ -171,7 +174,9 @@ def generate_supplementary_tex(output_dir, yaml_metadata=None, manuscript_path=N
         # Convert section headers to regular LaTeX sections
         tables_content = re.sub(r"^## (.+)$", r"\\section*{\1}", tables_content, flags=re.MULTILINE)
 
-        tables_latex = "% Supplementary Tables\n\n" + convert_markdown_to_latex(tables_content, is_supplementary=True)
+        tables_latex = "% Supplementary Tables\n\n" + convert_markdown_to_latex(
+            tables_content, is_supplementary=True, citation_style=citation_style
+        )
 
     if sections["notes"]:
         # Process notes section with special handling for section headers
@@ -190,7 +195,9 @@ def generate_supplementary_tex(output_dir, yaml_metadata=None, manuscript_path=N
 
 """
         notes_latex = (
-            "% Supplementary Notes\n" + note_setup + convert_markdown_to_latex(notes_content, is_supplementary=True)
+            "% Supplementary Notes\n"
+            + note_setup
+            + convert_markdown_to_latex(notes_content, is_supplementary=True, citation_style=citation_style)
         )
 
     if sections["figures"]:
@@ -201,7 +208,7 @@ def generate_supplementary_tex(output_dir, yaml_metadata=None, manuscript_path=N
         figures_content = re.sub(r"^## (.+)$", r"\\section*{\1}", figures_content, flags=re.MULTILINE)
 
         figures_latex = "% Supplementary Figures\n\n" + convert_markdown_to_latex(
-            figures_content, is_supplementary=True
+            figures_content, is_supplementary=True, citation_style=citation_style
         )
 
     # Combine sections in proper order
@@ -421,7 +428,9 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
     template_content = template_content.replace("<PY-RPL:BIBLIOGRAPHY>", bibliography_section)
 
     # Extract content sections from markdown
-    content_sections, section_order = extract_content_sections(article_md)
+    # Get citation style from metadata
+    citation_style = yaml_metadata.get("citation_style", "numbered")
+    content_sections, section_order = extract_content_sections(article_md, citation_style)
 
     # Replace content placeholders with extracted sections
     template_content = template_content.replace("<PY-RPL:ABSTRACT>", content_sections.get("abstract", ""))

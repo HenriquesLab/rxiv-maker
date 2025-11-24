@@ -300,6 +300,8 @@ rxiv config                # Interactive configuration menu
 
 # Maintenance
 rxiv upgrade               # Upgrade to latest version
+rxiv changelog             # View changelog and release notes
+rxiv changelog --recent 5  # View last 5 versions
 ```
 
 ### 📂 Repository Management

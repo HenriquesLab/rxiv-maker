@@ -10,15 +10,25 @@ import re
 from .types import CitationKey, LatexContent, MarkdownContent, ProtectedContent
 
 
-def convert_citations_to_latex(text: MarkdownContent) -> LatexContent:
+def convert_citations_to_latex(text: MarkdownContent, citation_style: str = "numbered") -> LatexContent:
     """Convert markdown citations to LaTeX format.
 
     Args:
         text: Text containing markdown citations
+        citation_style: Citation style to use ("numbered" or "author-date")
 
     Returns:
         Text with citations converted to LaTeX format
     """
+    # Choose LaTeX citation commands based on style
+    # For numbered: use \cite{} for all citations
+    # For author-date: use \citep{} for bracketed (parenthetical) and \citet{} for inline (textual)
+    if citation_style == "author-date":
+        bracketed_cmd = "citep"  # Parenthetical: (Author, year)
+        inline_cmd = "citet"  # Textual: Author (year)
+    else:  # numbered (default)
+        bracketed_cmd = "cite"
+        inline_cmd = "cite"
 
     # Handle bracketed multiple citations like [@citation1;@citation2]
     def process_multiple_citations(match: re.Match[str]) -> str:
@@ -30,7 +40,7 @@ def convert_citations_to_latex(text: MarkdownContent) -> LatexContent:
             clean_cite = cite.strip().lstrip("@").strip()
             if clean_cite:
                 citations.append(clean_cite)
-        return "\\cite{" + ",".join(citations) + "}"
+        return f"\\{bracketed_cmd}{{{','.join(citations)}}}"
 
     text = re.sub(r"\[(@[^]]+)\]", process_multiple_citations, text)
 
@@ -47,7 +57,7 @@ def convert_citations_to_latex(text: MarkdownContent) -> LatexContent:
     # Handle single citations like @citation_key (but not figure/equation references)
     # Allow alphanumeric, underscore, and hyphen in citation keys
     # Exclude figure and equation references by not matching @fig: or @eq: patterns
-    text = re.sub(r"@(?!fig:|eq:)([a-zA-Z0-9_-]+)", r"\\cite{\1}", text)
+    text = re.sub(r"@(?!fig:|eq:)([a-zA-Z0-9_-]+)", rf"\\{inline_cmd}{{\1}}", text)
 
     # Restore protected email patterns
     for i, pattern in enumerate(email_patterns):
@@ -57,13 +67,14 @@ def convert_citations_to_latex(text: MarkdownContent) -> LatexContent:
 
 
 def process_citations_outside_tables(
-    content: MarkdownContent, protected_markdown_tables: ProtectedContent
+    content: MarkdownContent, protected_markdown_tables: ProtectedContent, citation_style: str = "numbered"
 ) -> LatexContent:
     """Process citations only outside of protected markdown table blocks.
 
     Args:
         content: Content to process
         protected_markdown_tables: Dictionary of protected table content
+        citation_style: Citation style to use ("numbered" or "author-date")
 
     Returns:
         Content with citations processed outside tables
@@ -73,7 +84,7 @@ def process_citations_outside_tables(
 
     if not table_placeholders:
         # No protected tables, process normally
-        return process_citations_in_text(content)
+        return process_citations_in_text(content, citation_style)
 
     # Split content by table placeholders and only process non-protected parts
     parts = [content]
@@ -98,20 +109,30 @@ def process_citations_outside_tables(
             processed_parts.append(part)
         else:
             # This is regular text - process citations
-            processed_parts.append(process_citations_in_text(part))
+            processed_parts.append(process_citations_in_text(part, citation_style))
 
     return "".join(processed_parts)
 
 
-def process_citations_in_text(text: MarkdownContent) -> LatexContent:
+def process_citations_in_text(text: MarkdownContent, citation_style: str = "numbered") -> LatexContent:
     """Process citations in regular text content.
 
     Args:
         text: Text content to process
+        citation_style: Citation style to use ("numbered" or "author-date")
 
     Returns:
         Text with citations converted to LaTeX
     """
+    # Choose LaTeX citation commands based on style
+    # For numbered: use \cite{} for all citations
+    # For author-date: use \citep{} for bracketed (parenthetical) and \citet{} for inline (textual)
+    if citation_style == "author-date":
+        bracketed_cmd = "citep"  # Parenthetical: (Author, year)
+        inline_cmd = "citet"  # Textual: Author (year)
+    else:  # numbered (default)
+        bracketed_cmd = "cite"
+        inline_cmd = "cite"
 
     # First handle bracketed multiple citations like [@citation1;@citation2]
     def process_multiple_citations(match: re.Match[str]) -> str:
@@ -123,7 +144,7 @@ def process_citations_in_text(text: MarkdownContent) -> LatexContent:
             clean_cite = cite.strip().lstrip("@").strip()
             if clean_cite:
                 citations.append(clean_cite)
-        return "\\cite{" + ",".join(citations) + "}"
+        return f"\\{bracketed_cmd}{{{','.join(citations)}}}"
 
     text = re.sub(r"\[(@[^]]+)\]", process_multiple_citations, text)
 
@@ -140,7 +161,7 @@ def process_citations_in_text(text: MarkdownContent) -> LatexContent:
     # Handle single citations like @citation_key (but not figure/equation references)
     # Allow alphanumeric, underscore, and hyphen in citation keys
     # Exclude figure and equation references by not matching @fig: or @eq: patterns
-    text = re.sub(r"@(?!fig:|eq:)([a-zA-Z0-9_-]+)", r"\\cite{\1}", text)
+    text = re.sub(r"@(?!fig:|eq:)([a-zA-Z0-9_-]+)", rf"\\{inline_cmd}{{\1}}", text)
 
     # Restore protected email patterns
     for i, pattern in enumerate(email_patterns):

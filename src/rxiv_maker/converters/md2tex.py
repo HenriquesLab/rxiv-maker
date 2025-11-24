@@ -47,7 +47,9 @@ from .types import LatexContent, MarkdownContent, ProtectedContent
 from .url_processor import convert_links_to_latex
 
 
-def convert_markdown_to_latex(content: MarkdownContent, is_supplementary: bool = False) -> LatexContent:
+def convert_markdown_to_latex(
+    content: MarkdownContent, is_supplementary: bool = False, citation_style: str = "numbered"
+) -> LatexContent:
     r"""Convert basic markdown formatting to LaTeX.
 
     This function now uses the centralized ContentProcessor for enhanced
@@ -57,6 +59,7 @@ def convert_markdown_to_latex(content: MarkdownContent, is_supplementary: bool =
     Args:
         content: The markdown content to convert
         is_supplementary: If True, adds \newpage after figures and tables
+        citation_style: Citation style to use ("numbered" or "author-date")
 
     Returns:
         LaTeX formatted content
@@ -157,6 +160,7 @@ def convert_markdown_to_latex(content: MarkdownContent, is_supplementary: bool =
         protected_markdown_tables,
         protected_tables,
         is_supplementary,
+        citation_style,
     )
 
     # Convert figures BEFORE headers to avoid conflicts
@@ -188,7 +192,7 @@ def convert_markdown_to_latex(content: MarkdownContent, is_supplementary: bool =
     content = process_supplementary_note_references(content)
 
     # Convert citations with table protection
-    content = process_citations_outside_tables(content, protected_markdown_tables)
+    content = process_citations_outside_tables(content, protected_markdown_tables, citation_style)
 
     # Process text formatting
     content = _process_text_formatting(content, protected_backtick_content)
@@ -406,6 +410,7 @@ def _process_tables_with_protection(
     protected_markdown_tables: ProtectedContent,
     protected_tables: ProtectedContent,
     is_supplementary: bool,
+    citation_style: str,
 ) -> LatexContent:
     """Process tables with proper content protection."""
     # Restore protected markdown tables before table processing
@@ -428,6 +433,7 @@ def _process_tables_with_protection(
         temp_content,
         protected_backtick_content,
         is_supplementary,
+        citation_style,
     )
 
     # Protect LaTeX table blocks from further markdown processing
