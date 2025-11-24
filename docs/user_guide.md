@@ -659,9 +659,48 @@ The method was first described [-@jones2024].
 # Check all citations
 rxiv validate --citations-only
 
-# Generate bibliography preview  
+# Generate bibliography preview
 rxiv pdf --draft  # See how citations render
 ```
+
+### v1.13.0 Features
+
+#### Multiple Citation Styles
+
+Switch between numbered and author-date citation formats:
+
+```yaml
+# In 00_CONFIG.yml
+citation_style: "numbered"      # [1, 2, 3] (default)
+# OR
+citation_style: "author-date"   # (Smith, 2024)
+```
+
+**Same markdown, different output:**
+- Numbered: `Recent work [1] shows...`
+- Author-date: `Recent work (Smith, 2024) shows...`
+
+#### Inline DOI Resolution
+
+Paste DOIs directly in markdown - automatically fetch BibTeX from CrossRef/DataCite:
+
+```yaml
+# In 00_CONFIG.yml
+enable_inline_doi_resolution: true
+```
+
+**Example workflow:**
+```markdown
+# Write with DOIs
+Recent advances 10.1038/nature12373 enable new techniques.
+
+# After running rxiv pdf, auto-updated to:
+Recent advances @smith2023 enable new techniques.
+```
+
+**BibTeX entry created automatically** with complete metadata!
+
+> 📖 **Learn more**: [10-Minute Tutorial](https://henriqueslab.github.io/rxiv-maker/getting-started/citations-tutorial/) | [Complete Guide](https://henriqueslab.github.io/rxiv-maker/guides/citations-and-references/)
 
 ---
 

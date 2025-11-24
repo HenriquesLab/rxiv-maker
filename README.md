@@ -127,6 +127,8 @@ rxiv pdf
 - **Inline DOI resolution**: Paste DOIs directly in text - automatically converted to proper citations
 - CrossRef/DataCite DOI validation and metadata fetching
 
+> 📖 **Learn more**: [10-Minute Tutorial](https://henriqueslab.github.io/rxiv-maker/getting-started/citations-tutorial/) | [Complete Guide](https://henriqueslab.github.io/rxiv-maker/guides/citations-and-references/)
+
 ### 🔧 **Developer Experience**
 - Modern CLI with rich output and progress bars
 - Consistent environments with package management

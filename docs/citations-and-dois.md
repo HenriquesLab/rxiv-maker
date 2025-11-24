@@ -1,5 +1,9 @@
 # Citation Styles and Inline DOI Resolution
 
+> 💡 **New to citations in rxiv-maker?** Start with the [10-minute tutorial](https://henriqueslab.github.io/rxiv-maker/getting-started/citations-tutorial/) on the website for hands-on practice.
+>
+> This document is a comprehensive technical reference for developers and power users.
+
 This document describes two powerful citation management features in Rxiv-Maker:
 1. **Multiple Citation Styles** - Choose between numbered and author-date citations
 2. **Inline DOI Resolution** - Automatically convert DOIs to proper citations

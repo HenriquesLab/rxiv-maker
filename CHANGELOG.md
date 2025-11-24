@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.13.0] - 2025-11-24
+
+### Added
+- **Multiple citation styles**: Choose between numbered citations `[1, 2]` and author-date format `(Smith, 2024)` via `citation_style` config option
+  - Numbered style (default): Traditional academic format with `[1]` in text and numbered bibliography
+  - Author-date style: Parenthetical citations like `(Smith, 2024)` with alphabetically sorted bibliography
+  - Same Markdown syntax for both styles - just change config to switch formats
+  - Configurable via `citation_style: "numbered"` or `citation_style: "author-date"` in `00_CONFIG.yml`
+  - Implemented in `src/rxiv_maker/converters/citation_processor.py` and BST files
+  - Full documentation in `docs/citations-and-dois.md`
+
+- **Inline DOI resolution**: Automatically convert DOIs in text to proper BibTeX citations
+  - Paste DOIs directly in Markdown (e.g., `10.1038/nature12373`)
+  - Automatically fetches metadata from CrossRef/DataCite APIs
+  - Generates complete BibTeX entries in `03_REFERENCES.bib`
+  - Replaces DOIs with citation keys in your manuscript
+  - Enable via `enable_inline_doi_resolution: true` in `00_CONFIG.yml`
+  - Supports retry logic for API rate limiting
+  - Works with both CrossRef and DataCite DOI registries
+  - Implemented in `src/rxiv_maker/services/doi_service.py`
+  - Full documentation in `docs/citations-and-dois.md`
+
+### Changed
+- Enhanced citation processor to support multiple output formats
+- Updated LaTeX templates with conditional citation style handling
+- Improved bibliography sorting to support both numeric and author-date styles
+
+### Documentation
+- Added comprehensive citation documentation in `docs/citations-and-dois.md`
+- Updated user guide with citation style examples
+- Added 10-minute tutorial for citation features on website
+
 ## [v1.12.2] - 2025-11-21
 
 ### Fixed
