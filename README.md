@@ -127,7 +127,7 @@ rxiv pdf
 - **Inline DOI resolution**: Paste DOIs directly in text - automatically converted to proper citations
 - CrossRef/DataCite DOI validation and metadata fetching
 
-> 📖 **Learn more**: [10-Minute Tutorial](https://henriqueslab.github.io/rxiv-maker/getting-started/citations-tutorial/) | [Complete Guide](https://henriqueslab.github.io/rxiv-maker/guides/citations-and-references/)
+> 📖 **Learn more**: [10-Minute Tutorial](https://rxiv-maker.henriqueslab.org/getting-started/citations-tutorial/) | [Complete Guide](https://rxiv-maker.henriqueslab.org/guides/citations-and-references/)
 
 ### 🔧 **Developer Experience**
 - Modern CLI with rich output and progress bars
@@ -235,9 +235,10 @@ Visit our **[official documentation website](https://rxiv-maker.henriqueslab.org
   - Real-time validation
 
 - **🐳 [Docker Support](https://github.com/HenriquesLab/docker-rxiv-maker)**
-  - Containerized execution environment
-  - Pre-configured LaTeX and dependencies
-  - CI/CD integration
+  - Containerized execution environment with pre-installed rxiv-maker
+  - Pre-configured LaTeX, Python, R, and all dependencies
+  - Perfect for CI/CD and users without local LaTeX installation
+  - Separate repository for easier maintenance and faster image updates
 
 ### 🚀 **Deployment Options**
 
@@ -247,9 +248,38 @@ Visit our **[official documentation website](https://rxiv-maker.henriqueslab.org
 - **🐳 Containers**: Docker for reproducible environments
 
 ### 📦 **Simplified Architecture**
+
+```mermaid
+graph LR
+    A[rxiv-maker<br/>Core Tool] --> B[PyPI]
+    A --> C[Homebrew]
+    D[docker-rxiv-maker<br/>Container] --> E[Docker Hub]
+    D -.installs.-> A
+    F[vscode-rxiv-maker<br/>Extension] -.extends.-> A
+    G[website-rxiv-maker<br/>Docs] -.documents.-> A
+    H[manuscript-rxiv-maker<br/>Example] -.demonstrates.-> A
+
+    style A fill:#e1f5ff
+    style D fill:#fff4e6
+    style F fill:#fff4e6
+    style G fill:#e8f5e9
+    style H fill:#e8f5e9
+```
+
 > **Note**: As of v1.8.4, we've streamlined the ecosystem while maintaining multiple installation options (Homebrew, pip, pipx, uv) with optional Docker support for containerized workflows.
 >
+> **📋 [Ecosystem Guide](docs/ECOSYSTEM.md)** - Complete architecture and integration patterns
 > **📋 [Migration Guide](docs/migration-v1.7.9.md)** - For users upgrading from previous versions
+
+### 🔗 **Repository Cross-Reference**
+
+| Repository | Purpose | Install/Access | Dependencies |
+|------------|---------|----------------|--------------|
+| **rxiv-maker** (this repo) | Main CLI tool & Python package | `brew install` / `pipx install` | LaTeX |
+| **[docker-rxiv-maker](https://github.com/HenriquesLab/docker-rxiv-maker)** | Pre-built container with all deps | `docker pull henriqueslab/rxiv-maker-base` | Docker |
+| **[manuscript-rxiv-maker](https://github.com/HenriquesLab/manuscript-rxiv-maker)** | Official example (arXiv:2508.00836) | `rxiv get-rxiv-preprint` | rxiv-maker |
+| **[vscode-rxiv-maker](https://github.com/HenriquesLab/vscode-rxiv-maker)** | VS Code extension | VS Code Marketplace | rxiv-maker |
+| **[website-rxiv-maker](https://github.com/HenriquesLab/website-rxiv-maker)** | Documentation website | [rxiv-maker.henriqueslab.org](https://rxiv-maker.henriqueslab.org) | - |
 
 ## 🚀 Essential Commands
 

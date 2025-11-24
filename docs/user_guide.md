@@ -663,9 +663,7 @@ rxiv validate --citations-only
 rxiv pdf --draft  # See how citations render
 ```
 
-### v1.13.0 Features
-
-#### Multiple Citation Styles
+### Multiple Citation Styles
 
 Switch between numbered and author-date citation formats:
 
@@ -680,7 +678,7 @@ citation_style: "author-date"   # (Smith, 2024)
 - Numbered: `Recent work [1] shows...`
 - Author-date: `Recent work (Smith, 2024) shows...`
 
-#### Inline DOI Resolution
+### Inline DOI Resolution
 
 Paste DOIs directly in markdown - automatically fetch BibTeX from CrossRef/DataCite:
 
@@ -700,7 +698,7 @@ Recent advances @smith2023 enable new techniques.
 
 **BibTeX entry created automatically** with complete metadata!
 
-> 📖 **Learn more**: [10-Minute Tutorial](https://henriqueslab.github.io/rxiv-maker/getting-started/citations-tutorial/) | [Complete Guide](https://henriqueslab.github.io/rxiv-maker/guides/citations-and-references/)
+> 📖 **Learn more**: [10-Minute Tutorial](https://rxiv-maker.henriqueslab.org/getting-started/citations-tutorial/) | [Complete Guide](https://rxiv-maker.henriqueslab.org/guides/citations-and-references/)
 
 ---
 

@@ -342,17 +342,24 @@ def example_function():
 
 ## 🚀 Release Process
 
+> 📋 **For maintainers**: See [RELEASING.md](RELEASING.md) for the complete release workflow including PyPI, Homebrew, Docker, and website documentation updates.
+
 ### Versioning
 We follow [Semantic Versioning](https://semver.org/):
 - **MAJOR**: Breaking changes
 - **MINOR**: New features (backward compatible)
 - **PATCH**: Bug fixes (backward compatible)
 
-### Release Workflow
+### Release Workflow (Summary)
 1. **Update CHANGELOG.md**: Document all changes
 2. **Version Bump**: Update version in relevant files
 3. **Create Release**: GitHub release with notes
 4. **PyPI Upload**: Automated via GitHub Actions
+5. **Homebrew Formula**: Update in `../homebrew-formulas` repository
+6. **Docker Images**: Verify `../docker-rxiv-maker` builds correctly
+7. **Documentation**: Update website if needed
+
+**Note**: Contributors don't need to worry about release mechanics. Maintainers handle all release processes using the detailed checklist in [RELEASING.md](RELEASING.md).
 
 ## 🎯 Project Priorities
 
