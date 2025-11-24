@@ -502,9 +502,7 @@ class TestUpdateCheckerChangelogIntegration:
 
     @patch("rxiv_maker.utils.update_checker.fetch_and_format_changelog")
     @patch("rxiv_maker.utils.update_checker.detect_install_method")
-    def test_update_notification_includes_changelog(
-        self, mock_detect, mock_changelog, tmp_path
-    ):
+    def test_update_notification_includes_changelog(self, mock_detect, mock_changelog, tmp_path):
         """Test that update notification includes changelog summary."""
         from rxiv_maker.utils.update_checker import UpdateChecker
 
@@ -541,9 +539,7 @@ class TestUpdateCheckerChangelogIntegration:
 
     @patch("rxiv_maker.utils.update_checker.fetch_and_format_changelog")
     @patch("rxiv_maker.utils.update_checker.detect_install_method")
-    def test_update_notification_without_changelog_on_error(
-        self, mock_detect, mock_changelog, tmp_path
-    ):
+    def test_update_notification_without_changelog_on_error(self, mock_detect, mock_changelog, tmp_path):
         """Test that notification works even if changelog fetch fails."""
         from rxiv_maker.utils.update_checker import UpdateChecker
 
@@ -613,9 +609,7 @@ class TestUpdateCheckerChangelogIntegration:
 
     @patch("rxiv_maker.utils.update_checker.fetch_and_format_changelog")
     @patch("rxiv_maker.utils.update_checker.detect_install_method")
-    def test_changelog_multi_version_update(
-        self, mock_detect, mock_changelog, tmp_path
-    ):
+    def test_changelog_multi_version_update(self, mock_detect, mock_changelog, tmp_path):
         """Test changelog for multi-version updates."""
         from rxiv_maker.utils.update_checker import UpdateChecker
 
@@ -666,9 +660,7 @@ What's New:
 
     @patch("rxiv_maker.utils.update_checker.fetch_and_format_changelog")
     @patch("rxiv_maker.utils.update_checker.detect_install_method")
-    def test_changelog_with_breaking_changes_prominence(
-        self, mock_detect, mock_changelog, tmp_path
-    ):
+    def test_changelog_with_breaking_changes_prominence(self, mock_detect, mock_changelog, tmp_path):
         """Test that breaking changes are prominently displayed."""
         from rxiv_maker.utils.update_checker import UpdateChecker
 

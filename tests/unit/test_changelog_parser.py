@@ -1,6 +1,5 @@
 """Tests for changelog parser module."""
 
-import pytest
 from rxiv_maker.utils.changelog_parser import (
     ChangelogEntry,
     detect_breaking_changes,
@@ -11,7 +10,6 @@ from rxiv_maker.utils.changelog_parser import (
     parse_sections,
     parse_version_entry,
 )
-
 
 # Sample changelog content for testing
 SAMPLE_CHANGELOG = """# Changelog

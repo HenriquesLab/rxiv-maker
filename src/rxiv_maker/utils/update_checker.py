@@ -248,13 +248,15 @@ class UpdateChecker:
             notification_lines.append(changelog_summary)
 
         # Add installation and upgrade instructions
-        notification_lines.extend([
-            "",  # Blank line
-            f"Installed via: {install_name}",
-            f"Run: {upgrade_cmd}",
-            "",
-            f"Full details: https://github.com/henriqueslab/rxiv-maker/releases/tag/v{latest}",
-        ])
+        notification_lines.extend(
+            [
+                "",  # Blank line
+                f"Installed via: {install_name}",
+                f"Run: {upgrade_cmd}",
+                "",
+                f"Full details: https://github.com/henriqueslab/rxiv-maker/releases/tag/v{latest}",
+            ]
+        )
 
         return "\n".join(notification_lines)
 
