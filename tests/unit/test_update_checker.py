@@ -204,7 +204,7 @@ class TestUpdateChecker:
             assert notification is not None
             assert "v1.0.0 → v1.2.0" in notification
             assert "pip install --upgrade" in notification
-            assert "release notes" in notification.lower()
+            assert "full details" in notification.lower()
 
     def test_get_update_notification_not_available(self):
         """Test update notification when no update is available."""
