@@ -302,7 +302,9 @@ class DependencyManager:
         )
 
         # Python packages
-        for pkg in ["click", "rich", "jinja2", "pyyaml", "pathlib"]:
+        # Note: Use actual Python import names, not PyPI package names
+        # e.g., "yaml" not "pyyaml" (PyPI: PyYAML)
+        for pkg in ["click", "rich", "yaml", "pathlib"]:
             self.register_dependency(
                 DependencySpec(
                     name=pkg,
