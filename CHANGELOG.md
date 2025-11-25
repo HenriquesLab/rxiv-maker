@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.13.2] - 2025-11-25
+
 ### Fixed
 - **Dependency checker false positives**: Fixed incorrect package names in dependency manager
   - Changed `pyyaml` to `yaml` (correct Python import name)
