@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.13.3] - 2025-01-27
+
+### Fixed
+- **Custom section headers**: Fixed missing section headers for custom (non-standard) sections in PDF output
+  - Custom sections like "Cell Cycle and Division Prediction" or "Interpretability and Feature Discovery" now render with proper `\section*{}` headers
+  - Previously, custom sections had their content included but without section headers, making them invisible in the document structure
+  - Standard sections (Introduction, Methods, Results, etc.) were unaffected
+  - Modified `src/rxiv_maker/converters/section_processor.py` to preserve original section titles
+  - Modified `src/rxiv_maker/processors/template_processor.py` to use preserved titles for custom sections
+  - Updated function signatures in `build_manager.py` and test files to handle new return type
+  - Fixes issue reported in manuscript-fatetracking where custom section headers were not appearing in generated PDFs
+
 ## [v1.13.2] - 2025-11-25
 
 ### Fixed

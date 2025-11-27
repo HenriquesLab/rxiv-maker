@@ -11,7 +11,7 @@ from .types import MarkdownContent, SectionDict, SectionKey, SectionOrder, Secti
 
 def extract_content_sections(
     article_md: MarkdownContent, citation_style: str = "numbered"
-) -> tuple[SectionDict, SectionOrder]:
+) -> tuple[SectionDict, dict[str, str], SectionOrder]:
     """Extract content sections from markdown file and convert to LaTeX.
 
     Args:
@@ -19,7 +19,11 @@ def extract_content_sections(
         citation_style: Citation style to use ("numbered" or "author-date")
 
     Returns:
-        Tuple of (dictionary mapping section keys to LaTeX content, ordered list of section keys)
+        Tuple of (
+            dictionary mapping section keys to LaTeX content,
+            dictionary mapping section keys to original titles,
+            ordered list of section keys
+        )
 
     Raises:
         FileNotFoundError: If article_md is a file path that doesn't exist
@@ -41,6 +45,7 @@ def extract_content_sections(
 
     # Dictionary to store extracted sections and list to preserve order
     sections: SectionDict = {}
+    section_titles: dict[str, str] = {}  # Preserve original titles
     section_order: SectionOrder = []
 
     # Split content by ## headers to find sections
@@ -53,7 +58,7 @@ def extract_content_sections(
         is_supplementary = "supplementary" in content.lower()
         sections["main"] = convert_markdown_to_latex(content, is_supplementary, citation_style)
         section_order.append("main")
-        return sections, section_order
+        return sections, section_titles, section_order
 
     # Extract main content (everything before first ## header)
     first_section_start = section_matches[0].start()
@@ -86,9 +91,10 @@ def extract_content_sections(
         section_key = map_section_title_to_key(section_title)
         if section_key:
             sections[section_key] = section_content_latex
+            section_titles[section_key] = section_title  # Preserve original title
             section_order.append(section_key)
 
-    return sections, section_order
+    return sections, section_titles, section_order
 
 
 def map_section_title_to_key(title: SectionTitle) -> SectionKey:
