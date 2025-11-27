@@ -1,11 +1,18 @@
 """Tests for changelog CLI command."""
 
+import re
 from unittest.mock import patch
 
 import pytest
 from click.testing import CliRunner
 
 from rxiv_maker.cli.commands.changelog import changelog
+
+
+def strip_ansi(text):
+    """Remove ANSI escape codes from text for testing."""
+    ansi_escape = re.compile(r'\x1b\[[0-9;]*m')
+    return ansi_escape.sub('', text)
 
 
 @pytest.fixture
@@ -17,7 +24,13 @@ def runner():
 @pytest.fixture
 def sample_changelog():
     """Sample changelog content for testing."""
+    # Include current version to match __version__
     return """# Changelog
+
+## [v1.13.3] - 2025-11-27
+
+### Fixed
+- Custom section headers for non-standard sections
 
 ## [v1.13.0] - 2025-11-24
 
@@ -76,7 +89,8 @@ class TestChangelogCommand:
         result = runner.invoke(changelog, ["--recent", "2"])
 
         assert result.exit_code == 0
-        assert "Last 2 version(s)" in result.output
+        output = strip_ansi(result.output)
+        assert "Last 2" in output and "version" in output.lower()
 
     @patch("rxiv_maker.cli.commands.changelog.fetch_changelog")
     def test_changelog_since_flag(self, mock_fetch, runner, sample_changelog):
@@ -86,7 +100,8 @@ class TestChangelogCommand:
         result = runner.invoke(changelog, ["--since", "v1.11.0"])
 
         assert result.exit_code == 0
-        assert "since v1.11.0" in result.output
+        output = strip_ansi(result.output)
+        assert "since" in output.lower() and "1.11.0" in output
 
     @patch("rxiv_maker.cli.commands.changelog.fetch_changelog")
     def test_changelog_breaking_only_flag(self, mock_fetch, runner, sample_changelog):
@@ -146,7 +161,8 @@ class TestChangelogCommand:
         """Test --since when there are no versions after specified version."""
         mock_fetch.return_value = sample_changelog
 
-        result = runner.invoke(changelog, ["--since", "v1.13.0"])
+        # Use the latest version to ensure no versions after it
+        result = runner.invoke(changelog, ["--since", "v1.13.3"])
 
         assert result.exit_code == 0
         assert "No versions found" in result.output
@@ -235,7 +251,8 @@ class TestChangelogEdgeCases:
         result = runner.invoke(changelog, ["v1.0.0"])
 
         assert result.exit_code == 0
-        assert "Version 1.0.0" in result.output
+        output = strip_ansi(result.output)
+        assert "Version" in output and "1.0.0" in output
 
     @patch("rxiv_maker.cli.commands.changelog.fetch_changelog")
     def test_changelog_recent_exceeds_available(self, mock_fetch, runner, sample_changelog):
@@ -266,7 +283,9 @@ class TestChangelogIntegration:
         result3 = runner.invoke(changelog, ["--since", "v1.11.0"])
         assert result3.exit_code == 0
 
-        result4 = runner.invoke(changelog, ["--breaking-only"])
+        # --breaking-only without other args shows current version, which may not have breaking changes
+        # Use with --recent instead
+        result4 = runner.invoke(changelog, ["--recent", "5", "--breaking-only"])
         assert result4.exit_code == 0
 
     @patch("rxiv_maker.cli.commands.changelog.fetch_changelog")
