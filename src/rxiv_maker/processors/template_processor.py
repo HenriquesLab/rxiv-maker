@@ -430,7 +430,7 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
     # Extract content sections from markdown
     # Get citation style from metadata
     citation_style = yaml_metadata.get("citation_style", "numbered")
-    content_sections, section_order = extract_content_sections(article_md, citation_style)
+    content_sections, section_titles, section_order = extract_content_sections(article_md, citation_style)
 
     # Replace content placeholders with extracted sections
     template_content = template_content.replace("<PY-RPL:ABSTRACT>", content_sections.get("abstract", ""))
@@ -505,7 +505,10 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
     custom_sections = []
     for section_key, section_content in content_sections.items():
         if section_key not in standard_sections and section_content.strip():
-            custom_sections.append(section_content)
+            # Add section header using the original title
+            section_title = section_titles.get(section_key, section_key.replace("_", " ").title())
+            custom_section_with_header = f"\\section*{{{section_title}}}\n{section_content}"
+            custom_sections.append(custom_section_with_header)
 
     # Add all custom sections to the main section
     if custom_sections:
