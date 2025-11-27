@@ -11,8 +11,8 @@ from rxiv_maker.cli.commands.changelog import changelog
 
 def strip_ansi(text):
     """Remove ANSI escape codes from text for testing."""
-    ansi_escape = re.compile(r'\x1b\[[0-9;]*m')
-    return ansi_escape.sub('', text)
+    ansi_escape = re.compile(r"\x1b\[[0-9;]*m")
+    return ansi_escape.sub("", text)
 
 
 @pytest.fixture
