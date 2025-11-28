@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.13.4] - 2025-11-28
+
+### Fixed
+- **R installation check**: Improved R/Rscript detection with helpful installation guidance
+  - When R is not installed, rxiv-maker now shows platform-specific installation instructions
+  - Clear warning message guides users to install R for generating R-based figures
+  - Gracefully skips R figure generation when Rscript is not available
+  - Modified `src/rxiv_maker/engines/operations/generate_figures.py` to provide better user experience
+
+### Changed
+- **Cache directory management**: Enhanced .gitignore templates and manuscript repository configurations
+  - Added `.rxiv_cache/` to default .gitignore template in `rxiv init`
+  - Updated all manuscript repositories to properly ignore cache directories
+  - Created .gitignore files for repositories that were missing them
+  - Ensures cache directories are never accidentally committed to version control
+
 ## [v1.13.3] - 2025-11-27
 
 ### Fixed
