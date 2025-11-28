@@ -508,9 +508,17 @@ startxref
         # Check if Rscript is available
         if not self._check_rscript():
             if use_rich:
-                self.console.print("⚠️ [yellow]R/Rscript not found - skipping R files[/yellow]")
+                self.console.print("⚠️ [yellow]R/Rscript not found - skipping R figure generation[/yellow]")
+                self.console.print("   [dim]To generate R-based figures, install R:[/dim]")
+                self.console.print("   [dim]  • macOS: brew install r[/dim]")
+                self.console.print("   [dim]  • Linux: sudo apt-get install r-base[/dim]")
+                self.console.print("   [dim]  • Windows: https://cran.r-project.org/[/dim]")
             else:
-                print("⚠️ R/Rscript not found - skipping R files")
+                print("⚠️ R/Rscript not found - skipping R figure generation")
+                print("   To generate R-based figures, install R:")
+                print("     • macOS: brew install r")
+                print("     • Linux: sudo apt-get install r-base")
+                print("     • Windows: https://cran.r-project.org/")
             return []
 
         processed_files = []

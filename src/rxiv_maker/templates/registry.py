@@ -244,6 +244,7 @@ Information about code repositories, data availability, and reproducibility reso
         """Get default .gitignore template."""
         return """# rxiv-maker outputs
 output/
+.rxiv_cache/
 *.pdf
 *.log
 *.aux
