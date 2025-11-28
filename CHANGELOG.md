@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.13.5] - 2025-11-28
+
+### Added
+- **Interactive path change in `rxiv repos-search`**: Users can now change the clone destination path during the interactive dialog
+  - New 3-option menu: "Yes, proceed" / "Change path" / "Cancel"
+  - Path validation with write permission checks
+  - Automatic directory creation with user confirmation
+  - Config file automatically updated when path changes
+  - Clear error handling with loop-back on invalid paths
+  - Support for keyboard interrupt (Ctrl+C) at any point
+  - Added `prompt_confirm_with_path_change()` function in `src/rxiv_maker/cli/interactive.py`
+  - Modified `src/rxiv_maker/cli/commands/repos_search.py` to use new interactive prompt
+  - Added comprehensive unit tests in `tests/unit/test_interactive_path_change.py`
+
 ## [v1.13.4] - 2025-11-28
 
 ### Fixed
