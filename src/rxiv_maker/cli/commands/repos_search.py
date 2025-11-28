@@ -16,7 +16,7 @@ from ...utils.github import (
     clone_github_repo,
     list_github_repos,
 )
-from ..interactive import prompt_confirm, prompt_multi_select
+from ..interactive import prompt_confirm, prompt_confirm_with_path_change, prompt_multi_select
 
 console = Console()
 logger = logging.getLogger(__name__)
@@ -129,9 +129,20 @@ def repos_search(
 
         # Interactive cloning
         if unclaimed_repos and not no_interactive:
-            if prompt_confirm(f"Clone repositories to {config.parent_dir}?", default=True):
-                # Ensure parent directory exists
-                config.parent_dir.mkdir(parents=True, exist_ok=True)
+            # Get confirmation with optional path change
+            proceed, final_path = prompt_confirm_with_path_change(
+                current_path=config.parent_dir,
+                action_description="Clone repositories",
+            )
+
+            if proceed:
+                # Update config if path changed
+                if final_path != config.parent_dir:
+                    config.parent_dir = str(final_path)
+                    console.print(f"[dim]Updated parent directory to: {final_path}[/dim]\n")
+
+                # Ensure parent directory exists (safety check)
+                final_path.mkdir(parents=True, exist_ok=True)
 
                 # Interactive selection using checkboxes
                 if len(unclaimed_repos) == 1:
@@ -175,7 +186,7 @@ def repos_search(
 
                     for repo in selected_repos:
                         repo_name = repo["name"]
-                        target_path = config.parent_dir / repo_name
+                        target_path = final_path / repo_name
 
                         try:
                             console.print(f"Cloning {repo_name}...")

@@ -4,6 +4,7 @@ This module provides a consistent interface for all interactive prompts,
 replacing scattered usage of Click and prompt_toolkit throughout the codebase.
 """
 
+import os
 from functools import wraps
 from pathlib import Path
 from typing import Any, Callable, List, Optional
@@ -186,6 +187,107 @@ def prompt_confirm(question: str, default: bool = True) -> bool:
     except TypeError:
         # Fallback for older versions that don't support default
         return confirm(question)
+
+
+def prompt_confirm_with_path_change(
+    current_path: Path,
+    action_description: str = "Clone repositories",
+) -> tuple[bool, Optional[Path]]:
+    """Confirm action with option to change target path.
+
+    This function presents a 3-option menu allowing the user to:
+    1. Proceed with the current path
+    2. Change the path (with validation and directory creation)
+    3. Cancel the operation
+
+    When changing the path, the function:
+    - Prompts for a new path with validation
+    - Offers to create the directory if it doesn't exist
+    - Validates write permissions
+    - Loops back to the menu if there are errors
+
+    Args:
+        current_path: Current target path
+        action_description: Description of action (e.g., "Clone repositories")
+
+    Returns:
+        Tuple of (should_proceed, final_path):
+        - (True, Path): User confirmed with final path
+        - (False, None): User cancelled
+
+    Example:
+        >>> proceed, path = prompt_confirm_with_path_change(
+        ...     Path("~/manuscripts"),
+        ...     "Clone repositories"
+        ... )
+        >>> if proceed:
+        ...     # Use path for cloning
+        ...     pass
+    """
+    while True:
+        # Display current path
+        console.print(f"\nTarget directory: [bold cyan]{current_path}[/bold cyan]\n")
+
+        # Create 3-option menu
+        choices = [
+            f"Yes, {action_description.lower()} to this path",
+            "Change path",
+            "Cancel",
+        ]
+
+        try:
+            choice = prompt_choice(choices, prompt_text="Select option: ", default=1)
+        except KeyboardInterrupt:
+            # Allow Ctrl+C to cancel
+            console.print("\n[yellow]Cancelled[/yellow]")
+            return (False, None)
+
+        if choice == 0:  # Yes, proceed
+            return (True, current_path)
+
+        elif choice == 1:  # Change path
+            try:
+                # Prompt for new path
+                new_path = prompt_path(
+                    "New target directory: ",
+                    default=str(current_path),
+                    must_exist=False,  # Allow non-existent paths
+                    must_be_dir=True,
+                )
+
+                # Create directory if it doesn't exist
+                if not new_path.exists():
+                    if prompt_confirm("Directory does not exist. Create it?", default=True):
+                        try:
+                            new_path.mkdir(parents=True, exist_ok=True)
+                            console.print(f"[green]✓[/green] Created directory: {new_path}")
+                        except PermissionError:
+                            console.print(f"[red]Error: Permission denied creating {new_path}[/red]")
+                            continue  # Loop back to options
+                        except Exception as e:
+                            console.print(f"[red]Error creating directory: {e}[/red]")
+                            continue  # Loop back to options
+                    else:
+                        # User declined to create, loop back
+                        continue
+
+                # Validate write permissions
+                if not os.access(new_path, os.W_OK):
+                    console.print(f"[red]Error: No write permission for {new_path}[/red]")
+                    continue  # Loop back to options
+
+                # Success - update current path and show confirmation
+                current_path = new_path
+                console.print(f"[green]✓ Path changed to: {current_path}[/green]\n")
+                # Loop back to show updated path in menu
+
+            except KeyboardInterrupt:
+                # Allow Ctrl+C during path input to go back to menu
+                console.print("\n")
+                continue
+
+        elif choice == 2:  # Cancel
+            return (False, None)
 
 
 def prompt_text(
