@@ -72,8 +72,9 @@ class TestChangelogCommand:
         result = runner.invoke(changelog)
 
         assert result.exit_code == 0
-        assert "Version" in result.output
-        assert "📋 Fetching changelog..." in result.output
+        output = strip_ansi(result.output)
+        assert "Version" in output
+        assert "Fetching changelog" in output
 
     @patch("rxiv_maker.cli.commands.changelog.fetch_changelog")
     def test_changelog_specific_version(self, mock_fetch, runner, sample_changelog):
@@ -113,11 +114,12 @@ class TestChangelogCommand:
         """Test --breaking-only flag."""
         mock_fetch.return_value = sample_changelog
 
-        result = runner.invoke(changelog, ["--recent", "3", "--breaking-only"])
+        result = runner.invoke(changelog, ["--recent", "5", "--breaking-only"])
 
         assert result.exit_code == 0
         # Should show v1.12.0 which has breaking changes
-        assert "BREAKING" in result.output or "Configuration format" in result.output
+        output = strip_ansi(result.output)
+        assert "BREAKING" in output or "Configuration format" in output
 
     @patch("rxiv_maker.cli.commands.changelog.fetch_changelog")
     def test_changelog_full_flag(self, mock_fetch, runner, sample_changelog):
@@ -167,10 +169,11 @@ class TestChangelogCommand:
         mock_fetch.return_value = sample_changelog
 
         # Use the latest version to ensure no versions after it
-        result = runner.invoke(changelog, ["--since", "v1.13.3"])
+        result = runner.invoke(changelog, ["--since", "v1.13.6"])
 
         assert result.exit_code == 0
-        assert "No versions found" in result.output
+        output = strip_ansi(result.output)
+        assert "No versions found" in output
 
     @patch("rxiv_maker.cli.commands.changelog.fetch_changelog")
     def test_changelog_recent_with_zero(self, mock_fetch, runner, sample_changelog):
