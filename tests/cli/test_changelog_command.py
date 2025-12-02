@@ -27,6 +27,11 @@ def sample_changelog():
     # Include current version to match __version__
     return """# Changelog
 
+## [v1.13.6] - 2025-12-02
+
+### Fixed
+- Citation auto-injection to use arXiv version
+
 ## [v1.13.3] - 2025-11-27
 
 ### Fixed
