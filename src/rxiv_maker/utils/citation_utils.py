@@ -13,6 +13,7 @@ CANONICAL_RXIV_CITATION = """@misc{saraiva_2025_rxivmaker,
       eprint={2508.00836},
       archivePrefix={arXiv},
       primaryClass={cs.DL},
+      doi={10.48550/arXiv.2508.00836},
       url={https://arxiv.org/abs/2508.00836},
 }"""
 
@@ -48,14 +49,16 @@ def is_citation_outdated(existing_citation: str) -> bool:
     current_authors = "Bruno M. Saraiva and António D. Brito and Guillaume Jaquemet and Ricardo Henriques"
     current_title = "Rxiv-Maker: an automated template engine for streamlined scientific publications"
     current_eprint = "2508.00836"
+    current_doi = "10.48550/arXiv.2508.00836"
 
     # Check if citation contains all current required elements
     has_current_authors = current_authors in existing_citation
     has_current_title = current_title in existing_citation
     has_current_eprint = current_eprint in existing_citation
+    has_current_doi = current_doi in existing_citation
 
     # Citation is outdated if any key element is missing
-    return not (has_current_authors and has_current_title and has_current_eprint)
+    return not (has_current_authors and has_current_title and has_current_eprint and has_current_doi)
 
 
 def inject_rxiv_citation(yaml_metadata: dict[str, Any]) -> None:

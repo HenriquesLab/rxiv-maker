@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.13.6] - 2025-12-02
+
+### Fixed
+- **Citation auto-injection**: Fixed rxiv-maker citation to use official arXiv version instead of Zenodo
+  - Updated canonical citation to use arXiv:2508.00836 as the primary reference
+  - Added DOI field (10.48550/arXiv.2508.00836) to citation metadata
+  - Ensures all four authors are properly credited: Bruno M. Saraiva, António D. Brito, Guillaume Jaquemet, and Ricardo Henriques
+  - Citations without DOI are now automatically updated to include it
+  - Modified `src/rxiv_maker/utils/citation_utils.py` to include DOI in canonical citation
+  - Updated validation in `is_citation_outdated()` to check for DOI presence
+  - Updated all unit tests to expect DOI field in citations
+
 ## [v1.13.5] - 2025-11-28
 
 ### Added
