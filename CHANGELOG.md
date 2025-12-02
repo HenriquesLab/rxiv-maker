@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.13.7] - 2025-12-02
+
+### Fixed
+- **DOI display in bibliographies**: DOIs now appear as clickable hyperlinks for all bibliography entry types
+  - Added `\RequirePackage{doi}` to LaTeX document class for proper DOI hyperlinking
+  - Added DOI output to `@misc` entry type in BibTeX style file (used for arXiv preprints)
+  - DOIs display consistently across all entry types including articles, books, and preprints
+  - Modified `src/tex/style/rxiv_maker_style.cls` to load doi package
+  - Modified `src/tex/style/rxiv_maker_style.bst` to output DOI for misc entries
+
+### Changed
+- **Citation system clarification**: Removed misleading configuration options and documentation
+  - Removed confusing `style` field from config validator that suggested unsupported journal styles
+  - Clarified that rxiv-maker supports only two citation styles: `numbered` [1] and `author-date` (Smith, 2024)
+  - Clarified that rxiv-maker uses only the rxiv-maker document style (no journal-specific formatting)
+  - Updated config validator to only accept "numbered" and "author-date" for `citation_style` field
+  - Removed references to "nature", "science", "plos", "ieee" styles from config validation
+  - Modified `src/rxiv_maker/config/validator.py` to remove misleading style options
+
 ## [v1.13.6] - 2025-12-02
 
 ### Fixed
