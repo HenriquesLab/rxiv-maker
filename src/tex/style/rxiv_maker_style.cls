@@ -185,6 +185,7 @@
 \RequirePackage{listings}   % Code formatting (arXiv compatible replacement for minted)
 \RequirePackage{pdfpages}   % Document assembly
 \RequirePackage{url}        % URL formatting and line breaks
+\RequirePackage{doi}        % DOI hyperlinks in bibliography
 \RequirePackage{seqsplit}   % Better long text breaking
 
 %% Enhanced line breaking and text wrapping configuration

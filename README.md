@@ -112,6 +112,7 @@ rxiv pdf
 - Auto-numbered figures, tables, and equations
 - Mathematical notation with LaTeX math
 - Code blocks with syntax highlighting
+- Markdown comments (`<!-- note -->`) for TODOs and notes
 
 ### 📊 **Automated Figures & Data Analysis**
 - Execute Python/R scripts during PDF generation

@@ -926,6 +926,7 @@ FUNCTION {misc}
   howpublished output
   format.date output
   format.issn output
+  format.doi output
   new.block
   note output
   fin.entry

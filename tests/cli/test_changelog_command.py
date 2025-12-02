@@ -27,6 +27,12 @@ def sample_changelog():
     # Include current version to match __version__
     return """# Changelog
 
+## [v1.13.7] - 2025-12-02
+
+### Fixed
+- DOI display in bibliographies
+- Citation system clarification
+
 ## [v1.13.6] - 2025-12-02
 
 ### Fixed
@@ -169,7 +175,7 @@ class TestChangelogCommand:
         mock_fetch.return_value = sample_changelog
 
         # Use the latest version to ensure no versions after it
-        result = runner.invoke(changelog, ["--since", "v1.13.6"])
+        result = runner.invoke(changelog, ["--since", "v1.13.7"])
 
         assert result.exit_code == 0
         output = strip_ansi(result.output)
