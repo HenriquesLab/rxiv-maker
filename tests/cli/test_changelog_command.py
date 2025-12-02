@@ -175,7 +175,7 @@ class TestChangelogCommand:
         mock_fetch.return_value = sample_changelog
 
         # Use the latest version to ensure no versions after it
-        result = runner.invoke(changelog, ["--since", "v1.13.6"])
+        result = runner.invoke(changelog, ["--since", "v1.13.7"])
 
         assert result.exit_code == 0
         output = strip_ansi(result.output)
