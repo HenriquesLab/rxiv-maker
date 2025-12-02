@@ -100,6 +100,7 @@ class TestInjectRxivCitation:
       eprint={2508.00836},
       archivePrefix={arXiv},
       primaryClass={cs.DL},
+      doi={10.48550/arXiv.2508.00836},
       url={https://arxiv.org/abs/2508.00836},
 }
 """
@@ -269,6 +270,7 @@ class TestInjectRxivCitation:
         assert "eprint={2508.00836}" in content
         assert "archivePrefix={arXiv}" in content
         assert "primaryClass={cs.DL}" in content
+        assert "doi={10.48550/arXiv.2508.00836}" in content
         assert "url={https://arxiv.org/abs/2508.00836}" in content
         assert "}" in content  # Closing brace
 
@@ -441,7 +443,8 @@ class TestInjectRxivCitation:
       title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
       author={Bruno M. Saraiva and António D. Brito and Guillaume Jaquemet and Ricardo Henriques},
       year={2025},
-      eprint={2508.00836}
+      eprint={2508.00836},
+      doi={10.48550/arXiv.2508.00836}
 }"""
         assert is_citation_outdated(current_citation) is False
 
