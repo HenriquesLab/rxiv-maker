@@ -352,9 +352,8 @@ rxiv docx --no-footnotes      # Without DOI footnotes
 ```
 
 **Output Location:**
-- Automatically saved to `MANUSCRIPT/output/{manuscript_name}.docx`
-- Placed alongside PDF with same base name
-- Output directory created automatically if needed
+- Automatically saved to `MANUSCRIPT/{manuscript_name}.docx`
+- Saved directly in the manuscript directory
 
 **Features:**
 - ✅ **Numbered Citations**: Converts `@cite` to [1], [2], etc.

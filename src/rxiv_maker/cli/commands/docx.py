@@ -40,13 +40,13 @@ def docx(
     """Export manuscript to DOCX format for collaborative review.
 
     Generates a Word document with numbered citations, embedded figures,
-    and DOI footnotes. Output is automatically placed in the output/
-    directory alongside the PDF with the same base name.
+    and DOI footnotes. Output is automatically saved to the manuscript
+    directory.
 
     **MANUSCRIPT_PATH**: Directory containing manuscript files.
     Defaults to MANUSCRIPT/
 
-    **Output**: Automatically saved to MANUSCRIPT/output/{manuscript_name}.docx
+    **Output**: Automatically saved to MANUSCRIPT/{manuscript_name}.docx
 
     ## Examples
 
@@ -92,7 +92,6 @@ def docx(
         # Success message
         if not quiet:
             console.print(f"[green]✅ DOCX exported:[/green] {docx_path}")
-            console.print("[dim]   (alongside PDF in output/ directory)[/dim]")
 
     except FileNotFoundError as e:
         console.print(f"[red]❌ Error:[/red] {e}", err=True)

@@ -268,7 +268,6 @@ class BuildCommand(BaseCommand):
 
             if not quiet:
                 self.console.print(f"[green]✅ DOCX exported:[/green] {docx_path}")
-                self.console.print("[dim]   (alongside PDF in output/ directory)[/dim]")
 
         except Exception as e:
             self.console.print(f"[yellow]⚠️  DOCX export failed:[/yellow] {e}", err=True)

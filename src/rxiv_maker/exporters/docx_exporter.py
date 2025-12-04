@@ -49,17 +49,14 @@ class DocxExporter:
         logger.debug(f"DocxExporter initialized: {self.path_manager.manuscript_path}")
 
     def _get_output_path(self) -> Path:
-        """Get output path in same location as PDF with same name.
+        """Get output path in manuscript directory.
 
         Returns:
-            Path to output DOCX file (in output/ directory)
+            Path to output DOCX file (in manuscript directory)
         """
-        # Use the same pattern as PDF: output/MANUSCRIPT.docx
-        output_dir = self.path_manager.manuscript_path / "output"
-        output_dir.mkdir(parents=True, exist_ok=True)
-
+        # Output directly to manuscript directory
         manuscript_name = self.path_manager.manuscript_name
-        return output_dir / f"{manuscript_name}.docx"
+        return self.path_manager.manuscript_path / f"{manuscript_name}.docx"
 
     def export(self) -> Path:
         """Execute complete DOCX export process.
