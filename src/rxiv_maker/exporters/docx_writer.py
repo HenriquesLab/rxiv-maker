@@ -45,9 +45,27 @@ class DocxWriter:
         self.base_path = base_path or Path.cwd()
         doc = Document()
 
-        # Process each section
+        # Collect figures to add at the end
+        figures = []
+
+        # Process each section (skip figures for now)
         for section in doc_structure["sections"]:
-            self._add_section(doc, section, bibliography, include_footnotes)
+            if section["type"] == "figure":
+                figures.append(section)
+            else:
+                self._add_section(doc, section, bibliography, include_footnotes)
+
+        # Add figures at the end
+        if figures:
+            # Add page break before figures
+            doc.add_page_break()
+
+            # Add "Figures" heading
+            doc.add_heading("Figures", level=1)
+
+            # Add each figure
+            for figure in figures:
+                self._add_figure(doc, figure)
 
         # Save document
         doc.save(str(output_path))
@@ -108,6 +126,10 @@ class DocxWriter:
             include_footnotes: Whether to add footnotes
         """
         paragraph = doc.add_paragraph()
+
+        # Set justified alignment for all paragraphs
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
         runs_data = section["runs"]
 
         for run_data in runs_data:
@@ -138,7 +160,9 @@ class DocxWriter:
         elif run_data["type"] == "citation":
             cite_num = run_data["number"]
             run = paragraph.add_run(f"[{cite_num}]")
-            run.font.superscript = True
+            # Make citations bold and slightly smaller, but not superscript
+            run.bold = True
+            run.font.size = Pt(10)
 
             # Add footnote if requested and bibliography entry exists
             if include_footnotes and cite_num in bibliography:
@@ -156,7 +180,7 @@ class DocxWriter:
         items = section["items"]
 
         for item in items:
-            paragraph = doc.add_paragraph(item, style="List Bullet" if list_type == "bullet" else "List Number")
+            doc.add_paragraph(item, style="List Bullet" if list_type == "bullet" else "List Number")
 
     def _add_code_block(self, doc: Document, section: Dict[str, Any]):
         """Add code block to document.
@@ -242,8 +266,6 @@ class DocxWriter:
             run: Run object to attach footnote to
             bib_entry: Bibliography entry with 'formatted' text and optional 'doi'
         """
-        formatted_text = bib_entry["formatted"]
-
         # Note: python-docx doesn't have built-in footnote support
         # We'll need to add it via OOXML
         # For MVP, we'll add a simplified version
