@@ -41,12 +41,12 @@ def docx(
 
     Generates a Word document with numbered citations, embedded figures,
     and DOI footnotes. Output is automatically saved to the manuscript
-    directory.
+    directory with the same naming pattern as the PDF.
 
     **MANUSCRIPT_PATH**: Directory containing manuscript files.
     Defaults to MANUSCRIPT/
 
-    **Output**: Automatically saved to MANUSCRIPT/{manuscript_name}.docx
+    **Output**: Automatically saved to MANUSCRIPT/YEAR__lastname_et_al__rxiv.docx
 
     ## Examples
 
@@ -69,9 +69,9 @@ def docx(
     try:
         # Configure logging
         if verbose:
-            logger.setLevel("DEBUG")
+            logger.set_level("DEBUG")
         elif quiet:
-            logger.setLevel("WARNING")
+            logger.set_level("WARNING")
 
         # Set manuscript path
         manuscript_path = manuscript_path or "MANUSCRIPT"
@@ -94,10 +94,10 @@ def docx(
             console.print(f"[green]✅ DOCX exported:[/green] {docx_path}")
 
     except FileNotFoundError as e:
-        console.print(f"[red]❌ Error:[/red] {e}", err=True)
+        console.print(f"[red]❌ Error:[/red] {e}", stderr=True)
         raise click.Abort() from e
     except Exception as e:
         if verbose:
             logger.error(f"DOCX export failed: {e}")
-        console.print(f"[red]❌ Export failed:[/red] {e}", err=True)
+        console.print(f"[red]❌ Export failed:[/red] {e}", stderr=True)
         raise click.Abort() from e

@@ -12,8 +12,11 @@ from typing import Dict
 
 from ..core.logging_config import get_logger
 from ..core.path_manager import PathManager
+from ..processors.yaml_processor import extract_yaml_metadata
 from ..utils.bibliography_parser import parse_bib_file
 from ..utils.docx_helpers import format_bibliography_entry, remove_yaml_header
+from ..utils.file_helpers import find_manuscript_md
+from ..utils.pdf_utils import get_custom_pdf_filename
 from .docx_citation_mapper import CitationMapper
 from .docx_content_processor import DocxContentProcessor
 from .docx_writer import DocxWriter
@@ -49,14 +52,26 @@ class DocxExporter:
         logger.debug(f"DocxExporter initialized: {self.path_manager.manuscript_path}")
 
     def _get_output_path(self) -> Path:
-        """Get output path in manuscript directory.
+        """Get output path in manuscript directory with custom filename.
 
         Returns:
             Path to output DOCX file (in manuscript directory)
         """
-        # Output directly to manuscript directory
-        manuscript_name = self.path_manager.manuscript_name
-        return self.path_manager.manuscript_path / f"{manuscript_name}.docx"
+        # Get metadata for custom filename
+        try:
+            manuscript_md = find_manuscript_md(str(self.path_manager.manuscript_path))
+            yaml_metadata = extract_yaml_metadata(str(manuscript_md))
+
+            # Generate DOCX name using same pattern as PDF: YEAR__lastname_et_al__rxiv.docx
+            pdf_filename = get_custom_pdf_filename(yaml_metadata)
+            docx_filename = pdf_filename.replace(".pdf", ".docx")
+
+            return self.path_manager.manuscript_path / docx_filename
+        except Exception as e:
+            # Fallback to simple name if metadata extraction fails
+            logger.warning(f"Could not extract metadata for custom filename: {e}")
+            manuscript_name = self.path_manager.manuscript_name
+            return self.path_manager.manuscript_path / f"{manuscript_name}.docx"
 
     def export(self) -> Path:
         """Execute complete DOCX export process.

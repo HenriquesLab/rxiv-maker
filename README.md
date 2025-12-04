@@ -352,7 +352,8 @@ rxiv docx --no-footnotes      # Without DOI footnotes
 ```
 
 **Output Location:**
-- Automatically saved to `MANUSCRIPT/{manuscript_name}.docx`
+- Automatically saved to `MANUSCRIPT/YEAR__lastname_et_al__rxiv.docx`
+- Uses the same naming pattern as the PDF for easy identification
 - Saved directly in the manuscript directory
 
 **Features:**

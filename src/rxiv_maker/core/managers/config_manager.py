@@ -342,7 +342,7 @@ class ConfigManager:
             "bibliography": {"file": "03_REFERENCES.bib", "style": "nature"},
             "citation_style": "numbered",
             "enable_inline_doi_resolution": False,
-            "cache": {"enabled": True, "ttl_hours": 24, "directory": None},
+            "cache": {"enabled": True, "ttl_hours": 24},
             "version": "1.0",
             "acknowledge_rxiv_maker": True,
         }
