@@ -336,24 +336,25 @@ rxiv config --non-interactive  # Show current settings
 
 ### 📄 DOCX Export for Collaborative Review
 
-Share your manuscript with non-LaTeX collaborators by exporting to Microsoft Word format:
+Share your manuscript with non-LaTeX collaborators by exporting to Microsoft Word format. The easiest way is to add the `--docx` flag when building your PDF:
 
 ```bash
-# Basic export
-rxiv docx                          # Export to {manuscript_name}.docx
-
-# Custom output location
-rxiv docx --output review_draft.docx
-
-# Export from custom directory
-rxiv docx MY_PAPER/
+# Build PDF and also export to DOCX
+rxiv pdf --docx
 
 # With DOI resolution for missing entries
-rxiv docx --resolve-dois
+rxiv pdf --docx --resolve-dois
 
-# Without footnotes (citations only)
-rxiv docx --no-footnotes
+# Or use the standalone command
+rxiv docx                     # Just DOCX (without rebuilding PDF)
+rxiv docx --resolve-dois      # With DOI resolution
+rxiv docx --no-footnotes      # Without DOI footnotes
 ```
+
+**Output Location:**
+- Automatically saved to `MANUSCRIPT/output/{manuscript_name}.docx`
+- Placed alongside PDF with same base name
+- Output directory created automatically if needed
 
 **Features:**
 - ✅ **Numbered Citations**: Converts `@cite` to [1], [2], etc.

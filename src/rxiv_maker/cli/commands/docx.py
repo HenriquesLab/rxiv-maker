@@ -18,12 +18,6 @@ console = Console()
     metavar="[MANUSCRIPT_PATH]",
 )
 @click.option(
-    "--output",
-    "-o",
-    help="Output filename (default: {manuscript_name}.docx)",
-    metavar="FILE",
-)
-@click.option(
     "--resolve-dois",
     "-r",
     is_flag=True,
@@ -38,7 +32,6 @@ console = Console()
 @click.option("--quiet", "-q", is_flag=True, help="Suppress non-essential output")
 def docx(
     manuscript_path: str | None,
-    output: str | None,
     resolve_dois: bool,
     no_footnotes: bool,
     verbose: bool,
@@ -46,21 +39,20 @@ def docx(
 ) -> None:
     """Export manuscript to DOCX format for collaborative review.
 
-    Generates a Word document with numbered citations and DOI footnotes
-    for easy sharing with non-LaTeX collaborators.
+    Generates a Word document with numbered citations, embedded figures,
+    and DOI footnotes. Output is automatically placed in the output/
+    directory alongside the PDF with the same base name.
 
     **MANUSCRIPT_PATH**: Directory containing manuscript files.
     Defaults to MANUSCRIPT/
+
+    **Output**: Automatically saved to MANUSCRIPT/output/{manuscript_name}.docx
 
     ## Examples
 
     **Basic export:**
 
         $ rxiv docx
-
-    **Custom output location:**
-
-        $ rxiv docx --output review_draft.docx
 
     **Export from custom directory:**
 
@@ -90,7 +82,6 @@ def docx(
 
         exporter = DocxExporter(
             manuscript_path=manuscript_path,
-            output_path=output,
             resolve_dois=resolve_dois,
             include_footnotes=not no_footnotes,
         )
@@ -100,13 +91,14 @@ def docx(
 
         # Success message
         if not quiet:
-            console.print(f"[green]✅ DOCX exported successfully:[/green] {docx_path}")
+            console.print(f"[green]✅ DOCX exported:[/green] {docx_path}")
+            console.print("[dim]   (alongside PDF in output/ directory)[/dim]")
 
     except FileNotFoundError as e:
         console.print(f"[red]❌ Error:[/red] {e}", err=True)
-        raise click.Abort()
+        raise click.Abort() from e
     except Exception as e:
         if verbose:
             logger.error(f"DOCX export failed: {e}")
         console.print(f"[red]❌ Export failed:[/red] {e}", err=True)
-        raise click.Abort()
+        raise click.Abort() from e

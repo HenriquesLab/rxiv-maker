@@ -28,6 +28,8 @@ from ..framework import BuildCommand
     metavar="TAG",
 )
 @click.option("--keep-output", is_flag=True, help="Preserve existing output directory (default: clear before build)")
+@click.option("--docx", is_flag=True, help="Also export to DOCX format for collaborative review")
+@click.option("--resolve-dois", "-r", is_flag=True, help="Attempt to resolve missing DOIs (when using --docx)")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.option("--quiet", "-q", is_flag=True, help="Suppress non-essential output")
 @click.option("--debug", "-d", is_flag=True, help="Enable debug output")
@@ -45,6 +47,8 @@ def build(
     skip_validation: bool,
     track_changes: str | None,
     keep_output: bool,
+    docx: bool,
+    resolve_dois: bool,
     verbose: bool,
     quiet: bool,
     debug: bool,
@@ -68,6 +72,14 @@ def build(
     **Build from custom directory:**
 
         $ rxiv pdf MY_PAPER/
+
+    **Also export to DOCX for collaborative review:**
+
+        $ rxiv pdf --docx
+
+    **Export to DOCX with DOI resolution:**
+
+        $ rxiv pdf --docx --resolve-dois
 
     **Force regenerate all figures:**
 
@@ -94,6 +106,8 @@ def build(
         skip_validation=skip_validation,
         track_changes=track_changes,
         keep_output=keep_output,
+        docx=docx,
+        resolve_dois=resolve_dois,
         debug=debug or verbose,
         quiet=quiet,
         container_mode=container_mode,

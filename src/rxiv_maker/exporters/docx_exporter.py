@@ -8,7 +8,7 @@ This module coordinates the DOCX export process, bringing together:
 """
 
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict
 
 from ..core.logging_config import get_logger
 from ..core.path_manager import PathManager
@@ -27,7 +27,6 @@ class DocxExporter:
     def __init__(
         self,
         manuscript_path: str,
-        output_path: Optional[str] = None,
         resolve_dois: bool = False,
         include_footnotes: bool = True,
     ):
@@ -35,12 +34,10 @@ class DocxExporter:
 
         Args:
             manuscript_path: Path to manuscript directory
-            output_path: Output file path (optional, defaults to manuscript_name.docx)
             resolve_dois: Whether to attempt DOI resolution for missing entries
             include_footnotes: Whether to include DOI footnotes
         """
         self.path_manager = PathManager(manuscript_path=manuscript_path)
-        self.output_path = Path(output_path) if output_path else self._default_output_path()
         self.resolve_dois = resolve_dois
         self.include_footnotes = include_footnotes
 
@@ -51,14 +48,18 @@ class DocxExporter:
 
         logger.debug(f"DocxExporter initialized: {self.path_manager.manuscript_path}")
 
-    def _default_output_path(self) -> Path:
-        """Generate default output path.
+    def _get_output_path(self) -> Path:
+        """Get output path in same location as PDF with same name.
 
         Returns:
-            Path to output DOCX file
+            Path to output DOCX file (in output/ directory)
         """
+        # Use the same pattern as PDF: output/MANUSCRIPT.docx
+        output_dir = self.path_manager.manuscript_path / "output"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
         manuscript_name = self.path_manager.manuscript_name
-        return self.path_manager.manuscript_path / f"{manuscript_name}.docx"
+        return output_dir / f"{manuscript_name}.docx"
 
     def export(self) -> Path:
         """Execute complete DOCX export process.
@@ -96,10 +97,11 @@ class DocxExporter:
         logger.debug(f"Parsed {len(doc_structure['sections'])} sections")
 
         # Step 7: Write DOCX file
+        output_path = self._get_output_path()
         docx_path = self.writer.write(
             doc_structure,
             bibliography,
-            self.output_path,
+            output_path,
             include_footnotes=self.include_footnotes,
             base_path=self.path_manager.manuscript_path,
         )

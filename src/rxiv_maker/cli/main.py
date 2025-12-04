@@ -89,6 +89,10 @@ click.rich_click.OPTION_GROUPS = {
             "options": ["-o", "--output-dir", "-f", "--force-figures"],
         },
         {
+            "name": "Export Options",
+            "options": ["--docx", "-r", "--resolve-dois"],
+        },
+        {
             "name": "Processing Options",
             "options": [
                 "-s",
@@ -117,7 +121,7 @@ click.rich_click.OPTION_GROUPS = {
     "rxiv docx": [
         {
             "name": "Export Options",
-            "options": ["-o", "--output", "-r", "--resolve-dois", "--no-footnotes"],
+            "options": ["-r", "--resolve-dois", "--no-footnotes"],
         },
         {
             "name": "Processing Options",
