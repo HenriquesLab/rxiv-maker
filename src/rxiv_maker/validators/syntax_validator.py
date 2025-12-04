@@ -38,6 +38,7 @@ class SyntaxValidator(BaseValidator):
     # Code block patterns
     CODE_PATTERNS = {
         "fenced_code": re.compile(r"^```(\w+)?\s*$.*?^```\s*$", re.MULTILINE | re.DOTALL),
+        "fenced_code_start": re.compile(r"^```(\w+)?\s*$", re.MULTILINE),
         "indented_code": re.compile(r"^(    .+)$", re.MULTILINE),
         "html_code": re.compile(r"<code>(.*?)</code>", re.DOTALL),
     }
@@ -55,6 +56,7 @@ class SyntaxValidator(BaseValidator):
     # URL and link patterns
     LINK_PATTERNS = {
         "markdown_link": re.compile(r"\[([^\]]+)\]\(([^)]+)\)"),
+        "markdown_image": re.compile(r"!\[([^\]]*)\]\(([^)]+)\)"),
         "bare_url": re.compile(r'https?://[^\s<>"]+'),
         "email": re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"),
     }
@@ -73,6 +75,32 @@ class SyntaxValidator(BaseValidator):
         "down_arrow": re.compile(r"↓"),
     }
 
+    # Standard manuscript sections that should be level 2 headings (##)
+    STANDARD_SECTIONS = {
+        "Abstract",
+        "Introduction",
+        "Methods",
+        "Materials and Methods",
+        "Results",
+        "Discussion",
+        "Conclusion",
+        "Conclusions",
+        "Acknowledgements",
+        "Acknowledgments",
+        "References",
+        "Supplementary Information",
+        "Supplementary Material",
+        "Appendix",
+        "Abbreviations",
+        "Declarations",
+        "Ethics Statement",
+        "Data Availability",
+        "Code Availability",
+        "Author Contributions",
+        "Competing Interests",
+        "Funding",
+    }
+
     def __init__(self, manuscript_path: str):
         """Initialize syntax validator.
 
@@ -87,14 +115,22 @@ class SyntaxValidator(BaseValidator):
             "code_blocks": [],
             "html_elements": [],
             "links": [],
+            "images": [],
             "tables": [],
             "special_chars": [],
+            "headings": [],
         }
+        # Cache for protected content to avoid recomputing
+        self._protected_content_cache: dict[str, str] = {}
 
     def validate(self) -> ValidationResult:
         """Validate special syntax elements in manuscript files."""
         errors = []
         metadata = {}
+
+        # Validate title synchronization first
+        title_errors = self._validate_title_sync()
+        errors.extend(title_errors)
 
         # Process manuscript files
         files_to_check = [
@@ -113,6 +149,80 @@ class SyntaxValidator(BaseValidator):
 
         return ValidationResult("SyntaxValidator", errors, metadata)
 
+    def _validate_title_sync(self) -> list:
+        """Validate title synchronization between config and main file.
+
+        Returns:
+            List of validation errors if titles are mismatched
+        """
+        errors = []
+
+        try:
+            from pathlib import Path
+
+            from ..utils.title_sync import extract_title_from_config, extract_title_from_main
+
+            manuscript_dir = Path(self.manuscript_path)
+
+            # Find config file (check in order of preference)
+            config_path = manuscript_dir / "00_CONFIG.yml"
+            if not config_path.exists():
+                # Fallback to alternative config file names
+                alt_paths = [
+                    manuscript_dir / "rxiv.yml",
+                    manuscript_dir / "rxiv.yaml",
+                ]
+                for alt_path in alt_paths:
+                    if alt_path.exists():
+                        config_path = alt_path
+                        break
+
+            main_path = manuscript_dir / "01_MAIN.md"
+
+            # Extract titles
+            config_title = extract_title_from_config(config_path)
+            main_title, is_auto_generated, line_num = extract_title_from_main(main_path)
+
+            # Check for mismatch (only if both exist and manual title in main)
+            if config_title and main_title and not is_auto_generated:
+                # Normalize for comparison
+                config_normalized = config_title.strip().lower()
+                main_normalized = main_title.strip().lower()
+
+                if config_normalized != main_normalized:
+                    # Get config file name for error message
+                    config_name = config_path.name if config_path.exists() else "00_CONFIG.yml"
+
+                    errors.append(
+                        self._create_error(
+                            ValidationLevel.ERROR,
+                            "Title mismatch between config and main manuscript",
+                            file_path=str(main_path),
+                            line_number=line_num,
+                            context=f"Config: '{config_title}' | Main: '{main_title}'",
+                            suggestion=(
+                                f"Update either the title in {config_name} or the # heading in 01_MAIN.md to match.\n"
+                                f"   Or remove the # heading from 01_MAIN.md (line {line_num}) to use only the config title."
+                            ),
+                            error_code="title_mismatch",
+                        )
+                    )
+
+        except ImportError:
+            # Title sync module not available, skip validation
+            pass
+        except Exception as e:
+            # Don't fail validation if title sync check fails
+            errors.append(
+                self._create_error(
+                    ValidationLevel.WARNING,
+                    f"Could not validate title synchronization: {e}",
+                    error_code="title_sync_check_failed",
+                )
+            )
+
+        return errors
+
     def _validate_file_syntax(self, file_path: str, file_type: str) -> list:
         """Validate special syntax in a specific file."""
         errors = []
@@ -130,8 +240,12 @@ class SyntaxValidator(BaseValidator):
 
         lines = content.split("\n")
 
+        # Cache protected content for this file (avoids recomputing multiple times)
+        protected_content = self._protect_validation_sensitive_content(content)
+        self._protected_content_cache[file_path] = protected_content
+
         # Validate page markers
-        marker_errors = self._validate_page_markers(content, file_path)
+        marker_errors = self._validate_page_markers(protected_content, file_path)
         errors.extend(marker_errors)
 
         # Validate text formatting
@@ -154,9 +268,13 @@ class SyntaxValidator(BaseValidator):
         html_errors = self._validate_html_elements(content, file_path)
         errors.extend(html_errors)
 
-        # Validate links and URLs
-        link_errors = self._validate_links(content, file_path)
+        # Validate links, images, and URLs
+        link_errors = self._validate_links(protected_content, file_path)
         errors.extend(link_errors)
+
+        # Validate images
+        image_errors = self._validate_images(content, file_path)
+        errors.extend(image_errors)
 
         # Validate tables
         table_errors = self._validate_tables(lines, file_path)
@@ -166,14 +284,20 @@ class SyntaxValidator(BaseValidator):
         char_errors = self._validate_special_characters(content, file_path)
         errors.extend(char_errors)
 
+        # Validate heading levels
+        heading_errors = self._validate_headings(lines, file_path, file_type)
+        errors.extend(heading_errors)
+
         return errors
 
-    def _validate_page_markers(self, content: str, file_path: str) -> list:
-        """Validate page control markers."""
-        errors = []
+    def _validate_page_markers(self, protected_content: str, file_path: str) -> list:
+        """Validate page control markers.
 
-        # Protect code blocks, inline code, and HTML comments from page marker validation
-        protected_content = self._protect_validation_sensitive_content(content)
+        Args:
+            protected_content: Content with code blocks/comments protected
+            file_path: Path to the file being validated
+        """
+        errors = []
 
         for marker_type, pattern in self.PAGE_MARKERS.items():
             for match in pattern.finditer(protected_content):
@@ -386,6 +510,35 @@ class SyntaxValidator(BaseValidator):
         """Validate code block formatting."""
         errors = []
 
+        # Check for unclosed fenced code blocks
+        lines = content.split("\n")
+        in_code_block = False
+        code_block_start_line = None
+
+        for line_num, line in enumerate(lines, 1):
+            if line.strip().startswith("```"):
+                if in_code_block:
+                    # Found closing marker
+                    in_code_block = False
+                    code_block_start_line = None
+                else:
+                    # Found opening marker
+                    in_code_block = True
+                    code_block_start_line = line_num
+
+        # If still in code block at end of file, it's unclosed
+        if in_code_block and code_block_start_line:
+            errors.append(
+                self._create_error(
+                    ValidationLevel.ERROR,
+                    f"Unclosed code block starting at line {code_block_start_line}",
+                    file_path=file_path,
+                    line_number=code_block_start_line,
+                    suggestion="Add closing ``` to end the code block",
+                    error_code="unclosed_code_block",
+                )
+            )
+
         # Check fenced code blocks
         for match in self.CODE_PATTERNS["fenced_code"].finditer(content):
             line_num = content[: match.start()].count("\n") + 1
@@ -494,12 +647,14 @@ class SyntaxValidator(BaseValidator):
 
         return errors
 
-    def _validate_links(self, content: str, file_path: str) -> list:
-        """Validate links and URLs."""
-        errors = []
+    def _validate_links(self, protected_content: str, file_path: str) -> list:
+        """Validate links and URLs.
 
-        # Protect code blocks, inline code, and HTML comments from URL validation
-        protected_content = self._protect_validation_sensitive_content(content)
+        Args:
+            protected_content: Content with code blocks/comments protected
+            file_path: Path to the file being validated
+        """
+        errors = []
 
         # Check markdown links
         for match in self.LINK_PATTERNS["markdown_link"].finditer(protected_content):
@@ -556,7 +711,6 @@ class SyntaxValidator(BaseValidator):
 
             # Check if this URL is part of a markdown link
             url_start = match.start()
-            match.end()
 
             # Look for markdown link patterns that might contain this URL
             is_part_of_markdown_link = False
@@ -674,6 +828,184 @@ class SyntaxValidator(BaseValidator):
                         line_number=line_num,
                         suggestion=("Consider using LaTeX math arrows (\\rightarrow, \\leftarrow) for consistency"),
                         error_code="unicode_arrow",
+                    )
+                )
+
+        return errors
+
+    def _validate_headings(self, lines: list[str], file_path: str, file_type: str) -> list:
+        """Validate heading levels and structure.
+
+        Checks for:
+        - Standard sections using level 1 (#) instead of level 2 (##) in main manuscript
+        - Multiple level 1 headings (only one should be the document title)
+        - Heading hierarchy (skipped levels)
+        - Duplicate heading text
+
+        Args:
+            lines: Lines of content to validate
+            file_path: Path to the file being validated
+            file_type: Type of file ("main" or "supplementary")
+        """
+        errors = []
+        heading_pattern = re.compile(r"^(#{1,6})\s+(.+?)(?:\s*\{#.*?\})?\s*$")
+        level_1_headings = []
+        all_headings = []
+        heading_texts = {}
+        previous_level = 0
+
+        for line_num, line in enumerate(lines, 1):
+            match = heading_pattern.match(line)
+            if match:
+                hashes = match.group(1)
+                heading_text = match.group(2).strip()
+                level = len(hashes)
+
+                # Store found heading
+                heading_info = {
+                    "level": level,
+                    "text": heading_text,
+                    "line": line_num,
+                    "file": os.path.basename(file_path),
+                }
+                self.found_elements["headings"].append(heading_info)
+                all_headings.append((line_num, level, heading_text))
+
+                # Track level 1 headings
+                if level == 1:
+                    level_1_headings.append((line_num, heading_text))
+
+                # Check for duplicate headings
+                normalized_text = heading_text.lower().strip()
+                if normalized_text in heading_texts:
+                    first_line = heading_texts[normalized_text]
+                    errors.append(
+                        self._create_error(
+                            ValidationLevel.WARNING,
+                            f"Duplicate heading text: '{heading_text}'",
+                            file_path=file_path,
+                            line_number=line_num,
+                            context=f"Also found at line {first_line}",
+                            suggestion=(
+                                "Consider using unique heading text or adding clarifying words.\n"
+                                "   Duplicate headings can confuse cross-references."
+                            ),
+                            error_code="duplicate_heading",
+                        )
+                    )
+                else:
+                    heading_texts[normalized_text] = line_num
+
+                # Check heading hierarchy (skip level check for first heading)
+                if previous_level > 0 and level > previous_level + 1:
+                    errors.append(
+                        self._create_error(
+                            ValidationLevel.WARNING,
+                            f"Heading hierarchy skips levels: {previous_level} → {level}",
+                            file_path=file_path,
+                            line_number=line_num,
+                            context=line.strip(),
+                            suggestion=(
+                                f"Consider using {'#' * (previous_level + 1)} instead of {'#' * level}.\n"
+                                f"   Skipping heading levels (e.g., ## to ####) makes document structure unclear."
+                            ),
+                            error_code="skipped_heading_level",
+                        )
+                    )
+
+                previous_level = level
+
+                # Check if standard sections are using wrong heading level (only in main manuscript)
+                # Supplementary files are separate documents and can have their own level 1 title
+                if file_type == "main":
+                    # Normalize for case-insensitive comparison and strip common punctuation
+                    normalized_heading = heading_text.strip().rstrip(":").title()
+                    if level == 1 and normalized_heading in self.STANDARD_SECTIONS:
+                        errors.append(
+                            self._create_error(
+                                ValidationLevel.ERROR,
+                                f"Standard section '{heading_text}' using level 1 heading (#)",
+                                file_path=file_path,
+                                line_number=line_num,
+                                context=line.strip(),
+                                suggestion=(
+                                    f"Change to level 2 heading: ## {heading_text}\n"
+                                    f"   Level 1 (#) should only be used for the document title.\n"
+                                    f"   Standard sections (Abstract, Introduction, Methods, etc.) should use ## (level 2)."
+                                ),
+                                error_code="incorrect_heading_level",
+                            )
+                        )
+
+        # Warn if there are multiple level 1 headings
+        if len(level_1_headings) > 1:
+            heading_list = ", ".join([f"'{text}' (line {num})" for num, text in level_1_headings])
+            errors.append(
+                self._create_error(
+                    ValidationLevel.WARNING,
+                    f"Multiple level 1 headings found: {len(level_1_headings)}",
+                    file_path=file_path,
+                    line_number=level_1_headings[0][0],
+                    context=f"Found at: {heading_list}",
+                    suggestion=(
+                        "Typically, only the document title should use level 1 heading (#).\n"
+                        "   Consider using ## for major sections."
+                    ),
+                    error_code="multiple_level1_headings",
+                )
+            )
+
+        return errors
+
+    def _validate_images(self, content: str, file_path: str) -> list:
+        """Validate image syntax and check for common issues.
+
+        Args:
+            content: File content to validate
+            file_path: Path to the file being validated
+        """
+        errors = []
+
+        for match in self.LINK_PATTERNS["markdown_image"].finditer(content):
+            line_num = content[: match.start()].count("\n") + 1
+            alt_text = match.group(1)
+            image_path = match.group(2)
+
+            # Store found image
+            self.found_elements["images"].append(
+                {
+                    "alt_text": alt_text,
+                    "path": image_path,
+                    "line": line_num,
+                    "file": os.path.basename(file_path),
+                }
+            )
+
+            # Check for missing alt text
+            if not alt_text.strip():
+                errors.append(
+                    self._create_error(
+                        ValidationLevel.WARNING,
+                        "Image without alt text",
+                        file_path=file_path,
+                        line_number=line_num,
+                        context=match.group(0),
+                        suggestion="Add descriptive alt text for accessibility: ![description](path)",
+                        error_code="missing_image_alt_text",
+                    )
+                )
+
+            # Check for suspicious image paths (absolute paths, external URLs might be intentional)
+            if image_path.startswith("/") and not image_path.startswith("http"):
+                errors.append(
+                    self._create_error(
+                        ValidationLevel.INFO,
+                        f"Image uses absolute path: {image_path}",
+                        file_path=file_path,
+                        line_number=line_num,
+                        context=match.group(0),
+                        suggestion="Consider using relative paths for better portability",
+                        error_code="absolute_image_path",
                     )
                 )
 

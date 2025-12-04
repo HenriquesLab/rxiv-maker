@@ -12,6 +12,7 @@ from .config import config_group as config
 
 # Removed: from .containers import containers_cmd (deprecated with container engine support)
 from .create_repo import create_repo
+from .docx import docx
 from .figures import figures
 from .get_rxiv_preprint import get_rxiv_preprint
 from .init import init
@@ -37,6 +38,7 @@ __all__ = [
     "completion_cmd",
     # Removed: "containers_cmd" (deprecated with container engine support)
     "create_repo",
+    "docx",
     "figures",
     "get_rxiv_preprint",
     "init",

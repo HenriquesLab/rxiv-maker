@@ -47,7 +47,7 @@ click.rich_click.COMMAND_GROUPS = {
         },
         {
             "name": "Content Commands",
-            "commands": ["figures", "bibliography", "clean"],
+            "commands": ["figures", "bibliography", "clean", "docx"],
         },
         {
             "name": "Repository Management",
@@ -108,6 +108,20 @@ click.rich_click.OPTION_GROUPS = {
         {
             "name": "Validation Options",
             "options": ["-d", "--detailed", "--no-doi"],
+        },
+        {
+            "name": "Help",
+            "options": ["--help"],
+        },
+    ],
+    "rxiv docx": [
+        {
+            "name": "Export Options",
+            "options": ["-o", "--output", "-r", "--resolve-dois", "--no-footnotes"],
+        },
+        {
+            "name": "Processing Options",
+            "options": ["-v", "--verbose", "-q", "--quiet"],
         },
         {
             "name": "Help",
@@ -215,6 +229,7 @@ def main(
 main.add_command(commands.pdf, name="pdf")
 main.add_command(commands.validate)
 main.add_command(commands.clean)
+main.add_command(commands.docx)
 main.add_command(commands.figures)
 main.add_command(commands.get_rxiv_preprint, name="get-rxiv-preprint")
 main.add_command(commands.arxiv)

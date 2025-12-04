@@ -190,7 +190,7 @@ format_summary(
 ) → str
 ```
 
-Format changelog entries for terminal display. 
+Format changelog entries for terminal display with rich markup. 
 
 
 
@@ -203,7 +203,7 @@ Format changelog entries for terminal display.
 
 
 **Returns:**
- Formatted string for terminal display 
+ Formatted string for terminal display with rich markup 
 
 
 ---

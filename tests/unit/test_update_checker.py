@@ -202,9 +202,12 @@ class TestUpdateChecker:
 
             notification = checker.get_update_notification()
             assert notification is not None
-            assert "v1.0.0 → v1.2.0" in notification
+            # Check for version numbers (may have Rich markup)
+            assert "v1.0.0" in notification
+            assert "v1.2.0" in notification
+            assert "→" in notification or "->" in notification
             assert "pip install --upgrade" in notification
-            assert "full details" in notification.lower()
+            assert "full details" in notification.lower() or "Full details" in notification
 
     def test_get_update_notification_not_available(self):
         """Test update notification when no update is available."""
@@ -228,6 +231,30 @@ class TestUpdateChecker:
 
             notification = checker.get_update_notification()
             assert notification is None
+
+    def test_get_update_notification_same_version_stale_cache(self):
+        """Test no notification when cache says update available but versions match (after upgrade)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache_dir = Path(tmpdir) / ".rxiv"
+            cache_dir.mkdir()
+            cache_file = cache_dir / "update_cache.json"
+
+            # User has upgraded to latest but cache still says update available
+            checker = UpdateChecker(self.package_name, "1.2.0")  # Current = latest
+            checker.cache_dir = cache_dir
+            checker.cache_file = cache_file
+
+            cache_data = {
+                "last_check": datetime.now().isoformat(),
+                "latest_version": "1.2.0",  # Same as current
+                "current_version": "1.0.0",  # Stale cached version
+                "update_available": True,  # Stale flag
+            }
+            with open(cache_file, "w") as f:
+                json.dump(cache_data, f)
+
+            notification = checker.get_update_notification()
+            assert notification is None  # Should not show notification when versions match
 
     @patch("src.rxiv_maker.utils.update_checker.urlopen")
     def test_force_check(self, mock_urlopen):
@@ -354,7 +381,7 @@ class TestInstallDetectionIntegration:
             notification = checker.get_update_notification()
             assert notification is not None
             assert "pip install --upgrade" in notification
-            assert "Installed via: pip" in notification
+            assert "Installed via" in notification and "pip" in notification
 
     @patch("src.rxiv_maker.utils.update_checker.detect_install_method")
     def test_update_notification_homebrew(self, mock_detect):
@@ -382,7 +409,7 @@ class TestInstallDetectionIntegration:
             notification = checker.get_update_notification()
             assert notification is not None
             assert "brew update && brew upgrade" in notification
-            assert "Installed via: Homebrew" in notification
+            assert "Installed via" in notification and "Homebrew" in notification
 
     @patch("src.rxiv_maker.utils.update_checker.detect_install_method")
     def test_update_notification_uv(self, mock_detect):
@@ -410,7 +437,7 @@ class TestInstallDetectionIntegration:
             notification = checker.get_update_notification()
             assert notification is not None
             assert "uv tool upgrade" in notification
-            assert "Installed via: uv tool" in notification
+            assert "Installed via" in notification and "uv tool" in notification
 
     @patch("src.rxiv_maker.utils.update_checker.detect_install_method")
     def test_update_notification_pipx(self, mock_detect):
@@ -438,7 +465,7 @@ class TestInstallDetectionIntegration:
             notification = checker.get_update_notification()
             assert notification is not None
             assert "pipx upgrade" in notification
-            assert "Installed via: pipx" in notification
+            assert "Installed via" in notification and "pipx" in notification
 
     @patch("src.rxiv_maker.utils.update_checker.detect_install_method")
     @patch("src.rxiv_maker.utils.update_checker.check_homebrew_update")
@@ -532,7 +559,9 @@ class TestUpdateCheckerChangelogIntegration:
         notification = checker.get_update_notification()
 
         assert notification is not None
-        assert "v1.12.0 → v1.13.0" in notification
+        assert "v1.12.0" in notification
+        assert "v1.13.0" in notification
+        assert "→" in notification or "->" in notification
         assert "BREAKING CHANGES" in notification
         assert "New feature" in notification
         mock_changelog.assert_called_once()
@@ -566,7 +595,8 @@ class TestUpdateCheckerChangelogIntegration:
         notification = checker.get_update_notification()
 
         assert notification is not None
-        assert "v1.12.0 → v1.13.0" in notification
+        assert "v1.12.0" in notification
+        assert "v1.13.0" in notification
         # Should still show basic notification without changelog
         assert "pip install --upgrade" in notification
 
@@ -652,8 +682,9 @@ What's New:
         notification = checker.get_update_notification()
 
         assert notification is not None
-        assert "v1.11.0 → v1.13.0" in notification
+        assert "v1.11.0" in notification
         assert "v1.13.0" in notification
+        assert "→" in notification or "->" in notification
         assert "v1.12.1" in notification
         assert "v1.12.0" in notification
         assert "BREAKING CHANGES" in notification

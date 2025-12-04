@@ -386,8 +386,14 @@ class TestFormatSummary:
         entry = parse_version_entry(SAMPLE_CHANGELOG, "1.13.0")
         summary = format_summary([entry], show_breaking=False, highlights_per_version=1)
 
-        # Count number of emoji highlights
-        emoji_count = summary.count("✨") + summary.count("🔄") + summary.count("🐛")
+        # Split by "What's New:" header to only count highlights (not the header emoji)
+        if "What's New:" in summary:
+            highlights_section = summary.split("What's New:", 1)[1]
+        else:
+            highlights_section = summary
+
+        # Count number of emoji highlights in the highlights section
+        emoji_count = highlights_section.count("✨") + highlights_section.count("🔄") + highlights_section.count("🐛")
         assert emoji_count == 1
 
 

@@ -17,8 +17,9 @@ except ImportError:
     pkg_version = None  # type: ignore
 
 from rich.console import Console
+from rich.panel import Panel
 
-from rxiv_maker.utils.unicode_safe import get_safe_icon, safe_print
+from rxiv_maker.utils.unicode_safe import safe_print
 
 from ..core.cache.cache_utils import get_manuscript_cache_dir
 from .changelog_parser import fetch_and_format_changelog
@@ -230,35 +231,41 @@ class UpdateChecker:
         if current == "unknown" or latest == "unknown":
             return None
 
+        # Don't show notification if versions are the same
+        if current == latest:
+            return None
+
         # Detect installation method and get appropriate upgrade command
         install_method = detect_install_method()
         upgrade_cmd = get_upgrade_command(install_method)
         install_name = get_friendly_install_name(install_method)
 
-        # Format the notification message with safe icons
-        package_icon = get_safe_icon("📦", "[UPDATE]")
-        notification_lines = [
-            f"{package_icon} Update available: {self.package_name} v{current} → v{latest}",
-        ]
+        # Build the update message with rich formatting
+        content_lines = []
+
+        # Version update line with gradient colors
+        content_lines.append(
+            f"[bold cyan]{self.package_name}[/bold cyan] "
+            f"[dim]v{current}[/dim] [bold yellow]→[/bold yellow] [bold green]v{latest}[/bold green]"
+        )
+        content_lines.append("")
 
         # Try to fetch and add changelog summary
         changelog_summary = self._get_changelog_summary(current, latest)
         if changelog_summary:
-            notification_lines.append("")  # Blank line
-            notification_lines.append(changelog_summary)
+            content_lines.append(changelog_summary)
+            content_lines.append("")
 
-        # Add installation and upgrade instructions
-        notification_lines.extend(
-            [
-                "",  # Blank line
-                f"Installed via: {install_name}",
-                f"Run: {upgrade_cmd}",
-                "",
-                f"Full details: https://github.com/henriqueslab/rxiv-maker/releases/tag/v{latest}",
-            ]
+        # Installation info with color
+        content_lines.append(f"[bold]Installed via:[/bold] [cyan]{install_name}[/cyan]")
+        content_lines.append(f"[bold]Upgrade:[/bold] [yellow]{upgrade_cmd}[/yellow]")
+        content_lines.append("")
+        content_lines.append(
+            f"[dim]📖 Full details: https://github.com/henriqueslab/rxiv-maker/releases/tag/v{latest}[/dim]"
         )
 
-        return "\n".join(notification_lines)
+        message_text = "\n".join(content_lines)
+        return message_text
 
     def _get_changelog_summary(self, current: str, latest: str) -> str | None:
         """Fetch and format changelog summary for version range.
@@ -301,10 +308,19 @@ class UpdateChecker:
         notification = self.get_update_notification()
         if notification:
             try:
-                console.print(f"\n{notification}", style="blue")
+                # Create a colorful panel for the update notification
+                panel = Panel(
+                    notification,
+                    title="[bold magenta]📦 Update Available[/bold magenta]",
+                    title_align="left",
+                    border_style="bright_blue",
+                    padding=(1, 2),
+                )
+                console.print()
+                console.print(panel)
             except Exception:
                 # Fallback to safe print for environments with encoding issues
-                safe_print(f"\n{notification}")
+                safe_print(f"\n📦 Update Available\n{notification}")
 
     def force_check(self) -> tuple[bool, str | None]:
         """Force an immediate update check.

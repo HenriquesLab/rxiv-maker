@@ -177,7 +177,7 @@ class TipsManager:
         return self._select_tip(category)
 
     def format_tip_for_console(self, tip: Dict[str, Any]) -> str:
-        """Format a tip for rich console display.
+        """Format a tip for rich console display with vibrant colors.
 
         Args:
             tip: Tip dictionary
@@ -188,12 +188,14 @@ class TipsManager:
         title = tip.get("title", "Tip")
         message = tip.get("message", "")
 
-        # Create formatted tip with "Tips and Tricks" header and consistent styling
-        formatted = "\n[bold cyan]Tips and Tricks[/bold cyan]\n"
-        formatted += f"💡 [bold blue]{title}[/bold blue]\n"
-        formatted += f"   [dim]{message}[/dim]"
+        # Create formatted tip with colorful styling
+        formatted_lines = []
+        formatted_lines.append("[bold bright_magenta]💡 Tips & Tricks[/bold bright_magenta]")
+        formatted_lines.append("")
+        formatted_lines.append(f"[bold bright_cyan]{title}[/bold bright_cyan]")
+        formatted_lines.append(f"[green]{message}[/green]")
 
-        return formatted
+        return "\n".join(formatted_lines)
 
 
 def get_build_success_tip(frequency: str = "always") -> Optional[str]:

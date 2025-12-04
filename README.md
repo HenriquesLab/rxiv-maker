@@ -289,6 +289,7 @@ graph LR
 rxiv init my-paper          # Create new manuscript
 rxiv get-rxiv-preprint     # Clone complete example manuscript
 rxiv pdf                    # Generate PDF
+rxiv docx                   # Export to DOCX for collaborative review
 rxiv validate              # Check manuscript quality
 rxiv arxiv                 # Prepare arXiv submission
 rxiv track-changes v1 v2   # Visual version comparison
@@ -332,6 +333,41 @@ rxiv config --non-interactive  # Show current settings
 ```
 
 > **💡 CI/Automation Note:** All interactive commands support non-interactive mode or configuration files for use in CI/CD pipelines and automated workflows. Use `--non-interactive` flag or configure via `~/.rxiv-maker/config` for non-TTY environments.
+
+### 📄 DOCX Export for Collaborative Review
+
+Share your manuscript with non-LaTeX collaborators by exporting to Microsoft Word format:
+
+```bash
+# Basic export
+rxiv docx                          # Export to {manuscript_name}.docx
+
+# Custom output location
+rxiv docx --output review_draft.docx
+
+# Export from custom directory
+rxiv docx MY_PAPER/
+
+# With DOI resolution for missing entries
+rxiv docx --resolve-dois
+
+# Without footnotes (citations only)
+rxiv docx --no-footnotes
+```
+
+**Features:**
+- ✅ **Numbered Citations**: Converts `@cite` to [1], [2], etc.
+- ✅ **DOI Footnotes**: Clickable DOI links for easy reference lookup
+- ✅ **Embedded Figures**: Automatically converts PDF figures to PNG and embeds them
+- ✅ **Figure Captions**: Properly formatted with labels
+- ✅ **Formatting Preserved**: Maintains bold, italic, and inline code
+- ✅ **Supplementary Info**: Automatically includes 02_SUPPLEMENTARY_INFO.md
+- ✅ **Missing DOI Resolution**: Attempts to fetch DOIs from CrossRef/DataCite
+
+**Content Scope:**
+- Includes: Main manuscript (01_MAIN.md), supplementary information (02_SUPPLEMENTARY_INFO.md), and figures
+- Converts: PDF figures to embedded PNG images (150 DPI, max 6" width)
+- Excludes: YAML metadata headers
 
 **[📖 CLI Reference](docs/cli-reference.md)**
 
