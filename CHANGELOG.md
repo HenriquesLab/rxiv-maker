@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.14.2] - 2025-12-05
+
+### Fixed
+- **Test linting**: Fixed unused variable warning in title sync tests
+  - Changed `result =` to `_ =` to satisfy linter
+  - Modified `tests/unit/test_title_sync.py`
+
 ## [v1.14.1] - 2025-12-05
 
 ### Fixed
