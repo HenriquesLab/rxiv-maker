@@ -135,16 +135,56 @@ class CitationValidator(BaseValidator):
         # Perform DOI validation if enabled
         if self.enable_doi_validation:
             try:
-                doi_validator = DOIValidator(
-                    self.manuscript_path,
-                    enable_online_validation=self.enable_doi_validation,
-                    ignore_ci_environment=True,  # Allow validation in CI for consistent test behavior
-                )
-                doi_result = doi_validator.validate()
+                import logging
+                import signal
 
-                # Merge DOI validation results
-                errors.extend(doi_result.errors)
-                metadata["doi_validation"] = doi_result.metadata
+                logger = logging.getLogger(__name__)
+
+                # Set up timeout handler
+                class DOIValidationTimeout(Exception):
+                    pass
+
+                def timeout_handler(signum, frame):
+                    raise DOIValidationTimeout("DOI validation timed out")
+
+                # Run DOI validation with 30-second timeout
+                try:
+                    # Set signal alarm (Unix only)
+                    signal.signal(signal.SIGALRM, timeout_handler)
+                    signal.alarm(30)  # 30-second timeout
+
+                    doi_validator = DOIValidator(
+                        self.manuscript_path,
+                        enable_online_validation=self.enable_doi_validation,
+                        ignore_ci_environment=True,  # Allow validation in CI for consistent test behavior
+                    )
+                    doi_result = doi_validator.validate()
+
+                    # Cancel the alarm
+                    signal.alarm(0)
+
+                    # Merge DOI validation results
+                    errors.extend(doi_result.errors)
+                    metadata["doi_validation"] = doi_result.metadata
+
+                except DOIValidationTimeout:
+                    # Cancel the alarm
+                    signal.alarm(0)
+                    logger.warning("DOI validation timed out after 30 seconds, continuing with remaining validations")
+                    errors.append(
+                        create_validation_error(
+                            ErrorCode.DOI_NOT_RESOLVABLE,
+                            "DOI validation timed out after 30 seconds and was skipped",
+                            suggestion="This may occur with slow network connections or large bibliography files. "
+                            "Use --no-doi to skip DOI validation entirely, or check your network connection.",
+                        )
+                    )
+                    metadata["doi_validation"] = {
+                        "status": "timeout",
+                        "reason": "Validation exceeded 30 second timeout",
+                        "note": "Validation was skipped to prevent indefinite hanging",
+                    }
+
             except Exception as e:
                 # DOI validation failed due to configuration issues, but don't fail entire validation
                 errors.append(
