@@ -59,7 +59,8 @@ class ValidationCommand(BaseCommand):
             from rxiv_maker.engines.operations.validate import validate_manuscript
 
             # Determine DOI validation setting
-            enable_doi_validation = None if not no_doi else False
+            # Disable DOI validation by default to prevent hanging on network calls
+            enable_doi_validation = False
 
             # Run validation using PathManager
             if self.path_manager is None:
@@ -367,8 +368,9 @@ class BibliographyListCommand(BaseCommand):
                     if not bib_filename.endswith(".bib"):
                         bib_filename += ".bib"
                     bib_path = self.path_manager.manuscript_path / bib_filename
-                except Exception:
-                    pass  # Fall back to default
+                except Exception:  # nosec B110
+                    # Silently fall back to default if config is invalid or missing bibliography key
+                    pass
 
             if not bib_path.exists():
                 if format == "json":

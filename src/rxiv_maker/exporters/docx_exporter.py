@@ -104,10 +104,10 @@ class DocxExporter:
         # Step 5: Replace citations in text
         markdown_with_numbers = self.citation_mapper.replace_citations_in_text(markdown_content, citation_map)
 
-        # Step 5.5: Replace figure references with numbers
-        # First, do a quick pass to find all figures and create mapping
+        # Step 5.5: Replace figure and equation references with numbers
         import re
 
+        # Find all figures and create mapping
         figure_labels = re.findall(r"!\[[^\]]*\]\([^)]+\)\s*\n\s*\{#fig:(\w+)", markdown_with_numbers)
         figure_map = {label: i + 1 for i, label in enumerate(figure_labels)}
 
@@ -116,6 +116,16 @@ class DocxExporter:
             markdown_with_numbers = re.sub(rf"@fig:{label}\b", f"Figure {num}", markdown_with_numbers)
 
         logger.debug(f"Mapped {len(figure_map)} figure labels to numbers")
+
+        # Find all equations and create mapping (looking for {#eq:label} tags)
+        equation_labels = re.findall(r"\{#eq:(\w+)\}", markdown_with_numbers)
+        equation_map = {label: i + 1 for i, label in enumerate(equation_labels)}
+
+        # Replace @eq:label with "Eq. X" in text (no parentheses to avoid "Eq. (X)")
+        for label, num in equation_map.items():
+            markdown_with_numbers = re.sub(rf"@eq:{label}\b", f"Eq. {num}", markdown_with_numbers)
+
+        logger.debug(f"Mapped {len(equation_map)} equation labels to numbers")
 
         # Step 6: Convert content to DOCX structure
         doc_structure = self.content_processor.parse(markdown_with_numbers, citation_map)
