@@ -12,7 +12,8 @@ class MathValidator(BaseValidator):
 
     # Math patterns based on codebase analysis
     MATH_PATTERNS = {
-        "inline_math": re.compile(r"\$([^$]+)\$"),  # $...$
+        # Use negative lookahead/lookbehind to avoid matching $ that are part of $$
+        "inline_math": re.compile(r"(?<!\$)\$(?!\$)([^$]+)(?<!\$)\$(?!\$)"),  # $...$
         "display_math": re.compile(r"\$\$([^$]+)\$\$"),  # $$...$$
         "attributed_math": re.compile(r"\$\$(.*?)\$\$\s*\{([^}]*#[^}]*)\}"),  # $$...$${#eq:label}
         "environment_math": re.compile(r"\\begin\{([^}]+)\}.*?\\end\{\1\}", re.DOTALL),

@@ -382,6 +382,41 @@ Nested delimiters: $$E = mc^2 $$inside$$ more$$
         # Should have errors for invalid math
         self.assertTrue(result.has_errors)
 
+    def test_math_validation_display_math_followed_by_inline_with_parens(self):
+        """Test that display math followed by text with parentheses and inline math doesn't cause false positives.
+
+        This is a regression test for a bug where the inline math regex would match
+        from the second $ in $$ to the next $, treating intervening text as math.
+        """
+        main_content = """
+# Test Manuscript
+
+## Section with Math
+
+The efficiency is defined by $\\eta(r)$:
+$$ PSF_{eff}(r) = PSF_{exc}(r) \\cdot \\eta(r) $$ {#eq:sted}
+We use parameters (e.g., $\\sigma_{xy} \\approx 20$ nm).
+
+Another example with scaling factor $s$:
+$$ N_i = (p_i - c_{original}) - s \\cdot (p_i - c_{scaled}) $$ {#eq:normal}
+
+The value ranges from 0 to 1 (with default $\\alpha = 0.5$).
+"""
+        with open(os.path.join(self.manuscript_dir, "01_MAIN.md"), "w") as f:
+            f.write(main_content)
+
+        validator = MathValidator(self.manuscript_dir)
+        result = validator.validate()
+
+        # Should pass without false positives for parentheses in text
+        # Filter out info-level messages and warnings about alt text
+        errors = [e for e in result.errors if e.level == ValidationLevel.ERROR]
+        if errors:
+            print("Unexpected errors found:")
+            for error in errors:
+                print(f"  - {error.message} (line {error.line_number})")
+        self.assertEqual(len(errors), 0, f"Should have no errors, but got {len(errors)}")
+
 
 @pytest.mark.validation
 @unittest.skipUnless(VALIDATORS_AVAILABLE, "Validators not available")
