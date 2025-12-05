@@ -357,8 +357,8 @@ rxiv docx --no-footnotes      # Without DOI footnotes
 - Saved directly in the manuscript directory
 
 **Features:**
-- ✅ **Numbered Citations**: Converts `@cite` to [1], [2], etc.
-- ✅ **DOI Footnotes**: Clickable DOI links for easy reference lookup
+- ✅ **Numbered Citations**: Converts `@cite` to superscript [1], [2], etc.
+- ✅ **References Section**: Complete bibliography with clickable DOI links
 - ✅ **Embedded Figures**: Automatically converts PDF figures to PNG and embeds them
 - ✅ **Figure Captions**: Properly formatted with labels
 - ✅ **Formatting Preserved**: Maintains bold, italic, and inline code

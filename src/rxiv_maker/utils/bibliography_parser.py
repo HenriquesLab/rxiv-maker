@@ -108,34 +108,76 @@ def _parse_fields(fields_content: str) -> dict[str, str]:
     # - field = "value"  (quoted values)
     # - field = value    (bare values - numbers, single words)
     # Handles multi-line values and nested braces
-    field_pattern = re.compile(
-        r"""
-        (\w+)                           # Field name
-        \s*=\s*                         # Equals sign with optional whitespace
-        (?:
-            \{((?:[^\}]|\{[^\}]*\})*?)\}  # Braced value (group 2)
-            |"((?:[^"]|\\")*?)"           # Quoted value (group 3)
-            |([^,}\s][^,}]*)              # Bare value (group 4) - anything until comma or }
-        )
-        """,
-        re.DOTALL | re.MULTILINE | re.VERBOSE,
+
+    # Helper function to extract braced field values with proper nesting
+    def extract_braced_value(text: str, start_pos: int) -> tuple[str, int]:
+        """Extract value from braced field, handling nested braces.
+
+        Returns: (value, end_position)
+        """
+        if start_pos >= len(text) or text[start_pos] != "{":
+            return ("", start_pos)
+
+        brace_count = 0
+        value_start = start_pos + 1
+        i = start_pos
+
+        while i < len(text):
+            if text[i] == "{":
+                brace_count += 1
+            elif text[i] == "}":
+                brace_count -= 1
+                if brace_count == 0:
+                    return (text[value_start:i], i + 1)
+            i += 1
+
+        return (text[value_start:], len(text))
+
+    # Simpler pattern that finds field names and equals signs
+    field_start_pattern = re.compile(
+        r'(\w+)\s*=\s*(["{])',  # Field name, =, and opening delimiter
+        re.MULTILINE,
     )
 
-    for field_match in field_pattern.finditer(fields_content):
+    for field_match in field_start_pattern.finditer(fields_content):
         field_name = field_match.group(1).strip().lower()
+        delimiter = field_match.group(2)
+        value_start = field_match.end() - 1  # Back up to the delimiter
 
-        # Get value from whichever group matched (braced, quoted, or bare)
-        field_value = field_match.group(2) or field_match.group(3) or field_match.group(4) or ""
+        if delimiter == "{":
+            # Extract braced value with proper nesting
+            field_value, _end_pos = extract_braced_value(fields_content, value_start)
+        elif delimiter == '"':
+            # Extract quoted value
+            quote_end = fields_content.find('"', value_start + 1)
+            if quote_end != -1:
+                field_value = fields_content[value_start + 1 : quote_end]
+            else:
+                field_value = fields_content[value_start + 1 :]
+        else:
+            continue
 
-        # Clean up the value:
-        # 1. Strip leading/trailing whitespace
+        # Clean up the value
         field_value = field_value.strip()
-        # 2. Remove trailing comma (from bare values)
-        field_value = field_value.rstrip(",").strip()
-        # 3. Replace all whitespace (including newlines, tabs) with single spaces
         field_value = " ".join(field_value.split())
 
-        if field_value:  # Only add non-empty values
+        if field_value:
+            fields[field_name] = field_value
+
+    # Also handle bare values (numbers, etc.) not already processed
+    bare_pattern = re.compile(r'(\w+)\s*=\s*([^,}\s"{][^,}]*)', re.MULTILINE)
+
+    for field_match in bare_pattern.finditer(fields_content):
+        field_name = field_match.group(1).strip().lower()
+
+        # Skip if already processed
+        if field_name in fields:
+            continue
+
+        field_value = field_match.group(2).strip().rstrip(",").strip()
+        field_value = " ".join(field_value.split())
+
+        if field_value:
             fields[field_name] = field_value
 
     return fields

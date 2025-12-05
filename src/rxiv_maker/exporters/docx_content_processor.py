@@ -46,6 +46,11 @@ class DocxContentProcessor:
                 i += 1
                 continue
 
+            # Skip HTML/markdown comments
+            if line.strip().startswith("<!--"):
+                i += 1
+                continue
+
             # Check for heading
             heading_match = re.match(r"^(#{1,6})\s+(.+?)(?:\s*\{#.*?\})?\s*$", line)
             if heading_match:
@@ -194,7 +199,6 @@ class DocxContentProcessor:
             List of run dictionaries with formatting
         """
         runs = []
-        pos = 0
 
         # Find all formatting markers and citations
         # For simplicity in MVP, we'll do a basic pass
@@ -265,16 +269,20 @@ class DocxContentProcessor:
         alt_text = img_match.group(1)
         image_path = img_match.group(2)
 
-        # Look ahead for caption line (next non-empty line)
+        # Look ahead for caption line (skip empty lines)
         caption = ""
         label = ""
         next_i = start_idx + 1
+
+        # Skip empty lines to find caption
+        while next_i < len(lines) and not lines[next_i].strip():
+            next_i += 1
 
         if next_i < len(lines):
             next_line = lines[next_i].strip()
 
             # Check for {#fig:label ...} **Caption**
-            if next_line:
+            if next_line and next_line.startswith("{#fig:"):
                 # Extract label if present
                 label_match = re.match(r"\{#fig:(\w+)[^}]*\}", next_line)
                 if label_match:

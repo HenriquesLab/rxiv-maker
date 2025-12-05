@@ -104,6 +104,19 @@ class DocxExporter:
         # Step 5: Replace citations in text
         markdown_with_numbers = self.citation_mapper.replace_citations_in_text(markdown_content, citation_map)
 
+        # Step 5.5: Replace figure references with numbers
+        # First, do a quick pass to find all figures and create mapping
+        import re
+
+        figure_labels = re.findall(r"!\[[^\]]*\]\([^)]+\)\s*\n\s*\{#fig:(\w+)", markdown_with_numbers)
+        figure_map = {label: i + 1 for i, label in enumerate(figure_labels)}
+
+        # Replace @fig:label with "Figure X" in text
+        for label, num in figure_map.items():
+            markdown_with_numbers = re.sub(rf"@fig:{label}\b", f"Figure {num}", markdown_with_numbers)
+
+        logger.debug(f"Mapped {len(figure_map)} figure labels to numbers")
+
         # Step 6: Convert content to DOCX structure
         doc_structure = self.content_processor.parse(markdown_with_numbers, citation_map)
         logger.debug(f"Parsed {len(doc_structure['sections'])} sections")
@@ -163,7 +176,8 @@ class DocxExporter:
             logger.info("Including supplementary information")
             supp_content = supp_md.read_text(encoding="utf-8")
             supp_content = remove_yaml_header(supp_content)
-            content.append("\n\n# Supplementary Information\n\n" + supp_content)
+            # Don't add heading - SI file already has its own heading
+            content.append(supp_content)
         else:
             logger.debug("No supplementary information file found")
 
@@ -205,8 +219,8 @@ class DocxExporter:
             # if self.resolve_dois and not doi:
             #     doi = self._resolve_doi_from_metadata(entry)
 
-            # Format entry
-            formatted = format_bibliography_entry(entry, doi)
+            # Format entry (slim format for DOCX footnotes)
+            formatted = format_bibliography_entry(entry, doi, slim=True)
 
             bibliography[number] = {"key": key, "entry": entry, "doi": doi, "formatted": formatted}
 

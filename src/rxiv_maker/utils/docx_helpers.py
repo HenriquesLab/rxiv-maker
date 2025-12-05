@@ -18,7 +18,7 @@ from ..utils.bibliography_parser import BibEntry
 
 
 def remove_yaml_header(content: str) -> str:
-    """Remove YAML frontmatter from markdown content.
+    r"""Remove YAML frontmatter from markdown content.
 
     Args:
         content: Markdown content that may contain YAML frontmatter
@@ -27,7 +27,7 @@ def remove_yaml_header(content: str) -> str:
         Content with YAML header removed
 
     Example:
-        >>> content = "---\\ntitle: Test\\n---\\n\\nActual content"
+        >>> content = "---\ntitle: Test\n---\n\nActual content"
         >>> remove_yaml_header(content)
         'Actual content'
     """
@@ -39,15 +39,17 @@ def remove_yaml_header(content: str) -> str:
     return content
 
 
-def format_bibliography_entry(entry: BibEntry, doi: Optional[str] = None) -> str:
+def format_bibliography_entry(entry: BibEntry, doi: Optional[str] = None, slim: bool = False) -> str:
     """Format a bibliography entry for footnote display.
 
-    Formats as: Author (Year). Title. Journal.
+    Formats as: Author (Year). Title. Journal. (full)
+    Or: LastName, Year (slim)
     Appends DOI if available.
 
     Args:
         entry: Bibliography entry to format
         doi: DOI string (optional)
+        slim: If True, use slim format (LastName, Year)
 
     Returns:
         Formatted bibliography string
@@ -60,12 +62,30 @@ def format_bibliography_entry(entry: BibEntry, doi: Optional[str] = None) -> str
         ...             "title": "Test Article", "journal": "Nature"},
         ...     raw=""
         ... )
-        >>> format_bibliography_entry(entry, "10.1234/example")
-        'Smith, J. (2021). Test Article. Nature.\\nDOI: https://doi.org/10.1234/example'
+        >>> format_bibliography_entry(entry, "10.1234/example", slim=True)
+        'Smith, 2021'
     """
     # Extract fields with defaults
     author = entry.fields.get("author", "Unknown Author")
     year = entry.fields.get("year", "n.d.")
+
+    # Clean LaTeX commands from author names
+    author = clean_latex_commands(author)
+
+    if slim:
+        # Slim format: First author last name, Year
+        first_author = author.split(" and ")[0].strip()
+        # Get last name (last word before any comma)
+        if "," in first_author:
+            # Format: "LastName, FirstName" - take first part
+            last_name = first_author.split(",")[0].strip()
+        else:
+            # Format: "FirstName LastName" - take last word
+            author_parts = first_author.split()
+            last_name = author_parts[-1] if author_parts else "Unknown"
+        return f"{last_name}, {year}"
+
+    # Full format
     title = entry.fields.get("title", "Untitled")
     journal = entry.fields.get("journal", "")
 
@@ -109,7 +129,7 @@ def format_authors_list(authors_string: str, max_authors: int = 3) -> str:
 
 
 def clean_latex_commands(text: str) -> str:
-    """Remove or convert common LaTeX commands to plain text.
+    r"""Remove or convert common LaTeX commands to plain text.
 
     Args:
         text: Text potentially containing LaTeX commands
@@ -120,7 +140,87 @@ def clean_latex_commands(text: str) -> str:
     Example:
         >>> clean_latex_commands("Text with \\\\textbf{bold} and \\\\cite{ref}")
         'Text with bold and ref'
+        >>> clean_latex_commands("Griffi{\\'e}")
+        'Griffié'
     """
+    # Convert LaTeX accent commands to Unicode
+    # Handle both with and without backslashes (BibTeX parser may strip them)
+    # Also handle variant forms where backslash is replaced with the literal character
+    accent_map = {
+        # Acute accents (é, á, í, ó, ú) - use non-raw strings for single backslash
+        "\\'e": "é",
+        "{\\'e}": "é",
+        "{'e}": "é",
+        "{'é}": "é",
+        "\\'a": "á",
+        "{\\'a}": "á",
+        "{'a}": "á",
+        "{'á}": "á",
+        "\\'i": "í",
+        "{\\'i}": "í",
+        "{'i}": "í",
+        "{'í}": "í",
+        "\\'o": "ó",
+        "{\\'o}": "ó",
+        "{'o}": "ó",
+        "{'ó}": "ó",
+        "\\'u": "ú",
+        "{\\'u}": "ú",
+        "{'u}": "ú",
+        "{'ú}": "ú",
+        # Umlaut/diaeresis (ë, ä, ï, ö, ü)
+        '\\"e': "ë",
+        '{\\"e}': "ë",
+        '{"e}': "ë",
+        '{"ë}': "ë",
+        '\\"a': "ä",
+        '{\\"a}': "ä",
+        '{"a}': "ä",
+        '{"ä}': "ä",
+        '\\"i': "ï",
+        '{\\"i}': "ï",
+        '{"i}': "ï",
+        '{"ï}': "ï",
+        '\\"o': "ö",
+        '{\\"o}': "ö",
+        '{"o}': "ö",
+        '{"ö}': "ö",
+        '\\"u': "ü",
+        '{\\"u}': "ü",
+        '{"u}': "ü",
+        '{"ü}': "ü",
+        # Grave accents (è, à)
+        "\\`e": "è",
+        "{\\`e}": "è",
+        "{`e}": "è",
+        "{`è}": "è",
+        "\\`a": "à",
+        "{\\`a}": "à",
+        "{`a}": "à",
+        "{`à}": "à",
+        # Circumflex (ê, â)
+        "\\^e": "ê",
+        "{\\^e}": "ê",
+        "{^e}": "ê",
+        "{^ê}": "ê",
+        "\\^a": "â",
+        "{\\^a}": "â",
+        "{^a}": "â",
+        "{^â}": "â",
+        # Tilde (ñ)
+        "\\~n": "ñ",
+        "{\\~n}": "ñ",
+        "{~n}": "ñ",
+        "{~ñ}": "ñ",
+        # Cedilla (ç)
+        "\\c{c}": "ç",
+        "{\\c{c}}": "ç",
+        "{\\c{ç}}": "ç",
+    }
+
+    for latex_cmd, unicode_char in accent_map.items():
+        text = text.replace(latex_cmd, unicode_char)
+
     # Remove common formatting commands but keep their content
     text = re.sub(r"\\textbf\{([^}]+)\}", r"\1", text)
     text = re.sub(r"\\textit\{([^}]+)\}", r"\1", text)
@@ -128,6 +228,10 @@ def clean_latex_commands(text: str) -> str:
 
     # Remove citations (they'll be handled separately)
     text = re.sub(r"\\cite[pt]?\{[^}]+\}", "", text)
+
+    # Remove braces around single accented characters (leftover from LaTeX accents)
+    # Matches: {ü}, {é}, {ë}, etc.
+    text = re.sub(r"\{([áéíóúàèìòùâêîôûäëïöüñç])\}", r"\1", text)
 
     # Remove other common commands
     text = re.sub(r"\\[a-zA-Z]+\{([^}]+)\}", r"\1", text)
@@ -160,7 +264,7 @@ def truncate_text(text: str, max_length: int = 100, suffix: str = "...") -> str:
 
 
 def normalize_whitespace(text: str) -> str:
-    """Normalize whitespace in text (multiple spaces to single, strip).
+    r"""Normalize whitespace in text (multiple spaces to single, strip).
 
     Args:
         text: Text to normalize
