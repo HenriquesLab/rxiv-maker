@@ -272,7 +272,7 @@ def format_summary(
     show_breaking: bool = True,
     highlights_per_version: int = 3,
 ) -> str:
-    """Format changelog entries for terminal display.
+    """Format changelog entries for terminal display with rich markup.
 
     Args:
         entries: List of changelog entries to format
@@ -280,7 +280,7 @@ def format_summary(
         highlights_per_version: Number of highlights per version
 
     Returns:
-        Formatted string for terminal display
+        Formatted string for terminal display with rich markup
     """
     lines = []
 
@@ -293,27 +293,27 @@ def format_summary(
 
     # Show breaking changes prominently if present
     if show_breaking and all_breaking:
-        lines.append("⚠️  BREAKING CHANGES:")
+        lines.append("[bold red]⚠️  BREAKING CHANGES:[/bold red]")
         for version, change in all_breaking:
-            lines.append(f"  • {change} (v{version})")
+            lines.append(f"  [red]•[/red] {change} [dim](v{version})[/dim]")
         lines.append("")
 
     # Show highlights for each version
     if entries:
-        lines.append("What's New:")
+        lines.append("[bold bright_cyan]✨ What's New:[/bold bright_cyan]")
         lines.append("")
 
     for entry in entries:
-        # Version header with date
+        # Version header with date - use gradient colors
         if entry.date:
-            lines.append(f"  v{entry.version} ({entry.date}):")
+            lines.append(f"  [bold yellow]v{entry.version}[/bold yellow] [dim]({entry.date})[/dim]:")
         else:
-            lines.append(f"  v{entry.version}:")
+            lines.append(f"  [bold yellow]v{entry.version}[/bold yellow]:")
 
-        # Highlights
+        # Highlights with colored emojis and descriptions
         highlights = extract_highlights(entry, limit=highlights_per_version)
         for emoji, description in highlights:
-            lines.append(f"    {emoji} {description}")
+            lines.append(f"    [bright_white]{emoji}[/bright_white] [dim]{description}[/dim]")
 
         lines.append("")  # Blank line between versions
 

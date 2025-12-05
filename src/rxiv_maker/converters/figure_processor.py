@@ -109,14 +109,14 @@ def convert_figure_references_to_latex(text: MarkdownContent) -> LatexContent:
     """
     # Convert @fig:id followed by space and panel letter to Figure \ref{fig:id}PanelLetter (no space)
     # Use empty group {} to prevent LaTeX from inserting unwanted spaces after \ref{}
-    text = re.sub(r"@fig:([a-zA-Z0-9_-]+)\s+([A-Z])", r"Fig. \\ref{fig:\1}{}\2", text)
+    text = re.sub(r"@fig:([a-zA-Z0-9_-]+)\s+([a-zA-Z])\b", r"Fig. \\ref{fig:\1}{}\2", text)
 
     # Convert @fig:id to Figure \ref{fig:id} (remaining basic references)
     text = re.sub(r"@fig:([a-zA-Z0-9_-]+)", r"Fig. \\ref{fig:\1}", text)
 
     # Convert @sfig:id followed by space and panel letter to Figure \ref{sfig:id}PanelLetter (no space)
     # Use empty group {} to prevent LaTeX from inserting unwanted spaces after \ref{}
-    text = re.sub(r"@sfig:([a-zA-Z0-9_-]+)\s+([A-Z])", r"Fig. \\ref{sfig:\1}{}\2", text)
+    text = re.sub(r"@sfig:([a-zA-Z0-9_-]+)\s+([a-zA-Z])\b", r"Fig. \\ref{sfig:\1}{}\2", text)
 
     # Convert @sfig:id to Figure \ref{sfig:id} (supplementary figures)
     text = re.sub(r"@sfig:([a-zA-Z0-9_-]+)", r"Fig. \\ref{sfig:\1}", text)

@@ -382,6 +382,41 @@ Nested delimiters: $$E = mc^2 $$inside$$ more$$
         # Should have errors for invalid math
         self.assertTrue(result.has_errors)
 
+    def test_math_validation_display_math_followed_by_inline_with_parens(self):
+        """Test that display math followed by text with parentheses and inline math doesn't cause false positives.
+
+        This is a regression test for a bug where the inline math regex would match
+        from the second $ in $$ to the next $, treating intervening text as math.
+        """
+        main_content = """
+# Test Manuscript
+
+## Section with Math
+
+The efficiency is defined by $\\eta(r)$:
+$$ PSF_{eff}(r) = PSF_{exc}(r) \\cdot \\eta(r) $$ {#eq:sted}
+We use parameters (e.g., $\\sigma_{xy} \\approx 20$ nm).
+
+Another example with scaling factor $s$:
+$$ N_i = (p_i - c_{original}) - s \\cdot (p_i - c_{scaled}) $$ {#eq:normal}
+
+The value ranges from 0 to 1 (with default $\\alpha = 0.5$).
+"""
+        with open(os.path.join(self.manuscript_dir, "01_MAIN.md"), "w") as f:
+            f.write(main_content)
+
+        validator = MathValidator(self.manuscript_dir)
+        result = validator.validate()
+
+        # Should pass without false positives for parentheses in text
+        # Filter out info-level messages and warnings about alt text
+        errors = [e for e in result.errors if e.level == ValidationLevel.ERROR]
+        if errors:
+            print("Unexpected errors found:")
+            for error in errors:
+                print(f"  - {error.message} (line {error.line_number})")
+        self.assertEqual(len(errors), 0, f"Should have no errors, but got {len(errors)}")
+
 
 @pytest.mark.validation
 @unittest.skipUnless(VALIDATORS_AVAILABLE, "Validators not available")
@@ -501,6 +536,115 @@ This has **unmatched bold and *mixed formatting problems.
         # Note: This might generate warnings rather than errors depending on
         # implementation
         self.assertTrue(result.has_warnings or result.has_errors)
+
+    def test_syntax_validation_incorrect_heading_levels(self):
+        """Test validation of incorrect heading levels."""
+        main_content = """
+# My Paper Title
+
+This is the intro.
+
+# Abstract
+
+This should be level 2 (##), not level 1 (#).
+
+## Introduction
+
+This one is correct!
+
+# Methods
+
+Wrong level again.
+
+## Results
+
+Correct.
+"""
+        with open(os.path.join(self.manuscript_dir, "01_MAIN.md"), "w") as f:
+            f.write(main_content)
+
+        validator = SyntaxValidator(self.manuscript_dir)
+        result = validator.validate()
+
+        # Should detect heading level errors
+        self.assertTrue(result.has_errors)
+
+        # Count heading-related errors
+        heading_errors = [e for e in result.errors if "heading" in e.error_code.lower()]
+        self.assertGreater(len(heading_errors), 0, "Should find heading level errors")
+
+        # Verify we caught the specific sections
+        error_messages = " ".join([e.message for e in heading_errors])
+        self.assertIn("Abstract", error_messages)
+        self.assertIn("Methods", error_messages)
+
+    def test_syntax_validation_multiple_level1_headings(self):
+        """Test warning for multiple level 1 headings."""
+        main_content = """
+# First Heading
+
+Some content.
+
+# Second Heading
+
+More content.
+
+# Third Heading
+
+Even more content.
+"""
+        with open(os.path.join(self.manuscript_dir, "01_MAIN.md"), "w") as f:
+            f.write(main_content)
+
+        validator = SyntaxValidator(self.manuscript_dir)
+        result = validator.validate()
+
+        # Should warn about multiple level 1 headings
+        self.assertTrue(result.has_warnings)
+
+        # Check for the specific warning
+        warning_messages = " ".join([e.message for e in result.errors if e.level.value == "warning"])
+        self.assertIn("Multiple level 1 headings", warning_messages)
+
+    def test_syntax_validation_supplementary_level1_allowed(self):
+        """Test that level 1 headings are allowed in supplementary files."""
+        main_content = """
+# My Paper Title
+
+## Abstract
+
+This is the abstract.
+
+## Introduction
+
+This is the introduction.
+"""
+        with open(os.path.join(self.manuscript_dir, "01_MAIN.md"), "w") as f:
+            f.write(main_content)
+
+        # Supplementary file with level 1 heading should be allowed
+        supp_content = """
+# Supplementary Information
+
+This is supplementary information with its own title.
+
+## Additional Methods
+
+Some additional methods here.
+"""
+        with open(os.path.join(self.manuscript_dir, "02_SUPPLEMENTARY_INFO.md"), "w") as f:
+            f.write(supp_content)
+
+        validator = SyntaxValidator(self.manuscript_dir)
+        result = validator.validate()
+
+        # Should not error on the level 1 heading in supplementary file
+        heading_errors = [
+            e
+            for e in result.errors
+            if "incorrect_heading_level" in e.error_code and "02_SUPPLEMENTARY_INFO.md" in e.file_path
+        ]
+        self.assertEqual(len(heading_errors), 0, "Level 1 heading should be allowed in supplementary files")
 
 
 @pytest.mark.validation

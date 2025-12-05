@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.14.0] - 2025-12-05
+
+### Added
+- **DOCX export functionality**: Complete Microsoft Word document export for collaborative review
+  - New `rxiv docx` command for standalone DOCX generation
+  - New `--docx` flag for `rxiv pdf` command to generate both PDF and DOCX in one command
+  - Exports main manuscript and supplementary information to single DOCX file
+  - Numbered citations displayed as bold [NN] matching configured citation style
+  - Bibliography section with slim format: LastName, Year + clickable DOI hyperlinks
+  - All figures embedded at document end with numbered captions (Figure 1:, Figure 2:, etc.)
+  - Figure references in text automatically converted from `@fig:label` to "Figure N"
+  - Justified text alignment for all body paragraphs
+  - Custom filename pattern matching PDF output (YEAR__lastname_et_al__rxiv.docx)
+  - Output location: manuscript directory alongside PDF
+  - Added `DocxExporter` orchestrator in `src/rxiv_maker/exporters/docx_exporter.py`
+  - Added `DocxWriter` for document generation in `src/rxiv_maker/exporters/docx_writer.py`
+  - Added `DocxContentProcessor` for markdown parsing in `src/rxiv_maker/exporters/docx_content_processor.py`
+  - Added `CitationMapper` for citation numbering in `src/rxiv_maker/exporters/docx_citation_mapper.py`
+  - Added DOCX helper utilities in `src/rxiv_maker/utils/docx_helpers.py`
+
+### Fixed
+- **BibTeX parser nested braces**: Fixed author name truncation with LaTeX escape sequences
+  - BibTeX parser now correctly handles nested braces in field values
+  - Added `extract_braced_value()` helper function with proper brace counting
+  - Author names with accents (Griffié, Früh, Mickaël) now fully extracted
+  - Modified `_parse_fields()` in `src/rxiv_maker/utils/bibliography_parser.py`
+- **LaTeX accent conversion**: Bibliography entries now display proper Unicode characters
+  - Added comprehensive LaTeX accent command to Unicode mapping
+  - Handles acute (é), umlaut (ü), grave (è), circumflex (ê), tilde (ñ), cedilla (ç)
+  - Supports multiple pattern variations for robustness
+  - Removes leftover braces around accented characters
+  - Enhanced `clean_latex_commands()` in `src/rxiv_maker/utils/docx_helpers.py`
+- **DOCX figure spacing**: Removed extra blank pages between figures
+  - Eliminated redundant empty paragraph after each figure
+  - Spacing now handled exclusively by `space_after` paragraph property
+  - Modified figure loop in `src/rxiv_maker/exporters/docx_writer.py`
+- **Duplicate SI heading**: Fixed duplicate "Supplementary Information" heading in DOCX
+  - Removed auto-added heading since SI file already contains its own
+  - Modified `_load_markdown()` in `src/rxiv_maker/exporters/docx_exporter.py`
+
+### Changed
+- **DOCX dependencies**: Added required packages to pyproject.toml
+  - `python-docx>=1.1.0` for DOCX file creation and manipulation
+  - `pdf2image>=1.16.0` for converting PDF figures to embeddable PNG images
+  - Both packages included in main dependencies (not dev-only)
+
 ## [v1.13.7] - 2025-12-02
 
 ### Fixed

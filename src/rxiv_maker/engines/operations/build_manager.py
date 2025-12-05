@@ -205,6 +205,40 @@ class BuildManager:
             self.log(f"Local validation error: {e}", "ERROR")
             return False
 
+    def sync_manuscript_titles(self):
+        """Synchronize titles between config and main manuscript file.
+
+        Automatically syncs titles to ensure consistency:
+        - If title only in config → copy to main with auto-generated marker
+        - If title only in main → copy to config
+        - If both exist and differ → validation will catch it later
+        """
+        try:
+            from ...utils.title_sync import sync_titles
+
+            result = sync_titles(self.manuscript_dir, auto_sync=True)
+
+            if result.success:
+                if result.action == "synced_to_main":
+                    self.log(f"✓ Synced title to main: '{result.title}'", "INFO")
+                elif result.action == "synced_to_config":
+                    self.log(f"✓ Synced title to config: '{result.title}'", "INFO")
+                elif result.action == "no_change":
+                    # Don't log if titles are already in sync (reduces noise)
+                    pass
+            else:
+                # If there's a mismatch, validation will catch it
+                # Just log the issue here without failing the build
+                if result.action == "mismatch":
+                    self.log("⚠️  Title mismatch detected (will be validated later)", "WARNING")
+
+        except ImportError:
+            # Title sync module not available, skip
+            pass
+        except Exception as e:
+            # Don't fail build if title sync fails
+            self.log(f"Warning: Could not sync titles: {e}", "WARNING")
+
     def generate_figures(self):
         """Generate figures from source files using local execution."""
         if not self.figures_dir.exists():
@@ -867,6 +901,9 @@ class BuildManager:
                     reset_python_execution_reporter()
                 except ImportError:
                     pass  # Reporter not available
+
+                # Step 1.5: Synchronize titles between config and main
+                self.sync_manuscript_titles()
 
                 # Step 2: Generate figures first (before validation)
                 self.generate_figures()

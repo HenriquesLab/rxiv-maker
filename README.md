@@ -289,6 +289,7 @@ graph LR
 rxiv init my-paper          # Create new manuscript
 rxiv get-rxiv-preprint     # Clone complete example manuscript
 rxiv pdf                    # Generate PDF
+rxiv docx                   # Export to DOCX for collaborative review
 rxiv validate              # Check manuscript quality
 rxiv arxiv                 # Prepare arXiv submission
 rxiv track-changes v1 v2   # Visual version comparison
@@ -332,6 +333,42 @@ rxiv config --non-interactive  # Show current settings
 ```
 
 > **💡 CI/Automation Note:** All interactive commands support non-interactive mode or configuration files for use in CI/CD pipelines and automated workflows. Use `--non-interactive` flag or configure via `~/.rxiv-maker/config` for non-TTY environments.
+
+### 📄 DOCX Export for Collaborative Review
+
+Share your manuscript with non-LaTeX collaborators by exporting to Microsoft Word format. The easiest way is to add the `--docx` flag when building your PDF:
+
+```bash
+# Build PDF and also export to DOCX
+rxiv pdf --docx
+
+# With DOI resolution for missing entries
+rxiv pdf --docx --resolve-dois
+
+# Or use the standalone command
+rxiv docx                     # Just DOCX (without rebuilding PDF)
+rxiv docx --resolve-dois      # With DOI resolution
+rxiv docx --no-footnotes      # Without DOI footnotes
+```
+
+**Output Location:**
+- Automatically saved to `MANUSCRIPT/YEAR__lastname_et_al__rxiv.docx`
+- Uses the same naming pattern as the PDF for easy identification
+- Saved directly in the manuscript directory
+
+**Features:**
+- ✅ **Numbered Citations**: Converts `@cite` to superscript [1], [2], etc.
+- ✅ **References Section**: Complete bibliography with clickable DOI links
+- ✅ **Embedded Figures**: Automatically converts PDF figures to PNG and embeds them
+- ✅ **Figure Captions**: Properly formatted with labels
+- ✅ **Formatting Preserved**: Maintains bold, italic, and inline code
+- ✅ **Supplementary Info**: Automatically includes 02_SUPPLEMENTARY_INFO.md
+- ✅ **Missing DOI Resolution**: Attempts to fetch DOIs from CrossRef/DataCite
+
+**Content Scope:**
+- Includes: Main manuscript (01_MAIN.md), supplementary information (02_SUPPLEMENTARY_INFO.md), and figures
+- Converts: PDF figures to embedded PNG images (150 DPI, max 6" width)
+- Excludes: YAML metadata headers
 
 **[📖 CLI Reference](docs/cli-reference.md)**
 

@@ -158,6 +158,8 @@ class BuildCommand(BaseCommand):
         skip_validation: bool = False,
         track_changes: Optional[str] = None,
         keep_output: bool = False,
+        docx: bool = False,
+        resolve_dois: bool = False,
         debug: bool = False,
         quiet: bool = False,
         container_mode: Optional[str] = None,
@@ -170,6 +172,8 @@ class BuildCommand(BaseCommand):
             skip_validation: Skip validation step
             track_changes: Track changes against specified git tag
             keep_output: Preserve existing output directory
+            docx: Also export to DOCX format
+            resolve_dois: Attempt to resolve missing DOIs (for DOCX export)
             debug: Enable debug output
             quiet: Suppress non-critical warnings
             container_mode: Container behavior mode
@@ -233,8 +237,44 @@ class BuildCommand(BaseCommand):
                 stats = build_manager.get_build_stats()
                 self.console.print(f"📊 Build time: {stats.get('duration', 'N/A')}", style="dim")
 
+            # Export to DOCX if requested
+            if docx:
+                self._export_docx(resolve_dois=resolve_dois, quiet=quiet, debug=debug)
+
             # Show helpful tips after successful build
             self._show_build_tips()
+
+    def _export_docx(self, resolve_dois: bool = False, quiet: bool = False, debug: bool = False) -> None:
+        """Export manuscript to DOCX format after successful PDF build.
+
+        Args:
+            resolve_dois: Whether to attempt DOI resolution for missing entries
+            quiet: Suppress non-essential output
+            debug: Enable debug output
+        """
+        try:
+            from ...exporters.docx_exporter import DocxExporter
+
+            if not quiet:
+                self.console.print("\n[cyan]📝 Exporting to DOCX...[/cyan]")
+
+            exporter = DocxExporter(
+                manuscript_path=str(self.path_manager.manuscript_path),
+                resolve_dois=resolve_dois,
+                include_footnotes=True,
+            )
+
+            docx_path = exporter.export()
+
+            if not quiet:
+                self.console.print(f"[green]✅ DOCX exported:[/green] {docx_path}")
+
+        except Exception as e:
+            self.console.print(f"[yellow]⚠️  DOCX export failed:[/yellow] {e}", err=True)
+            if debug:
+                import traceback
+
+                self.console.print(f"[dim]{traceback.format_exc()}[/dim]", err=True)
 
     def _show_build_tips(self) -> None:
         """Show helpful tips after successful PDF build."""

@@ -712,5 +712,7 @@
 
 \def\sectionmark#1{\relax}
 
+% Paragraph formatting: no indentation, space between paragraphs
 \parindent=0pt
+\parskip=0.5\baselineskip plus 2pt minus 1pt
 \endinput
