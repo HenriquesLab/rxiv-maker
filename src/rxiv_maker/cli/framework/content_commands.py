@@ -59,8 +59,7 @@ class ValidationCommand(BaseCommand):
             from rxiv_maker.engines.operations.validate import validate_manuscript
 
             # Determine DOI validation setting
-            # Disable DOI validation by default to prevent hanging on network calls
-            enable_doi_validation = False
+            enable_doi_validation = None if not no_doi else False
 
             # Run validation using PathManager
             if self.path_manager is None:
