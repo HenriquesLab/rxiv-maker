@@ -127,7 +127,7 @@ def convert_figure_references_to_latex(text: MarkdownContent) -> LatexContent:
 def convert_equation_references_to_latex(text: MarkdownContent) -> LatexContent:
     r"""Convert equation references from @eq:id to LaTeX.
 
-    Converts @eq:id to \\ref{eq:id} for equation referencing without parentheses.
+    Converts @eq:id to Eq.~\\ref{eq:id} for equation referencing without parentheses.
     This avoids double parentheses like "s (Eq. (7)):" when users write "(Eq. @eq:id)".
 
     Args:
@@ -136,9 +136,10 @@ def convert_equation_references_to_latex(text: MarkdownContent) -> LatexContent:
     Returns:
         Text with equation references converted to LaTeX format
     """
-    # Convert @eq:id to \ref{eq:id} (plain number, no auto-parentheses)
+    # Convert @eq:id to Eq.~\ref{eq:id} (Eq. prefix with non-breaking space, no auto-parentheses)
     # Changed from \eqref to \ref to avoid double parentheses
-    text = re.sub(r"@eq:([a-zA-Z0-9_-]+)", r"\\ref{eq:\1}", text)
+    # Using ~ for non-breaking space between "Eq." and the number
+    text = re.sub(r"@eq:([a-zA-Z0-9_-]+)", r"Eq.~\\ref{eq:\1}", text)
 
     return text
 

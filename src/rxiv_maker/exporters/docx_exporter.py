@@ -121,7 +121,8 @@ class DocxExporter:
         equation_labels = re.findall(r"\{#eq:(\w+)\}", markdown_with_numbers)
         equation_map = {label: i + 1 for i, label in enumerate(equation_labels)}
 
-        # Replace @eq:label with "Eq. X" in text (no parentheses to avoid "Eq. (X)")
+        # Replace @eq:label with "Eq. X" (no parentheses)
+        # This outputs "Eq. 7" to match the PDF output format
         for label, num in equation_map.items():
             markdown_with_numbers = re.sub(rf"@eq:{label}\b", f"Eq. {num}", markdown_with_numbers)
 

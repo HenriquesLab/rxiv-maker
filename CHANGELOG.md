@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.14.1] - 2025-12-05
+
+### Fixed
+- **Equation reference formatting**: Fixed equation references to display "Eq. 7" instead of just numbers or double parentheses
+  - PDF output now uses `Eq.~\ref{eq:id}` instead of `\eqref{eq:id}` to avoid automatic parentheses
+  - DOCX output now shows "Eq. 7" instead of just "7"
+  - Prevents double parentheses when users write text like "(Eq. @eq:id)"
+  - Maintains consistency between PDF and DOCX outputs
+  - Non-breaking space (~) ensures "Eq." and number stay together in PDF
+  - Modified `convert_equation_references_to_latex()` in `src/rxiv_maker/converters/figure_processor.py`
+  - Modified equation reference replacement in `src/rxiv_maker/exporters/docx_exporter.py`
+
 ## [v1.14.0] - 2025-12-05
 
 ### Added
