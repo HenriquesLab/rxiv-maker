@@ -367,8 +367,9 @@ class BibliographyListCommand(BaseCommand):
                     if not bib_filename.endswith(".bib"):
                         bib_filename += ".bib"
                     bib_path = self.path_manager.manuscript_path / bib_filename
-                except Exception:
-                    pass  # Fall back to default
+                except Exception:  # nosec B110
+                    # Silently fall back to default if config is invalid or missing bibliography key
+                    pass
 
             if not bib_path.exists():
                 if format == "json":

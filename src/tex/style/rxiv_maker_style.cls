@@ -714,5 +714,5 @@
 
 % Paragraph formatting: no indentation, space between paragraphs
 \parindent=0pt
-\parskip=0.5\baselineskip plus 2pt minus 1pt
+\parskip=0.75\baselineskip plus 3pt minus 2pt
 \endinput

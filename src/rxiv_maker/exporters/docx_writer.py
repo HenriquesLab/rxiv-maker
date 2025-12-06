@@ -8,10 +8,11 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from docx import Document
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_COLOR_INDEX
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt
+from latex2mathml.converter import convert as latex_to_mathml
 from lxml import etree
 
 from ..core.logging_config import get_logger
@@ -30,6 +31,7 @@ class DocxWriter:
         output_path: Path,
         include_footnotes: bool = True,
         base_path: Optional[Path] = None,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> Path:
         """Write DOCX file from structured content.
 
@@ -39,6 +41,7 @@ class DocxWriter:
             output_path: Path where DOCX file should be saved
             include_footnotes: Whether to add DOI footnotes
             base_path: Base path for resolving relative figure paths
+            metadata: Document metadata (title, authors, affiliations)
 
         Returns:
             Path to created DOCX file
@@ -48,28 +51,34 @@ class DocxWriter:
         self.include_footnotes = include_footnotes
         doc = Document()
 
-        # Collect figures to add at the end and create label->number mapping
-        figures = []
+        # Add title and author information if metadata provided
+        if metadata:
+            self._add_title_page(doc, metadata)
+
+        # Build figure numbering map (figures stay inline in text)
         figure_map = {}  # Maps label to number
+        figure_counter = 0
 
         for section in doc_structure["sections"]:
             if section["type"] == "figure":
+                figure_counter += 1
                 label = section.get("label", "")
                 if label:
-                    figure_map[label] = len(figures) + 1  # 1-indexed
-                figures.append(section)
+                    figure_map[label] = figure_counter
 
         # Store figure map for use in text processing
         self.figure_map = figure_map
 
-        # Process each section (skip figures for now)
+        # Process each section INCLUDING figures inline
+        figure_counter = 0
         for section in doc_structure["sections"]:
             if section["type"] == "figure":
-                continue  # Skip figures, we'll add them at the end
+                figure_counter += 1
+                self._add_figure(doc, section, figure_number=figure_counter)
             else:
                 self._add_section(doc, section, bibliography, include_footnotes)
 
-        # Add bibliography section (before figures)
+        # Add bibliography section at the end
         if include_footnotes and bibliography:
             doc.add_page_break()
             doc.add_heading("Bibliography", level=1)
@@ -96,22 +105,84 @@ class DocxWriter:
                 # Add spacing between entries
                 para.paragraph_format.space_after = Pt(6)
 
-        # Add figures at the end
-        if figures:
-            # Add page break before figures
-            doc.add_page_break()
-
-            # Add "Figures" heading
-            doc.add_heading("Figures", level=1)
-
-            # Add each figure with its caption and number
-            for i, figure in enumerate(figures, start=1):
-                self._add_figure(doc, figure, figure_number=i)
-                # Spacing is handled within _add_figure (space_after on caption)
-
         # Save document
         doc.save(str(output_path))
         return output_path
+
+    def _add_title_page(self, doc: Document, metadata: Dict[str, Any]):
+        """Add title, author and affiliation information.
+
+        Args:
+            doc: Document object
+            metadata: Metadata dictionary with title and authors
+        """
+        # Add title first
+        title = metadata.get("title", "")
+        if title:
+            # Title can be a string or a list with 'long' format
+            if isinstance(title, list) and len(title) > 0:
+                title_text = title[0].get("long", "")
+            else:
+                title_text = title
+
+            if title_text:
+                title_para = doc.add_paragraph(title_text)
+                title_para.runs[0].font.size = Pt(16)
+                title_para.runs[0].bold = True
+                title_para.paragraph_format.space_after = Pt(12)
+
+        # Then add author and affiliation info
+        authors = metadata.get("authors", [])
+        if not authors:
+            return  # Nothing more to add
+
+        # Collect unique affiliations and build mapping
+        all_affiliations = []
+        affiliation_map = {}  # Maps affiliation string to number
+
+        for author in authors:
+            author_affils = author.get("affiliations", [])
+            for affil in author_affils:
+                if affil not in affiliation_map:
+                    affiliation_map[affil] = len(affiliation_map) + 1
+                    all_affiliations.append(affil)
+
+        # Add authors with superscript affiliation numbers
+        if authors:
+            author_para = doc.add_paragraph()
+            for i, author in enumerate(authors):
+                if i > 0:
+                    author_para.add_run(", ")
+
+                # Add author name
+                name = author.get("name", "")
+                author_para.add_run(name)
+
+                # Add superscript affiliation numbers
+                author_affils = author.get("affiliations", [])
+                if author_affils:
+                    affil_nums = [str(affiliation_map[a]) for a in author_affils]
+                    sup_run = author_para.add_run(",".join(affil_nums))
+                    sup_run.font.superscript = True
+
+            author_para.paragraph_format.space_after = Pt(8)
+
+        # Add affiliations
+        if all_affiliations:
+            for i, affil_text in enumerate(all_affiliations, start=1):
+                affil_para = doc.add_paragraph()
+
+                # Add superscript number
+                num_run = affil_para.add_run(str(i))
+                num_run.font.superscript = True
+
+                # Add affiliation text
+                affil_para.add_run(f" {affil_text}")
+                affil_para.paragraph_format.space_after = Pt(4)
+                affil_para.runs[1].font.size = Pt(10)
+
+            # Extra space after last affiliation
+            affil_para.paragraph_format.space_after = Pt(12)
 
     def _add_section(
         self,
@@ -132,6 +203,8 @@ class DocxWriter:
 
         if section_type == "heading":
             self._add_heading(doc, section)
+        elif section_type == "snote_title":
+            self._add_snote_title(doc, section)
         elif section_type == "paragraph":
             self._add_paragraph(doc, section, bibliography, include_footnotes)
         elif section_type == "list":
@@ -140,6 +213,29 @@ class DocxWriter:
             self._add_code_block(doc, section)
         elif section_type == "figure":
             self._add_figure(doc, section)
+        elif section_type == "table":
+            self._add_table(doc, section)
+        elif section_type == "equation":
+            self._add_equation(doc, section)
+        elif section_type == "page_break":
+            self._add_page_break(doc)
+
+    def _add_snote_title(self, doc: Document, section: Dict[str, Any]):
+        """Add supplementary note title to document.
+
+        Args:
+            doc: Document object
+            section: Supplementary note title with 'label' and 'text'
+        """
+        _label = section.get("label", "")  # Reserved for future use
+        text = section.get("text", "")
+
+        # Add as bold heading
+        para = doc.add_heading(level=3)
+        para.clear()
+        run = para.add_run(text)
+        run.bold = True
+        run.font.size = Pt(12)
 
     def _add_heading(self, doc: Document, section: Dict[str, Any]):
         """Add heading to document.
@@ -198,16 +294,23 @@ class DocxWriter:
             if run_data.get("code"):
                 run.font.name = "Courier New"
                 run.font.size = Pt(10)
+            if run_data.get("xref"):
+                run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+
+        elif run_data["type"] == "inline_equation":
+            # Add inline equation as Office Math
+            latex_content = run_data.get("latex", "")
+            self._add_inline_equation(paragraph, latex_content)
 
         elif run_data["type"] == "citation":
             cite_num = run_data["number"]
-            # Add citation as [NN] inline (endnotes, not footnotes)
+            # Add citation as [NN] inline with yellow highlighting
             run = paragraph.add_run(f"[{cite_num}]")
-            run.bold = True
+            run.font.highlight_color = WD_COLOR_INDEX.YELLOW
             run.font.size = Pt(10)
 
     def _add_list(self, doc: Document, section: Dict[str, Any]):
-        """Add list to document.
+        """Add list to document with inline formatting.
 
         Args:
             doc: Document object
@@ -215,9 +318,37 @@ class DocxWriter:
         """
         list_type = section["list_type"]
         items = section["items"]
+        style = "List Bullet" if list_type == "bullet" else "List Number"
 
-        for item in items:
-            doc.add_paragraph(item, style="List Bullet" if list_type == "bullet" else "List Number")
+        for item_runs in items:
+            # Create paragraph with list style
+            paragraph = doc.add_paragraph(style=style)
+
+            # Add each run with its formatting
+            for run_data in item_runs:
+                if run_data["type"] == "text":
+                    text = run_data["text"]
+                    run = paragraph.add_run(text)
+
+                    # Apply formatting
+                    if run_data.get("bold"):
+                        run.bold = True
+                    if run_data.get("italic"):
+                        run.italic = True
+                    if run_data.get("code"):
+                        run.font.name = "Courier New"
+                    if run_data.get("xref"):
+                        run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                        run.font.size = Pt(10)
+                elif run_data["type"] == "inline_equation":
+                    # Add inline equation as Office Math
+                    latex_content = run_data.get("latex", "")
+                    self._add_inline_equation(paragraph, latex_content)
+                elif run_data["type"] == "citation":
+                    cite_num = run_data["number"]
+                    run = paragraph.add_run(f"[{cite_num}]")
+                    run.bold = True
+                    run.font.size = Pt(10)
 
     def _add_code_block(self, doc: Document, section: Dict[str, Any]):
         """Add code block to document.
@@ -253,17 +384,25 @@ class DocxWriter:
         if not figure_path.is_absolute():
             figure_path = self.base_path / figure_path
 
-        # Try to convert PDF to image if it's a PDF
-        img_bytes = None
-        if figure_path.exists() and figure_path.suffix.lower() == ".pdf":
-            img_bytes = convert_pdf_to_image(figure_path)
-        elif not figure_path.exists():
-            logger.warning(f"Figure file not found: {figure_path}")
+        # Handle different image types
+        img_source = None
 
-        if img_bytes:
+        if not figure_path.exists():
+            logger.warning(f"Figure file not found: {figure_path}")
+        elif figure_path.suffix.lower() == ".pdf":
+            # Convert PDF to image
+            img_source = convert_pdf_to_image(figure_path)
+            logger.debug(f"  PDF converted: {img_source is not None}")
+        elif figure_path.suffix.lower() in [".png", ".jpg", ".jpeg", ".gif", ".bmp"]:
+            # Use image file directly
+            img_source = str(figure_path)
+        else:
+            logger.warning(f"Unsupported image format: {figure_path.suffix}")
+
+        if img_source:
             # Add image
             try:
-                doc.add_picture(img_bytes, width=Inches(6))
+                doc.add_picture(img_source, width=Inches(6))
                 logger.debug(f"Embedded figure: {figure_path}")
             except Exception as e:
                 logger.warning(f"Failed to embed figure {figure_path}: {e}")
@@ -272,7 +411,7 @@ class DocxWriter:
                 run = p.add_run(f"[Figure: {figure_path.name}]")
                 run.italic = True
         else:
-            # Add placeholder if conversion failed or not a PDF
+            # Add placeholder if embedding failed
             p = doc.add_paragraph()
             run = p.add_run(f"[Figure: {figure_path.name}]")
             run.italic = True
@@ -283,18 +422,369 @@ class DocxWriter:
             caption_para = doc.add_paragraph()
             caption_para.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
-            # Format as "Figure number: caption"
+            # Format as "Figure number: "
             if figure_number:
                 run = caption_para.add_run(f"Figure {figure_number}: ")
                 run.bold = True
+                run.font.size = Pt(8)
             else:
                 run = caption_para.add_run("Figure: ")
                 run.bold = True
+                run.font.size = Pt(8)
 
-            caption_para.add_run(caption)
+            # Parse and add caption with inline formatting
+            # Import the processor to parse inline formatting
+            from rxiv_maker.exporters.docx_content_processor import DocxContentProcessor
+
+            processor = DocxContentProcessor()
+            caption_runs = processor._parse_inline_formatting(caption, {})
+
+            for run_data in caption_runs:
+                if run_data["type"] == "text":
+                    text = run_data["text"]
+                    run = caption_para.add_run(text)
+                    run.font.size = Pt(8)
+
+                    # Apply formatting
+                    if run_data.get("bold"):
+                        run.bold = True
+                    if run_data.get("italic"):
+                        run.italic = True
+                    if run_data.get("code"):
+                        run.font.name = "Courier New"
+                    if run_data.get("xref"):
+                        run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                elif run_data["type"] == "inline_equation":
+                    # Add inline equation as Office Math
+                    latex_content = run_data.get("latex", "")
+                    self._add_inline_equation(caption_para, latex_content)
+                elif run_data["type"] == "citation":
+                    cite_num = run_data["number"]
+                    run = caption_para.add_run(f"[{cite_num}]")
+                    run.bold = True
+                    run.font.size = Pt(8)
 
             # Add spacing after figure
             caption_para.paragraph_format.space_after = Pt(12)
+
+    def _add_table(self, doc: Document, section: Dict[str, Any]):
+        """Add table to document.
+
+        Args:
+            doc: Document object
+            section: Table section data with 'headers' and 'rows'
+        """
+        from rxiv_maker.exporters.docx_content_processor import DocxContentProcessor
+
+        processor = DocxContentProcessor()
+
+        headers = section["headers"]
+        rows = section["rows"]
+
+        # Create table
+        table = doc.add_table(rows=len(rows) + 1, cols=len(headers))
+        table.style = "Light Grid Accent 1"
+
+        # Add header row with inline formatting
+        header_cells = table.rows[0].cells
+        for i, header in enumerate(headers):
+            # Clear default paragraph
+            header_cells[i].text = ""
+            paragraph = header_cells[i].paragraphs[0]
+
+            # Parse inline formatting
+            header_runs = processor._parse_inline_formatting(header, {})
+
+            for run_data in header_runs:
+                if run_data["type"] == "text":
+                    text = run_data["text"]
+                    run = paragraph.add_run(text)
+                    # Headers are always bold by default, but respect markdown formatting
+                    run.bold = True if run_data.get("bold") else True  # All headers bold
+                    if run_data.get("italic"):
+                        run.italic = True
+                    if run_data.get("code"):
+                        run.font.name = "Courier New"
+
+        # Add data rows with inline formatting
+        for row_idx, row_data in enumerate(rows):
+            row_cells = table.rows[row_idx + 1].cells
+            for col_idx, cell_data in enumerate(row_data):
+                if col_idx < len(row_cells):
+                    # Clear default paragraph
+                    row_cells[col_idx].text = ""
+                    paragraph = row_cells[col_idx].paragraphs[0]
+
+                    # Parse inline formatting
+                    cell_runs = processor._parse_inline_formatting(cell_data, {})
+
+                    for run_data in cell_runs:
+                        if run_data["type"] == "text":
+                            text = run_data["text"]
+                            run = paragraph.add_run(text)
+                            if run_data.get("bold"):
+                                run.bold = True
+                            if run_data.get("italic"):
+                                run.italic = True
+                            if run_data.get("code"):
+                                run.font.name = "Courier New"
+                            if run_data.get("xref"):
+                                run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+
+        # Add table caption if present
+        caption = section.get("caption")
+        label = section.get("label")
+        if caption:
+            caption_para = doc.add_paragraph()
+            caption_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+            # Determine table number from label (e.g., "stable:structural_models" -> "Supp. Table 1")
+            if label and label.startswith("stable:"):
+                # Count how many supplementary tables we've seen so far
+                # For now, we'll just format as "Supp. Table: caption"
+                # A more sophisticated approach would track table numbers
+                run = caption_para.add_run("Supp. Table: ")
+                run.bold = True
+                run.font.size = Pt(8)
+            elif label and label.startswith("table:"):
+                run = caption_para.add_run("Table: ")
+                run.bold = True
+                run.font.size = Pt(8)
+
+            # Parse and add caption with inline formatting
+            caption_runs = processor._parse_inline_formatting(caption, {})
+            for run_data in caption_runs:
+                if run_data["type"] == "text":
+                    text = run_data["text"]
+                    run = caption_para.add_run(text)
+                    run.font.size = Pt(8)
+                    if run_data.get("bold"):
+                        run.bold = True
+                    if run_data.get("italic"):
+                        run.italic = True
+                    if run_data.get("code"):
+                        run.font.name = "Courier New"
+                    if run_data.get("xref"):
+                        run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+
+            caption_para.paragraph_format.space_after = Pt(12)
+
+        # Add spacing after table
+        doc.add_paragraph()
+
+    def _add_inline_equation(self, paragraph, latex_content: str):
+        """Add inline equation to paragraph as Office Math.
+
+        Args:
+            paragraph: Paragraph object to add equation to
+            latex_content: LaTeX equation content
+        """
+        if not latex_content:
+            return
+
+        try:
+            # Convert LaTeX to MathML
+            mathml_str = latex_to_mathml(latex_content)
+
+            # Parse MathML
+            mathml_root = etree.fromstring(mathml_str.encode("utf-8"))
+
+            # Convert MathML to OMML
+            omml_root = self._mathml_to_omml(mathml_root)
+
+            # Insert the OMML element inline into the paragraph
+            paragraph._element.append(omml_root)
+
+        except Exception as e:
+            logger.debug(f"Could not convert inline equation to OMML: {e}")
+            # Fallback: add as italic text
+            run = paragraph.add_run(latex_content)
+            run.italic = True
+            run.font.size = Pt(10)
+
+    def _add_equation(self, doc: Document, section: Dict[str, Any]):
+        """Add equation to document as native Office Math.
+
+        Args:
+            doc: Document object
+            section: Equation section data with 'content' (LaTeX) and optional 'label'
+        """
+        latex_content = section.get("content", "")
+        _label = section.get("label", "")  # Reserved for future use (equation numbering)
+
+        if not latex_content:
+            return
+
+        try:
+            logger.debug(f"Converting equation to OMML: {latex_content[:50]}...")
+
+            # Convert LaTeX to MathML
+            mathml_str = latex_to_mathml(latex_content)
+            logger.debug(f"MathML generated: {mathml_str[:100]}...")
+
+            # Parse MathML
+            mathml_root = etree.fromstring(mathml_str.encode("utf-8"))
+
+            # Convert MathML to OMML (Office Math Markup Language)
+            omml_root = self._mathml_to_omml(mathml_root)
+            logger.debug(f"OMML element created: {type(omml_root)}")
+
+            # Create a paragraph for the equation
+            para = doc.add_paragraph()
+            para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+            # Insert the OMML element into the paragraph
+            para._element.append(omml_root)
+            logger.info("Equation successfully added to document")
+
+            # Note: We don't display the equation label in DOCX since references
+            # are already converted to "Eq. X" format with yellow highlighting
+
+            # Add spacing after equation
+            para.paragraph_format.space_after = Pt(12)
+
+        except Exception as e:
+            logger.error(f"Could not convert equation to OMML: {e}")
+            logger.debug(f"LaTeX content: {latex_content}")
+            import traceback
+
+            logger.debug(traceback.format_exc())
+            # Fallback: add as monospace text
+            para = doc.add_paragraph()
+            para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run = para.add_run(latex_content)
+            run.font.name = "Courier New"
+            run.font.size = Pt(10)
+            para.paragraph_format.space_after = Pt(12)
+
+    def _mathml_to_omml(self, mathml_elem):
+        """Convert MathML to OMML (Office Math Markup Language).
+
+        Args:
+            mathml_elem: MathML element (lxml element)
+
+        Returns:
+            OMML element (OxmlElement)
+        """
+        # For now, use basic OMML structure
+        # A full implementation would use XSLT transformation
+        return self._create_basic_omml(mathml_elem)
+
+    def _create_basic_omml(self, mathml_elem):
+        """Create a basic OMML structure when XSLT transformation fails.
+
+        Args:
+            mathml_elem: MathML element
+
+        Returns:
+            Basic OMML element
+        """
+        # Create oMath element (namespace will be handled by python-docx)
+        oMath = OxmlElement("m:oMath")
+
+        # Extract text content
+        math_text = self._extract_mathml_text(mathml_elem)
+
+        # Create a run with the math text
+        r = OxmlElement("m:r")
+
+        # Add text element
+        t = OxmlElement("m:t")
+        t.text = math_text
+        r.append(t)
+
+        oMath.append(r)
+
+        return oMath
+
+    def _extract_mathml_text(self, elem):
+        """Extract text content from MathML element.
+
+        Args:
+            elem: MathML element
+
+        Returns:
+            String with text content
+        """
+        text_parts = []
+        if elem.text:
+            text_parts.append(elem.text)
+        for child in elem:
+            text_parts.append(self._extract_mathml_text(child))
+            if child.tail:
+                text_parts.append(child.tail)
+        return "".join(text_parts)
+
+    def _get_mml2omml_xslt(self):
+        """Get simplified MathML to OMML XSLT transformation.
+
+        Returns:
+            XSLT stylesheet as string
+        """
+        # Simplified XSLT for basic MathML to OMML conversion
+        # This is a minimal implementation - a full version would handle all MathML elements
+        return """<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="1.0"
+    xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:mml="http://www.w3.org/1998/Math/MathML"
+    xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">
+
+    <xsl:output method="xml" indent="no" encoding="UTF-8"/>
+
+    <xsl:template match="/">
+        <m:oMath>
+            <xsl:apply-templates/>
+        </m:oMath>
+    </xsl:template>
+
+    <xsl:template match="mml:math">
+        <xsl:apply-templates/>
+    </xsl:template>
+
+    <xsl:template match="mml:mi|mml:mn|mml:mo|mml:mtext">
+        <m:r>
+            <m:t><xsl:value-of select="."/></m:t>
+        </m:r>
+    </xsl:template>
+
+    <xsl:template match="mml:mrow">
+        <xsl:apply-templates/>
+    </xsl:template>
+
+    <xsl:template match="mml:msub">
+        <m:sSub>
+            <m:e><xsl:apply-templates select="*[1]"/></m:e>
+            <m:sub><xsl:apply-templates select="*[2]"/></m:sub>
+        </m:sSub>
+    </xsl:template>
+
+    <xsl:template match="mml:msup">
+        <m:sSup>
+            <m:e><xsl:apply-templates select="*[1]"/></m:e>
+            <m:sup><xsl:apply-templates select="*[2]"/></m:sup>
+        </m:sSup>
+    </xsl:template>
+
+    <xsl:template match="mml:mfrac">
+        <m:f>
+            <m:num><xsl:apply-templates select="*[1]"/></m:num>
+            <m:den><xsl:apply-templates select="*[2]"/></m:den>
+        </m:f>
+    </xsl:template>
+
+    <xsl:template match="text()">
+        <xsl:value-of select="."/>
+    </xsl:template>
+
+</xsl:stylesheet>"""
+
+    def _add_page_break(self, doc: Document):
+        """Add page break to document.
+
+        Args:
+            doc: Document object
+        """
+        doc.add_page_break()
 
     def _add_footnote(self, paragraph, cite_num: int, bib_entry: Dict[str, Any]):
         """Add footnote with bibliography entry and DOI.

@@ -517,7 +517,19 @@ def _format_regular_table_cell(cell: str, citation_style: str = "numbered") -> s
     # Apply formatting outside texttt blocks
     cell = _apply_formatting_outside_texttt(cell)
 
-    # Process citations after formatting but before escaping
+    # Process cross-references BEFORE citations (to avoid @fig/@sfig being treated as citation keys)
+    from .figure_processor import (
+        convert_equation_references_to_latex,
+        convert_figure_references_to_latex,
+    )
+    from .supplementary_note_processor import process_supplementary_note_references
+
+    cell = convert_figure_references_to_latex(cell)
+    cell = convert_table_references_to_latex(cell)
+    cell = convert_equation_references_to_latex(cell)
+    cell = process_supplementary_note_references(cell)
+
+    # Process citations after cross-references but before escaping
     cell = convert_citations_to_latex(cell, citation_style)
 
     # Escape remaining special characters outside LaTeX commands
@@ -779,11 +791,11 @@ def _escape_underscores_outside_cite(text: str) -> str:
 
 def _escape_outside_latex_commands(text: str) -> str:
     """Escape special characters outside LaTeX formatting commands."""
-    # Split on all LaTeX formatting commands to protect them
-    parts = _split_on_latex_commands(text, ["texttt", "textbf", "textit"])
+    # Split on all LaTeX formatting and reference commands to protect them
+    parts = _split_on_latex_commands(text, ["texttt", "textbf", "textit", "ref", "cite"])
     result: list[str] = []
     for _i, part in enumerate(parts):
-        if part.startswith(("\\texttt{", "\\textbf{", "\\textit{")):
+        if part.startswith(("\\texttt{", "\\textbf{", "\\textit{", "\\ref{", "\\cite{")):
             # For code blocks, ensure % is escaped so it doesn't start a LaTeX comment
             if part.startswith("\\texttt{"):
                 # Replace unescaped % with \%

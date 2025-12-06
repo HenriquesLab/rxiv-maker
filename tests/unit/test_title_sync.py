@@ -466,7 +466,7 @@ class TestEdgeCases:
             f.write("# Test\n")
 
         # Should handle gracefully without crashing
-        result = sync_titles(temp_manuscript_dir, auto_sync=True)
+        _ = sync_titles(temp_manuscript_dir, auto_sync=True)
         # Exact outcome depends on implementation, but should not crash
 
     def test_unicode_in_title(self, temp_manuscript_dir):

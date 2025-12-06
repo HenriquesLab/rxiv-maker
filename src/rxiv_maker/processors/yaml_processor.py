@@ -11,6 +11,15 @@ try:
 except ImportError:
     yaml = None  # type: ignore[assignment]
 
+# Import configuration defaults
+try:
+    from ..config.defaults import get_config_with_defaults
+except ImportError:
+    # Fallback if config module is not available
+    def get_config_with_defaults(config):
+        """Fallback function if defaults module is not available."""
+        return config
+
 
 # Import email processing utilities
 def _get_email_processor():
@@ -47,6 +56,46 @@ def find_config_file(md_file):
     return None
 
 
+def extract_abstract_from_markdown(md_file):
+    """Extract abstract section from markdown file.
+
+    Looks for ## Abstract section and extracts content between it and the next
+    ## heading.
+
+    Args:
+        md_file: Path to markdown file
+
+    Returns:
+        Abstract text or None if not found
+    """
+    from pathlib import Path
+
+    md_path = Path(md_file)
+    manuscript_dir = md_path.parent
+    main_md = manuscript_dir / "01_MAIN.md"
+
+    if not main_md.exists():
+        return None
+
+    try:
+        content = main_md.read_text(encoding="utf-8")
+
+        # Remove YAML frontmatter if present
+        content = re.sub(r"^---\n.*?\n---\n", "", content, flags=re.DOTALL)
+
+        # Find abstract section (case-insensitive)
+        # Match: ## Abstract followed by content until next ## heading or end of file
+        match = re.search(r"##\s+Abstract\s*\n(.*?)(?=\n##|\Z)", content, re.DOTALL | re.IGNORECASE)
+        if match:
+            abstract = match.group(1).strip()
+            return abstract
+
+    except Exception as e:
+        print(f"Warning: Could not extract abstract from 01_MAIN.md: {e}")
+
+    return None
+
+
 def extract_yaml_metadata(md_file):
     """Extract yaml metadata from separate config file or from the markdown file."""
     # First try to find separate config file
@@ -62,6 +111,14 @@ def extract_yaml_metadata(md_file):
                 # Process email64 fields if present
                 if metadata and "authors" in metadata:
                     metadata["authors"] = process_author_emails(metadata["authors"])
+                # Apply defaults for missing optional fields
+                if metadata:
+                    metadata = get_config_with_defaults(metadata)
+                    # Auto-extract abstract if not provided in config
+                    if not metadata.get("abstract"):
+                        abstract = extract_abstract_from_markdown(md_file)
+                        if abstract:
+                            metadata["abstract"] = abstract
                 return metadata
             except yaml.YAMLError as e:
                 print(f"Error parsing YAML config file: {e}")
@@ -71,6 +128,14 @@ def extract_yaml_metadata(md_file):
             # Process email64 fields if present
             if metadata and "authors" in metadata:
                 metadata["authors"] = process_author_emails(metadata["authors"])
+            # Apply defaults for missing optional fields
+            if metadata:
+                metadata = get_config_with_defaults(metadata)
+                # Auto-extract abstract if not provided in config
+                if not metadata.get("abstract"):
+                    abstract = extract_abstract_from_markdown(md_file)
+                    if abstract:
+                        metadata["abstract"] = abstract
             return metadata
 
     # Fall back to extracting from markdown file
@@ -88,6 +153,14 @@ def extract_yaml_metadata(md_file):
                 # Process email64 fields if present
                 if metadata and "authors" in metadata:
                     metadata["authors"] = process_author_emails(metadata["authors"])
+                # Apply defaults for missing optional fields
+                if metadata:
+                    metadata = get_config_with_defaults(metadata)
+                    # Auto-extract abstract if not provided in config
+                    if not metadata.get("abstract"):
+                        abstract = extract_abstract_from_markdown(md_file)
+                        if abstract:
+                            metadata["abstract"] = abstract
                 return metadata
             except yaml.YAMLError as e:
                 print(f"Error parsing YAML: {e}")
@@ -98,6 +171,14 @@ def extract_yaml_metadata(md_file):
             # Process email64 fields if present
             if metadata and "authors" in metadata:
                 metadata["authors"] = process_author_emails(metadata["authors"])
+            # Apply defaults for missing optional fields
+            if metadata:
+                metadata = get_config_with_defaults(metadata)
+                # Auto-extract abstract if not provided in config
+                if not metadata.get("abstract"):
+                    abstract = extract_abstract_from_markdown(md_file)
+                    if abstract:
+                        metadata["abstract"] = abstract
             return metadata
     else:
         return {}

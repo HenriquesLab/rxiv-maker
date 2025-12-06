@@ -109,20 +109,30 @@ class DOIValidator(BaseValidator):
             temp_cache_dir = tempfile.mkdtemp(prefix="rxiv_doi_cache_")
             self.cache = DOICache(temp_cache_dir)
 
-        # Initialize API clients
-        self.crossref_client = CrossRefClient()
-        self.datacite_client = DataCiteClient()
-        self.joss_client = JOSSClient()
-        self.doi_resolver = DOIResolver(cache=self.cache)
+        # Initialize API clients with aggressive timeouts to prevent hanging
+        # Use 5-second timeout and 2 retries to ensure validation completes quickly
+        client_timeout = 5  # Reduced from default 10s
+        client_retries = 2  # Reduced from default 3
+        self.crossref_client = CrossRefClient(timeout=client_timeout, max_retries=client_retries)
+        self.datacite_client = DataCiteClient(timeout=client_timeout, max_retries=client_retries)
+        self.joss_client = JOSSClient(timeout=client_timeout, max_retries=client_retries)
+        self.doi_resolver = DOIResolver(cache=self.cache, timeout=client_timeout, max_retries=client_retries)
 
         # Initialize fallback API clients with configuration
+        # Use the same aggressive timeout and retry settings for fallback APIs
         if self.enable_fallback_apis:
-            self.openalex_client = OpenAlexClient(timeout=self.fallback_timeout) if self.enable_openalex else None
+            self.openalex_client = (
+                OpenAlexClient(timeout=client_timeout, max_retries=client_retries) if self.enable_openalex else None
+            )
             self.semantic_scholar_client = (
-                SemanticScholarClient(timeout=self.fallback_timeout) if self.enable_semantic_scholar else None
+                SemanticScholarClient(timeout=client_timeout, max_retries=client_retries)
+                if self.enable_semantic_scholar
+                else None
             )
             self.handle_system_client = (
-                HandleSystemClient(timeout=self.fallback_timeout) if self.enable_handle_system else None
+                HandleSystemClient(timeout=client_timeout, max_retries=client_retries)
+                if self.enable_handle_system
+                else None
             )
         else:
             self.openalex_client = None
@@ -191,13 +201,18 @@ class DOIValidator(BaseValidator):
             self.enable_online_validation = False
 
         # Check network connectivity before attempting online validation (unless bypassed for testing)
-        if self.enable_online_validation and not self.ignore_network_check and not self._check_network_connectivity():
-            logger.warning("Network connectivity unavailable, skipping online DOI validation")
-            self.enable_online_validation = False
+        if self.enable_online_validation and not self.ignore_network_check:
+            logger.info("Checking network connectivity for DOI validation...")
+            if not self._check_network_connectivity():
+                logger.warning("Network connectivity unavailable, skipping online DOI validation")
+                self.enable_online_validation = False
+            else:
+                logger.info("Network connectivity check passed")
 
         if not self.enable_online_validation:
             logger.info("Online DOI validation is disabled")
             # Still validate DOI format even when online validation is disabled
+            logger.info("Looking for bibliography files for format validation...")
             bib_files = list(Path(self.manuscript_path).glob("*.bib"))
             if not bib_files:
                 logger.warning("No .bib files found")
@@ -211,9 +226,12 @@ class DOIValidator(BaseValidator):
                     )
                 )
                 return ValidationResult(self.name, errors, metadata)
+            logger.info(f"Found {len(bib_files)} bib file(s), validating format only...")
             for bib_file in bib_files:
                 try:
+                    logger.info(f"Processing {bib_file.name}...")
                     file_errors, file_metadata = self._validate_bib_file_format_only(bib_file)
+                    logger.info(f"Finished processing {bib_file.name}")
                     errors.extend(file_errors)
                     # Merge metadata
                     for key in metadata:
@@ -232,6 +250,7 @@ class DOIValidator(BaseValidator):
             return ValidationResult(self.name, errors, metadata)
 
         # Find bibliography files
+        logger.info("Looking for bibliography files...")
         bib_files = list(Path(self.manuscript_path).glob("*.bib"))
         if not bib_files:
             logger.warning("No .bib files found")
@@ -245,6 +264,8 @@ class DOIValidator(BaseValidator):
                 )
             )
             return ValidationResult(self.name, errors, metadata)
+
+        logger.info(f"Found {len(bib_files)} bibliography file(s)")
 
         # Process bibliography files in parallel for better performance (if optimizations enabled)
         if len(bib_files) > 1 and self.enable_performance_optimizations:
@@ -376,25 +397,51 @@ class DOIValidator(BaseValidator):
         if len(doi_entries) > 20:
             logger.info(f"Processing {len(doi_entries)} DOI entries with batch optimization")
 
+        logger.info(f"Starting parallel DOI validation with {self.max_workers} workers...")
         # Validate DOI entries in parallel with enhanced performance monitoring
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             future_to_entry = {
                 executor.submit(self._validate_doi_entry, entry, str(bib_file)): entry for entry in doi_entries
             }
 
-            # Process results as they complete for better user feedback
+            # Process results with a timeout to prevent indefinite hanging on slow network calls
+            # With 5s timeout and 2 retries per DOI, 20s should be sufficient for most cases
+            timeout_seconds = 20
             completed_count = 0
-            for future in concurrent.futures.as_completed(future_to_entry):
-                entry_errors, entry_metadata = future.result()
-                errors.extend(entry_errors)
-                # Merge entry metadata
-                for key in metadata:
-                    if key in entry_metadata:
-                        metadata[key] += entry_metadata[key]
 
-                completed_count += 1
-                if len(doi_entries) > 10 and completed_count % 10 == 0:
-                    logger.info(f"Validated {completed_count}/{len(doi_entries)} DOIs...")
+            # Wait for all futures with a timeout
+            done, not_done = concurrent.futures.wait(
+                future_to_entry.keys(), timeout=timeout_seconds, return_when=concurrent.futures.ALL_COMPLETED
+            )
+
+            # Process completed futures
+            for future in done:
+                try:
+                    entry_errors, entry_metadata = future.result()
+                    errors.extend(entry_errors)
+                    # Merge entry metadata
+                    for key in metadata:
+                        if key in entry_metadata:
+                            metadata[key] += entry_metadata[key]
+
+                    completed_count += 1
+                    if len(doi_entries) > 10 and completed_count % 10 == 0:
+                        logger.info(f"Validated {completed_count}/{len(doi_entries)} DOIs...")
+                except Exception as e:
+                    # Log individual validation errors but continue processing
+                    logger.warning(f"DOI validation error for entry: {e}")
+
+            # Handle timeout - cancel remaining futures
+            if not_done:
+                logger.warning(
+                    f"DOI validation timed out after {timeout_seconds}s. "
+                    f"Validated {completed_count}/{len(doi_entries)} entries. "
+                    f"{len(not_done)} validations still pending. "
+                    "Continuing with partial results."
+                )
+                # Cancel remaining futures
+                for future in not_done:
+                    future.cancel()
 
         # Update checksum after successful validation
         self.checksum_manager.update_checksum(validation_completed=True)
