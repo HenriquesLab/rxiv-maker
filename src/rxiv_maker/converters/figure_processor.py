@@ -661,8 +661,15 @@ def _process_figure_with_attributes(text: MarkdownContent, is_supplementary: boo
         attr_string = match.group(3)
         caption_text = match.group(4).strip()
 
-        # If there's text in the image brackets and also in the caption, combine them
-        if image_caption and caption_text:
+        # Rule: If caption text starts with bold (**...**), use ONLY the caption
+        # (ignore alt text, as it's just for markdown display)
+        # Pattern: "**Title.** rest of caption..."
+
+        if caption_text and caption_text.lstrip().startswith("**"):
+            # Caption has a bold title - use only caption text
+            combined_caption = caption_text
+        elif image_caption and caption_text:
+            # Caption without bold title - combine alt text and caption
             combined_caption = f"{image_caption}. {caption_text}"
         elif image_caption:
             combined_caption = image_caption

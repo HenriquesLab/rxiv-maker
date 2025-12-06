@@ -92,75 +92,6 @@ class DocxExporter:
         markdown_content = self._load_markdown()
         logger.debug(f"Loaded {len(markdown_content)} characters of markdown")
 
-        # Step 2.5: Replace cross-references with numbers BEFORE citation extraction
-        # (to avoid @sfig:, @stable:, etc. being treated as citations)
-        import re
-
-        # Find all figures and create mapping
-        figure_labels = re.findall(r"!\[[^\]]*\]\([^)]+\)\s*\n\s*\{#fig:(\w+)", markdown_content)
-        figure_map = {label: i + 1 for i, label in enumerate(figure_labels)}
-
-        # Replace @fig:label with <<XREF>>Fig. X<</XREF>> in text, handling optional panel letters
-        for label, num in figure_map.items():
-            markdown_content = re.sub(
-                rf"@fig:{label}\b\s*([a-z,\-]*)",
-                lambda m, num=num: f"<<XREF>>Fig. {num}{m.group(1)}<</XREF>>"
-                if m.group(1)
-                else f"<<XREF>>Fig. {num}<</XREF>>",
-                markdown_content,
-            )
-
-        logger.debug(f"Mapped {len(figure_map)} figure labels to numbers")
-
-        # Find all supplementary figures and create mapping
-        sfig_labels = re.findall(r"!\[[^\]]*\]\([^)]+\)\s*\n\s*\{#sfig:(\w+)", markdown_content)
-        sfig_map = {label: i + 1 for i, label in enumerate(sfig_labels)}
-
-        # Replace @sfig:label with <<XREF>>Supp. Fig. X<</XREF>> in text
-        for label, num in sfig_map.items():
-            markdown_content = re.sub(
-                rf"@sfig:{label}\b\s*([a-z,\-]*)",
-                lambda m, num=num: f"<<XREF>>Supp. Fig. {num}{m.group(1)}<</XREF>>"
-                if m.group(1)
-                else f"<<XREF>>Supp. Fig. {num}<</XREF>>",
-                markdown_content,
-            )
-
-        logger.debug(f"Mapped {len(sfig_map)} supplementary figure labels to numbers")
-
-        # Find all tables and create mapping
-        table_labels = re.findall(r"\{#stable:(\w+)\}", markdown_content)
-        table_map = {label: i + 1 for i, label in enumerate(table_labels)}
-
-        # Replace @stable:label with <<XREF>>Supp. Table X<</XREF>> in text
-        for label, num in table_map.items():
-            markdown_content = re.sub(rf"@stable:{label}\b", f"<<XREF>>Supp. Table {num}<</XREF>>", markdown_content)
-
-        logger.debug(f"Mapped {len(table_map)} supplementary table labels to numbers")
-
-        # Find all supplementary notes and create mapping
-        snote_labels = re.findall(r"\{#snote:(\w+)\}", markdown_content)
-        snote_map = {label: i + 1 for i, label in enumerate(snote_labels)}
-
-        # Replace @snote:label with <<XREF>>Supp. Note X<</XREF>> in text
-        for label, num in snote_map.items():
-            markdown_content = re.sub(rf"@snote:{label}\b", f"<<XREF>>Supp. Note {num}<</XREF>>", markdown_content)
-
-        logger.debug(f"Mapped {len(snote_map)} supplementary note labels to numbers")
-
-        # Find all equations and create mapping
-        equation_labels = re.findall(r"\{#eq:(\w+)\}", markdown_content)
-        equation_map = {label: i + 1 for i, label in enumerate(equation_labels)}
-
-        # Replace equation references with <<XREF>>Eq. X<</XREF>>
-        for label, num in equation_map.items():
-            # Replace (@eq:label) with (<<XREF>>Eq. X<</XREF>>)
-            markdown_content = re.sub(rf"\(@eq:{label}\b\)", f"(<<XREF>>Eq. {num}<</XREF>>)", markdown_content)
-            # Replace @eq:label with <<XREF>>Eq. X<</XREF>>
-            markdown_content = re.sub(rf"@eq:{label}\b", f"<<XREF>>Eq. {num}<</XREF>>", markdown_content)
-
-        logger.debug(f"Mapped {len(equation_map)} equation labels to numbers")
-
         # Step 3: Extract and map citations
         citations = self.citation_mapper.extract_citations_from_markdown(markdown_content)
         citation_map = self.citation_mapper.create_mapping(citations)
@@ -173,9 +104,90 @@ class DocxExporter:
         # Step 5: Replace citations in text
         markdown_with_numbers = self.citation_mapper.replace_citations_in_text(markdown_content, citation_map)
 
+        # Step 5.5: Replace figure and equation references with numbers
+        import re
+
+        # Find all figures and create mapping
+        figure_labels = re.findall(r"!\[[^\]]*\]\([^)]+\)\s*\n\s*\{#fig:(\w+)", markdown_with_numbers)
+        figure_map = {label: i + 1 for i, label in enumerate(figure_labels)}
+
+        # Replace @fig:label with "Fig. X" in text, handling optional panel letters
+        # Pattern matches: @fig:label optionally followed by space and panel letter(s)
+        # Use special markers <<XREF>> to enable yellow highlighting in DOCX
+        for label, num in figure_map.items():
+            # Match @fig:label with optional space and panel (e.g., " a", " d,e", " a-c")
+            markdown_with_numbers = re.sub(
+                rf"@fig:{label}\b\s*([a-z,\-]*)",
+                lambda m, num=num: f"<<XREF>>Fig. {num}{m.group(1)}<</XREF>>"
+                if m.group(1)
+                else f"<<XREF>>Fig. {num}<</XREF>>",
+                markdown_with_numbers,
+            )
+
+        logger.debug(f"Mapped {len(figure_map)} figure labels to numbers")
+
+        # Find all supplementary figures and create mapping
+        sfig_labels = re.findall(r"!\[[^\]]*\]\([^)]+\)\s*\n\s*\{#sfig:(\w+)", markdown_with_numbers)
+        sfig_map = {label: i + 1 for i, label in enumerate(sfig_labels)}
+
+        # Replace @sfig:label with "Supp. Fig. X" in text, handling optional panel letters
+        for label, num in sfig_map.items():
+            markdown_with_numbers = re.sub(
+                rf"@sfig:{label}\b\s*([a-z,\-]*)",
+                lambda m, num=num: f"<<XREF>>Supp. Fig. {num}{m.group(1)}<</XREF>>"
+                if m.group(1)
+                else f"<<XREF>>Supp. Fig. {num}<</XREF>>",
+                markdown_with_numbers,
+            )
+
+        logger.debug(f"Mapped {len(sfig_map)} supplementary figure labels to numbers")
+
+        # Find all tables and create mapping (looking for {#stable:label} tags)
+        table_labels = re.findall(r"\{#stable:(\w+)\}", markdown_with_numbers)
+        table_map = {label: i + 1 for i, label in enumerate(table_labels)}
+
+        # Replace @stable:label with "Supp. Table X" in text
+        for label, num in table_map.items():
+            markdown_with_numbers = re.sub(
+                rf"@stable:{label}\b", f"<<XREF>>Supp. Table {num}<</XREF>>", markdown_with_numbers
+            )
+
+        logger.debug(f"Mapped {len(table_map)} supplementary table labels to numbers")
+
+        # Find all supplementary notes and create mapping (looking for {#snote:label} tags)
+        snote_labels = re.findall(r"\{#snote:(\w+)\}", markdown_with_numbers)
+        snote_map = {label: i + 1 for i, label in enumerate(snote_labels)}
+
+        # Replace @snote:label with "Supp. Note X" in text
+        for label, num in snote_map.items():
+            markdown_with_numbers = re.sub(
+                rf"@snote:{label}\b", f"<<XREF>>Supp. Note {num}<</XREF>>", markdown_with_numbers
+            )
+
+        logger.debug(f"Mapped {len(snote_map)} supplementary note labels to numbers")
+
+        # Find all equations and create mapping (looking for {#eq:label} tags)
+        equation_labels = re.findall(r"\{#eq:(\w+)\}", markdown_with_numbers)
+        equation_map = {label: i + 1 for i, label in enumerate(equation_labels)}
+
+        # Replace @eq:label with "Eq. X"
+        # Handle both @eq:label and (@eq:label) formats
+        for label, num in equation_map.items():
+            # Replace (@eq:label) with (Eq. X)
+            markdown_with_numbers = re.sub(
+                rf"\(@eq:{label}\b\)", f"(<<XREF>>Eq. {num}<</XREF>>)", markdown_with_numbers
+            )
+            # Replace @eq:label with Eq. X
+            markdown_with_numbers = re.sub(rf"@eq:{label}\b", f"<<XREF>>Eq. {num}<</XREF>>", markdown_with_numbers)
+
+        logger.debug(f"Mapped {len(equation_map)} equation labels to numbers")
+
         # Step 6: Convert content to DOCX structure
         doc_structure = self.content_processor.parse(markdown_with_numbers, citation_map)
         logger.debug(f"Parsed {len(doc_structure['sections'])} sections")
+
+        # Step 6.5: Get metadata for title page
+        metadata = self._get_metadata()
 
         # Step 7: Write DOCX file
         output_path = self._get_output_path()
@@ -185,6 +197,7 @@ class DocxExporter:
             output_path,
             include_footnotes=self.include_footnotes,
             base_path=self.path_manager.manuscript_path,
+            metadata=metadata,
         )
         logger.info(f"DOCX exported successfully: {docx_path}")
 
@@ -232,7 +245,9 @@ class DocxExporter:
             logger.info("Including supplementary information")
             supp_content = supp_md.read_text(encoding="utf-8")
             supp_content = remove_yaml_header(supp_content)
-            # Don't add heading - SI file already has its own heading
+            # Add page break and SI title before supplementary content
+            content.append("<!-- PAGE_BREAK -->")
+            content.append("# Supplementary Information")
             content.append(supp_content)
         else:
             logger.debug("No supplementary information file found")
