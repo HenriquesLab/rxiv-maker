@@ -304,9 +304,9 @@ class DocxWriter:
 
         elif run_data["type"] == "citation":
             cite_num = run_data["number"]
-            # Add citation as [NN] inline (endnotes, not footnotes)
+            # Add citation as [NN] inline with yellow highlighting
             run = paragraph.add_run(f"[{cite_num}]")
-            run.bold = True
+            run.font.highlight_color = WD_COLOR_INDEX.YELLOW
             run.font.size = Pt(10)
 
     def _add_list(self, doc: Document, section: Dict[str, Any]):
