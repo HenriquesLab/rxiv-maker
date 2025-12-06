@@ -256,17 +256,28 @@ class DocxWriter:
         if not figure_path.is_absolute():
             figure_path = self.base_path / figure_path
 
-        # Try to convert PDF to image if it's a PDF
+        # Handle figure embedding based on file type
         img_bytes = None
-        if figure_path.exists() and figure_path.suffix.lower() == ".pdf":
-            img_bytes = convert_pdf_to_image(figure_path)
-        elif not figure_path.exists():
-            logger.warning(f"Figure file not found: {figure_path}")
+        img_path = None
 
-        if img_bytes:
+        if not figure_path.exists():
+            logger.warning(f"Figure file not found: {figure_path}")
+        elif figure_path.suffix.lower() == ".pdf":
+            # Convert PDF to image bytes
+            img_bytes = convert_pdf_to_image(figure_path)
+        elif figure_path.suffix.lower() in [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff"]:
+            # Use image file directly - python-docx supports these formats natively
+            img_path = str(figure_path)
+        else:
+            logger.warning(f"Unsupported figure format: {figure_path.suffix}")
+
+        if img_bytes or img_path:
             # Add image
             try:
-                doc.add_picture(img_bytes, width=Inches(6))
+                if img_bytes:
+                    doc.add_picture(img_bytes, width=Inches(6))
+                else:
+                    doc.add_picture(img_path, width=Inches(6))
                 logger.debug(f"Embedded figure: {figure_path}")
             except Exception as e:
                 logger.warning(f"Failed to embed figure {figure_path}: {e}")
@@ -275,7 +286,7 @@ class DocxWriter:
                 run = p.add_run(f"[Figure: {figure_path.name}]")
                 run.italic = True
         else:
-            # Add placeholder if conversion failed or not a PDF
+            # Add placeholder if file not found or unsupported format
             p = doc.add_paragraph()
             run = p.add_run(f"[Figure: {figure_path.name}]")
             run.italic = True
