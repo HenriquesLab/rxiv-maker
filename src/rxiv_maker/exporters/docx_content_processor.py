@@ -34,6 +34,9 @@ class DocxContentProcessor:
                 ]
             }
         """
+        # Store citation_map for use in other methods
+        self.citation_map = citation_map
+
         sections = []
         lines = markdown.split("\n")
 
@@ -204,9 +207,10 @@ class DocxContentProcessor:
         # For simplicity in MVP, we'll do a basic pass
         # More sophisticated parsing would use a state machine
 
-        # Pattern to match: **bold**, *italic*, `code`, [number]
+        # Pattern to match: <<XREF>>cross-ref<</XREF>>, **bold**, *italic*, `code`, [number]
         pattern = re.compile(
-            r"(\*\*([^*]+)\*\*)"  # Bold
+            r"(<<XREF>>([^<]+)<</XREF>>)"  # Cross-reference (XREF)
+            r"|(\*\*([^*]+)\*\*)"  # Bold
             r"|(\*([^*]+)\*)"  # Italic
             r"|(`([^`]+)`)"  # Code
             r"|(\[(\d+(?:,\s*\d+)*)\])"  # Citation numbers
@@ -222,15 +226,26 @@ class DocxContentProcessor:
                     runs.append({"type": "text", "text": before_text, "bold": False, "italic": False, "code": False})
 
             # Determine what was matched
-            if match.group(1):  # Bold
-                runs.append({"type": "text", "text": match.group(2), "bold": True, "italic": False, "code": False})
-            elif match.group(3):  # Italic
-                runs.append({"type": "text", "text": match.group(4), "bold": False, "italic": True, "code": False})
-            elif match.group(5):  # Code
-                runs.append({"type": "text", "text": match.group(6), "bold": False, "italic": False, "code": True})
-            elif match.group(7):  # Citation
+            if match.group(1):  # Cross-reference (XREF)
+                runs.append(
+                    {
+                        "type": "text",
+                        "text": match.group(2),
+                        "bold": False,
+                        "italic": False,
+                        "code": False,
+                        "xref": True,
+                    }
+                )
+            elif match.group(3):  # Bold
+                runs.append({"type": "text", "text": match.group(4), "bold": True, "italic": False, "code": False})
+            elif match.group(5):  # Italic
+                runs.append({"type": "text", "text": match.group(6), "bold": False, "italic": True, "code": False})
+            elif match.group(7):  # Code
+                runs.append({"type": "text", "text": match.group(8), "bold": False, "italic": False, "code": True})
+            elif match.group(9):  # Citation
                 # Parse citation numbers (may be multiple: [1, 2, 3])
-                numbers_str = match.group(8)
+                numbers_str = match.group(10)
                 numbers = [int(n.strip()) for n in numbers_str.split(",")]
                 for num in numbers:
                     runs.append({"type": "citation", "number": num})
@@ -270,7 +285,7 @@ class DocxContentProcessor:
         image_path = img_match.group(2)
 
         # Look ahead for caption line (skip empty lines)
-        caption = ""
+        caption_runs = []
         label = ""
         next_i = start_idx + 1
 
@@ -290,15 +305,14 @@ class DocxContentProcessor:
                     # Remove the {#fig:...} part
                     next_line = re.sub(r"\{#fig:[^}]*\}\s*", "", next_line)
 
-                # Extract caption (remove ** markdown)
-                caption = re.sub(r"\*\*([^*]+)\*\*", r"\1", next_line)
-                caption = caption.strip()
+                # Parse caption with inline formatting (citations, bold, etc.)
+                caption_runs = self._parse_inline_formatting(next_line.strip(), self.citation_map)
                 next_i += 1
 
         return {
             "type": "figure",
             "path": image_path,
             "alt": alt_text,
-            "caption": caption,
+            "caption_runs": caption_runs,
             "label": label,
         }, next_i

@@ -345,7 +345,7 @@ class ConfigValidator:
         schemas = {
             "manuscript_config": {
                 "type": "object",
-                "required": ["title", "authors"],
+                "required": ["title", "authors", "keywords", "citation_style"],
                 "properties": {
                     "title": {"type": "string", "minLength": 1},
                     "authors": {
@@ -362,7 +362,11 @@ class ConfigValidator:
                             },
                         },
                     },
-                    "abstract": {"type": "string", "minLength": 50},
+                    "abstract": {
+                        "type": "string",
+                        "minLength": 50,
+                        "description": "Optional - will be auto-extracted from ## Abstract section in 01_MAIN.md if not provided",
+                    },
                     "keywords": {"type": "array", "items": {"type": "string"}, "minItems": 3, "maxItems": 10},
                     "date": {"type": "string", "format": "date"},
                     "doi": {"type": "string", "pattern": r"^10\.\d{4,9}/[-._;()/:\w\[\]]+$"},

@@ -8,7 +8,7 @@ This module coordinates the DOCX export process, bringing together:
 """
 
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict
 
 from ..core.logging_config import get_logger
 from ..core.path_manager import PathManager
@@ -92,6 +92,75 @@ class DocxExporter:
         markdown_content = self._load_markdown()
         logger.debug(f"Loaded {len(markdown_content)} characters of markdown")
 
+        # Step 2.5: Replace cross-references with numbers BEFORE citation extraction
+        # (to avoid @sfig:, @stable:, etc. being treated as citations)
+        import re
+
+        # Find all figures and create mapping
+        figure_labels = re.findall(r"!\[[^\]]*\]\([^)]+\)\s*\n\s*\{#fig:(\w+)", markdown_content)
+        figure_map = {label: i + 1 for i, label in enumerate(figure_labels)}
+
+        # Replace @fig:label with <<XREF>>Fig. X<</XREF>> in text, handling optional panel letters
+        for label, num in figure_map.items():
+            markdown_content = re.sub(
+                rf"@fig:{label}\b\s*([a-z,\-]*)",
+                lambda m, num=num: f"<<XREF>>Fig. {num}{m.group(1)}<</XREF>>"
+                if m.group(1)
+                else f"<<XREF>>Fig. {num}<</XREF>>",
+                markdown_content,
+            )
+
+        logger.debug(f"Mapped {len(figure_map)} figure labels to numbers")
+
+        # Find all supplementary figures and create mapping
+        sfig_labels = re.findall(r"!\[[^\]]*\]\([^)]+\)\s*\n\s*\{#sfig:(\w+)", markdown_content)
+        sfig_map = {label: i + 1 for i, label in enumerate(sfig_labels)}
+
+        # Replace @sfig:label with <<XREF>>Supp. Fig. X<</XREF>> in text
+        for label, num in sfig_map.items():
+            markdown_content = re.sub(
+                rf"@sfig:{label}\b\s*([a-z,\-]*)",
+                lambda m, num=num: f"<<XREF>>Supp. Fig. {num}{m.group(1)}<</XREF>>"
+                if m.group(1)
+                else f"<<XREF>>Supp. Fig. {num}<</XREF>>",
+                markdown_content,
+            )
+
+        logger.debug(f"Mapped {len(sfig_map)} supplementary figure labels to numbers")
+
+        # Find all tables and create mapping
+        table_labels = re.findall(r"\{#stable:(\w+)\}", markdown_content)
+        table_map = {label: i + 1 for i, label in enumerate(table_labels)}
+
+        # Replace @stable:label with <<XREF>>Supp. Table X<</XREF>> in text
+        for label, num in table_map.items():
+            markdown_content = re.sub(rf"@stable:{label}\b", f"<<XREF>>Supp. Table {num}<</XREF>>", markdown_content)
+
+        logger.debug(f"Mapped {len(table_map)} supplementary table labels to numbers")
+
+        # Find all supplementary notes and create mapping
+        snote_labels = re.findall(r"\{#snote:(\w+)\}", markdown_content)
+        snote_map = {label: i + 1 for i, label in enumerate(snote_labels)}
+
+        # Replace @snote:label with <<XREF>>Supp. Note X<</XREF>> in text
+        for label, num in snote_map.items():
+            markdown_content = re.sub(rf"@snote:{label}\b", f"<<XREF>>Supp. Note {num}<</XREF>>", markdown_content)
+
+        logger.debug(f"Mapped {len(snote_map)} supplementary note labels to numbers")
+
+        # Find all equations and create mapping
+        equation_labels = re.findall(r"\{#eq:(\w+)\}", markdown_content)
+        equation_map = {label: i + 1 for i, label in enumerate(equation_labels)}
+
+        # Replace equation references with <<XREF>>Eq. X<</XREF>>
+        for label, num in equation_map.items():
+            # Replace (@eq:label) with (<<XREF>>Eq. X<</XREF>>)
+            markdown_content = re.sub(rf"\(@eq:{label}\b\)", f"(<<XREF>>Eq. {num}<</XREF>>)", markdown_content)
+            # Replace @eq:label with <<XREF>>Eq. X<</XREF>>
+            markdown_content = re.sub(rf"@eq:{label}\b", f"<<XREF>>Eq. {num}<</XREF>>", markdown_content)
+
+        logger.debug(f"Mapped {len(equation_map)} equation labels to numbers")
+
         # Step 3: Extract and map citations
         citations = self.citation_mapper.extract_citations_from_markdown(markdown_content)
         citation_map = self.citation_mapper.create_mapping(citations)
@@ -103,30 +172,6 @@ class DocxExporter:
 
         # Step 5: Replace citations in text
         markdown_with_numbers = self.citation_mapper.replace_citations_in_text(markdown_content, citation_map)
-
-        # Step 5.5: Replace figure and equation references with numbers
-        import re
-
-        # Find all figures and create mapping
-        figure_labels = re.findall(r"!\[[^\]]*\]\([^)]+\)\s*\n\s*\{#fig:(\w+)", markdown_with_numbers)
-        figure_map = {label: i + 1 for i, label in enumerate(figure_labels)}
-
-        # Replace @fig:label with "Figure X" in text
-        for label, num in figure_map.items():
-            markdown_with_numbers = re.sub(rf"@fig:{label}\b", f"Figure {num}", markdown_with_numbers)
-
-        logger.debug(f"Mapped {len(figure_map)} figure labels to numbers")
-
-        # Find all equations and create mapping (looking for {#eq:label} tags)
-        equation_labels = re.findall(r"\{#eq:(\w+)\}", markdown_with_numbers)
-        equation_map = {label: i + 1 for i, label in enumerate(equation_labels)}
-
-        # Replace @eq:label with "Eq. X" (no parentheses)
-        # This outputs "Eq. 7" to match the PDF output format
-        for label, num in equation_map.items():
-            markdown_with_numbers = re.sub(rf"@eq:{label}\b", f"Eq. {num}", markdown_with_numbers)
-
-        logger.debug(f"Mapped {len(equation_map)} equation labels to numbers")
 
         # Step 6: Convert content to DOCX structure
         doc_structure = self.content_processor.parse(markdown_with_numbers, citation_map)
@@ -239,6 +284,20 @@ class DocxExporter:
             logger.warning(f"{len(missing_keys)} citation(s) not found in bibliography: {', '.join(missing_keys)}")
 
         return bibliography
+
+    def _get_metadata(self) -> Dict[str, Any]:
+        """Extract metadata for title page.
+
+        Returns:
+            Metadata dictionary with title, authors, affiliations, etc.
+        """
+        try:
+            manuscript_md = find_manuscript_md(str(self.path_manager.manuscript_path))
+            metadata = extract_yaml_metadata(str(manuscript_md))
+            return metadata
+        except Exception as e:
+            logger.warning(f"Could not extract metadata: {e}")
+            return {}
 
     def _report_results(self, citation_map: Dict[str, int], bibliography: Dict[int, Dict]):
         """Report export statistics.

@@ -131,17 +131,29 @@ keywords:
   - keyword2
   - keyword3
 
-bibliography: "03_REFERENCES.bib"
+# Citation style: "numbered" for [1] or "author-date" for (Author, Year)
+citation_style: "numbered"
 
-# Methods section placement
-# Options: after_intro (after Introduction) | after_results (after Results) | after_discussion (after Discussion) | after_bibliography (after Bibliography, Nature Methods style)
-# Can use string values or numeric: 1=after_intro, 2=after_results, 3=after_discussion, 4=after_bibliography
-methods_placement: "after_bibliography"
-
-# Acknowledgment
-acknowledge_rxiv_maker: true  # Include rxiv-maker acknowledgment
-
-version: "1.0"
+# Note: Abstract is auto-extracted from ## Abstract section in 01_MAIN.md
+# Note: All other settings (figures, validation, cache, methods_placement) use sensible defaults
+# Uncomment below to override defaults:
+#
+# figures:
+#   directory: "FIGURES"
+#   generate: true
+#   formats: ["png", "svg"]
+#
+# validation:
+#   enabled: true
+#   strict: false
+#   skip_doi_check: false
+#
+# cache:
+#   enabled: true
+#   ttl_hours: 24
+#
+# methods_placement: "after_bibliography"  # Options: "inline", "after_results", "after_bibliography"
+# acknowledge_rxiv_maker: true
 """
 
     def _get_default_main_template(self) -> str:
@@ -287,9 +299,12 @@ authors:
   - name: "{author_name}"
     email: "{author_email}"
 
-bibliography: "03_REFERENCES.bib"
+keywords:
+  - keyword1
+  - keyword2
+  - keyword3
 
-version: "1.0"
+citation_style: "numbered"
 """
 
     def _get_minimal_main_template(self) -> str:

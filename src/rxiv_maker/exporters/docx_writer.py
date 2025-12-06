@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from docx import Document
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_COLOR_INDEX
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt
@@ -198,12 +198,15 @@ class DocxWriter:
             if run_data.get("code"):
                 run.font.name = "Courier New"
                 run.font.size = Pt(10)
+            if run_data.get("xref"):
+                # Cross-reference - apply yellow highlighting
+                run.font.highlight_color = WD_COLOR_INDEX.YELLOW
 
         elif run_data["type"] == "citation":
             cite_num = run_data["number"]
-            # Add citation as [NN] inline (endnotes, not footnotes)
+            # Add citation as [NN] inline with yellow highlighting
             run = paragraph.add_run(f"[{cite_num}]")
-            run.bold = True
+            run.font.highlight_color = WD_COLOR_INDEX.YELLOW
             run.font.size = Pt(10)
 
     def _add_list(self, doc: Document, section: Dict[str, Any]):
@@ -243,11 +246,11 @@ class DocxWriter:
 
         Args:
             doc: Document object
-            section: Figure section data with 'path', 'caption', 'label'
+            section: Figure section data with 'path', 'caption_runs', 'label'
             figure_number: Figure number (1-indexed)
         """
         figure_path = Path(section["path"])
-        caption = section.get("caption", "")
+        caption_runs = section.get("caption_runs", [])
 
         # Resolve relative path
         if not figure_path.is_absolute():
@@ -278,8 +281,8 @@ class DocxWriter:
             run.italic = True
             logger.warning(f"Could not embed figure: {figure_path}")
 
-        # Add caption
-        if caption:
+        # Add caption with formatted runs
+        if caption_runs:
             caption_para = doc.add_paragraph()
             caption_para.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
@@ -291,7 +294,9 @@ class DocxWriter:
                 run = caption_para.add_run("Figure: ")
                 run.bold = True
 
-            caption_para.add_run(caption)
+            # Add formatted caption runs
+            for run_data in caption_runs:
+                self._add_run(caption_para, run_data, {}, False)
 
             # Add spacing after figure
             caption_para.paragraph_format.space_after = Pt(12)
