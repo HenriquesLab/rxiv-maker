@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.15.0] - 2025-12-06
+
+### Added
+- **Simplified configuration with smart defaults**: Reduced required fields from 10+ to just 4 (title, authors, keywords, citation_style)
+  - New default configuration system provides sensible defaults for all optional settings
+  - Users only need to specify essential manuscript metadata
+  - Full backward compatibility maintained - existing configs continue to work
+  - Added `DEFAULT_CONFIG` dictionary in `src/rxiv_maker/config/defaults.py`
+  - Added `get_config_with_defaults()` function to merge user config with defaults
+
+- **Abstract auto-extraction**: Automatic extraction of abstract from markdown
+  - Abstract is now automatically extracted from `## Abstract` section in `01_MAIN.md`
+  - No need to duplicate abstract in both config file and markdown
+  - Falls back to config if markdown extraction fails
+  - Added `extract_abstract_from_markdown()` in `src/rxiv_maker/processors/yaml_processor.py`
+
+- **Comprehensive DOCX formatting features**: Full support for tables, equations, and enhanced cross-references
+  - **Table support**: Markdown tables now properly formatted in DOCX with headers and cell formatting
+  - **LaTeX equation conversion**: Display equations (`$$...$$`) converted to native DOCX equation objects using MathML
+  - **Inline math support**: Inline equations (`$...$`) converted to DOCX inline math
+  - **Cross-reference highlighting**: All cross-references (figures, tables, equations, notes) highlighted in yellow
+  - **Citation highlighting**: Citations highlighted in yellow (consistent with cross-references)
+  - **Supplementary note titles**: Special formatting for `{#snote:label} Title` format
+  - **Page breaks**: Support for `<!-- PAGE_BREAK -->` to start SI section on new page
+  - **Multi-line captions**: Improved figure caption parsing across multiple lines
+  - Added latex2mathml dependency for equation conversion
+  - Enhanced `DocxContentProcessor` with table, equation, and page break parsing
+  - Enhanced `DocxWriter` with MathML equation rendering and table formatting
+
+### Changed
+- **Configuration validation**: Updated required fields to include keywords and citation_style
+  - Modified `src/rxiv_maker/config/validator.py` to require 4 essential fields
+  - Updated init templates to show only required fields with commented optional overrides
+
+- **DOCX citation formatting**: Changed from bold to yellow highlighting for consistency
+  - Citations now use yellow highlighting instead of bold text
+  - Matches cross-reference visual style for better document cohesion
+
+### Fixed
+- **PNG image embedding in DOCX**: Now properly embeds PNG, JPG, and other image formats
+  - Previously only PDF figures were embedded (converted to images)
+  - Now directly embeds PNG, JPG, JPEG, GIF, BMP, TIFF using python-docx native support
+  - Fixes missing supplementary figures that were stored as PNG files
+  - Modified `_add_figure()` in `src/rxiv_maker/exporters/docx_writer.py`
+
+- **Page break detection**: Fixed page breaks being skipped as HTML comments
+  - Page break marker `<!-- PAGE_BREAK -->` was being filtered out before detection
+  - Now checks for page breaks before general HTML comment filtering
+  - Supplementary Information correctly starts on new page in DOCX
+  - Modified parse loop in `src/rxiv_maker/exporters/docx_content_processor.py`
+
 ## [v1.14.3] - 2025-12-05
 
 ### Changed
