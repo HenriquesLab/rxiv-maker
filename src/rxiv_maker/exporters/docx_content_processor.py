@@ -49,6 +49,12 @@ class DocxContentProcessor:
                 i += 1
                 continue
 
+            # Check for page break BEFORE skipping comments
+            if line.strip() == "<!-- PAGE_BREAK -->":
+                sections.append({"type": "page_break"})
+                i += 1
+                continue
+
             # Skip HTML/markdown comments
             if line.strip().startswith("<!--"):
                 i += 1
@@ -123,12 +129,6 @@ class DocxContentProcessor:
                     sections.append(figure_data)
                     i = next_i
                     continue
-
-            # Check for page break
-            if line.strip() == "<!-- PAGE_BREAK -->":
-                sections.append({"type": "page_break"})
-                i += 1
-                continue
 
             # Check for table (starts with |)
             if line.strip().startswith("|"):
