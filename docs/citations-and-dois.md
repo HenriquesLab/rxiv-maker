@@ -6,7 +6,8 @@
 
 This document describes two powerful citation management features in Rxiv-Maker:
 1. **Multiple Citation Styles** - Choose between numbered and author-date citations
-2. **Inline DOI Resolution** - Automatically convert DOIs to proper citations
+2. **Inline DOI Resolution** - Automatically convert DOIs into proper citations
+
 
 ---
 

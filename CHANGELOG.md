@@ -7,7 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [v1.15.1] - 2025-12-09
+## [Unreleased]
+
+## [v1.15.2] - 2025-12-09
+
+### Added
+- **DOCX Export Documentation**: Added comprehensive guide on exporting manuscripts to Word
+  - New section in User Guide detailing `rxiv docx` command usage
+  - Documentation for inline DOI resolution (`--resolve-dois`)
+- **Template Updates**: Added `*.docx` to template `.gitignore` to prevent committing generated files
+- **Markdown Docs**: Added examples for underlined text (`__text__`) and subscripts/superscripts to syntax guide
+
+### Changed
+- **Inline DOI Resolution**: Updated documentation to clearer phrasing
+
 
 ### Fixed
 - **Cross-reference conversion for hyphenated labels**: Support for labels like `tool-comparison`, `multi-step`
