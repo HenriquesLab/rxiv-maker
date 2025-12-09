@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.15.1] - 2025-12-09
+
+### Fixed
+- **Cross-reference conversion for hyphenated labels**: Support for labels like `tool-comparison`, `multi-step`
+  - Updated regex patterns to support hyphens in figure, table, equation, and note labels
+  - Pattern changed from `\w+` to `[\w-]+` for all cross-reference types
+  - Fixes issue where `@stable:tool-comparison` appeared literally in output
+
+- **Bibliography formatting**: Full academic citation format instead of slim "LastName, Year"
+  - Entry type-specific formatting (article/book/inproceedings/misc)
+  - Full format: Author (Year). Title. Journal Volume(Number): Pages. DOI
+  - Proper handling of optional fields (volume, number, pages, publisher)
+
+- **LaTeX accent support**: Comprehensive international character rendering
+  - Added 50+ accent patterns for Portuguese, Spanish, French, German, and other languages
+  - Examples: `Lu'{\i}s` → Luís, `Jo~{a}o` → João, `L'{o}pez` → López
+  - Covers: dotless i, tilde, acute, grave, circumflex, umlaut, cedilla, ring, stroke
+
+- **Label marker cleanup timing**: Moved from preprocessor to exporter
+  - Label markers (`{#fig:label}`, `{#eq:label}`) now removed after cross-reference mapping
+  - Prevents issues where markers were removed before references could be resolved
+
+### Changed
+- **URL highlighting**: All URLs and hyperlinks now have yellow highlighting
+  - Consistent visual style with citations and cross-references
+  - Added `highlight` parameter to `_add_hyperlink()` method in DocxWriter
+
 ## [v1.15.0] - 2025-12-06
 
 ### Added
