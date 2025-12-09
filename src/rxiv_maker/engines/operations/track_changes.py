@@ -195,7 +195,8 @@ class TrackChangesManager:
             # Use subprocess approach like BuildManager does
             cmd = [
                 sys.executable,
-                "src/rxiv_maker/commands/generate_preprint.py",
+                "-m",
+                "rxiv_maker.engines.operations.generate_preprint",
                 "--output-dir",
                 str(latex_output_dir),
             ]
