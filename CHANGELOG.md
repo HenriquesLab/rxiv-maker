@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.15.6] - 2025-12-09
+
+### Fixed
+- **Track Changes**: Updated `rxiv track-changes` to extract the full repository state using `git archive` instead of cherry-picking specific files. This ensures that all helper scripts, data files, and assets present at the historical tag are available during the build process.
+
 ## [v1.15.5] - 2025-12-09
 
 ### Fixed
