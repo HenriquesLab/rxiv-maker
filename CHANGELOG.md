@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.15.3] - 2025-12-09
+
+### Fixed
+- **Track Changes Command**: Fixed `AttributeError` by updating `TrackChangesCommand` to use the correct `BuildManager.build()` method instead of deprecated `run_full_build()`
+
 ## [v1.15.2] - 2025-12-09
 
 ### Added
