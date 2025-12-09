@@ -40,11 +40,11 @@ def remove_yaml_header(content: str) -> str:
 
 
 def format_bibliography_entry(entry: BibEntry, doi: Optional[str] = None, slim: bool = False) -> str:
-    """Format a bibliography entry for footnote display.
+    """Format a bibliography entry for display.
 
-    Formats as: Author (Year). Title. Journal. (full)
-    Or: LastName, Year (slim)
-    Appends DOI if available.
+    Full format: Author (Year). Title. Journal Volume(Number): Pages. DOI (if provided)
+    Slim format: LastName, Year
+    DOI is appended as a new line and rendered as a hyperlink in DOCX writer.
 
     Args:
         entry: Bibliography entry to format
@@ -87,14 +87,60 @@ def format_bibliography_entry(entry: BibEntry, doi: Optional[str] = None, slim: 
 
     # Full format
     title = entry.fields.get("title", "Untitled")
-    journal = entry.fields.get("journal", "")
+    title = clean_latex_commands(title)
 
-    # Build formatted string
+    # Build formatted string starting with authors and year
     formatted = f"{author} ({year}). {title}."
 
-    if journal:
-        formatted += f" {journal}."
+    # Add journal/publisher information based on entry type
+    entry_type = entry.entry_type.lower()
 
+    if entry_type == "article":
+        journal = entry.fields.get("journal", "")
+        if journal:
+            journal = clean_latex_commands(journal)
+            formatted += f" {journal}"
+
+            # Add volume
+            volume = entry.fields.get("volume", "")
+            if volume:
+                formatted += f" {volume}"
+
+            # Add issue/number in parentheses
+            number = entry.fields.get("number", "")
+            if number:
+                formatted += f"({number})"
+
+            # Add pages
+            pages = entry.fields.get("pages", "")
+            if pages:
+                # Replace double dashes with en dash
+                pages = pages.replace("--", "–")
+                formatted += f": {pages}"
+
+            formatted += "."
+
+    elif entry_type in ["book", "inbook", "incollection"]:
+        publisher = entry.fields.get("publisher", "")
+        if publisher:
+            publisher = clean_latex_commands(publisher)
+            formatted += f" {publisher}."
+
+    elif entry_type == "inproceedings":
+        booktitle = entry.fields.get("booktitle", "")
+        if booktitle:
+            booktitle = clean_latex_commands(booktitle)
+            formatted += f" In: {booktitle}"
+
+            # Add pages if available
+            pages = entry.fields.get("pages", "")
+            if pages:
+                pages = pages.replace("--", "–")
+                formatted += f", pp. {pages}"
+
+            formatted += "."
+
+    # Add DOI if available (will be rendered as hyperlink in DOCX writer)
     if doi:
         formatted += f"\nDOI: https://doi.org/{doi}"
 
@@ -160,14 +206,34 @@ def clean_latex_commands(text: str) -> str:
         "{\\'i}": "í",
         "{'i}": "í",
         "{'í}": "í",
+        "'{\\i}": "í",  # Acute on dotless i
         "\\'o": "ó",
         "{\\'o}": "ó",
         "{'o}": "ó",
         "{'ó}": "ó",
+        "'{o}": "ó",  # Acute o (variant without backslash)
         "\\'u": "ú",
         "{\\'u}": "ú",
         "{'u}": "ú",
         "{'ú}": "ú",
+        # Uppercase acute accents
+        "\\'E": "É",
+        "{\\'E}": "É",
+        "{'E}": "É",
+        "\\'A": "Á",
+        "{\\'A}": "Á",
+        "{'A}": "Á",
+        "\\'I": "Í",
+        "{\\'I}": "Í",
+        "{'I}": "Í",
+        "'{\\I}": "Í",  # Acute on uppercase dotless I
+        "\\'O": "Ó",
+        "{\\'O}": "Ó",
+        "{'O}": "Ó",
+        "'{O}": "Ó",
+        "\\'U": "Ú",
+        "{\\'U}": "Ú",
+        "{'U}": "Ú",
         # Umlaut/diaeresis (ë, ä, ï, ö, ü)
         '\\"e': "ë",
         '{\\"e}': "ë",
@@ -207,11 +273,32 @@ def clean_latex_commands(text: str) -> str:
         "{\\^a}": "â",
         "{^a}": "â",
         "{^â}": "â",
-        # Tilde (ñ)
+        # Tilde (ñ, ã, õ)
         "\\~n": "ñ",
         "{\\~n}": "ñ",
         "{~n}": "ñ",
         "{~ñ}": "ñ",
+        "~{n}": "ñ",
+        "\\~a": "ã",
+        "{\\~a}": "ã",
+        "{~a}": "ã",
+        "~{a}": "ã",  # Tilde on a (variant)
+        "{~ã}": "ã",
+        "\\~o": "õ",
+        "{\\~o}": "õ",
+        "{~o}": "õ",
+        "~{o}": "õ",  # Tilde on o (variant)
+        "{~õ}": "õ",
+        # Uppercase tilde
+        "\\~N": "Ñ",
+        "{\\~N}": "Ñ",
+        "~{N}": "Ñ",
+        "\\~A": "Ã",
+        "{\\~A}": "Ã",
+        "~{A}": "Ã",
+        "\\~O": "Õ",
+        "{\\~O}": "Õ",
+        "~{O}": "Õ",
         # Cedilla (ç)
         "\\c{c}": "ç",
         "{\\c{c}}": "ç",
@@ -230,8 +317,8 @@ def clean_latex_commands(text: str) -> str:
     text = re.sub(r"\\cite[pt]?\{[^}]+\}", "", text)
 
     # Remove braces around single accented characters (leftover from LaTeX accents)
-    # Matches: {ü}, {é}, {ë}, etc.
-    text = re.sub(r"\{([áéíóúàèìòùâêîôûäëïöüñç])\}", r"\1", text)
+    # Matches: {ü}, {é}, {ë}, {Ó}, {Í}, etc.
+    text = re.sub(r"\{([áéíóúàèìòùâêîôûäëïöüñçãõÁÉÍÓÚÀÈÌÒÙÂÊÎÔÛÄËÏÖÜÑÇÃÕ])\}", r"\1", text)
 
     # Remove other common commands
     text = re.sub(r"\\[a-zA-Z]+\{([^}]+)\}", r"\1", text)

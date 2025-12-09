@@ -95,12 +95,12 @@ class DocxWriter:
                 # Add formatted bibliography text (slim format)
                 para.add_run(bib_entry["formatted"])
 
-                # Add DOI as hyperlink if present
+                # Add DOI as hyperlink with yellow highlighting if present
                 if bib_entry.get("doi"):
                     doi = bib_entry["doi"]
                     doi_url = f"https://doi.org/{doi}" if not doi.startswith("http") else doi
                     para.add_run(" ")
-                    self._add_hyperlink(para, doi_url, doi_url)
+                    self._add_hyperlink(para, doi_url, doi_url, highlight=True)
 
                 # Add spacing between entries
                 para.paragraph_format.space_after = Pt(6)
@@ -119,13 +119,21 @@ class DocxWriter:
         # Add title first
         title = metadata.get("title", "")
         if title:
-            # Title can be a string or a list with 'long' format
-            if isinstance(title, list) and len(title) > 0:
-                title_text = title[0].get("long", "")
+            # Title can be a string, a dict with 'long' key, or a list
+            if isinstance(title, dict):
+                title_text = title.get("long", title.get("short", ""))
+            elif isinstance(title, list) and len(title) > 0:
+                if isinstance(title[0], dict):
+                    title_text = title[0].get("long", title[0].get("short", ""))
+                else:
+                    title_text = str(title[0])
             else:
-                title_text = title
+                title_text = str(title)
 
-            if title_text:
+            if title_text and isinstance(title_text, str):
+                # Clean LaTeX formatting from title for DOCX
+                title_text = self._clean_latex_from_text(title_text)
+
                 title_para = doc.add_paragraph(title_text)
                 title_para.runs[0].font.size = Pt(16)
                 title_para.runs[0].bold = True
@@ -291,11 +299,21 @@ class DocxWriter:
                 run.bold = True
             if run_data.get("italic"):
                 run.italic = True
+            if run_data.get("underline"):
+                run.underline = True
             if run_data.get("code"):
                 run.font.name = "Courier New"
                 run.font.size = Pt(10)
             if run_data.get("xref"):
                 run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+            if run_data.get("highlight_yellow"):
+                run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+
+        elif run_data["type"] == "hyperlink":
+            # Add hyperlink with yellow highlighting
+            text = run_data.get("text", "")
+            url = run_data.get("url", "")
+            self._add_hyperlink(paragraph, url, text, highlight=True)
 
         elif run_data["type"] == "inline_equation":
             # Add inline equation as Office Math
@@ -339,7 +357,15 @@ class DocxWriter:
                         run.font.name = "Courier New"
                     if run_data.get("xref"):
                         run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                    if run_data.get("highlight_yellow"):
+                        run.font.highlight_color = WD_COLOR_INDEX.YELLOW
                         run.font.size = Pt(10)
+                    if run_data.get("highlight_yellow"):
+                        run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                elif run_data["type"] == "hyperlink":
+                    text = run_data.get("text", "")
+                    url = run_data.get("url", "")
+                    self._add_hyperlink(paragraph, url, text, highlight=True)
                 elif run_data["type"] == "inline_equation":
                     # Add inline equation as Office Math
                     latex_content = run_data.get("latex", "")
@@ -421,16 +447,18 @@ class DocxWriter:
         if caption:
             caption_para = doc.add_paragraph()
             caption_para.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+            # Add small space before caption to separate from figure
+            caption_para.paragraph_format.space_before = Pt(3)
 
             # Format as "Figure number: "
             if figure_number:
                 run = caption_para.add_run(f"Figure {figure_number}: ")
                 run.bold = True
-                run.font.size = Pt(8)
+                run.font.size = Pt(7)
             else:
                 run = caption_para.add_run("Figure: ")
                 run.bold = True
-                run.font.size = Pt(8)
+                run.font.size = Pt(7)
 
             # Parse and add caption with inline formatting
             # Import the processor to parse inline formatting
@@ -443,7 +471,7 @@ class DocxWriter:
                 if run_data["type"] == "text":
                     text = run_data["text"]
                     run = caption_para.add_run(text)
-                    run.font.size = Pt(8)
+                    run.font.size = Pt(7)
 
                     # Apply formatting
                     if run_data.get("bold"):
@@ -454,6 +482,8 @@ class DocxWriter:
                         run.font.name = "Courier New"
                     if run_data.get("xref"):
                         run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                    if run_data.get("highlight_yellow"):
+                        run.font.highlight_color = WD_COLOR_INDEX.YELLOW
                 elif run_data["type"] == "inline_equation":
                     # Add inline equation as Office Math
                     latex_content = run_data.get("latex", "")
@@ -462,10 +492,10 @@ class DocxWriter:
                     cite_num = run_data["number"]
                     run = caption_para.add_run(f"[{cite_num}]")
                     run.bold = True
-                    run.font.size = Pt(8)
+                    run.font.size = Pt(7)
 
-            # Add spacing after figure
-            caption_para.paragraph_format.space_after = Pt(12)
+            # Add spacing after figure (reduced from 12 to 6 for compactness)
+            caption_para.paragraph_format.space_after = Pt(6)
 
     def _add_table(self, doc: Document, section: Dict[str, Any]):
         """Add table to document.
@@ -526,6 +556,8 @@ class DocxWriter:
                                 run.bold = True
                             if run_data.get("italic"):
                                 run.italic = True
+                            if run_data.get("underline"):
+                                run.underline = True
                             if run_data.get("code"):
                                 run.font.name = "Courier New"
                             if run_data.get("xref"):
@@ -537,6 +569,8 @@ class DocxWriter:
         if caption:
             caption_para = doc.add_paragraph()
             caption_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            # Add small space before caption to separate from table
+            caption_para.paragraph_format.space_before = Pt(3)
 
             # Determine table number from label (e.g., "stable:structural_models" -> "Supp. Table 1")
             if label and label.startswith("stable:"):
@@ -545,11 +579,11 @@ class DocxWriter:
                 # A more sophisticated approach would track table numbers
                 run = caption_para.add_run("Supp. Table: ")
                 run.bold = True
-                run.font.size = Pt(8)
+                run.font.size = Pt(7)
             elif label and label.startswith("table:"):
                 run = caption_para.add_run("Table: ")
                 run.bold = True
-                run.font.size = Pt(8)
+                run.font.size = Pt(7)
 
             # Parse and add caption with inline formatting
             caption_runs = processor._parse_inline_formatting(caption, {})
@@ -557,17 +591,20 @@ class DocxWriter:
                 if run_data["type"] == "text":
                     text = run_data["text"]
                     run = caption_para.add_run(text)
-                    run.font.size = Pt(8)
+                    run.font.size = Pt(7)
                     if run_data.get("bold"):
                         run.bold = True
                     if run_data.get("italic"):
                         run.italic = True
+                    if run_data.get("underline"):
+                        run.underline = True
                     if run_data.get("code"):
                         run.font.name = "Courier New"
                     if run_data.get("xref"):
                         run.font.highlight_color = WD_COLOR_INDEX.YELLOW
 
-            caption_para.paragraph_format.space_after = Pt(12)
+            # Add spacing after table (reduced from 12 to 6 for compactness)
+            caption_para.paragraph_format.space_after = Pt(6)
 
         # Add spacing after table
         doc.add_paragraph()
@@ -609,6 +646,8 @@ class DocxWriter:
             doc: Document object
             section: Equation section data with 'content' (LaTeX) and optional 'label'
         """
+        import re
+
         latex_content = section.get("content", "")
         _label = section.get("label", "")  # Reserved for future use (equation numbering)
 
@@ -617,6 +656,24 @@ class DocxWriter:
 
         try:
             logger.debug(f"Converting equation to OMML: {latex_content[:50]}...")
+
+            # Check if equation is complex (has fractions, matrices, etc.)
+            # These don't convert well to Office Math with basic OMML
+            complex_patterns = [
+                r"\\frac",  # Fractions
+                r"\\begin\{matrix",  # Matrices
+                r"\\begin\{array",  # Arrays
+                r"\\sqrt\[",  # Nth roots
+                r"\\int_",  # Integrals with limits
+                r"\\sum_",  # Sums with limits
+                r"\\prod_",  # Products with limits
+            ]
+
+            is_complex = any(re.search(pattern, latex_content) for pattern in complex_patterns)
+
+            if is_complex:
+                # Force fallback for complex equations
+                raise ValueError("Complex equation detected - using LaTeX source")
 
             # Convert LaTeX to MathML
             mathml_str = latex_to_mathml(latex_content)
@@ -644,14 +701,19 @@ class DocxWriter:
             para.paragraph_format.space_after = Pt(12)
 
         except Exception as e:
-            logger.error(f"Could not convert equation to OMML: {e}")
+            logger.warning(f"Equation rendering limitation - using LaTeX source: {e}")
             logger.debug(f"LaTeX content: {latex_content}")
-            import traceback
-
-            logger.debug(traceback.format_exc())
-            # Fallback: add as monospace text
+            # Fallback: display LaTeX source with note
+            # (Complex equations with fractions, matrices, etc. don't convert well to Office Math)
             para = doc.add_paragraph()
             para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+            # Add note in smaller text
+            note_run = para.add_run("[Equation - see PDF for proper rendering]\n")
+            note_run.font.size = Pt(9)
+            note_run.italic = True
+
+            # Add LaTeX source in monospace
             run = para.add_run(latex_content)
             run.font.name = "Courier New"
             run.font.size = Pt(10)
@@ -954,13 +1016,40 @@ class DocxWriter:
 
         return footnote
 
-    def _add_hyperlink(self, paragraph, url: str, text: str):
+    def _clean_latex_from_text(self, text: str) -> str:
+        """Clean LaTeX formatting from text for DOCX display.
+
+        Args:
+            text: Text that may contain LaTeX formatting
+
+        Returns:
+            Text with LaTeX formatting removed or converted
+        """
+        import re
+
+        # Replace colored text {\\color{...}text} with just text (handle both \ and \\)
+        text = re.sub(r"\{\\color\{[^}]+\}([^}]+)\}", r"\1", text)
+        text = re.sub(r"\{\bcolor\{[^}]+\}([^}]+)\}", r"\1", text)
+
+        # Replace common Greek letters in math mode (handle both single and double backslashes)
+        text = re.sub(r"\$\\chi\$", "χ", text)
+        text = re.sub(r"\$\\\\chi\$", "χ", text)
+        text = re.sub(r"\$\\alpha\$", "α", text)
+        text = re.sub(r"\$\\\\alpha\$", "α", text)
+        text = re.sub(r"\$\\beta\$", "β", text)
+        text = re.sub(r"\$\\gamma\$", "γ", text)
+        text = re.sub(r"\$\\delta\$", "δ", text)
+
+        return text
+
+    def _add_hyperlink(self, paragraph, url: str, text: str, highlight: bool = False):
         """Add hyperlink to paragraph.
 
         Args:
             paragraph: Paragraph object
             url: URL to link to
             text: Display text
+            highlight: If True, add yellow background highlighting
         """
         # Add hyperlink using OOXML
         part = paragraph.part
@@ -989,6 +1078,12 @@ class DocxWriter:
         color = OxmlElement("w:color")
         color.set(qn("w:val"), "0000FF")
         r_pr.append(color)
+
+        # Add yellow highlighting if requested
+        if highlight:
+            highlight_elem = OxmlElement("w:highlight")
+            highlight_elem.set(qn("w:val"), "yellow")
+            r_pr.append(highlight_elem)
 
         new_run.append(r_pr)
 

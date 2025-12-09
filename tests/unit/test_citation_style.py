@@ -19,6 +19,7 @@ class TestCitationStyleConfig:
         config_data = {
             "title": "Test Manuscript",
             "authors": [{"name": "Test Author"}],
+            "keywords": ["test", "citation", "style"],
             "citation_style": "numbered",
         }
 

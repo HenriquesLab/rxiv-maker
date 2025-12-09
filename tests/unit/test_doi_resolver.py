@@ -213,6 +213,8 @@ class TestDOIResolverConfig:
         config_data = {
             "title": "Test Manuscript",
             "authors": [{"name": "Test Author"}],
+            "keywords": ["test", "doi", "resolution"],
+            "citation_style": "numbered",
             "enable_inline_doi_resolution": True,
         }
 
