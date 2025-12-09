@@ -108,42 +108,45 @@ class DocxExporter:
         import re
 
         # Find all figures and create mapping
-        figure_labels = re.findall(r"!\[[^\]]*\]\([^)]+\)\s*\n\s*\{#fig:(\w+)", markdown_with_numbers)
+        # Allow hyphens and underscores in label names
+        figure_labels = re.findall(r"!\[[^\]]*\]\([^)]+\)\s*\n\s*\{#fig:([\w-]+)", markdown_with_numbers)
         figure_map = {label: i + 1 for i, label in enumerate(figure_labels)}
 
         # Replace @fig:label with "Fig. X" in text, handling optional panel letters
         # Pattern matches: @fig:label optionally followed by space and panel letter(s)
         # Use special markers <<XREF>> to enable yellow highlighting in DOCX
         for label, num in figure_map.items():
-            # Match @fig:label with optional space and panel (e.g., " a", " d,e", " a-c")
+            # Match @fig:label with optional panel letters like " a", " a,b", " a-c"
+            # Use negative lookahead (?![a-z]) to prevent matching start of words like " is", " and"
+            # Panel letters must be followed by non-letter (space, punctuation, end of string)
             markdown_with_numbers = re.sub(
-                rf"@fig:{label}\b\s*([a-z,\-]*)",
-                lambda m, num=num: f"<<XREF>>Fig. {num}{m.group(1)}<</XREF>>"
-                if m.group(1)
-                else f"<<XREF>>Fig. {num}<</XREF>>",
+                rf"@fig:{label}\b(\s+[a-z](?:[,\-][a-z])*(?![a-z]))?",
+                lambda m, num=num: f"<<XREF>>Fig. {num}{m.group(1) if m.group(1) else ''}<</XREF>>",
                 markdown_with_numbers,
             )
 
         logger.debug(f"Mapped {len(figure_map)} figure labels to numbers")
 
         # Find all supplementary figures and create mapping
-        sfig_labels = re.findall(r"!\[[^\]]*\]\([^)]+\)\s*\n\s*\{#sfig:(\w+)", markdown_with_numbers)
+        # Allow hyphens and underscores in label names
+        sfig_labels = re.findall(r"!\[[^\]]*\]\([^)]+\)\s*\n\s*\{#sfig:([\w-]+)", markdown_with_numbers)
         sfig_map = {label: i + 1 for i, label in enumerate(sfig_labels)}
 
         # Replace @sfig:label with "Supp. Fig. X" in text, handling optional panel letters
         for label, num in sfig_map.items():
+            # Match panel letters like " a", " b,c" but not words like " is"
+            # Negative lookahead prevents matching start of words
             markdown_with_numbers = re.sub(
-                rf"@sfig:{label}\b\s*([a-z,\-]*)",
-                lambda m, num=num: f"<<XREF>>Supp. Fig. {num}{m.group(1)}<</XREF>>"
-                if m.group(1)
-                else f"<<XREF>>Supp. Fig. {num}<</XREF>>",
+                rf"@sfig:{label}\b(\s+[a-z](?:[,\-][a-z])*(?![a-z]))?",
+                lambda m, num=num: f"<<XREF>>Supp. Fig. {num}{m.group(1) if m.group(1) else ''}<</XREF>>",
                 markdown_with_numbers,
             )
 
         logger.debug(f"Mapped {len(sfig_map)} supplementary figure labels to numbers")
 
         # Find all tables and create mapping (looking for {#stable:label} tags)
-        table_labels = re.findall(r"\{#stable:(\w+)\}", markdown_with_numbers)
+        # Allow hyphens and underscores in label names
+        table_labels = re.findall(r"\{#stable:([\w-]+)\}", markdown_with_numbers)
         table_map = {label: i + 1 for i, label in enumerate(table_labels)}
 
         # Replace @stable:label with "Supp. Table X" in text
@@ -155,7 +158,8 @@ class DocxExporter:
         logger.debug(f"Mapped {len(table_map)} supplementary table labels to numbers")
 
         # Find all supplementary notes and create mapping (looking for {#snote:label} tags)
-        snote_labels = re.findall(r"\{#snote:(\w+)\}", markdown_with_numbers)
+        # Allow hyphens and underscores in label names
+        snote_labels = re.findall(r"\{#snote:([\w-]+)\}", markdown_with_numbers)
         snote_map = {label: i + 1 for i, label in enumerate(snote_labels)}
 
         # Replace @snote:label with "Supp. Note X" in text
@@ -167,7 +171,8 @@ class DocxExporter:
         logger.debug(f"Mapped {len(snote_map)} supplementary note labels to numbers")
 
         # Find all equations and create mapping (looking for {#eq:label} tags)
-        equation_labels = re.findall(r"\{#eq:(\w+)\}", markdown_with_numbers)
+        # Allow hyphens and underscores in label names
+        equation_labels = re.findall(r"\{#eq:([\w-]+)\}", markdown_with_numbers)
         equation_map = {label: i + 1 for i, label in enumerate(equation_labels)}
 
         # Replace @eq:label with "Eq. X"
@@ -181,6 +186,12 @@ class DocxExporter:
             markdown_with_numbers = re.sub(rf"@eq:{label}\b", f"<<XREF>>Eq. {num}<</XREF>>", markdown_with_numbers)
 
         logger.debug(f"Mapped {len(equation_map)} equation labels to numbers")
+
+        # Step 5.6: Remove label markers now that mapping is complete
+        # These metadata markers should not appear in the final output
+        markdown_with_numbers = re.sub(
+            r"^\{#(?:fig|sfig|snote|stable|table|eq):[^}]+\}\s*", "", markdown_with_numbers, flags=re.MULTILINE
+        )
 
         # Step 6: Convert content to DOCX structure
         doc_structure = self.content_processor.parse(markdown_with_numbers, citation_map)
@@ -224,12 +235,17 @@ class DocxExporter:
         """Load and combine markdown files.
 
         Returns:
-            Combined markdown content
+            Combined markdown content with rxiv-maker syntax processed
 
         Raises:
             FileNotFoundError: If 01_MAIN.md doesn't exist
         """
+        from ..processors.markdown_preprocessor import get_markdown_preprocessor
+
         content = []
+
+        # Get markdown preprocessor for this manuscript
+        preprocessor = get_markdown_preprocessor(manuscript_path=str(self.path_manager.manuscript_path))
 
         # Load 01_MAIN.md
         main_md = self.path_manager.manuscript_path / "01_MAIN.md"
@@ -237,6 +253,10 @@ class DocxExporter:
 
         # Remove YAML header
         main_content = remove_yaml_header(main_content)
+
+        # Process rxiv-maker syntax ({{py:exec}}, {{py:get}}, {{tex:...}})
+        main_content = preprocessor.process(main_content, target_format="docx", file_path="01_MAIN.md")
+
         content.append(main_content)
 
         # Load 02_SUPPLEMENTARY_INFO.md if exists
@@ -245,6 +265,12 @@ class DocxExporter:
             logger.info("Including supplementary information")
             supp_content = supp_md.read_text(encoding="utf-8")
             supp_content = remove_yaml_header(supp_content)
+
+            # Process rxiv-maker syntax
+            supp_content = preprocessor.process(
+                supp_content, target_format="docx", file_path="02_SUPPLEMENTARY_INFO.md"
+            )
+
             # Add page break and SI title before supplementary content
             content.append("<!-- PAGE_BREAK -->")
             content.append("# Supplementary Information")
@@ -290,8 +316,8 @@ class DocxExporter:
             # if self.resolve_dois and not doi:
             #     doi = self._resolve_doi_from_metadata(entry)
 
-            # Format entry (slim format for DOCX footnotes)
-            formatted = format_bibliography_entry(entry, doi, slim=True)
+            # Format entry (full format for DOCX bibliography)
+            formatted = format_bibliography_entry(entry, doi, slim=False)
 
             bibliography[number] = {"key": key, "entry": entry, "doi": doi, "formatted": formatted}
 

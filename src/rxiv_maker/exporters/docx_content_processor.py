@@ -316,12 +316,13 @@ class DocxContentProcessor:
         return "\n".join(code_lines), i
 
     def _parse_inline_formatting(self, text: str, citation_map: Dict[str, int]) -> List[Dict[str, Any]]:
-        """Parse inline formatting (bold, italic, code, citations).
+        """Parse inline formatting (bold, italic, code, citations, links).
 
         This is complex as we need to handle:
         - **bold**
         - *italic*
         - `code`
+        - [text](url) links
         - [1] citations
 
         Args:
@@ -333,15 +334,16 @@ class DocxContentProcessor:
         """
         runs = []
 
-        # Find all formatting markers and citations
-        # For simplicity in MVP, we'll do a basic pass
-        # More sophisticated parsing would use a state machine
-
-        # Pattern to match: <<XREF>>text<</XREF>>, **bold**, *italic*, `code`, $math$, [number]
+        # Find all formatting markers, links, and citations
+        # Pattern to match: <<HIGHLIGHT_YELLOW>>text<</HIGHLIGHT_YELLOW>>, <<XREF>>text<</XREF>>, [text](url), **bold**, __underlined__, *italic*, _italic_, `code`, $math$, [number]
         pattern = re.compile(
-            r"(<<XREF>>([^<]+)<</XREF>>)"  # Cross-reference (must be first)
+            r"(<<HIGHLIGHT_YELLOW>>([^<]+)<</HIGHLIGHT_YELLOW>>)"  # Yellow highlight (must be first)
+            r"|(<<XREF>>([^<]+)<</XREF>>)"  # Cross-reference
+            r"|(\[([^\]]+)\]\(([^)]+)\))"  # Markdown link [text](url) (before citations)
             r"|(\*\*([^*]+)\*\*)"  # Bold
-            r"|(\*([^*]+)\*)"  # Italic
+            r"|(__([^_]+)__)"  # Underline with double underscores (must come before single underscore)
+            r"|(\*([^*]+)\*)"  # Italic with asterisks
+            r"|(_([^_]+)_)"  # Italic with underscores
             r"|(`([^`]+)`)"  # Code
             r"|(\$([^\$]+)\$)"  # Inline math
             r"|(\[(\d+(?:,\s*\d+)*)\])"  # Citation numbers
@@ -360,61 +362,95 @@ class DocxContentProcessor:
                             "text": before_text,
                             "bold": False,
                             "italic": False,
+                            "underline": False,
                             "code": False,
                             "xref": False,
                         }
                     )
 
             # Determine what was matched
-            if match.group(1):  # Cross-reference
-                runs.append(
-                    {
-                        "type": "text",
-                        "text": match.group(2),
-                        "bold": False,
-                        "italic": False,
-                        "code": False,
-                        "xref": True,
-                    }
-                )
-            elif match.group(3):  # Bold
+            if match.group(1):  # Yellow highlight
+                # Recursively parse inner text for bold/italic/other formatting
+                inner_text = match.group(2)
+                inner_runs = self._parse_inline_formatting(inner_text, citation_map)
+                # Add yellow highlight to all inner runs
+                for run in inner_runs:
+                    if run["type"] == "text":
+                        run["highlight_yellow"] = True
+                    runs.append(run)
+            elif match.group(3):  # Cross-reference
                 runs.append(
                     {
                         "type": "text",
                         "text": match.group(4),
-                        "bold": True,
+                        "bold": False,
                         "italic": False,
+                        "underline": False,
                         "code": False,
-                        "xref": False,
+                        "xref": True,
                     }
                 )
-            elif match.group(5):  # Italic
+            elif match.group(5):  # Markdown link [text](url)
                 runs.append(
                     {
-                        "type": "text",
+                        "type": "hyperlink",
                         "text": match.group(6),
-                        "bold": False,
-                        "italic": True,
-                        "code": False,
-                        "xref": False,
+                        "url": match.group(7),
                     }
                 )
-            elif match.group(7):  # Code
+            elif match.group(8):  # Bold
+                # Recursively parse inner text for underline/italic/other formatting
+                inner_text = match.group(9)
+                inner_runs = self._parse_inline_formatting(inner_text, citation_map)
+                # Add bold to all inner runs
+                for run in inner_runs:
+                    if run["type"] == "text":
+                        run["bold"] = True
+                    runs.append(run)
+            elif match.group(10):  # Underline
+                # Recursively parse inner text for bold/italic/other formatting
+                inner_text = match.group(11)
+                inner_runs = self._parse_inline_formatting(inner_text, citation_map)
+                # Add underline to all inner runs
+                for run in inner_runs:
+                    if run["type"] == "text":
+                        run["underline"] = True
+                    runs.append(run)
+            elif match.group(12):  # Italic with asterisks
+                # Recursively parse inner text for bold/underline/other formatting
+                inner_text = match.group(13)
+                inner_runs = self._parse_inline_formatting(inner_text, citation_map)
+                # Add italic to all inner runs
+                for run in inner_runs:
+                    if run["type"] == "text":
+                        run["italic"] = True
+                    runs.append(run)
+            elif match.group(14):  # Italic with underscores
+                # Recursively parse inner text for bold/underline/other formatting
+                inner_text = match.group(15)
+                inner_runs = self._parse_inline_formatting(inner_text, citation_map)
+                # Add italic to all inner runs
+                for run in inner_runs:
+                    if run["type"] == "text":
+                        run["italic"] = True
+                    runs.append(run)
+            elif match.group(16):  # Code
                 runs.append(
                     {
                         "type": "text",
-                        "text": match.group(8),
+                        "text": match.group(17),
                         "bold": False,
                         "italic": False,
+                        "underline": False,
                         "code": True,
                         "xref": False,
                     }
                 )
-            elif match.group(9):  # Inline math
-                runs.append({"type": "inline_equation", "latex": match.group(10)})
-            elif match.group(11):  # Citation
+            elif match.group(18):  # Inline math
+                runs.append({"type": "inline_equation", "latex": match.group(19)})
+            elif match.group(20):  # Citation
                 # Parse citation numbers (may be multiple: [1, 2, 3])
-                numbers_str = match.group(12)
+                numbers_str = match.group(21)
                 numbers = [int(n.strip()) for n in numbers_str.split(",")]
                 for num in numbers:
                     runs.append({"type": "citation", "number": num})
@@ -426,13 +462,31 @@ class DocxContentProcessor:
             remaining = text[last_end:]
             if remaining:
                 runs.append(
-                    {"type": "text", "text": remaining, "bold": False, "italic": False, "code": False, "xref": False}
+                    {
+                        "type": "text",
+                        "text": remaining,
+                        "bold": False,
+                        "italic": False,
+                        "underline": False,
+                        "code": False,
+                        "xref": False,
+                    }
                 )
 
         return (
             runs
             if runs
-            else [{"type": "text", "text": text, "bold": False, "italic": False, "code": False, "xref": False}]
+            else [
+                {
+                    "type": "text",
+                    "text": text,
+                    "bold": False,
+                    "italic": False,
+                    "underline": False,
+                    "code": False,
+                    "xref": False,
+                }
+            ]
         )
 
     def _parse_figure(self, lines: List[str], start_idx: int) -> tuple[Optional[Dict[str, Any]], int]:
