@@ -519,7 +519,7 @@ class TrackChangesCommand(BaseCommand):
             )
 
             try:
-                success = build_manager.run_full_build()
+                success = build_manager.build()
 
                 if success:
                     progress.update(task, description="✅ Change-tracked PDF generated successfully!")
