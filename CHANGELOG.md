@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.9] - 2025-12-09
+
+### Added
+- Added support for visual figure diffs in `track-changes` command by correctly separating tag and current figure paths.
+
 ## [1.15.8] - 2025-12-09
 
 ### Fixed

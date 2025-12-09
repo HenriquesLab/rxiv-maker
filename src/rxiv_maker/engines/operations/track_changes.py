@@ -214,6 +214,18 @@ class TrackChangesManager:
             if self.verbose:
                 self.log(f"LaTeX generation output: {result.stdout}")
 
+            # Post-process tag LaTeX to use distinct figure path
+            if output_subdir == "tag":
+                tex_file = latex_output_dir / f"{manuscript_dir.name}.tex"
+                if tex_file.exists():
+                    content = tex_file.read_text(encoding="utf-8")
+                    # Replace standard Figure path with tag specific path
+                    # Handle both Figures/ (standard) and FIGURES/ (source) just in case
+                    content = content.replace("{Figures/", "{Figures_tag/")
+                    content = content.replace("{FIGURES/", "{Figures_tag/")
+                    tex_file.write_text(content, encoding="utf-8")
+                    self.log(f"Updated figure paths in {tex_file.name} to use Figures_tag/")
+
             return True
 
         except subprocess.CalledProcessError as e:
@@ -483,6 +495,18 @@ class TrackChangesManager:
 
             if not self.generate_latex_files(target_manuscript_dir, "tag"):
                 return False
+
+            # Copy tag figures to output/Figures_tag
+            tag_figures_src = target_manuscript_dir / "FIGURES"
+            tag_figures_dst = self.output_dir / "Figures_tag"
+            
+            if tag_figures_src.exists():
+                if tag_figures_dst.exists():
+                    shutil.rmtree(tag_figures_dst)
+                shutil.copytree(tag_figures_src, tag_figures_dst)
+                self.log("Copied tag figures to Figures_tag directory")
+            else:
+                self.log("Warning: No FIGURES directory found in tag extraction", force=True)
 
             # Find the main LaTeX files
             current_tex = self.output_dir / "current" / f"{self.manuscript_path.name}.tex"
