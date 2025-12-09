@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.15.7] - 2025-12-09
+
+### Fixed
+- **Track Changes**: Fixed logic to correctly locate `01_MAIN.md` within the extracted historical tag, resolving file not found errors when the repository structure varies.
+- **Track Changes**: Corrected the expected output filename for the historical tag's LaTeX file to match the manuscript directory name (`MANUSCRIPT.tex`), enabling `latexdiff` to process the files correctly.
+- **Homebrew**: Added `latexdiff` as a dependency in the Homebrew formula.
+
 ## [v1.15.6] - 2025-12-09
 
 ### Fixed
