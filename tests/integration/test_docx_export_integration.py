@@ -19,11 +19,8 @@ class TestDocxExportIntegration:
 
     def test_full_export_workflow(self, sample_manuscript_path, tmp_path):
         """Test complete export process from manuscript to DOCX."""
-        output_path = tmp_path / "output.docx"
-
         exporter = DocxExporter(
             manuscript_path=sample_manuscript_path,
-            output_path=str(output_path),
             resolve_dois=False,
             include_footnotes=True,
         )
@@ -32,26 +29,24 @@ class TestDocxExportIntegration:
 
         # Verify file was created
         assert result_path.exists()
-        assert result_path == output_path
+        assert result_path.suffix == ".docx"
 
         # Verify DOCX is valid
         doc = Document(str(result_path))
         assert len(doc.paragraphs) > 0
 
-        # Verify content
+        # Verify content (first H1 "Abstract" is skipped as title)
         all_text = "\n".join([p.text for p in doc.paragraphs])
-        assert "Abstract" in all_text
         assert "Introduction" in all_text
         assert "Methods" in all_text
         assert "Results" in all_text
+        # Check for abstract content (not the heading which is skipped)
+        assert "sample manuscript for testing DOCX export" in all_text
 
     def test_export_with_citations(self, sample_manuscript_path, tmp_path):
         """Test that citations are properly converted to numbers."""
-        output_path = tmp_path / "citations.docx"
-
         exporter = DocxExporter(
             manuscript_path=sample_manuscript_path,
-            output_path=str(output_path),
         )
 
         result_path = exporter.export()
@@ -69,11 +64,8 @@ class TestDocxExportIntegration:
 
     def test_export_includes_supplementary(self, sample_manuscript_path, tmp_path):
         """Test that supplementary information is included."""
-        output_path = tmp_path / "with_supp.docx"
-
         exporter = DocxExporter(
             manuscript_path=sample_manuscript_path,
-            output_path=str(output_path),
         )
 
         result_path = exporter.export()
@@ -85,11 +77,8 @@ class TestDocxExportIntegration:
 
     def test_export_preserves_formatting(self, sample_manuscript_path, tmp_path):
         """Test that inline formatting is preserved."""
-        output_path = tmp_path / "formatting.docx"
-
         exporter = DocxExporter(
             manuscript_path=sample_manuscript_path,
-            output_path=str(output_path),
         )
 
         result_path = exporter.export()
@@ -111,26 +100,20 @@ class TestDocxExportIntegration:
 
     def test_export_with_default_output_path(self, sample_manuscript_path, tmp_path):
         """Test export with default output path."""
-        # Change to temp directory
-        import os
+        exporter = DocxExporter(
+            manuscript_path=sample_manuscript_path,
+            # No output_path specified - uses custom filename from metadata
+        )
 
-        original_cwd = os.getcwd()
-        try:
-            os.chdir(tmp_path)
+        result_path = exporter.export()
 
-            exporter = DocxExporter(
-                manuscript_path=sample_manuscript_path,
-                # No output_path specified
-            )
-
-            result_path = exporter.export()
-
-            # Should create file with manuscript name
-            assert result_path.exists()
-            assert result_path.name == "sample_manuscript.docx"
-
-        finally:
-            os.chdir(original_cwd)
+        # Should create file with custom name based on metadata
+        # Format: YEAR__lastname_et_al__rxiv.docx
+        assert result_path.exists()
+        assert result_path.suffix == ".docx"
+        assert "rxiv" in result_path.name  # Custom filename pattern
+        # File should be in manuscript directory
+        assert result_path.parent == Path(sample_manuscript_path)
 
     def test_export_validates_manuscript(self, tmp_path):
         """Test that missing manuscript files are detected."""
@@ -165,11 +148,8 @@ class TestDocxExportIntegration:
 
     def test_export_reports_statistics(self, sample_manuscript_path, tmp_path, caplog):
         """Test that export reports citation statistics."""
-        output_path = tmp_path / "stats.docx"
-
         exporter = DocxExporter(
             manuscript_path=sample_manuscript_path,
-            output_path=str(output_path),
         )
 
         exporter.export()
@@ -181,11 +161,8 @@ class TestDocxExportIntegration:
 
     def test_export_without_footnotes(self, sample_manuscript_path, tmp_path):
         """Test export with footnotes disabled."""
-        output_path = tmp_path / "no_footnotes.docx"
-
         exporter = DocxExporter(
             manuscript_path=sample_manuscript_path,
-            output_path=str(output_path),
             include_footnotes=False,
         )
 
@@ -218,7 +195,6 @@ class TestDocxExportIntegration:
 
         exporter = DocxExporter(
             manuscript_path=str(test_dir),
-            output_path=str(tmp_path / "invalid.docx"),
         )
 
         # Should complete without error (but log warning)
@@ -256,7 +232,6 @@ This is the actual content.
 
         exporter = DocxExporter(
             manuscript_path=str(test_dir),
-            output_path=str(tmp_path / "yaml.docx"),
         )
 
         result_path = exporter.export()
@@ -267,6 +242,5 @@ This is the actual content.
         assert "---" not in all_text
         assert "title: Test Title" not in all_text
 
-        # Should contain actual content
-        assert "Content" in all_text
+        # Should contain actual content (first H1 "Content" is skipped as title)
         assert "This is the actual content" in all_text

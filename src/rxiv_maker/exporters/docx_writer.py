@@ -119,13 +119,18 @@ class DocxWriter:
         # Add title first
         title = metadata.get("title", "")
         if title:
-            # Title can be a string or a list with 'long' format
-            if isinstance(title, list) and len(title) > 0:
-                title_text = title[0].get("long", "")
+            # Title can be a string, a dict with 'long' key, or a list
+            if isinstance(title, dict):
+                title_text = title.get("long", title.get("short", ""))
+            elif isinstance(title, list) and len(title) > 0:
+                if isinstance(title[0], dict):
+                    title_text = title[0].get("long", title[0].get("short", ""))
+                else:
+                    title_text = str(title[0])
             else:
-                title_text = title
+                title_text = str(title)
 
-            if title_text:
+            if title_text and isinstance(title_text, str):
                 # Clean LaTeX formatting from title for DOCX
                 title_text = self._clean_latex_from_text(title_text)
 
