@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.8] - 2025-12-09
+
+### Fixed
+- Fixed issue where metadata (title, authors) was missing in track-changes PDF due to configuration file not being loaded correctly in subprocess.
+
 ## [v1.15.7] - 2025-12-09
 
 ### Fixed

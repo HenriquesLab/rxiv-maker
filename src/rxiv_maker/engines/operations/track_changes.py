@@ -150,21 +150,21 @@ class TrackChangesManager:
             # Use git archive to extract the entire repository state at the tag
             # This ensures all helper scripts, data files, and assets are present
             # pipe git archive output to tar extraction
-            
+
             # Note: We need to run this from the repo root or use the correct path
             # The current working directory is expected to be the manuscript repo root
-            
+
             archive_cmd = ["git", "archive", "--format=tar", self.git_tag]
             tar_cmd = ["tar", "-x", "-C", str(tag_manuscript_dir)]
-            
+
             # Create pipe
             ps = subprocess.Popen(archive_cmd, stdout=subprocess.PIPE, cwd=self.manuscript_path.parent)
             subprocess.check_call(tar_cmd, stdin=ps.stdout)
             ps.wait()
-            
+
             if ps.returncode != 0:
                 raise subprocess.CalledProcessError(ps.returncode, archive_cmd)
-                
+
             self.log(f"Extracted full repository from tag {self.git_tag}")
             return True
 
@@ -199,6 +199,11 @@ class TrackChangesManager:
                 "--output-dir",
                 str(latex_output_dir),
             ]
+
+            # Pass config file explicitly if it exists in the manuscript directory
+            config_path = manuscript_dir / "00_CONFIG.yml"
+            if config_path.exists():
+                cmd.extend(["--config", str(config_path)])
 
             # Set environment variables like BuildManager does
             env = os.environ.copy()
@@ -460,25 +465,28 @@ class TrackChangesManager:
                 return False
 
             self.log("Generating LaTeX files for tag version...")
-            
+
             # Locate the manuscript directory within the extracted tag
             # Try the same directory name as the current manuscript
             target_manuscript_dir = tag_manuscript_dir / self.manuscript_path.name
-            
+
             # If not found there, check the root (in case the repo IS the manuscript dir)
             if not (target_manuscript_dir / "01_MAIN.md").exists():
                 if (tag_manuscript_dir / "01_MAIN.md").exists():
                     target_manuscript_dir = tag_manuscript_dir
                 else:
-                    self.log(f"Warning: Could not create locate 01_MAIN.md in extracted tag files at {target_manuscript_dir} or root", force=True)
+                    self.log(
+                        f"Warning: Could not create locate 01_MAIN.md in extracted tag files at {target_manuscript_dir} or root",
+                        force=True,
+                    )
                     # We continue with the guess, though it will likely fail in generation
-            
+
             if not self.generate_latex_files(target_manuscript_dir, "tag"):
                 return False
 
             # Find the main LaTeX files
             current_tex = self.output_dir / "current" / f"{self.manuscript_path.name}.tex"
-            
+
             # The generated tex file will be named after the manuscript directory name (MANUSCRIPT -> MANUSCRIPT.tex)
             # regardless of whether it's in the tag extraction or current
             tag_tex = self.output_dir / "tag" / f"{self.manuscript_path.name}.tex"
