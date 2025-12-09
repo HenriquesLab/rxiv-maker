@@ -146,35 +146,34 @@ class TrackChangesManager:
         tag_manuscript_dir = temp_dir / "tag_manuscript"
         tag_manuscript_dir.mkdir()
 
-        # Extract each manuscript file from the tag
-        for file_name in self.manuscript_files:
-            file_path = self.manuscript_path / file_name
-            if not file_path.exists():
-                self.log(f"Skipping {file_name} (not found in current manuscript)")
-                continue
+        try:
+            # Use git archive to extract the entire repository state at the tag
+            # This ensures all helper scripts, data files, and assets are present
+            # pipe git archive output to tar extraction
+            
+            # Note: We need to run this from the repo root or use the correct path
+            # The current working directory is expected to be the manuscript repo root
+            
+            archive_cmd = ["git", "archive", "--format=tar", self.git_tag]
+            tar_cmd = ["tar", "-x", "-C", str(tag_manuscript_dir)]
+            
+            # Create pipe
+            ps = subprocess.Popen(archive_cmd, stdout=subprocess.PIPE, cwd=self.manuscript_path.parent)
+            subprocess.check_call(tar_cmd, stdin=ps.stdout)
+            ps.wait()
+            
+            if ps.returncode != 0:
+                raise subprocess.CalledProcessError(ps.returncode, archive_cmd)
+                
+            self.log(f"Extracted full repository from tag {self.git_tag}")
+            return True
 
-            try:
-                # Try to extract file from git tag
-                result = subprocess.run(
-                    [
-                        "git",
-                        "show",
-                        f"{self.git_tag}:{self.manuscript_path.name}/{file_name}",
-                    ],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
-
-                # Write extracted content to temp directory
-                (tag_manuscript_dir / file_name).write_text(result.stdout, encoding="utf-8")
-                self.log(f"Extracted {file_name} from tag {self.git_tag}")
-
-            except subprocess.CalledProcessError as e:
-                self.log(f"Warning: Could not extract {file_name} from tag {self.git_tag}: {e}")
-                continue
-
-        return True
+        except subprocess.CalledProcessError as e:
+            self.log(f"Error extracting files from tag {self.git_tag}: {e}", force=True)
+            return False
+        except Exception as e:
+            self.log(f"Unexpected error during extraction: {e}", force=True)
+            return False
 
     def generate_latex_files(self, manuscript_dir: Path, output_subdir: str) -> bool:
         """Generate LaTeX files from a manuscript directory.
