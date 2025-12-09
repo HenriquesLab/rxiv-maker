@@ -42,9 +42,9 @@ def remove_yaml_header(content: str) -> str:
 def format_bibliography_entry(entry: BibEntry, doi: Optional[str] = None, slim: bool = False) -> str:
     """Format a bibliography entry for display.
 
-    Full format: Author (Year). Title. Journal Volume(Number): Pages.
+    Full format: Author (Year). Title. Journal Volume(Number): Pages. DOI (if provided)
     Slim format: LastName, Year
-    DOI is handled separately as a hyperlink in DOCX writer.
+    DOI is appended as a new line and rendered as a hyperlink in DOCX writer.
 
     Args:
         entry: Bibliography entry to format
@@ -140,8 +140,9 @@ def format_bibliography_entry(entry: BibEntry, doi: Optional[str] = None, slim: 
 
             formatted += "."
 
-    # Note: DOI is handled separately as a hyperlink in the DOCX writer
-    # We don't add it here to avoid duplication
+    # Add DOI if available (will be rendered as hyperlink in DOCX writer)
+    if doi:
+        formatted += f"\nDOI: https://doi.org/{doi}"
 
     return formatted
 
