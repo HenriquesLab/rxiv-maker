@@ -9,7 +9,9 @@ class TestDocxContentProcessor:
     def test_parse_simple_heading(self):
         """Test parsing a simple heading."""
         processor = DocxContentProcessor()
-        markdown = "# Introduction"
+        # First H1 is skipped (treated as title from metadata)
+        # So we need a title H1 followed by the actual heading we're testing
+        markdown = "# Title\n\n# Introduction"
         result = processor.parse(markdown, {})
 
         assert len(result["sections"]) == 1
@@ -21,7 +23,8 @@ class TestDocxContentProcessor:
     def test_parse_multiple_heading_levels(self):
         """Test parsing different heading levels."""
         processor = DocxContentProcessor()
-        markdown = "# Level 1\n\n## Level 2\n\n### Level 3"
+        # First H1 is skipped (title), so add it before the actual content
+        markdown = "# Title\n\n# Level 1\n\n## Level 2\n\n### Level 3"
         result = processor.parse(markdown, {})
 
         assert len(result["sections"]) == 3
@@ -102,7 +105,9 @@ class TestDocxContentProcessor:
         assert section["type"] == "list"
         assert section["list_type"] == "bullet"
         assert len(section["items"]) == 3
-        assert section["items"][0] == "Item 1"
+        # Items are lists of runs, not plain strings
+        assert len(section["items"][0]) == 1
+        assert section["items"][0][0]["text"] == "Item 1"
 
     def test_parse_numbered_list(self):
         """Test parsing numbered list."""
@@ -164,7 +169,8 @@ Results show [1, 2] support."""
     def test_parse_empty_lines_ignored(self):
         """Test that empty lines are ignored."""
         processor = DocxContentProcessor()
-        markdown = "# Heading\n\n\n\nParagraph"
+        # Add title H1 first, then the actual content
+        markdown = "# Title\n\n# Heading\n\n\n\nParagraph"
         result = processor.parse(markdown, {})
 
         # Should only have heading and paragraph, not empty sections
@@ -173,7 +179,8 @@ Results show [1, 2] support."""
     def test_parse_heading_with_id(self):
         """Test parsing heading with ID attribute."""
         processor = DocxContentProcessor()
-        markdown = "# Introduction {#intro}"
+        # Add title H1 first
+        markdown = "# Title\n\n# Introduction {#intro}"
         result = processor.parse(markdown, {})
 
         section = result["sections"][0]
