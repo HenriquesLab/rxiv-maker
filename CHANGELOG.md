@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.15.5] - 2025-12-09
+
+### Fixed
+- **Track Changes**: Fixed `FileNotFoundError` when running `rxiv track-changes` from an installed package by executing `generate_preprint` as a module instead of via a relative script path.
+
 ## [v1.15.4] - 2025-12-09
 
 ### Fixed
