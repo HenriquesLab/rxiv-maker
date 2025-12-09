@@ -884,6 +884,33 @@ class BuildManager:
                 if self.performance_tracker:
                     self.performance_tracker.start_operation("complete_build")
 
+                # Handle track changes mode if enabled
+                if self.track_changes_tag:
+                    self.log(f"Running in track-changes mode against tag: {self.track_changes_tag}", "INFO")
+                    try:
+                        from .track_changes import TrackChangesManager
+
+                        tracker = TrackChangesManager(
+                            manuscript_path=self.manuscript_path,
+                            output_dir=self.output_dir,
+                            git_tag=self.track_changes_tag,
+                            verbose=self.verbose,
+                        )
+                        success = tracker.generate_change_tracked_pdf()
+                        
+                        if self.performance_tracker:
+                            self.performance_tracker.end_operation("complete_build", metadata={"result": "success" if success else "failure"})
+                        
+                        op.add_metadata("build_successful", success)
+                        op.add_metadata("track_changes", True)
+                        return success
+                    except Exception as e:
+                        self.log(f"Track changes build failed: {e}", "ERROR")
+                        if self.performance_tracker:
+                            self.performance_tracker.end_operation("complete_build", metadata={"error": str(e)})
+                        op.add_metadata("build_successful", False)
+                        return False
+
                 # Set manuscript path in environment for Python executor
                 EnvironmentManager.set_manuscript_path(self.manuscript_dir)
 

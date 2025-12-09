@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.15.4] - 2025-12-09
+
+### Fixed
+- **Track Changes**: Restored missing delegation to `TrackChangesManager` in `BuildManager.build()`, enabling `rxiv track-changes` to correctly generate diff PDFs.
+
 ## [v1.15.3] - 2025-12-09
 
 ### Fixed
