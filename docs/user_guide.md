@@ -743,6 +743,24 @@ rxiv track-changes submitted-version revision-version \
     --output revision-package/
 ```
 
+### 📄 Exporting to Word (DOCX)
+
+Collaborate with colleagues who don't use LaTeX/Markdown by exporting to DOCX. The export preserves formatting, figures, and citations.
+
+```bash
+# Export to DOCX
+rxiv docx
+
+# Export with DOI resolution (citation update)
+rxiv docx --resolve-dois
+```
+
+**Features:**
+- **Figures**: Embedded as high-quality images
+- **Citations**: Converted to numbered [1] or Author-Date (Smith, 2024) style
+- **Formatting**: Bold, italic, underline, and superscripts preserved
+- **References**: Full bibliography generated at the end of manuscript, but prior to Supplementary Information
+
 ---
 
 ## 🎯 arXiv & Preprint Workflows

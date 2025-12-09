@@ -258,6 +258,7 @@ Information about code repositories, data availability, and reproducibility reso
 output/
 .rxiv_cache/
 *.pdf
+*.docx
 *.log
 *.aux
 *.fdb_latexmk

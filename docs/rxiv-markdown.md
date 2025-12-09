@@ -263,8 +263,15 @@ E = mc^2^           # Einstein's equation
 **Bold text**
 *Italic text*
 ***Bold and italic***
+__Underlined text__
 `inline code`
-~~Strikethrough~~
+```
+
+
+### Scientific Notation
+```markdown
+~subscript~         # Renders as subscript (e.g., H~2~O)
+^superscript^       # Renders as superscript (e.g., E = mc^2^)
 ```
 
 ### Special Characters

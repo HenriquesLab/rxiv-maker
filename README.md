@@ -125,8 +125,9 @@ rxiv pdf
 - BibTeX integration with `[@citation]` syntax
 - Automatic bibliography generation
 - **Multiple citation styles**: Choose between numbered `[1, 2]` or author-date `(Smith, 2024)` citations
-- **Inline DOI resolution**: Paste DOIs directly in text - automatically converted to proper citations
+- **Inline DOI resolution**: Paste DOIs directly in text `10.1038/...` and auto-convert to citations
 - CrossRef/DataCite DOI validation and metadata fetching
+
 
 > 📖 **Learn more**: [10-Minute Tutorial](https://rxiv-maker.henriqueslab.org/getting-started/citations-tutorial/) | [Complete Guide](https://rxiv-maker.henriqueslab.org/guides/citations-and-references/)
 
