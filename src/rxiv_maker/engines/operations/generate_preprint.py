@@ -34,7 +34,7 @@ def generate_preprint(output_dir, yaml_metadata, manuscript_path=None):
     manuscript_md = find_manuscript_md(manuscript_path)
 
     # Process all template replacements
-    template_content = process_template_replacements(template_content, yaml_metadata, str(manuscript_md))
+    template_content = process_template_replacements(template_content, yaml_metadata, str(manuscript_md), output_dir)
 
     # Extract manuscript name using centralized logic (PathManager handles this via write_manuscript_output)
     # The write_manuscript_output function now uses PathManager internally for consistent name extraction

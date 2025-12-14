@@ -221,7 +221,7 @@ class ManuscriptService(BaseService):
 
             # Process template with metadata
             processed_content = process_template_replacements(
-                template_content, metadata.raw, str(metadata.manuscript_path)
+                template_content, metadata.raw, str(metadata.manuscript_path), output_dir
             )
 
             # Write output

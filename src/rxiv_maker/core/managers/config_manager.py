@@ -38,6 +38,7 @@ class ConfigManager:
         # Configuration search paths (in order of priority)
         # Only search in manuscript directory, no global home directory configs
         self.config_paths = [
+            self.base_dir / "00_CONFIG.yml",  # Legacy manuscript config (first priority)
             self.base_dir / "rxiv.yml",
             self.base_dir / "rxiv.yaml",
             self.base_dir / ".rxiv.yml",

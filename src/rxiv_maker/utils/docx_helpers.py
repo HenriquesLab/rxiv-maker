@@ -14,6 +14,8 @@ from typing import Optional
 
 from PIL import Image
 
+from rxiv_maker.utils.author_name_formatter import format_author_list
+
 from ..utils.bibliography_parser import BibEntry
 
 
@@ -39,7 +41,12 @@ def remove_yaml_header(content: str) -> str:
     return content
 
 
-def format_bibliography_entry(entry: BibEntry, doi: Optional[str] = None, slim: bool = False) -> str:
+def format_bibliography_entry(
+    entry: BibEntry,
+    doi: Optional[str] = None,
+    slim: bool = False,
+    author_format: str = "lastname_firstname",
+) -> str:
     """Format a bibliography entry for display.
 
     Full format: Author (Year). Title. Journal Volume(Number): Pages. DOI (if provided)
@@ -50,6 +57,7 @@ def format_bibliography_entry(entry: BibEntry, doi: Optional[str] = None, slim: 
         entry: Bibliography entry to format
         doi: DOI string (optional)
         slim: If True, use slim format (LastName, Year)
+        author_format: Format for author names - "lastname_initials", "lastname_firstname", "firstname_lastname"
 
     Returns:
         Formatted bibliography string
@@ -69,8 +77,9 @@ def format_bibliography_entry(entry: BibEntry, doi: Optional[str] = None, slim: 
     author = entry.fields.get("author", "Unknown Author")
     year = entry.fields.get("year", "n.d.")
 
-    # Clean LaTeX commands from author names
+    # Clean LaTeX commands from author names and format according to specified style
     author = clean_latex_commands(author)
+    author = format_author_list(author, author_format)
 
     if slim:
         # Slim format: First author last name, Year

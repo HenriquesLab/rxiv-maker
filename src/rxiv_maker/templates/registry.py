@@ -154,6 +154,9 @@ citation_style: "numbered"
 #
 # methods_placement: "after_bibliography"  # Options: "inline", "after_results", "after_bibliography"
 # acknowledge_rxiv_maker: true
+#
+# # Bibliography author name format (applies to both PDF and DOCX):
+# bibliography_author_format: "lastname_firstname"  # Options: "lastname_initials" (Smith, J.A.), "lastname_firstname" (Smith, John A.), "firstname_lastname" (John A. Smith)
 """
 
     def _get_default_main_template(self) -> str:

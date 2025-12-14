@@ -10,6 +10,8 @@ from typing import Any, Dict
 DEFAULT_CONFIG: Dict[str, Any] = {
     # Citation configuration
     "citation_style": "numbered",  # or "author-date"
+    # Bibliography author name format
+    "bibliography_author_format": "lastname_firstname",  # Options: lastname_initials, lastname_firstname, firstname_lastname
     # Figures configuration
     "figures": {
         "directory": "FIGURES",
