@@ -16,7 +16,7 @@ Citation handling utilities for Rxiv-Maker.
 ## <kbd>function</kbd> `extract_existing_citation`
 
 ```python
-extract_existing_citation(bib_content: str) → Optional[Tuple[str, int, int]]
+def extract_existing_citation(bib_content: str) -> Optional[Tuple[str, int, int]]: ...
 ```
 
 Extract existing rxiv-maker citation from bibliography content. 
@@ -40,7 +40,7 @@ Extract existing rxiv-maker citation from bibliography content.
 ## <kbd>function</kbd> `is_citation_outdated`
 
 ```python
-is_citation_outdated(existing_citation: str) → bool
+def is_citation_outdated(existing_citation: str) -> bool: ...
 ```
 
 Check if the existing citation is outdated compared to canonical version. 
@@ -64,7 +64,7 @@ Check if the existing citation is outdated compared to canonical version.
 ## <kbd>function</kbd> `inject_rxiv_citation`
 
 ```python
-inject_rxiv_citation(yaml_metadata: dict[str, Any]) → None
+def inject_rxiv_citation(yaml_metadata: dict[str, Any]) -> None: ...
 ```
 
 Inject Rxiv-Maker citation into bibliography if acknowledge_rxiv_maker is true. 

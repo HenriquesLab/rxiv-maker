@@ -15,7 +15,7 @@ Detects how rxiv-maker was installed (Homebrew, pipx, uv, pip, etc.) to provide 
 ## <kbd>function</kbd> `detect_install_method`
 
 ```python
-detect_install_method() → Literal['homebrew', 'pipx', 'uv', 'pip-user', 'pip', 'dev', 'unknown']
+def detect_install_method() -> Literal['homebrew', 'pipx', 'uv', 'pip-user', 'pip', 'dev', 'unknown']: ...
 ```
 
 Detect how rxiv-maker was installed. 
@@ -34,9 +34,9 @@ Detect how rxiv-maker was installed.
 ## <kbd>function</kbd> `get_upgrade_command`
 
 ```python
-get_upgrade_command(
+def get_upgrade_command(
     install_method: Literal['homebrew', 'pipx', 'uv', 'pip-user', 'pip', 'dev', 'unknown']
-) → str
+) -> str
 ```
 
 Get the appropriate upgrade command for the installation method. 
@@ -60,9 +60,9 @@ Get the appropriate upgrade command for the installation method.
 ## <kbd>function</kbd> `get_friendly_install_name`
 
 ```python
-get_friendly_install_name(
+def get_friendly_install_name(
     install_method: Literal['homebrew', 'pipx', 'uv', 'pip-user', 'pip', 'dev', 'unknown']
-) → str
+) -> str
 ```
 
 Get a user-friendly name for the installation method. 

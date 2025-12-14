@@ -27,14 +27,14 @@ The command produces user-friendly output with clear error messages, suggestions
 ## <kbd>function</kbd> `validate_manuscript`
 
 ```python
-validate_manuscript(
+def validate_manuscript(
     manuscript_path: str,
     verbose: bool = False,
     include_info: bool = False,
     check_latex: bool = True,
     enable_doi_validation: bool | None = None,
     detailed: bool = False
-) → bool
+) -> bool
 ```
 
 Validate manuscript with comprehensive checks. 
@@ -63,7 +63,7 @@ Validate manuscript with comprehensive checks.
 ## <kbd>function</kbd> `main`
 
 ```python
-main()
+def main(): ...
 ```
 
 Main entry point for validate command. 
@@ -79,13 +79,14 @@ Unified validation system for rxiv-maker manuscripts.
 ### <kbd>function</kbd> `__init__`
 
 ```python
-__init__(
+def __init__(
+    self,
     manuscript_path: str,
     verbose: bool = False,
     include_info: bool = False,
     check_latex: bool = True,
     enable_doi_validation: bool = True
-)
+): ...
 ```
 
 Initialize unified validator. 
@@ -110,7 +111,7 @@ Initialize unified validator.
 ### <kbd>function</kbd> `print_detailed_report`
 
 ```python
-print_detailed_report() → None
+def print_detailed_report() -> None: ...
 ```
 
 Print detailed validation report. 
@@ -122,7 +123,7 @@ Print detailed validation report.
 ### <kbd>function</kbd> `print_summary`
 
 ```python
-print_summary() → None
+def print_summary() -> None: ...
 ```
 
 Print brief validation summary. 
@@ -134,7 +135,7 @@ Print brief validation summary.
 ### <kbd>function</kbd> `validate_all`
 
 ```python
-validate_all() → bool
+def validate_all() -> bool: ...
 ```
 
 Run all available validators. 

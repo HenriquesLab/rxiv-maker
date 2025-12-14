@@ -15,10 +15,10 @@ Provides manuscript-local cache directory management using .rxiv_cache.
 ## <kbd>function</kbd> `find_manuscript_directory`
 
 ```python
-find_manuscript_directory(
+def find_manuscript_directory(
     start_path: Path | None = None,
     max_depth: int = 5
-) → Path | None
+) -> Path | None
 ```
 
 Find the manuscript directory by locating 00_CONFIG.yml file. 
@@ -55,10 +55,10 @@ Walks up the directory tree from the starting path to find a directory containin
 ## <kbd>function</kbd> `get_manuscript_cache_dir`
 
 ```python
-get_manuscript_cache_dir(
+def get_manuscript_cache_dir(
     subfolder: str | None = None,
     manuscript_dir: Path | None = None
-) → Path
+) -> Path
 ```
 
 Get the manuscript-local cache directory (.rxiv_cache in manuscript directory). 
@@ -99,7 +99,7 @@ Get the manuscript-local cache directory (.rxiv_cache in manuscript directory).
 ## <kbd>function</kbd> `get_manuscript_name`
 
 ```python
-get_manuscript_name(manuscript_dir: Path | None = None) → str | None
+def get_manuscript_name(manuscript_dir: Path | None = None) -> str | None: ...
 ```
 
 Get the manuscript name from the manuscript directory. 
@@ -130,7 +130,7 @@ Get the manuscript name from the manuscript directory.
 ## <kbd>function</kbd> `is_in_manuscript_directory`
 
 ```python
-is_in_manuscript_directory() → bool
+def is_in_manuscript_directory() -> bool: ...
 ```
 
 Check if current working directory is within a manuscript directory. 

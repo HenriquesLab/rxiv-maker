@@ -13,7 +13,7 @@ Utility functions for extracting DOIs from URLs.
 ## <kbd>function</kbd> `extract_doi_from_url`
 
 ```python
-extract_doi_from_url(url: str) → Optional[str]
+def extract_doi_from_url(url: str) -> Optional[str]: ...
 ```
 
 Extract DOI from a URL. 
@@ -55,7 +55,7 @@ This function handles various URL formats from different publishers and converts
 ## <kbd>function</kbd> `normalize_doi_input`
 
 ```python
-normalize_doi_input(input_str: str) → str
+def normalize_doi_input(input_str: str) -> str: ...
 ```
 
 Normalize input that could be either a DOI or URL containing a DOI. 

@@ -8,6 +8,8 @@
 
 **Write scientific preprints in Markdown. Generate publication-ready PDFs efficiently.**
 
+> **💡 Best Experience:** Use the [VS Code Extension](https://marketplace.visualstudio.com/items?itemName=HenriquesLab.rxiv-maker) for syntax highlighting and citations.
+
 Rxiv-Maker converts enhanced Markdown into professional PDFs with automated figure generation, citation management, and LaTeX typesetting. While LaTeX installation is required, users don't need to write LaTeX code directly.
 
 ## ✨ Why Rxiv-Maker?
@@ -16,7 +18,7 @@ Rxiv-Maker converts enhanced Markdown into professional PDFs with automated figu
 - **Write in Markdown**: Focus on content, not formatting
 - **Automated Figures**: Python/R scripts become publication figures  
 - **Smart Citations**: BibTeX integration with cross-references
-- **Instant PDFs**: From Markdown to professional academic PDF
+- **Automated PDF Generation**: From Markdown to professional academic PDF
 
 ### 🚀 **For Teams**  
 - **Git-Friendly**: Version control for manuscripts and figures
@@ -54,11 +56,13 @@ pip install rxiv-maker
 # Using uv (modern, fast package manager)
 uv tool install rxiv-maker
 
-# Verify any installation
+# Verify installation
 rxiv check-installation
 ```
 
 **📋 Requirements:**
+> [!IMPORTANT]
+> **LaTeX** is required for PDF generation. The `check-installation` command will tell you if you're missing it and how to install it.
 - **LaTeX Distribution**: Required for PDF generation
   - **macOS**: MacTeX (recommended) or BasicTeX
   - **Windows**: MiKTeX or TeX Live
@@ -186,7 +190,6 @@ Visit our **[official documentation website](https://rxiv-maker.henriqueslab.org
 
 ### For Developers
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
-- **[CLAUDE.md](CLAUDE.md)** - AI assistant instructions & testing commands
 - **[CI-LOCAL-TESTING.md](CI-LOCAL-TESTING.md)** - Local CI workflow testing
 - **[Developer Docs](docs/)** - Technical documentation and API details
 

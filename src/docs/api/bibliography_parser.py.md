@@ -15,7 +15,7 @@ This module provides utilities for parsing BibTeX files and extracting entry inf
 ## <kbd>function</kbd> `parse_bib_file`
 
 ```python
-parse_bib_file(bib_path: Path) → list[BibEntry]
+def parse_bib_file(bib_path: Path) -> list[BibEntry]: ...
 ```
 
 Parse a BibTeX file and extract all entries. 
@@ -46,7 +46,7 @@ Parse a BibTeX file and extract all entries.
 ## <kbd>function</kbd> `parse_bib_content`
 
 ```python
-parse_bib_content(content: str) → list[BibEntry]
+def parse_bib_content(content: str) -> list[BibEntry]: ...
 ```
 
 Parse BibTeX content and extract all entries. 
@@ -70,7 +70,7 @@ Parse BibTeX content and extract all entries.
 ## <kbd>function</kbd> `entry_to_dict`
 
 ```python
-entry_to_dict(entry: BibEntry, include_raw: bool = False) → dict[str, Any]
+def entry_to_dict(entry: BibEntry, include_raw: bool = False) -> dict[str, Any]: ...
 ```
 
 Convert a BibEntry to a dictionary for JSON serialization. 
@@ -95,7 +95,7 @@ Convert a BibEntry to a dictionary for JSON serialization.
 ## <kbd>function</kbd> `format_author_list`
 
 ```python
-format_author_list(author_string: str) → list[str]
+def format_author_list(author_string: str) -> list[str]: ...
 ```
 
 Format author string into a list of individual authors. 

@@ -15,7 +15,7 @@ This module provides centralized reporting of Python code execution during manus
 ## <kbd>function</kbd> `get_python_execution_reporter`
 
 ```python
-get_python_execution_reporter() → PythonExecutionReporter
+def get_python_execution_reporter() -> PythonExecutionReporter: ...
 ```
 
 Get or create the global Python execution reporter. 
@@ -28,7 +28,7 @@ Get or create the global Python execution reporter.
 ## <kbd>function</kbd> `reset_python_execution_reporter`
 
 ```python
-reset_python_execution_reporter() → None
+def reset_python_execution_reporter() -> None: ...
 ```
 
 Reset the global Python execution reporter for a new build. 
@@ -44,7 +44,7 @@ Represents a single Python execution event.
 ### <kbd>function</kbd> `__init__`
 
 ```python
-__init__(
+def __init__(
     entry_type: str,
     line_number: int,
     execution_time: float,
@@ -70,7 +70,7 @@ Centralized reporting system for Python execution events during manuscript build
 ### <kbd>function</kbd> `__init__`
 
 ```python
-__init__()
+def __init__(): ...
 ```
 
 Initialize the reporter. 
@@ -85,14 +85,14 @@ Initialize the reporter.
 ### <kbd>function</kbd> `add_entry`
 
 ```python
-add_entry(
+def add_entry(
     operation_type: str,
     line_number: int,
     execution_time: float,
     file_path: str = 'manuscript',
     output: str = '',
     error: str = ''
-) → None
+) -> None
 ```
 
 Add a general execution entry. 
@@ -104,7 +104,7 @@ Add a general execution entry.
 ### <kbd>function</kbd> `display_report`
 
 ```python
-display_report(verbose: bool = False) → None
+def display_report(verbose: bool = False) -> None: ...
 ```
 
 Display the Python execution report. 
@@ -116,7 +116,7 @@ Display the Python execution report.
 ### <kbd>function</kbd> `format_errors_for_display`
 
 ```python
-format_errors_for_display() → str
+def format_errors_for_display() -> str: ...
 ```
 
 Format execution errors for display. 
@@ -128,7 +128,7 @@ Format execution errors for display.
 ### <kbd>function</kbd> `format_outputs_for_display`
 
 ```python
-format_outputs_for_display() → str
+def format_outputs_for_display() -> str: ...
 ```
 
 Format execution outputs for display. 
@@ -140,7 +140,7 @@ Format execution outputs for display.
 ### <kbd>function</kbd> `format_summary_for_display`
 
 ```python
-format_summary_for_display() → str
+def format_summary_for_display() -> str: ...
 ```
 
 Format summary statistics for display. 
@@ -152,7 +152,7 @@ Format summary statistics for display.
 ### <kbd>function</kbd> `format_verbose_report`
 
 ```python
-format_verbose_report() → str
+def format_verbose_report() -> str: ...
 ```
 
 Format a comprehensive report for verbose output. 
@@ -164,7 +164,7 @@ Format a comprehensive report for verbose output.
 ### <kbd>function</kbd> `get_entries_with_output`
 
 ```python
-get_entries_with_output() → List[PythonExecutionEntry]
+def get_entries_with_output() -> List[PythonExecutionEntry]: ...
 ```
 
 Get all entries that have output. 
@@ -176,7 +176,7 @@ Get all entries that have output.
 ### <kbd>function</kbd> `get_error_entries`
 
 ```python
-get_error_entries() → List[PythonExecutionEntry]
+def get_error_entries() -> List[PythonExecutionEntry]: ...
 ```
 
 Get all entries that have errors. 
@@ -188,7 +188,7 @@ Get all entries that have errors.
 ### <kbd>function</kbd> `get_execution_summary`
 
 ```python
-get_execution_summary() → dict
+def get_execution_summary() -> dict: ...
 ```
 
 Get execution summary compatible with build manager expectations. 
@@ -200,7 +200,7 @@ Get execution summary compatible with build manager expectations.
 ### <kbd>function</kbd> `get_summary_statistics`
 
 ```python
-get_summary_statistics() → Dict[str, Any]
+def get_summary_statistics() -> Dict[str, Any]: ...
 ```
 
 Get summary statistics of Python execution. 
@@ -212,7 +212,7 @@ Get summary statistics of Python execution.
 ### <kbd>function</kbd> `has_python_activity`
 
 ```python
-has_python_activity() → bool
+def has_python_activity() -> bool: ...
 ```
 
 Check if any Python activity was recorded. 
@@ -224,7 +224,7 @@ Check if any Python activity was recorded.
 ### <kbd>function</kbd> `reset`
 
 ```python
-reset() → None
+def reset() -> None: ...
 ```
 
 Reset the reporter for a new build. 
@@ -236,12 +236,12 @@ Reset the reporter for a new build.
 ### <kbd>function</kbd> `track_error`
 
 ```python
-track_error(
+def track_error(
     error_message: str,
     code_snippet: str,
     line_number: int,
     file_path: str = 'manuscript'
-) → None
+) -> None
 ```
 
 Track execution errors during manuscript processing. 
@@ -253,13 +253,13 @@ Track execution errors during manuscript processing.
 ### <kbd>function</kbd> `track_exec_block`
 
 ```python
-track_exec_block(
+def track_exec_block(
     code: str,
     output: str,
     line_number: int,
     file_path: str = 'manuscript',
     execution_time: float = 0.0
-) → None
+) -> None
 ```
 
 Track execution of a Python code block. 
@@ -271,12 +271,12 @@ Track execution of a Python code block.
 ### <kbd>function</kbd> `track_get_variable`
 
 ```python
-track_get_variable(
+def track_get_variable(
     variable_name: str,
     variable_value: str,
     line_number: int,
     file_path: str = 'manuscript'
-) → None
+) -> None
 ```
 
 Track variable access during manuscript processing. 
@@ -288,13 +288,13 @@ Track variable access during manuscript processing.
 ### <kbd>function</kbd> `track_inline_execution`
 
 ```python
-track_inline_execution(
+def track_inline_execution(
     code: str,
     output: str,
     line_number: int,
     file_path: str = 'manuscript',
     execution_time: float = 0.0
-) → None
+) -> None
 ```
 
 Track execution of inline Python code (for variable substitution). 

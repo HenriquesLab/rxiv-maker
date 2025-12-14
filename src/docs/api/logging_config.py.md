@@ -13,7 +13,7 @@ Centralized logging configuration for rxiv-maker.
 ## <kbd>function</kbd> `get_logger`
 
 ```python
-get_logger() → RxivLogger
+def get_logger() -> RxivLogger: ...
 ```
 
 Get the global logger instance. 
@@ -26,7 +26,7 @@ Get the global logger instance.
 ## <kbd>function</kbd> `debug`
 
 ```python
-debug(message: str) → None
+def debug(message: str) -> None: ...
 ```
 
 Log debug message. 
@@ -39,7 +39,7 @@ Log debug message.
 ## <kbd>function</kbd> `info`
 
 ```python
-info(message: str) → None
+def info(message: str) -> None: ...
 ```
 
 Log info message. 
@@ -52,7 +52,7 @@ Log info message.
 ## <kbd>function</kbd> `success`
 
 ```python
-success(message: str) → None
+def success(message: str) -> None: ...
 ```
 
 Log success message. 
@@ -65,7 +65,7 @@ Log success message.
 ## <kbd>function</kbd> `warning`
 
 ```python
-warning(message: str) → None
+def warning(message: str) -> None: ...
 ```
 
 Log warning message. 
@@ -78,7 +78,7 @@ Log warning message.
 ## <kbd>function</kbd> `error`
 
 ```python
-error(message: str) → None
+def error(message: str) -> None: ...
 ```
 
 Log error message. 
@@ -91,7 +91,7 @@ Log error message.
 ## <kbd>function</kbd> `critical`
 
 ```python
-critical(message: str) → None
+def critical(message: str) -> None: ...
 ```
 
 Log critical message. 
@@ -104,7 +104,7 @@ Log critical message.
 ## <kbd>function</kbd> `docker_info`
 
 ```python
-docker_info(message: str) → None
+def docker_info(message: str) -> None: ...
 ```
 
 Log Docker-related info. 
@@ -117,7 +117,7 @@ Log Docker-related info.
 ## <kbd>function</kbd> `tip`
 
 ```python
-tip(message: str) → None
+def tip(message: str) -> None: ...
 ```
 
 Log helpful tip. 
@@ -130,7 +130,7 @@ Log helpful tip.
 ## <kbd>function</kbd> `set_quiet`
 
 ```python
-set_quiet(quiet: bool = True) → None
+def set_quiet(quiet: bool = True) -> None: ...
 ```
 
 Enable/disable quiet mode. 
@@ -143,7 +143,7 @@ Enable/disable quiet mode.
 ## <kbd>function</kbd> `set_debug`
 
 ```python
-set_debug(debug_mode: bool = True) → None
+def set_debug(debug_mode: bool = True) -> None: ...
 ```
 
 Enable/disable debug mode. 
@@ -156,7 +156,7 @@ Enable/disable debug mode.
 ## <kbd>function</kbd> `set_log_directory`
 
 ```python
-set_log_directory(log_dir: Path) → None
+def set_log_directory(log_dir: Path) -> None: ...
 ```
 
 Set the directory where log files should be created. 
@@ -169,7 +169,7 @@ Set the directory where log files should be created.
 ## <kbd>function</kbd> `get_log_file_path`
 
 ```python
-get_log_file_path() → Path | None
+def get_log_file_path() -> Path | None: ...
 ```
 
 Get the current log file path. 
@@ -182,7 +182,7 @@ Get the current log file path.
 ## <kbd>function</kbd> `cleanup`
 
 ```python
-cleanup() → None
+def cleanup() -> None: ...
 ```
 
 Clean up logging resources. 
@@ -198,7 +198,7 @@ Centralized logging configuration for rxiv-maker with Rich support.
 ### <kbd>function</kbd> `__init__`
 
 ```python
-__init__() → None
+def __init__() -> None: ...
 ```
 
 Initialize the singleton instance only once. 
@@ -219,7 +219,7 @@ Get the Rich console instance.
 ### <kbd>function</kbd> `cleanup`
 
 ```python
-cleanup() → None
+def cleanup() -> None: ...
 ```
 
 Clean up resources, especially file handlers for Windows compatibility. 
@@ -231,7 +231,7 @@ Clean up resources, especially file handlers for Windows compatibility.
 ### <kbd>function</kbd> `critical`
 
 ```python
-critical(message: str) → None
+def critical(message: str) -> None: ...
 ```
 
 Log critical message. 
@@ -243,7 +243,7 @@ Log critical message.
 ### <kbd>function</kbd> `debug`
 
 ```python
-debug(message: str) → None
+def debug(message: str) -> None: ...
 ```
 
 Log debug message. 
@@ -255,7 +255,7 @@ Log debug message.
 ### <kbd>function</kbd> `docker_info`
 
 ```python
-docker_info(message: str) → None
+def docker_info(message: str) -> None: ...
 ```
 
 Log Docker-related info. 
@@ -267,7 +267,7 @@ Log Docker-related info.
 ### <kbd>function</kbd> `error`
 
 ```python
-error(message: str) → None
+def error(message: str) -> None: ...
 ```
 
 Log error message. 
@@ -279,7 +279,7 @@ Log error message.
 ### <kbd>function</kbd> `get_log_file_path`
 
 ```python
-get_log_file_path() → Path | None
+def get_log_file_path() -> Path | None: ...
 ```
 
 Get the current log file path. 
@@ -291,7 +291,7 @@ Get the current log file path.
 ### <kbd>function</kbd> `info`
 
 ```python
-info(message: str) → None
+def info(message: str) -> None: ...
 ```
 
 Log info message. 
@@ -303,7 +303,7 @@ Log info message.
 ### <kbd>function</kbd> `set_level`
 
 ```python
-set_level(level: str) → None
+def set_level(level: str) -> None: ...
 ```
 
 Set logging level. 
@@ -315,7 +315,7 @@ Set logging level.
 ### <kbd>function</kbd> `set_log_directory`
 
 ```python
-set_log_directory(log_dir: Path) → None
+def set_log_directory(log_dir: Path) -> None: ...
 ```
 
 Set the directory where log files should be created. 
@@ -327,7 +327,7 @@ Set the directory where log files should be created.
 ### <kbd>function</kbd> `set_quiet`
 
 ```python
-set_quiet(quiet: bool = True) → None
+def set_quiet(quiet: bool = True) -> None: ...
 ```
 
 Enable/disable quiet mode (only errors and warnings). 
@@ -339,7 +339,7 @@ Enable/disable quiet mode (only errors and warnings).
 ### <kbd>function</kbd> `success`
 
 ```python
-success(message: str) → None
+def success(message: str) -> None: ...
 ```
 
 Log success message. 
@@ -351,7 +351,7 @@ Log success message.
 ### <kbd>function</kbd> `tip`
 
 ```python
-tip(message: str) → None
+def tip(message: str) -> None: ...
 ```
 
 Log helpful tip. 
@@ -363,7 +363,7 @@ Log helpful tip.
 ### <kbd>function</kbd> `warning`
 
 ```python
-warning(message: str) → None
+def warning(message: str) -> None: ...
 ```
 
 Log warning message. 
