@@ -298,8 +298,20 @@ def generate_keywords(yaml_metadata):
     return result
 
 
-def generate_bibliography(yaml_metadata):
-    """Generate LaTeX bibliography section from YAML metadata."""
+def generate_bibliography(yaml_metadata, output_dir=None):
+    """Generate LaTeX bibliography section from YAML metadata.
+
+    Args:
+        yaml_metadata: Manuscript metadata dictionary
+        output_dir: Output directory for generated files (optional)
+
+    Returns:
+        LaTeX bibliography command string
+    """
+    from pathlib import Path
+
+    from ..utils.bst_generator import generate_bst_file
+
     bibliography_config = yaml_metadata.get("bibliography", "03_REFERENCES")
 
     # Handle both dict and string formats for backward compatibility
@@ -312,11 +324,34 @@ def generate_bibliography(yaml_metadata):
     if bibliography.endswith(".bib"):
         bibliography = bibliography[:-4]
 
+    # Generate custom .bst file with author name format preference
+    if output_dir:
+        author_format = yaml_metadata.get("bibliography_author_format", "lastname_firstname")
+        try:
+            output_path = Path(output_dir)
+            generate_bst_file(author_format, output_path)
+        except Exception as e:
+            # Log warning but don't fail - fall back to default .bst
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to generate custom .bst file: {e}. Using default.")
+
     return f"\\bibliography{{{bibliography}}}"
 
 
-def process_template_replacements(template_content, yaml_metadata, article_md):
-    """Process all template replacements with metadata and content."""
+def process_template_replacements(template_content, yaml_metadata, article_md, output_dir=None):
+    """Process all template replacements with metadata and content.
+
+    Args:
+        template_content: LaTeX template content
+        yaml_metadata: Manuscript metadata dictionary
+        article_md: Article markdown content
+        output_dir: Output directory for generated files (optional)
+
+    Returns:
+        Processed template content with all replacements
+    """
     # Process draft watermark based on status field
     is_draft = False
     if "status" in yaml_metadata:
@@ -424,7 +459,7 @@ def process_template_replacements(template_content, yaml_metadata, article_md):
     template_content = template_content.replace("<PY-RPL:KEYWORDS>", keywords_section)
 
     # Generate bibliography section
-    bibliography_section = generate_bibliography(yaml_metadata)
+    bibliography_section = generate_bibliography(yaml_metadata, output_dir)
     template_content = template_content.replace("<PY-RPL:BIBLIOGRAPHY>", bibliography_section)
 
     # Extract content sections from markdown

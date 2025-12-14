@@ -158,10 +158,10 @@ def process_citations_in_text(text: MarkdownContent, citation_style: str = "numb
     # Match email-like patterns: word@word.word or @word.word (domain patterns)
     text = re.sub(r"(\w+@[\w.-]+\.\w+|@[\w.-]+\.\w+)", protect_email, text)
 
-    # Handle single citations like @citation_key (but not figure/equation references)
+    # Handle single citations like @citation_key (but not cross-references)
     # Allow alphanumeric, underscore, and hyphen in citation keys
-    # Exclude figure and equation references by not matching @fig: or @eq: patterns
-    text = re.sub(r"@(?!fig:|eq:)([a-zA-Z0-9_-]+)", rf"\\{inline_cmd}{{\1}}", text)
+    # Exclude all cross-references by not matching @word: patterns (@fig:, @sfig:, @snote:, @tbl:, etc.)
+    text = re.sub(r"@(?![a-zA-Z]+:)([a-zA-Z0-9_-]+)", rf"\\{inline_cmd}{{\1}}", text)
 
     # Restore protected email patterns
     for i, pattern in enumerate(email_patterns):
@@ -194,16 +194,29 @@ def extract_citations_from_text(text: MarkdownContent) -> list[CitationKey]:
     """
     citations: list[CitationKey] = []
 
+    # First, remove content inside backticks (inline code) to avoid extracting example citations
+    # This prevents `@key` or `@Knuth...` from being treated as actual citations
+    backtick_patterns = []
+
+    def protect_backticks(match):
+        backtick_patterns.append(match.group(0))
+        return f"__BACKTICK_PATTERN_{len(backtick_patterns) - 1}__"
+
+    # Match both single backticks `...` and triple backticks ```...```
+    text_cleaned = re.sub(r"`[^`]+`", protect_backticks, text)
+    text_cleaned = re.sub(r"```.*?```", protect_backticks, text_cleaned, flags=re.DOTALL)
+
     # Find bracketed multiple citations
-    bracketed_matches = re.findall(r"\[(@[^]]+)\]", text)
+    bracketed_matches = re.findall(r"\[(@[^]]+)\]", text_cleaned)
     for match in bracketed_matches:
         for cite in match.split(";"):
             clean_cite = cite.strip().lstrip("@").strip()
             if clean_cite and clean_cite not in citations:
                 citations.append(clean_cite)
 
-    # Find single citations (excluding figure and equation references)
-    single_matches = re.findall(r"@(?!fig:|eq:)([a-zA-Z0-9_-]+)", text)
+    # Find single citations (excluding all cross-references like @fig:, @sfig:, @snote:, @tbl:, etc.)
+    # Exclude any pattern that looks like @word: (cross-reference format)
+    single_matches = re.findall(r"@(?![a-zA-Z]+:)([a-zA-Z0-9_-]+)", text_cleaned)
     for cite in single_matches:
         if cite not in citations:
             citations.append(cite)

@@ -10,6 +10,7 @@ Welcome to the API documentation for rxiv-maker.
 - [core.logging_config.py](core_logging_config.py.md)
 - [engines.operations.validate.py](engines_operations_validate.py.md)
 - [manuscript_utils.figure_utils.py](manuscript_utils_figure_utils.py.md)
+- [utils.author_name_formatter.py](utils_author_name_formatter.py.md)
 - [utils.bibliography_parser.py](utils_bibliography_parser.py.md)
 - [utils.changelog_parser.py](utils_changelog_parser.py.md)
 - [utils.citation_utils.py](utils_citation_utils.py.md)

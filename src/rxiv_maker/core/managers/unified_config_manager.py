@@ -39,6 +39,7 @@ CONFIG_SCOPE_MAP = {
     "output": ConfigScope.MANUSCRIPT,
     "figures": ConfigScope.MANUSCRIPT,
     "bibliography": ConfigScope.MANUSCRIPT,
+    "bibliography_author_format": ConfigScope.MANUSCRIPT,
     "validation": ConfigScope.MANUSCRIPT,
     "cache": ConfigScope.MANUSCRIPT,
     "acknowledge_rxiv_maker": ConfigScope.MANUSCRIPT,

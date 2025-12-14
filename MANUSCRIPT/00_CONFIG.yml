@@ -52,4 +52,5 @@ affiliations:
 # Bibliography and citation configuration
 bibliography: 03_REFERENCES.bib        # Path to BibTeX bibliography file
 citation_style: "numbered"             # Citation style: "numbered" or "author-date"
+bibliography_author_format: "lastname_initials"  # Author name format: "lastname_initials" (Smith, J.A.), "lastname_firstname" (Smith, John A.), "firstname_lastname" (John A. Smith)
 enable_inline_doi_resolution: false    # Auto-resolve inline DOIs to citations (replaces DOIs with @citationkey in markdown)

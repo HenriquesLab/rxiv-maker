@@ -781,8 +781,30 @@ class BuildManager:
         self.log("Copying style files...", "STEP")
 
         try:
-            # Use centralized path manager method for style file copying
-            copied_files = self.path_manager.copy_style_files_to_output()
+            # Generate custom .bst file with author name format preference
+            from ...core.managers.config_manager import ConfigManager
+            from ...utils.bst_generator import generate_bst_file
+
+            # Load config to get bibliography author format
+            config_manager = ConfigManager(base_dir=self.path_manager.manuscript_path)
+            config = config_manager.load_config()
+            author_format = config.get("bibliography_author_format", "lastname_firstname")
+
+            # Generate custom .bst file directly to output directory
+            try:
+                output_dir = self.path_manager.output_dir
+                generate_bst_file(author_format, output_dir)
+                self.log(f"Generated custom .bst file with format: {author_format}", "INFO")
+            except Exception as e:
+                self.log(f"Failed to generate custom .bst file: {e}. Using default.", "WARNING")
+                # If generation failed, copy the default .bst
+                copied_files = self.path_manager.copy_style_files_to_output()
+                for copied_file in copied_files:
+                    self.log(f"Copied {copied_file.name} to output directory", "INFO")
+                return True
+
+            # Copy only .cls file (not .bst since we generated a custom one)
+            copied_files = self.path_manager.copy_style_files_to_output(style_files=["rxiv_maker_style.cls"])
 
             for copied_file in copied_files:
                 self.log(f"Copied {copied_file.name} to output directory", "INFO")
@@ -897,10 +919,12 @@ class BuildManager:
                             verbose=self.verbose,
                         )
                         success = tracker.generate_change_tracked_pdf()
-                        
+
                         if self.performance_tracker:
-                            self.performance_tracker.end_operation("complete_build", metadata={"result": "success" if success else "failure"})
-                        
+                            self.performance_tracker.end_operation(
+                                "complete_build", metadata={"result": "success" if success else "failure"}
+                            )
+
                         op.add_metadata("build_successful", success)
                         op.add_metadata("track_changes", True)
                         return success

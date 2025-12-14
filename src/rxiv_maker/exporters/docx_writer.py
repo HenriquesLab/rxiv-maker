@@ -146,14 +146,23 @@ class DocxWriter:
 
         # Collect unique affiliations and build mapping
         all_affiliations = []
-        affiliation_map = {}  # Maps affiliation string to number
+        affiliation_map = {}  # Maps affiliation shortname to number
+
+        # Get full affiliation details from metadata
+        affiliation_details = {a.get("shortname"): a for a in metadata.get("affiliations", [])}
 
         for author in authors:
             author_affils = author.get("affiliations", [])
-            for affil in author_affils:
-                if affil not in affiliation_map:
-                    affiliation_map[affil] = len(affiliation_map) + 1
-                    all_affiliations.append(affil)
+            for affil_shortname in author_affils:
+                if affil_shortname not in affiliation_map:
+                    affiliation_map[affil_shortname] = len(affiliation_map) + 1
+                    # Look up full affiliation info
+                    affil_info = affiliation_details.get(affil_shortname, {})
+                    full_name = affil_info.get("full_name", affil_shortname)
+                    location = affil_info.get("location", "")
+                    # Format: "Full Name, Location" or just "Full Name" if no location
+                    affil_text = f"{full_name}, {location}" if location else full_name
+                    all_affiliations.append(affil_text)
 
         # Add authors with superscript affiliation numbers
         if authors:
