@@ -58,6 +58,8 @@ The template processor reads your config and sets the appropriate mode before La
 
 ## Bibliography Author Name Formatting
 
+> 🆕 **New in v1.16.0**
+
 ### Overview
 
 Rxiv-Maker allows you to customize how author names appear in the bibliography section. This applies to both PDF and DOCX exports.
@@ -72,7 +74,8 @@ Available formats:
 Add the `bibliography_author_format` option to your `00_CONFIG.yml`:
 
 ```yaml
-# Bibliography author name format (applies to both PDF and DOCX)
+# Bibliography author name format (v1.16.0+)
+# Applies to both PDF and DOCX exports
 bibliography_author_format: "lastname_initials"
 ```
 
