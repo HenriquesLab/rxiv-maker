@@ -62,12 +62,13 @@ rxiv check-installation
 
 **📋 Requirements:**
 > [!IMPORTANT]
-> **LaTeX** is required for PDF generation. The `check-installation` command will tell you if you're missing it and how to install it.
-- **LaTeX Distribution**: Required for PDF generation
+> **LaTeX** is required for PDF generation. When installing via **Homebrew** (`brew install rxiv-maker`), LaTeX is included automatically. For other installation methods (pip, pipx, uv), you'll need to install LaTeX separately. Run `rxiv check-installation` to verify your setup.
+
+- **Python 3.11+**: For rxiv-maker CLI and figure generation
+- **LaTeX Distribution**: Included with Homebrew installation, or install separately:
   - **macOS**: MacTeX (recommended) or BasicTeX
   - **Windows**: MiKTeX or TeX Live
-  - **Linux**: TeX Live (install via system package manager)
-- **Python 3.11+**: For rxiv-maker CLI and figure generation
+  - **Linux**: TeX Live (via system package manager)
 
 **Upgrading:**
 ```bash
