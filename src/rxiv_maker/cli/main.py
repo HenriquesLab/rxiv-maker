@@ -6,8 +6,15 @@ import os
 import rich_click as click
 from rich.console import Console
 
+from henriqueslab_updater import (
+    UpdateChecker,
+    RichNotifier,
+    ChangelogPlugin,
+    check_for_updates_async_background,
+    show_update_notification,
+)
+
 from .. import __version__
-from ..utils.update_checker import check_for_updates_async, show_update_notification
 from . import commands
 from .commands.check_installation import check_installation
 
@@ -143,8 +150,18 @@ class UpdateCheckGroup(click.Group):
     def invoke(self, ctx):
         """Invoke command and handle update checking."""
         try:
-            # Start update check in background (non-blocking)
-            check_for_updates_async()
+            # Start update check in background (non-blocking) with RichNotifier and ChangelogPlugin
+            check_for_updates_async_background(
+                package_name="rxiv-maker",
+                current_version=__version__,
+                notifier=RichNotifier(color_scheme="blue"),
+                plugins=[
+                    ChangelogPlugin(
+                        changelog_url="https://raw.githubusercontent.com/HenriquesLab/rxiv-maker/main/CHANGELOG.md",
+                        highlights_per_version=3,
+                    ),
+                ],
+            )
 
             # Invoke the actual command
             result = super().invoke(ctx)
