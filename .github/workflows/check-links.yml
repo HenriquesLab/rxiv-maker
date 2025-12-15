@@ -1,0 +1,72 @@
+name: Check Documentation Links
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**.md'
+      - '.github/workflows/check-links.yml'
+  pull_request:
+    paths:
+      - '**.md'
+      - '.github/workflows/check-links.yml'
+  schedule:
+    # Run weekly on Mondays at 9:00 UTC to catch external link rot
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  check-links:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check links with lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          # Check all markdown files
+          args: |
+            --verbose
+            --no-progress
+            --exclude-mail
+            --exclude 'linkedin.com'
+            --exclude 'twitter.com'
+            --exclude 'x.com'
+            --max-retries 3
+            --timeout 20
+            --accept 200,204,206,301,302,307,308,429
+            --headers "accept=text/html"
+            '**.md'
+
+          # Fail the action on broken links
+          fail: true
+
+          # Output format
+          format: markdown
+
+          # Create detailed report
+          output: lychee-report.md
+
+      - name: Upload link check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: link-check-report
+          path: lychee-report.md
+          retention-days: 30
+
+      - name: Comment PR with results
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('lychee-report.md', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🔗 Link Check Failed\n\nSome links in the documentation are broken:\n\n${report}\n\n---\n💡 **Tip:** Check the [full report artifact](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.`
+            });

@@ -1,0 +1,29 @@
+# Lychee link checker ignore patterns
+# These patterns are excluded from link checking
+
+# Social media (often blocks automated checks)
+https://linkedin.com
+https://twitter.com
+https://x.com
+
+# localhost and local development URLs
+http://localhost
+http://127.0.0.1
+
+# Placeholder URLs in examples
+https://example.com
+https://your-repo-url
+https://github.com/user/repo
+
+# URLs that require authentication
+https://github.com/settings
+
+# Known temporary unavailability (remove when fixed)
+# Add specific URLs here if they're temporarily down
+
+# Example DOIs in documentation (not real)
+https://doi.org/10.XXXX
+https://doi.org/10.1234
+
+# Private repositories (if any)
+# Add private repo URLs if needed
