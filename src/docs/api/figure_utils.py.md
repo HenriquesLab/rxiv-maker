@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/manuscript_utils/figure_utils.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/manuscript_utils/figure_utils.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `figure_utils.py`
 Figure generation utilities for manuscript Python code. 
@@ -14,17 +14,17 @@ This module provides functions that can be called from manuscript Python blocks 
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/manuscript_utils/figure_utils.py#L27"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/manuscript_utils/figure_utils.py#L27"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `convert_mermaid`
 
 ```python
-def convert_mermaid(
+convert_mermaid(
     input_file: Union[str, Path],
     output_format: str = 'png',
     output_dir: Optional[str, Path] = None,
     **kwargs
-) -> List[Path]
+) → List[Path]
 ```
 
 Convert a Mermaid diagram file to the specified format. 
@@ -52,17 +52,17 @@ Convert a Mermaid diagram file to the specified format.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/manuscript_utils/figure_utils.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/manuscript_utils/figure_utils.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `convert_python_figure`
 
 ```python
-def convert_python_figure(
+convert_python_figure(
     input_file: Union[str, Path],
     output_format: str = 'png',
     output_dir: Optional[str, Path] = None,
     **kwargs
-) -> List[Path]
+) → List[Path]
 ```
 
 Convert a Python figure script to the specified format. 
@@ -90,17 +90,17 @@ Convert a Python figure script to the specified format.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/manuscript_utils/figure_utils.py#L67"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/manuscript_utils/figure_utils.py#L67"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `convert_r_figure`
 
 ```python
-def convert_r_figure(
+convert_r_figure(
     input_file: Union[str, Path],
     output_format: str = 'png',
     output_dir: Optional[str, Path] = None,
     **kwargs
-) -> List[Path]
+) → List[Path]
 ```
 
 Convert an R script to the specified format. 
@@ -128,18 +128,18 @@ Convert an R script to the specified format.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/manuscript_utils/figure_utils.py#L93"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/manuscript_utils/figure_utils.py#L93"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `convert_figures_bulk`
 
 ```python
-def convert_figures_bulk(
+convert_figures_bulk(
     pattern: str,
     output_format: str = 'png',
     output_dir: Optional[str, Path] = None,
     figure_types: Optional[List[str]] = None,
     **kwargs
-) -> List[Path]
+) → List[Path]
 ```
 
 Convert multiple figure files matching a pattern. 
@@ -168,12 +168,12 @@ Convert multiple figure files matching a pattern.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/manuscript_utils/figure_utils.py#L265"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/manuscript_utils/figure_utils.py#L265"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `list_available_figures`
 
 ```python
-def list_available_figures(figures_dir: Optional[str, Path] = None) -> dict: ...
+list_available_figures(figures_dir: Optional[str, Path] = None) → dict
 ```
 
 List all available figure source files. 
@@ -192,12 +192,12 @@ List all available figure source files.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/manuscript_utils/figure_utils.py#L289"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/manuscript_utils/figure_utils.py#L289"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_figure_info`
 
 ```python
-def get_figure_info(input_file: Union[str, Path]) -> dict: ...
+get_figure_info(input_file: Union[str, Path]) → dict
 ```
 
 Get information about a figure file. 
@@ -216,15 +216,15 @@ Get information about a figure file.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/manuscript_utils/figure_utils.py#L326"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/manuscript_utils/figure_utils.py#L326"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `clean_figure_outputs`
 
 ```python
-def clean_figure_outputs(
+clean_figure_outputs(
     input_file: Optional[str, Path] = None,
     output_dir: Optional[str, Path] = None
-) -> int
+) → int
 ```
 
 Clean generated figure outputs. 

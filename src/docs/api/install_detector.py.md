@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/install_detector.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/install_detector.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `install_detector.py`
 Installation method detection for rxiv-maker. 
@@ -10,12 +10,12 @@ Detects how rxiv-maker was installed (Homebrew, pipx, uv, pip, etc.) to provide 
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/install_detector.py#L15"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/install_detector.py#L15"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `detect_install_method`
 
 ```python
-def detect_install_method() -> Literal['homebrew', 'pipx', 'uv', 'pip-user', 'pip', 'dev', 'unknown']: ...
+detect_install_method() → Literal['homebrew', 'pipx', 'uv', 'pip-user', 'pip', 'dev', 'unknown']
 ```
 
 Detect how rxiv-maker was installed. 
@@ -29,14 +29,14 @@ Detect how rxiv-maker was installed.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/install_detector.py#L84"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/install_detector.py#L84"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_upgrade_command`
 
 ```python
-def get_upgrade_command(
+get_upgrade_command(
     install_method: Literal['homebrew', 'pipx', 'uv', 'pip-user', 'pip', 'dev', 'unknown']
-) -> str
+) → str
 ```
 
 Get the appropriate upgrade command for the installation method. 
@@ -55,14 +55,14 @@ Get the appropriate upgrade command for the installation method.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/install_detector.py#L106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/install_detector.py#L106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_friendly_install_name`
 
 ```python
-def get_friendly_install_name(
+get_friendly_install_name(
     install_method: Literal['homebrew', 'pipx', 'uv', 'pip-user', 'pip', 'dev', 'unknown']
-) -> str
+) → str
 ```
 
 Get a user-friendly name for the installation method. 

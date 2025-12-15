@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/bibliography_parser.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/bibliography_parser.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `bibliography_parser.py`
 Bibliography file parsing utilities. 
@@ -10,12 +10,12 @@ This module provides utilities for parsing BibTeX files and extracting entry inf
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/bibliography_parser.py#L23"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/bibliography_parser.py#L23"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `parse_bib_file`
 
 ```python
-def parse_bib_file(bib_path: Path) -> list[BibEntry]: ...
+parse_bib_file(bib_path: Path) → list[BibEntry]
 ```
 
 Parse a BibTeX file and extract all entries. 
@@ -41,12 +41,12 @@ Parse a BibTeX file and extract all entries.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/bibliography_parser.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/bibliography_parser.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `parse_bib_content`
 
 ```python
-def parse_bib_content(content: str) -> list[BibEntry]: ...
+parse_bib_content(content: str) → list[BibEntry]
 ```
 
 Parse BibTeX content and extract all entries. 
@@ -65,12 +65,12 @@ Parse BibTeX content and extract all entries.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/bibliography_parser.py#L186"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/bibliography_parser.py#L186"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `entry_to_dict`
 
 ```python
-def entry_to_dict(entry: BibEntry, include_raw: bool = False) -> dict[str, Any]: ...
+entry_to_dict(entry: BibEntry, include_raw: bool = False) → dict[str, Any]
 ```
 
 Convert a BibEntry to a dictionary for JSON serialization. 
@@ -90,12 +90,12 @@ Convert a BibEntry to a dictionary for JSON serialization.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/bibliography_parser.py#L204"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/bibliography_parser.py#L204"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `format_author_list`
 
 ```python
-def format_author_list(author_string: str) -> list[str]: ...
+format_author_list(author_string: str) → list[str]
 ```
 
 Format author string into a list of individual authors. 

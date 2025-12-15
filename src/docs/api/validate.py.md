@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/engines/operations/validate.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/engines/operations/validate.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `validate.py`
 Unified validation command for rxiv-maker manuscripts. 
@@ -22,19 +22,19 @@ The command produces user-friendly output with clear error messages, suggestions
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/engines/operations/validate.py#L361"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/engines/operations/validate.py#L361"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `validate_manuscript`
 
 ```python
-def validate_manuscript(
+validate_manuscript(
     manuscript_path: str,
     verbose: bool = False,
     include_info: bool = False,
     check_latex: bool = True,
     enable_doi_validation: bool | None = None,
     detailed: bool = False
-) -> bool
+) → bool
 ```
 
 Validate manuscript with comprehensive checks. 
@@ -58,12 +58,12 @@ Validate manuscript with comprehensive checks.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/engines/operations/validate.py#L411"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/engines/operations/validate.py#L411"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 
 ```python
-def main(): ...
+main()
 ```
 
 Main entry point for validate command. 
@@ -74,19 +74,18 @@ Main entry point for validate command.
 ## <kbd>class</kbd> `UnifiedValidator`
 Unified validation system for rxiv-maker manuscripts. 
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/engines/operations/validate.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/engines/operations/validate.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `__init__`
 
 ```python
-def __init__(
-    self,
+__init__(
     manuscript_path: str,
     verbose: bool = False,
     include_info: bool = False,
     check_latex: bool = True,
     enable_doi_validation: bool = True
-): ...
+)
 ```
 
 Initialize unified validator. 
@@ -106,36 +105,36 @@ Initialize unified validator.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/engines/operations/validate.py#L168"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/engines/operations/validate.py#L168"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `print_detailed_report`
 
 ```python
-def print_detailed_report() -> None: ...
+print_detailed_report() → None
 ```
 
 Print detailed validation report. 
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/engines/operations/validate.py#L300"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/engines/operations/validate.py#L300"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `print_summary`
 
 ```python
-def print_summary() -> None: ...
+print_summary() → None
 ```
 
 Print brief validation summary. 
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/engines/operations/validate.py#L81"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/engines/operations/validate.py#L81"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>function</kbd> `validate_all`
 
 ```python
-def validate_all() -> bool: ...
+validate_all() → bool
 ```
 
 Run all available validators. 

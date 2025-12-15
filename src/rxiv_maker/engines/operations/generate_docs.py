@@ -8,7 +8,7 @@ signatures.
 
 import os
 import shutil
-import subprocess
+import subprocess  # nosec B404
 from pathlib import Path
 
 
@@ -216,7 +216,7 @@ def generate_api_docs(project_root: Path | None = None) -> bool:
                     "--no-watermark",
                     "--remove-package-prefix",
                     "--src-base-url",
-                    "https://github.com/henriqueslab/rxiv-maker/blob/main/src",
+                    "https://github.com/henriqueslab/rxiv-maker/blob/main",
                 ]
 
                 subprocess.run(

@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/unicode_safe.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/unicode_safe.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `unicode_safe.py`
 Unicode-safe console output utilities for rxiv-maker. 
@@ -10,12 +10,12 @@ This module provides cross-platform safe console output functions that handle Un
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/unicode_safe.py#L16"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/unicode_safe.py#L16"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `supports_unicode`
 
 ```python
-def supports_unicode() -> bool: ...
+supports_unicode() → bool
 ```
 
 Check if the current environment supports Unicode characters. 
@@ -29,12 +29,12 @@ Check if the current environment supports Unicode characters.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/unicode_safe.py#L49"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/unicode_safe.py#L49"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_safe_icon`
 
 ```python
-def get_safe_icon(emoji: str, fallback: str) -> str: ...
+get_safe_icon(emoji: str, fallback: str) → str
 ```
 
 Get a safe icon that works across different terminals. 
@@ -55,12 +55,12 @@ Get a safe icon that works across different terminals.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/unicode_safe.py#L62"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/unicode_safe.py#L62"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `convert_to_ascii`
 
 ```python
-def convert_to_ascii(message: str) -> str: ...
+convert_to_ascii(message: str) → str
 ```
 
 Convert Unicode emoji and symbols to ASCII equivalents. 
@@ -79,12 +79,12 @@ Convert Unicode emoji and symbols to ASCII equivalents.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/unicode_safe.py#L130"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/unicode_safe.py#L130"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `safe_print`
 
 ```python
-def safe_print(message: str, **kwargs) -> None: ...
+safe_print(message: str, **kwargs) → None
 ```
 
 Print a message with Unicode safety fallbacks. 
@@ -99,17 +99,17 @@ Print a message with Unicode safety fallbacks.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/unicode_safe.py#L153"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/unicode_safe.py#L153"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `safe_console_print`
 
 ```python
-def safe_console_print(
+safe_console_print(
     console,
     message: str,
     style: str | None = None,
     **kwargs
-) -> None
+) → None
 ```
 
 Print a message using Rich console with cross-platform Unicode fallback. 
@@ -126,12 +126,12 @@ Print a message using Rich console with cross-platform Unicode fallback.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/unicode_safe.py#L183"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/unicode_safe.py#L183"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `print_success`
 
 ```python
-def print_success(message: str) -> None: ...
+print_success(message: str) → None
 ```
 
 Print a success message with safe Unicode handling. 
@@ -139,12 +139,12 @@ Print a success message with safe Unicode handling.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/unicode_safe.py#L189"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/unicode_safe.py#L189"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `print_error`
 
 ```python
-def print_error(message: str) -> None: ...
+print_error(message: str) → None
 ```
 
 Print an error message with safe Unicode handling. 
@@ -152,12 +152,12 @@ Print an error message with safe Unicode handling.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/unicode_safe.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/unicode_safe.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `print_warning`
 
 ```python
-def print_warning(message: str) -> None: ...
+print_warning(message: str) → None
 ```
 
 Print a warning message with safe Unicode handling. 
@@ -165,12 +165,12 @@ Print a warning message with safe Unicode handling.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/unicode_safe.py#L201"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/unicode_safe.py#L201"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `print_info`
 
 ```python
-def print_info(message: str) -> None: ...
+print_info(message: str) → None
 ```
 
 Print an info message with safe Unicode handling. 
@@ -178,12 +178,12 @@ Print an info message with safe Unicode handling.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/unicode_safe.py#L208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/unicode_safe.py#L208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `console_success`
 
 ```python
-def console_success(console, message: str) -> None: ...
+console_success(console, message: str) → None
 ```
 
 Print a success message using Rich console with safe Unicode handling. 
@@ -191,12 +191,12 @@ Print a success message using Rich console with safe Unicode handling.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/unicode_safe.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/unicode_safe.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `console_error`
 
 ```python
-def console_error(console, message: str) -> None: ...
+console_error(console, message: str) → None
 ```
 
 Print an error message using Rich console with safe Unicode handling. 
@@ -204,12 +204,12 @@ Print an error message using Rich console with safe Unicode handling.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/unicode_safe.py#L220"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/unicode_safe.py#L220"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `console_warning`
 
 ```python
-def console_warning(console, message: str) -> None: ...
+console_warning(console, message: str) → None
 ```
 
 Print a warning message using Rich console with safe Unicode handling. 
@@ -217,12 +217,12 @@ Print a warning message using Rich console with safe Unicode handling.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/unicode_safe.py#L226"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/unicode_safe.py#L226"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `console_info`
 
 ```python
-def console_info(console, message: str) -> None: ...
+console_info(console, message: str) → None
 ```
 
 Print an info message using Rich console with safe Unicode handling. 

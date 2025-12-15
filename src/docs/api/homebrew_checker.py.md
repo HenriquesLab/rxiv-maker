@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/homebrew_checker.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/homebrew_checker.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `homebrew_checker.py`
 Homebrew update checker for rxiv-maker. 
@@ -17,15 +17,15 @@ Note: Before upgrading with Homebrew, always run 'brew update' first to fetch th
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/homebrew_checker.py#L21"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/homebrew_checker.py#L21"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_brew_outdated`
 
 ```python
-def check_brew_outdated(
+check_brew_outdated(
     package: str = 'rxiv-maker',
     timeout: int = 5
-) -> Optional[Tuple[str, str]]
+) → Optional[Tuple[str, str]]
 ```
 
 Check if package is outdated using `brew outdated` command. 
@@ -45,15 +45,15 @@ Check if package is outdated using `brew outdated` command.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/homebrew_checker.py#L63"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/homebrew_checker.py#L63"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_formula_github`
 
 ```python
-def check_formula_github(
+check_formula_github(
     formula_url: str = 'https://raw.githubusercontent.com/henriqueslab/homebrew-formulas/main/Formula/rxiv-maker.rb',
     timeout: int = 5
-) -> Optional[str]
+) → Optional[str]
 ```
 
 Check the latest version from the GitHub formula file. 
@@ -73,12 +73,12 @@ Check the latest version from the GitHub formula file.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/homebrew_checker.py#L99"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/homebrew_checker.py#L99"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_homebrew_update`
 
 ```python
-def check_homebrew_update(current_version: str) -> Optional[Tuple[bool, str]]: ...
+check_homebrew_update(current_version: str) → Optional[Tuple[bool, str]]
 ```
 
 Check if a Homebrew update is available. 
