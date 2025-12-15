@@ -25,7 +25,7 @@ Rxiv-Maker converts enhanced Markdown into professional PDFs with automated figu
 
 ## 🚀 Installation
 
-<details open>
+<details>
 <summary>🍎 <strong>macOS</strong> (Recommended - includes LaTeX automatically)</summary>
 
 ```bash
@@ -97,7 +97,7 @@ cd manuscript-rxiv-maker/MANUSCRIPT
 rxiv pdf
 ```
 
-**🎯 [Getting Started Guide](docs/first-manuscript.md)**
+**🎯 [Getting Started Guide](https://rxiv-maker.henriqueslab.org/getting-started/first-manuscript/)**
 
 ## 🏆 Key Features
 
