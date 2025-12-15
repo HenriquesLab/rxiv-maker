@@ -210,6 +210,9 @@ class BaseCommand(ABC):
             return self.execute_operation(**kwargs)
 
         except CommandExecutionError as e:
+            # Print error message to stderr before exiting
+            error_console = Console(stderr=True)
+            error_console.print(f"❌ Error: {e}", style="red")
             sys.exit(e.exit_code)
         except KeyboardInterrupt:
             self.handle_keyboard_interrupt(operation_name)

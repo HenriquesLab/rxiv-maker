@@ -50,43 +50,25 @@ class InitCommand(BaseCommand):
 
         Args:
             force: Force overwrite existing files
-            no_interactive: Skip interactive prompts
+            no_interactive: Deprecated (command is always non-interactive)
             validate: Run validation after initialization
             template: Template type to use (default, minimal, journal, preprint)
         """
-        from rich.prompt import Prompt
-
         # Get manuscript path from raw path (set during setup_common_options)
         manuscript_path = self.raw_manuscript_path
 
         manuscript_dir = Path(manuscript_path)
 
-        # Check if directory exists
+        # Check if directory exists and fail if --force not used
         if manuscript_dir.exists() and not force:
-            if not no_interactive:
-                overwrite = Prompt.ask(
-                    f"Directory '{manuscript_path}' already exists. Overwrite?", choices=["y", "n"], default="n"
-                )
-                if overwrite == "n":
-                    self.console.print("❌ Initialization cancelled", style="yellow")
-                    return
-            else:
-                raise CommandExecutionError(f"Directory '{manuscript_path}' already exists. Use --force to overwrite.")
+            raise CommandExecutionError(f"Directory '{manuscript_path}' already exists. Use --force to overwrite.")
 
-        # Get user information if interactive (BEFORE progress bar)
+        # Always use default values (non-interactive mode only)
         title = "Your Manuscript Title"
         author_name = "Your Name"
         author_email = "your.email@example.com"
         author_orcid = "0000-0000-0000-0000"
         author_affiliation = "Your Institution"
-
-        if not no_interactive:
-            self.console.print("\n📝 Enter manuscript details (press Enter for defaults):")
-            title = Prompt.ask("Title", default=title)
-            author_name = Prompt.ask("Author name", default=author_name)
-            author_email = Prompt.ask("Author email", default=author_email)
-            author_orcid = Prompt.ask("Author ORCID", default=author_orcid)
-            author_affiliation = Prompt.ask("Author affiliation", default=author_affiliation)
 
         with self.create_progress() as progress:
             task = progress.add_task(f"Initializing manuscript (template: {template})...", total=2)
