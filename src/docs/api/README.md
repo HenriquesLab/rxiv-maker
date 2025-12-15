@@ -12,6 +12,7 @@ Welcome to the API documentation for rxiv-maker.
 - [manuscript_utils.figure_utils.py](manuscript_utils_figure_utils.py.md)
 - [utils.author_name_formatter.py](utils_author_name_formatter.py.md)
 - [utils.bibliography_parser.py](utils_bibliography_parser.py.md)
+- [utils.changelog_parser.py](utils_changelog_parser.py.md)
 - [utils.citation_utils.py](utils_citation_utils.py.md)
 - [utils.email_encoder.py](utils_email_encoder.py.md)
 - [utils.github.py](utils_github.py.md)
