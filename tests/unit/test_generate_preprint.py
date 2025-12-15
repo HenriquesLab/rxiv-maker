@@ -338,7 +338,8 @@ class TestGeneratePreprintIntegration(unittest.TestCase):
         # Verify all components called correctly
         mock_create_dir.assert_called_once_with(self.output_dir)
         mock_find_md.assert_called_once_with("/custom/manuscript.md")
-        mock_process_template.assert_called_once_with(template_content, yaml_metadata, "/manuscripts/paper.md")
+        # process_template_replacements now takes output_path as 4th parameter (added in v1.16.1 for .bst generation)
+        mock_process_template.assert_called_once_with(template_content, yaml_metadata, "/manuscripts/paper.md", ANY)
         mock_write_output.assert_called_once_with(
             self.output_dir, "\\documentclass{article}\\begin{document}...", manuscript_name=None
         )
