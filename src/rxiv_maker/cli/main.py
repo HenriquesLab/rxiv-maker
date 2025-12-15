@@ -4,15 +4,13 @@
 import os
 
 import rich_click as click
-from rich.console import Console
-
 from henriqueslab_updater import (
-    UpdateChecker,
-    RichNotifier,
     ChangelogPlugin,
+    RichNotifier,
     check_for_updates_async_background,
     show_update_notification,
 )
+from rich.console import Console
 
 from .. import __version__
 from . import commands
