@@ -24,9 +24,24 @@ https://github.com/settings
 # Example DOIs in documentation (not real)
 https://doi.org/10.XXXX
 https://doi.org/10.1234
+https://doi.org/%7BDOI%7D
+
+# DOI links that may return 403 (rate limiting or bot detection)
+https://doi.org/10.1101
+https://doi.org/10.64898
 
 # Private repositories (if any)
-# Add private repo URLs if needed
+https://github.com/HenriquesLab/website-rxiv-maker
+
+# Discussions not enabled on repository
+https://github.com/henriqueslab/rxiv-maker/discussions
+
+# Website pages that don't exist yet
+https://rxiv-maker.henriqueslab.org/getting-started/citations-tutorial/
+https://rxiv-maker.henriqueslab.org/guides/citations-and-references/
+
+# Docker Hub blocks automated checkers
+https://hub.docker.com
 
 # Local files not tracked in git (gitignored)
 # Using relative paths that lychee can match
