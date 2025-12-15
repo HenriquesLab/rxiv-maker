@@ -29,5 +29,12 @@ https://doi.org/10.1234
 # Add private repo URLs if needed
 
 # Local files not tracked in git (gitignored)
-file:///*/CLAUDE.md
-file:///*/RELEASING.md
+# Using relative paths that lychee can match
+CLAUDE.md
+RELEASING.md
+CI-LOCAL-TESTING.md
+
+# Missing doc files (referenced but not created yet)
+docs/configuration.md
+docs/citation-syntax.md
+docs/bibliography.md

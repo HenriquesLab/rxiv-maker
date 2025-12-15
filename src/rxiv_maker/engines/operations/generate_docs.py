@@ -103,7 +103,10 @@ def generate_enhanced_index(docs_dir, successful_modules):
                 f.write(f"## {category.capitalize()} Modules\n\n")
                 for module in sorted(modules):
                     module_name = str(module).replace("/", ".")
-                    file_name = str(module).replace("/", "_") + ".md"
+                    # lazydocs generates files with just the basename + .md
+                    from pathlib import Path as ModPath
+
+                    file_name = ModPath(str(module)).name + ".md"
                     f.write(f"- [{module_name}]({file_name})\n")
                 f.write("\n")
 
