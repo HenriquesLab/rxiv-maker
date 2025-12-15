@@ -24,29 +24,53 @@ Rxiv-Maker converts enhanced Markdown into professional PDFs with automated figu
 
 ## 🚀 Installation
 
-**Recommended (All Platforms):**
+<details open>
+<summary>🍎 <strong>macOS</strong> (Recommended - includes LaTeX automatically)</summary>
+
+```bash
+brew tap henriqueslab/formulas
+brew install rxiv-maker
+rxiv check-installation
+```
+
+**Upgrade:**
+```bash
+brew upgrade rxiv-maker
+```
+
+> **📖 [Homebrew Formula](https://github.com/HenriquesLab/homebrew-formulas)** - Includes Python, LaTeX (MacTeX), and all dependencies
+
+</details>
+
+<details>
+<summary>🐧 <strong>Linux / Windows (WSL)</strong></summary>
+
+**Using pipx (recommended):**
 ```bash
 pipx install rxiv-maker
 rxiv check-installation
 ```
 
-**📋 Requirements:**
-> [!IMPORTANT]
-> **LaTeX** is required for PDF generation. Run `rxiv check-installation` to verify your setup.
-
-- **Python 3.11+**: For rxiv-maker CLI and figure generation
-- **LaTeX Distribution**: Install via your system package manager or see the [installation guide](https://rxiv-maker.henriqueslab.org/getting-started/installation/)
-
-> **🍎 macOS Users:** Prefer Homebrew? `brew install rxiv-maker` includes LaTeX automatically.
-> **📖 Need help?** See the [complete installation guide](https://rxiv-maker.henriqueslab.org/getting-started/installation/) for platform-specific instructions.
-
-**Upgrading:**
+**Using uv (faster alternative):**
 ```bash
-# Automatic upgrade (detects your installation method)
-rxiv upgrade
-
-# Or manually: pipx upgrade rxiv-maker
+uv tool install rxiv-maker
+rxiv check-installation
 ```
+
+**Requirements:**
+- **Python 3.11+**: For rxiv-maker CLI and figure generation
+- **LaTeX Distribution**: Install via system package manager
+  - **Ubuntu/Debian**: `sudo apt install texlive-latex-recommended`
+  - **Fedora/RHEL**: `sudo dnf install texlive-latex`
+
+**Upgrade:**
+```bash
+pipx upgrade rxiv-maker  # or: uv tool upgrade rxiv-maker
+```
+
+</details>
+
+> **📖 Need help?** See the [complete installation guide](https://rxiv-maker.henriqueslab.org/getting-started/installation/) for detailed platform-specific instructions.
 
 ## 🔥 Quick Start
 
