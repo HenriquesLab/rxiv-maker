@@ -14,22 +14,13 @@ Rxiv-Maker converts enhanced Markdown into professional PDFs with automated figu
 
 ## ✨ Why Rxiv-Maker?
 
-### 🎯 **For Researchers**
-- **Write in Markdown**: Focus on content, not formatting
-- **Automated Figures**: Python/R scripts become publication figures  
-- **Smart Citations**: BibTeX integration with cross-references
-- **Automated PDF Generation**: From Markdown to professional academic PDF
-
-### 🚀 **For Teams**  
+- **Write in Markdown**: Focus on content, not LaTeX formatting
+- **Automated Figures**: Python/R scripts become publication figures
+- **Smart Citations**: BibTeX integration with cross-references and DOI resolution
 - **Git-Friendly**: Version control for manuscripts and figures
 - **Reproducible**: All figures generated from code
-- **Collaborative**: Standard tools, no vendor lock-in
-- **Multi-Platform**: Works everywhere with local installation
-
-### 📈 **For Publishing**
 - **arXiv Ready**: Generate submission packages automatically
 - **Track Changes**: Visual diff between manuscript versions
-- **Quality Assurance**: Built-in validation and error checking
 
 ## 🚀 Installation
 
