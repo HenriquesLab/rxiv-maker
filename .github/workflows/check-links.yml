@@ -29,14 +29,13 @@ jobs:
           args: |
             --verbose
             --no-progress
-            --exclude-mail
             --exclude 'linkedin.com'
             --exclude 'twitter.com'
             --exclude 'x.com'
             --max-retries 3
             --timeout 20
             --accept 200,204,206,301,302,307,308,429
-            --headers "accept=text/html"
+            --header "accept=text/html"
             '**.md'
 
           # Fail the action on broken links
