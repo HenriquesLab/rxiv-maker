@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.2] - 2025-12-15
+
+### Changed
+- **Non-Interactive Init Command**: Made `rxiv init` fully non-interactive for reliable automated testing
+  - Removed all interactive prompts (overwrite confirmation, manuscript details)
+  - Always uses sensible defaults for title, author, email, ORCID, and affiliation
+  - Fails immediately with clear error message if directory exists without `--force` flag
+  - `--no-interactive` flag hidden but maintained for backward compatibility
+  - Updated documentation to clearly state non-interactive behavior
+
+### Fixed
+- **Error Messages**: Improved `CommandExecutionError` handling to display clean error messages to stderr
+- **Import Fix**: Updated upgrade command to import `force_update_check` from `henriqueslab-updater` package
+
+### Testing
+- Added comprehensive test suite with 26 tests covering all init command edge cases
+- All tests passing: 26 new tests + 4 existing integration tests (30/30 total)
+
 ## [1.16.1] - 2025-12-15
 
 ### Added
