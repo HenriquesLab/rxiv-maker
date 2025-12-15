@@ -7,7 +7,7 @@ YAML metadata handling, CLI integration, and error scenarios.
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, mock_open, patch
+from unittest.mock import ANY, Mock, mock_open, patch
 
 from rxiv_maker.engines.operations.generate_preprint import generate_preprint, main
 
@@ -56,7 +56,10 @@ class TestGeneratePreprintCore(unittest.TestCase):
         mock_create_dir.assert_called_once_with(self.output_dir)
         mock_get_template.assert_called_once()
         mock_find_md.assert_called_once_with(None)
-        mock_process_template.assert_called_once_with("template content", self.yaml_metadata, "/fake/manuscript.md")
+        # process_template_replacements now takes output_path as 4th parameter (added in v1.16.1 for .bst generation)
+        mock_process_template.assert_called_once_with(
+            "template content", self.yaml_metadata, "/fake/manuscript.md", ANY
+        )
         mock_write_output.assert_called_once_with(self.output_dir, "processed template content", manuscript_name=None)
         mock_generate_supp.assert_called_once_with(self.output_dir, self.yaml_metadata, None)
 
@@ -335,7 +338,8 @@ class TestGeneratePreprintIntegration(unittest.TestCase):
         # Verify all components called correctly
         mock_create_dir.assert_called_once_with(self.output_dir)
         mock_find_md.assert_called_once_with("/custom/manuscript.md")
-        mock_process_template.assert_called_once_with(template_content, yaml_metadata, "/manuscripts/paper.md")
+        # process_template_replacements now takes output_path as 4th parameter (added in v1.16.1 for .bst generation)
+        mock_process_template.assert_called_once_with(template_content, yaml_metadata, "/manuscripts/paper.md", ANY)
         mock_write_output.assert_called_once_with(
             self.output_dir, "\\documentclass{article}\\begin{document}...", manuscript_name=None
         )

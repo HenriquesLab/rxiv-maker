@@ -391,6 +391,10 @@ class ConfigValidator:
                     },
                     "bibliography": {"type": "string"},
                     "citation_style": {"type": "string", "enum": ["numbered", "author-date"]},
+                    "bibliography_author_format": {
+                        "type": "string",
+                        "enum": ["lastname_initials", "lastname_firstname", "firstname_lastname"],
+                    },
                     "enable_inline_doi_resolution": {"type": "boolean"},
                     "language": {"type": "string", "enum": ["en", "es", "pt", "fr", "de"]},
                     "license": {"type": "string"},

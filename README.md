@@ -125,6 +125,7 @@ rxiv pdf
 - BibTeX integration with `[@citation]` syntax
 - Automatic bibliography generation
 - **Multiple citation styles**: Choose between numbered `[1, 2]` or author-date `(Smith, 2024)` citations
+- **Configurable author name formatting**: Format bibliography as `Smith, J.A.` or `Smith, John A.` or `John A. Smith`
 - **Inline DOI resolution**: Paste DOIs directly in text `10.1038/...` and auto-convert to citations
 - CrossRef/DataCite DOI validation and metadata fetching
 

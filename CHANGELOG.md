@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.1] - 2025-12-15
+
+### Added
+- **Configurable bibliography author name format**: New `bibliography_author_format` configuration option to control how author names appear in both PDF and DOCX bibliography sections
+  - Supported formats:
+    - `lastname_firstname` (default): "Smith, John A." - maintains current behavior for backward compatibility
+    - `lastname_initials`: "Smith, J.A." - compact format with initials, easier to navigate alphabetically
+    - `firstname_lastname`: "John A. Smith" - natural reading order
+  - Works consistently across both PDF (via BibTeX) and DOCX exports
+  - Add to `00_CONFIG.yml`: `bibliography_author_format: "lastname_initials"`
+  - Handles edge cases: single names, suffixes (Jr., III), von/van prefixes, hyphenated names, multiple middle names
+  - New utility module: `src/rxiv_maker/utils/author_name_formatter.py` with comprehensive name parsing
+  - New BibTeX style generator: `src/rxiv_maker/utils/bst_generator.py` for dynamic .bst file generation
+- Added `00_CONFIG.yml` to `ConfigManager` search paths for better backward compatibility with legacy manuscript configurations
+
+## [1.16.0] - 2025-12-14
+
+### Changed
+- **Update Checker Modernization**: Migrated to `henriqueslab-updater` package for centralized update checking
+  - Removed internal update_checker.py, install_detector.py, homebrew_checker.py, and changelog_parser.py
+  - Now uses `henriqueslab-updater>=1.0.0` with RichNotifier and ChangelogPlugin
+  - Enhanced update notifications with changelog highlights (up to 3 per version)
+  - Maintains same user experience with improved code maintainability
+  - Reduces code duplication across HenriquesLab packages
+
+### Dependencies
+- Added `henriqueslab-updater>=1.0.0` dependency
+
 ## [1.15.9] - 2025-12-09
 
 ### Added

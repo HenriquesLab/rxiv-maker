@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from ..core.logging_config import get_logger
+from ..core.managers.config_manager import ConfigManager
 from ..core.path_manager import PathManager
 from ..processors.yaml_processor import extract_yaml_metadata
 from ..utils.bibliography_parser import parse_bib_file
@@ -43,6 +44,11 @@ class DocxExporter:
         self.path_manager = PathManager(manuscript_path=manuscript_path)
         self.resolve_dois = resolve_dois
         self.include_footnotes = include_footnotes
+
+        # Load config to get author name format preference
+        config_manager = ConfigManager(base_dir=Path(manuscript_path))
+        config = config_manager.load_config()
+        self.author_format = config.get("bibliography_author_format", "lastname_firstname")
 
         # Components
         self.citation_mapper = CitationMapper()
@@ -317,7 +323,7 @@ class DocxExporter:
             #     doi = self._resolve_doi_from_metadata(entry)
 
             # Format entry (full format for DOCX bibliography)
-            formatted = format_bibliography_entry(entry, doi, slim=False)
+            formatted = format_bibliography_entry(entry, doi, slim=False, author_format=self.author_format)
 
             bibliography[number] = {"key": key, "entry": entry, "doi": doi, "formatted": formatted}
 

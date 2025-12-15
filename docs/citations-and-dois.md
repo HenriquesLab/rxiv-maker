@@ -56,6 +56,123 @@ The template processor reads your config and sets the appropriate mode before La
 
 ---
 
+## Bibliography Author Name Formatting
+
+> 🆕 **New in v1.16.0**
+
+### Overview
+
+Rxiv-Maker allows you to customize how author names appear in the bibliography section. This applies to both PDF and DOCX exports.
+
+Available formats:
+- **lastname_initials**: `Smith, J.A.` (most compact)
+- **lastname_firstname**: `Smith, John A.` (default, traditional format)
+- **firstname_lastname**: `John A. Smith` (natural reading order)
+
+### Configuration
+
+Add the `bibliography_author_format` option to your `00_CONFIG.yml`:
+
+```yaml
+# Bibliography author name format (v1.16.0+)
+# Applies to both PDF and DOCX exports
+bibliography_author_format: "lastname_initials"
+```
+
+**Options:**
+- `"lastname_initials"` - Compact format with initials (e.g., "Smith, J.A.")
+- `"lastname_firstname"` - Full first names (e.g., "Smith, John A.") - **default**
+- `"firstname_lastname"` - Natural order (e.g., "John A. Smith")
+
+### Examples
+
+Given this BibTeX entry:
+```bibtex
+@article{smith2024,
+  author = {Smith, John Alan and Jones, Mary Beth},
+  title = {Example Article},
+  journal = {Nature},
+  year = {2024}
+}
+```
+
+**lastname_initials** (compact):
+```
+[1] Smith, J.A. and Jones, M.B. (2024). Example Article. Nature.
+```
+
+**lastname_firstname** (default):
+```
+[1] Smith, John Alan and Jones, Mary Beth (2024). Example Article. Nature.
+```
+
+**firstname_lastname** (natural order):
+```
+[1] John Alan Smith and Mary Beth Jones (2024). Example Article. Nature.
+```
+
+### How It Works
+
+#### PDF Export
+- Generates a custom BibTeX style file (`.bst`) with the appropriate name format string
+- Format strings:
+  - `lastname_initials`: `{vv~}{ll}{, f.}`
+  - `lastname_firstname`: `{ff~}{vv~}{ll}{, jj}`
+  - `firstname_lastname`: `{ff~}{vv~}{ll}`
+
+#### DOCX Export
+- Parses author names from BibTeX entries
+- Applies formatting rules during bibliography generation
+- Handles edge cases: middle names, suffixes (Jr., III), von/van prefixes
+
+### BibTeX Best Practices
+
+For proper name formatting, author names in `.bib` files should use:
+
+**✅ Recommended - Comma-separated format:**
+```bibtex
+author = {Smith, John A. and Jones, Mary}
+```
+
+**✅ Also works - Natural order:**
+```bibtex
+author = {John A. Smith and Mary Jones}
+```
+
+**⚠️ Corporate/Organization Authors:**
+Use double braces to preserve literal text (won't be formatted):
+```bibtex
+author = {{The Jupyter Team}}
+```
+
+**❌ Avoid single braces around personal names:**
+```bibtex
+author = {{John Smith}}  % Will be treated as organization, not formatted
+```
+
+### Common Use Cases
+
+**Academic journals preferring initials:**
+```yaml
+bibliography_author_format: "lastname_initials"
+```
+
+**Traditional academic formatting:**
+```yaml
+bibliography_author_format: "lastname_firstname"  # default
+```
+
+**Natural language reading:**
+```yaml
+bibliography_author_format: "firstname_lastname"
+```
+
+### Consistency Across Formats
+
+The same format applies to both PDF and DOCX exports, ensuring consistent bibliography appearance across all output formats.
+
+---
+
 ## Inline DOI Resolution
 
 ### Overview
