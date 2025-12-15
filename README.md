@@ -123,8 +123,7 @@ rxiv pdf
 - **Inline DOI resolution**: Paste DOIs directly in text `10.1038/...` and auto-convert to citations
 - CrossRef/DataCite DOI validation and metadata fetching
 
-
-> 📖 **Learn more**: [Citation Syntax Reference](https://rxiv-maker.henriqueslab.org/getting-started/quick-reference/#citations--references) | [Complete User Guide](https://rxiv-maker.henriqueslab.org/guides/)
+> 📖 **Learn more**: [Quick Reference Cheat-Sheet](https://rxiv-maker.henriqueslab.org/getting-started/quick-reference/)
 
 ### 🔧 **Developer Experience**
 - Modern CLI with rich output and progress bars
@@ -204,79 +203,37 @@ Visit our **[official documentation website](https://rxiv-maker.henriqueslab.org
 - ☁️ **Cloud**: GitHub Actions or Google Colab for browser-based editing
 
 <details>
-<summary>🔗 <strong>Ecosystem Details</strong> - Core repositories, development tools, and integration patterns</summary>
+<summary>🔗 <strong>Ecosystem</strong> - Related repositories and tools</summary>
 
-### 📦 **Core Repositories**
-
-1. **[rxiv-maker](https://github.com/HenriquesLab/rxiv-maker)** (this repository)
-   - Main Python package and CLI tool
-   - Core processing engine
-   - Development and contribution hub
-
-2. **[website-rxiv-maker](https://github.com/HenriquesLab/website-rxiv-maker)**
-   - Official documentation website
-   - User guides and tutorials
-   - API reference and examples
-   - Visit: [rxiv-maker.henriqueslab.org](https://rxiv-maker.henriqueslab.org)
-
-3. **[manuscript-rxiv-maker](https://github.com/HenriquesLab/manuscript-rxiv-maker)**
-   - Official example manuscript (published as arXiv:2508.00836)
-   - Complete working example with all features
-   - Clone with: `rxiv get-rxiv-preprint`
-
-### 🔧 **Development Tools**
-
-- **📝 [VS Code Extension](https://github.com/HenriquesLab/vscode-rxiv-maker)**
-  - Syntax highlighting and autocompletion
-  - Integrated build commands
-  - Real-time validation
-
-- **🐳 [Docker Support](https://github.com/HenriquesLab/docker-rxiv-maker)**
-  - Containerized execution environment with pre-installed rxiv-maker
-  - Pre-configured LaTeX, Python, R, and all dependencies
-  - Perfect for CI/CD and users without local LaTeX installation
-  - Separate repository for easier maintenance and faster image updates
-
-### 🚀 **Deployment Options**
-
-- **⚡ Local Installation**: Native system setup (recommended for development)
-- **☁️ GitHub Actions**: Automated cloud builds and CI/CD
-- **🌐 Google Colab**: Browser-based editing without local installation
-- **🐳 Containers**: Docker for reproducible environments
-
-### 📦 **Architecture Diagram**
+### Ecosystem Overview
 
 ```mermaid
 graph LR
-    A[rxiv-maker<br/>Core Tool] --> B[PyPI]
+    A[rxiv-maker<br/>Core CLI] --> B[PyPI]
     A --> C[Homebrew]
     D[docker-rxiv-maker<br/>Container] --> E[Docker Hub]
-    D -.installs.-> A
-    F[vscode-rxiv-maker<br/>Extension] -.extends.-> A
-    G[website-rxiv-maker<br/>Docs] -.documents.-> A
-    H[manuscript-rxiv-maker<br/>Example] -.demonstrates.-> A
+    D -.includes.-> A
+    F[vscode-rxiv-maker<br/>VS Code] -.enhances.-> A
+    G[manuscript-rxiv-maker<br/>Example] -.demonstrates.-> A
 
-    style A fill:#e1f5ff
-    style D fill:#fff4e6
-    style F fill:#fff4e6
-    style G fill:#e8f5e9
-    style H fill:#e8f5e9
+    style A fill:#2563eb,stroke:#1e40af,stroke-width:3px,color:#fff
+    style D fill:#ea580c,stroke:#c2410c,stroke-width:2px,color:#fff
+    style F fill:#7c3aed,stroke:#6d28d9,stroke-width:2px,color:#fff
+    style G fill:#059669,stroke:#047857,stroke-width:2px,color:#fff
+    style B fill:#64748b,stroke:#475569,color:#fff
+    style C fill:#64748b,stroke:#475569,color:#fff
+    style E fill:#64748b,stroke:#475569,color:#fff
 ```
 
-### 🔗 **Repository Cross-Reference**
+### Related Repositories
 
-| Repository | Purpose | Install/Access | Dependencies |
-|------------|---------|----------------|--------------|
-| **rxiv-maker** (this repo) | Main CLI tool & Python package | `brew install` / `pipx install` | LaTeX |
-| **[docker-rxiv-maker](https://github.com/HenriquesLab/docker-rxiv-maker)** | Pre-built container with all deps | `docker pull henriqueslab/rxiv-maker-base` | Docker |
-| **[manuscript-rxiv-maker](https://github.com/HenriquesLab/manuscript-rxiv-maker)** | Official example (arXiv:2508.00836) | `rxiv get-rxiv-preprint` | rxiv-maker |
-| **[vscode-rxiv-maker](https://github.com/HenriquesLab/vscode-rxiv-maker)** | VS Code extension | VS Code Marketplace | rxiv-maker |
-| **[website-rxiv-maker](https://github.com/HenriquesLab/website-rxiv-maker)** | Documentation website | [rxiv-maker.henriqueslab.org](https://rxiv-maker.henriqueslab.org) | - |
-
-> **Note**: As of v1.8.4, we've streamlined the ecosystem while maintaining multiple installation options (Homebrew, pip, pipx, uv) with optional Docker support for containerized workflows.
->
-> **📋 [Ecosystem Guide](docs/ECOSYSTEM.md)** - Complete architecture and integration patterns
-> **📋 [Migration Guide](docs/migration-v1.7.9.md)** - For users upgrading from previous versions
+| Repository | Purpose | Access |
+|------------|---------|--------|
+| **[rxiv-maker](https://github.com/HenriquesLab/rxiv-maker)** | Main CLI tool and Python package | `brew install rxiv-maker` |
+| **[docker-rxiv-maker](https://github.com/HenriquesLab/docker-rxiv-maker)** | Pre-configured container with LaTeX + dependencies | `docker pull henriqueslab/rxiv-maker-base` |
+| **[manuscript-rxiv-maker](https://github.com/HenriquesLab/manuscript-rxiv-maker)** | Complete example (published as arXiv:2508.00836) | `rxiv get-rxiv-preprint` |
+| **[vscode-rxiv-maker](https://github.com/HenriquesLab/vscode-rxiv-maker)** | VS Code extension with syntax highlighting | VS Code Marketplace |
+| **[Documentation](https://rxiv-maker.henriqueslab.org)** | User guides, API reference, tutorials | Visit website |
 
 </details>
 
@@ -335,10 +292,21 @@ rxiv changelog --recent 5  # View last 5 versions
 
 </details>
 
+## 📚 Publications Using Rxiv-Maker
+
+| Publication | Authors | Venue | DOI |
+|-------------|---------|-------|-----|
+| [Rxiv-Maker: an automated template engine for streamlined scientific publications](https://arxiv.org/abs/2508.00836) | BM Saraiva et al. | arXiv (2025) | `10.48550/arXiv.2508.00836` |
+| [Customizable FDM-based zebrafish embryo mold for live imaging](https://www.biorxiv.org/content/10.1101/2025.11.24.689779) | MX Rivera Pineda et al. | bioRxiv (2025) | `10.1101/2025.11.24.689779` |
+| [mAIcrobe: an open-source framework for high-throughput bacterial image analysis](https://www.biorxiv.org/content/10.1101/2025.10.21.683709) | AD Brito et al. | bioRxiv (2025) | `10.1101/2025.10.21.683709` |
+| [Filopodome proteomics identifies CCT8 as a MYO10 interactor critical for filopodia functions](https://www.biorxiv.org/content/10.64898/2025.12.03.691809v1) | A Popović et al. | bioRxiv (2025) | `10.64898/2025.12.03.691809` |
+
+> **Using Rxiv-Maker for your research?** Submit your publication via [GitHub Issue](https://github.com/HenriquesLab/rxiv-maker/issues/new?template=publication_submission.yml)
+
 ## 🤝 Community
 
 - **💬 [GitHub Discussions](https://github.com/henriqueslab/rxiv-maker/discussions)** - Ask questions, share tips
-- **🐛 [Issues](https://github.com/henriqueslab/rxiv-maker/issues)** - Report bugs, request features  
+- **🐛 [Issues](https://github.com/henriqueslab/rxiv-maker/issues)** - Report bugs, request features
 - **📚 [Example Manuscript](https://github.com/HenriquesLab/manuscript-rxiv-maker)** - Clone instantly: `rxiv get-rxiv-preprint`
 - **🧪 [Google Colab](https://colab.research.google.com/github/HenriquesLab/rxiv-maker/blob/main/notebooks/rxiv_maker_colab.ipynb)** - Try without installing
 
