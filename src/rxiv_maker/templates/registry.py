@@ -163,38 +163,36 @@ citation_style: "numbered"
         """Get default main manuscript template."""
         return """## Abstract
 
-Your manuscript abstract goes here. Provide a comprehensive summary of your work,
-key findings, and significance to the field.
+Your manuscript abstract goes here. Provide a comprehensive summary of your work, including the main problem you are addressing, your approach, key findings, and the significance of your results to the field. The abstract should be self-contained and provide readers with a clear understanding of your contribution. Aim for 150-300 words that capture the essence of your research.
 
 ## Introduction
 
-Introduce your topic, provide background, and state your objectives.
+Introduce your research topic by providing essential background context and motivation. Start with the broader significance of your field, then narrow down to the specific problem your work addresses. Clearly state your research objectives and how your approach differs from or builds upon existing work in the literature [@smith2023]. Explain why this research is important and what gap in knowledge it fills.
 
 ## Methods
 
-Describe your methods, approaches, and techniques.
-(For reviews, you can remove this section or describe your literature search strategy)
+Describe your experimental design, data collection procedures, and analytical techniques in sufficient detail to allow replication of your work. For computational studies, specify software versions, parameters, and algorithms used. For experimental work, detail protocols, sample preparation, and measurement procedures [@johnson2022]. Include information about statistical methods and data validation approaches. If you are writing a review article, you may remove this section or describe your literature search and selection strategy.
 
 ## Results
 
-Present your findings with supporting figures and tables.
-(For reviews, you can remove this section or rename it to organize your discussion)
+Present your findings in a logical sequence, using figures and tables to support your narrative. Start with an overview of the key results, then provide detailed analyses.
 
-![](FIGURES/Figure__example.mmd)
-{{#fig:example}} **Example Figure.** This is an example Mermaid diagram that will be automatically converted to PDF during build.
+![A flowchart showing the progression from data input through processing to results output](FIGURES/Figure__example.mmd)
+{{#fig:example}} **Example workflow diagram.** This Mermaid diagram illustrates a typical data processing pipeline, automatically converted to PDF during manuscript compilation. The diagram shows three stages: data input (gray), processing and analysis (red), and results output (green).
+
+Our analysis demonstrates that the methodology produces consistent results across different datasets. The workflow presented in @fig:example provides a schematic overview of the processing pipeline. These findings build upon previous work [@smith2023; @johnson2022] while introducing novel approaches to data analysis.
 
 ## Discussion
 
-Interpret your findings, discuss implications, and acknowledge limitations.
+Interpret your results in the context of existing literature and theory. Discuss how your findings support or challenge current understanding in the field. Address the implications of your work for theory, practice, or policy. Acknowledge limitations of your study, such as sample size constraints, methodological limitations, or scope boundaries. Suggest directions for future research that build upon your findings.
 
 ## Conclusions
 
-Summarize your key conclusions and broader impact.
+Summarize your key findings and their significance. Reinforce the main contributions of your work and their broader impact on the field. Keep this section concise but impactful, leaving readers with a clear understanding of what your research has accomplished and why it matters.
 
 ## References
 
-Citations will be automatically formatted. Add entries to 03_REFERENCES.bib and
-reference them in your text: [@smith2023; @johnson2022]
+Citations are automatically formatted from 03_REFERENCES.bib. Reference works using citation keys like [@smith2023] for single citations or [@smith2023; @johnson2022] for multiple citations.
 """
 
     def _get_default_supplementary_template(self) -> str:
@@ -225,34 +223,60 @@ Information about code repositories, data availability, and reproducibility reso
     def _get_default_bibliography_template(self) -> str:
         """Get default bibliography template."""
         return """@article{{smith2023,
-    title = {{Example Research Article}},
-    author = {{Smith, John and Doe, Jane}},
-    journal = {{Nature}},
-    volume = {{123}},
-    pages = {{456-789}},
+    title = {{Advances in computational biology: methods and applications}},
+    author = {{Smith, John A. and Doe, Jane M. and Williams, Robert L.}},
+    journal = {{Nature Methods}},
+    volume = {{20}},
+    number = {{8}},
+    pages = {{1234--1245}},
     year = {{2023}},
-    doi = {{10.1038/nature12345}}
+    publisher = {{Springer Nature}},
+    doi = {{10.1038/s41592-023-01234-5}}
 }}
 
 @article{{johnson2022,
-    title = {{Another Important Study}},
-    author = {{Johnson, Alice and Brown, Bob}},
+    title = {{Machine learning approaches for biological data analysis}},
+    author = {{Johnson, Alice B. and Brown, Robert C. and Davis, Sarah K.}},
     journal = {{Cell}},
     volume = {{185}},
-    pages = {{1234-1245}},
+    number = {{12}},
+    pages = {{2156--2170}},
     year = {{2022}},
-    doi = {{10.1016/j.cell.2022.01.001}}
+    publisher = {{Elsevier}},
+    doi = {{10.1016/j.cell.2022.05.015}}
+}}
+
+@article{{wilson2024,
+    title = {{Reproducible research practices in modern science}},
+    author = {{Wilson, Greg and Jones, Emily R.}},
+    journal = {{PLOS Computational Biology}},
+    volume = {{20}},
+    number = {{3}},
+    pages = {{e1011234}},
+    year = {{2024}},
+    publisher = {{Public Library of Science}},
+    doi = {{10.1371/journal.pcbi.1011234}}
 }}
 """
 
     def _get_default_figure_template(self) -> str:
         """Get default figure template (Mermaid diagram)."""
-        return """graph TD
-    A[Start] --> B{{Decision}}
-    B -->|Yes| C[Process 1]
-    B -->|No| D[Process 2]
-    C --> E[End]
-    D --> E
+        return """---
+config:
+  look: neo
+  theme: neo
+---
+flowchart LR
+    A["<b>DATA</b><br/>Input"] --> B["<b>PROCESSING</b><br/>Analysis"]
+    B --> C["<b>RESULTS</b><br/>Output"]
+
+    classDef inputStyle fill:#1f2937,stroke:#374151,stroke-width:3px,color:#ffffff
+    classDef processStyle fill:#dc2626,stroke:#991b1b,stroke-width:3px,color:#ffffff
+    classDef outputStyle fill:#059669,stroke:#047857,stroke-width:3px,color:#ffffff
+
+    class A inputStyle
+    class B processStyle
+    class C outputStyle
 """
 
     def _get_default_gitignore_template(self) -> str:

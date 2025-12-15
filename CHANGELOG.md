@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.5] - 2025-12-15
+
+### Fixed
+
+- **Init Template Improvements**: Enhanced default manuscript templates for better user experience
+  - Fixed Mermaid diagram template with proper neo theme configuration to prevent 204 errors
+  - Added descriptive alt text to example figure for accessibility compliance
+  - Expanded template content from ~120 to ~412 words with realistic examples
+  - Added proper citations in text body that reference bibliography entries
+  - Improved bibliography with 3 complete, realistic reference entries
+  - Added figure cross-references using `@fig:example` syntax
+  - Templates now follow manuscript-rxiv-maker quality standards
+
+- **Upgrade Command Import Error**: Fixed critical bug preventing CLI from loading
+  - Replaced missing `execute_upgrade` import from henriqueslab-updater
+  - Implemented safer subprocess execution using `shlex.split`
+  - Resolved ImportError that prevented `rxiv` command from running
+
 ## [1.16.4] - 2025-12-15
 
 ### Fixed
