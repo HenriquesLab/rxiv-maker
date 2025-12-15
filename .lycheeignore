@@ -38,3 +38,6 @@ CI-LOCAL-TESTING.md
 docs/configuration.md
 docs/citation-syntax.md
 docs/bibliography.md
+
+# Test fixture files (may not always exist)
+tests/fixtures/FIGURES/Fig4.png
