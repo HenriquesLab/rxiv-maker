@@ -19,12 +19,12 @@ This module provides functions that can be called from manuscript Python blocks 
 ## <kbd>function</kbd> `convert_mermaid`
 
 ```python
-convert_mermaid(
+def convert_mermaid(
     input_file: Union[str, Path],
     output_format: str = 'png',
     output_dir: Optional[str, Path] = None,
     **kwargs
-) → List[Path]
+) -> List[Path]
 ```
 
 Convert a Mermaid diagram file to the specified format. 
@@ -57,12 +57,12 @@ Convert a Mermaid diagram file to the specified format.
 ## <kbd>function</kbd> `convert_python_figure`
 
 ```python
-convert_python_figure(
+def convert_python_figure(
     input_file: Union[str, Path],
     output_format: str = 'png',
     output_dir: Optional[str, Path] = None,
     **kwargs
-) → List[Path]
+) -> List[Path]
 ```
 
 Convert a Python figure script to the specified format. 
@@ -95,12 +95,12 @@ Convert a Python figure script to the specified format.
 ## <kbd>function</kbd> `convert_r_figure`
 
 ```python
-convert_r_figure(
+def convert_r_figure(
     input_file: Union[str, Path],
     output_format: str = 'png',
     output_dir: Optional[str, Path] = None,
     **kwargs
-) → List[Path]
+) -> List[Path]
 ```
 
 Convert an R script to the specified format. 
@@ -133,13 +133,13 @@ Convert an R script to the specified format.
 ## <kbd>function</kbd> `convert_figures_bulk`
 
 ```python
-convert_figures_bulk(
+def convert_figures_bulk(
     pattern: str,
     output_format: str = 'png',
     output_dir: Optional[str, Path] = None,
     figure_types: Optional[List[str]] = None,
     **kwargs
-) → List[Path]
+) -> List[Path]
 ```
 
 Convert multiple figure files matching a pattern. 
@@ -173,7 +173,7 @@ Convert multiple figure files matching a pattern.
 ## <kbd>function</kbd> `list_available_figures`
 
 ```python
-list_available_figures(figures_dir: Optional[str, Path] = None) → dict
+def list_available_figures(figures_dir: Optional[str, Path] = None) -> dict: ...
 ```
 
 List all available figure source files. 
@@ -197,7 +197,7 @@ List all available figure source files.
 ## <kbd>function</kbd> `get_figure_info`
 
 ```python
-get_figure_info(input_file: Union[str, Path]) → dict
+def get_figure_info(input_file: Union[str, Path]) -> dict: ...
 ```
 
 Get information about a figure file. 
@@ -221,10 +221,10 @@ Get information about a figure file.
 ## <kbd>function</kbd> `clean_figure_outputs`
 
 ```python
-clean_figure_outputs(
+def clean_figure_outputs(
     input_file: Optional[str, Path] = None,
     output_dir: Optional[str, Path] = None
-) → int
+) -> int
 ```
 
 Clean generated figure outputs. 

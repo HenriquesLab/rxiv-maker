@@ -15,7 +15,7 @@ This module handles the encoding of email addresses to base64 for privacy in YAM
 ## <kbd>function</kbd> `encode_email`
 
 ```python
-encode_email(email)
+def encode_email(email): ...
 ```
 
 Encode an email address to base64. 
@@ -46,7 +46,7 @@ Encode an email address to base64.
 ## <kbd>function</kbd> `decode_email`
 
 ```python
-decode_email(encoded_email)
+def decode_email(encoded_email): ...
 ```
 
 Decode a base64 encoded email address. 
@@ -77,7 +77,7 @@ Decode a base64 encoded email address.
 ## <kbd>function</kbd> `process_author_emails`
 
 ```python
-process_author_emails(authors)
+def process_author_emails(authors): ...
 ```
 
 Process author list to decode any base64 encoded emails. 
@@ -104,7 +104,7 @@ This function looks for 'email64' fields in author entries and converts them to 
 ## <kbd>function</kbd> `encode_author_emails`
 
 ```python
-encode_author_emails(authors)
+def encode_author_emails(authors): ...
 ```
 
 Process author list to encode emails to base64. 

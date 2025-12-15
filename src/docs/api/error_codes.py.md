@@ -16,14 +16,14 @@ Centralized error codes for rxiv-maker.
 ## <kbd>function</kbd> `create_validation_error`
 
 ```python
-create_validation_error(
+def create_validation_error(
     error_code: 'ErrorCode',
     message: 'str | None' = None,
     file_path: 'str | None' = None,
     line_number: 'int | None' = None,
     context: 'str | None' = None,
     suggestion: 'str | None' = None
-) → ValidationError
+) -> ValidationError
 ```
 
 Create a ValidationError with structured error code. 

@@ -18,7 +18,7 @@ This module provides cross-platform utilities for detecting the operating system
 ## <kbd>function</kbd> `get_platform`
 
 ```python
-get_platform() → str
+def get_platform() -> str: ...
 ```
 
 Get the current platform name. 
@@ -31,7 +31,7 @@ Get the current platform name.
 ## <kbd>function</kbd> `get_platform_normalized`
 
 ```python
-get_platform_normalized() → str
+def get_platform_normalized() -> str: ...
 ```
 
 Get normalized platform name for cross-platform compatibility. 
@@ -44,7 +44,7 @@ Get normalized platform name for cross-platform compatibility.
 ## <kbd>function</kbd> `get_python_command`
 
 ```python
-get_python_command() → str
+def get_python_command() -> str: ...
 ```
 
 Get the Python command to use. 
@@ -57,7 +57,7 @@ Get the Python command to use.
 ## <kbd>function</kbd> `is_windows`
 
 ```python
-is_windows() → bool
+def is_windows() -> bool: ...
 ```
 
 Check if running on Windows. 
@@ -70,7 +70,7 @@ Check if running on Windows.
 ## <kbd>function</kbd> `is_unix_like`
 
 ```python
-is_unix_like() → bool
+def is_unix_like() -> bool: ...
 ```
 
 Check if running on Unix-like system. 
@@ -83,7 +83,7 @@ Check if running on Unix-like system.
 ## <kbd>function</kbd> `run_platform_command`
 
 ```python
-run_platform_command(cmd: str | list[str], **kwargs) → CompletedProcess
+def run_platform_command(cmd: str | list[str], **kwargs) -> CompletedProcess: ...
 ```
 
 Run a command with platform-appropriate settings. 
@@ -96,7 +96,7 @@ Run a command with platform-appropriate settings.
 ## <kbd>function</kbd> `is_in_venv`
 
 ```python
-is_in_venv() → bool
+def is_in_venv() -> bool: ...
 ```
 
 Check if running in a virtual environment. 
@@ -109,7 +109,7 @@ Check if running in a virtual environment.
 ## <kbd>function</kbd> `is_in_conda_env`
 
 ```python
-is_in_conda_env() → bool
+def is_in_conda_env() -> bool: ...
 ```
 
 Check if running in a conda/mamba environment. 
@@ -122,7 +122,7 @@ Check if running in a conda/mamba environment.
 ## <kbd>function</kbd> `get_conda_env_name`
 
 ```python
-get_conda_env_name() → str | None
+def get_conda_env_name() -> str | None: ...
 ```
 
 Get the name of the current conda/mamba environment. 
@@ -135,7 +135,7 @@ Get the name of the current conda/mamba environment.
 ## <kbd>function</kbd> `get_conda_python_path`
 
 ```python
-get_conda_python_path() → str | None
+def get_conda_python_path() -> str | None: ...
 ```
 
 Get the conda/mamba environment Python path. 
@@ -148,7 +148,7 @@ Get the conda/mamba environment Python path.
 ## <kbd>function</kbd> `get_conda_executable`
 
 ```python
-get_conda_executable() → str | None
+def get_conda_executable() -> str | None: ...
 ```
 
 Get the conda or mamba executable to use. 
@@ -161,11 +161,11 @@ Get the conda or mamba executable to use.
 ## <kbd>function</kbd> `safe_print`
 
 ```python
-safe_print(
+def safe_print(
     message: str,
     success_symbol: str = '✅',
     fallback_symbol: str = '[OK]'
-) → None
+) -> None
 ```
 
 Print a message with cross-platform compatible symbols. 
@@ -186,12 +186,12 @@ Print a message with cross-platform compatible symbols.
 ## <kbd>function</kbd> `safe_console_print`
 
 ```python
-safe_console_print(
+def safe_console_print(
     console,
     message: str,
     style: str | None = None,
     **kwargs
-) → None
+) -> None
 ```
 
 Print a message using Rich console with cross-platform Unicode fallback. 
@@ -216,7 +216,7 @@ Detect and manage platform-specific operations.
 ### <kbd>function</kbd> `__init__`
 
 ```python
-__init__()
+def __init__(): ...
 ```
 
 Initialize platform detector. 
@@ -243,7 +243,7 @@ Get the Python command to use.
 ### <kbd>function</kbd> `check_command_exists`
 
 ```python
-check_command_exists(command: str) → bool
+def check_command_exists(command: str) -> bool: ...
 ```
 
 Check if a command exists on the system. 
@@ -255,7 +255,7 @@ Check if a command exists on the system.
 ### <kbd>function</kbd> `copy_file`
 
 ```python
-copy_file(src: Path, dst: Path) → bool
+def copy_file(src: Path, dst: Path) -> bool: ...
 ```
 
 Copy a file with error handling. 
@@ -267,7 +267,7 @@ Copy a file with error handling.
 ### <kbd>function</kbd> `get_conda_env_name`
 
 ```python
-get_conda_env_name() → str | None
+def get_conda_env_name() -> str | None: ...
 ```
 
 Get the name of the current conda/mamba environment. 
@@ -279,7 +279,7 @@ Get the name of the current conda/mamba environment.
 ### <kbd>function</kbd> `get_conda_executable`
 
 ```python
-get_conda_executable() → str | None
+def get_conda_executable() -> str | None: ...
 ```
 
 Get the conda or mamba executable to use. 
@@ -291,7 +291,7 @@ Get the conda or mamba executable to use.
 ### <kbd>function</kbd> `get_conda_prefix`
 
 ```python
-get_conda_prefix() → Path | None
+def get_conda_prefix() -> Path | None: ...
 ```
 
 Get the prefix path of the current conda/mamba environment. 
@@ -303,7 +303,7 @@ Get the prefix path of the current conda/mamba environment.
 ### <kbd>function</kbd> `get_conda_python_path`
 
 ```python
-get_conda_python_path() → str | None
+def get_conda_python_path() -> str | None: ...
 ```
 
 Get the conda/mamba environment Python path. 
@@ -315,7 +315,7 @@ Get the conda/mamba environment Python path.
 ### <kbd>function</kbd> `get_env_file_content`
 
 ```python
-get_env_file_content(env_file: Path = PosixPath('.env')) → dict
+def get_env_file_content(env_file: Path = PosixPath('.env')) -> dict: ...
 ```
 
 Read environment file content if it exists. 
@@ -327,7 +327,7 @@ Read environment file content if it exists.
 ### <kbd>function</kbd> `get_null_device`
 
 ```python
-get_null_device() → str
+def get_null_device() -> str: ...
 ```
 
 Get the null device path for the current platform. 
@@ -339,7 +339,7 @@ Get the null device path for the current platform.
 ### <kbd>function</kbd> `get_path_separator`
 
 ```python
-get_path_separator() → str
+def get_path_separator() -> str: ...
 ```
 
 Get the path separator for the current platform. 
@@ -351,7 +351,7 @@ Get the path separator for the current platform.
 ### <kbd>function</kbd> `get_platform_normalized`
 
 ```python
-get_platform_normalized() → str
+def get_platform_normalized() -> str: ...
 ```
 
 Get normalized platform name for cross-platform compatibility. 
@@ -363,7 +363,7 @@ Get normalized platform name for cross-platform compatibility.
 ### <kbd>function</kbd> `get_venv_activate_path`
 
 ```python
-get_venv_activate_path() → str | None
+def get_venv_activate_path() -> str | None: ...
 ```
 
 Get the virtual environment activation script path. 
@@ -375,7 +375,7 @@ Get the virtual environment activation script path.
 ### <kbd>function</kbd> `get_venv_python_path`
 
 ```python
-get_venv_python_path() → str | None
+def get_venv_python_path() -> str | None: ...
 ```
 
 Get the virtual environment Python path. 
@@ -387,7 +387,7 @@ Get the virtual environment Python path.
 ### <kbd>function</kbd> `install_uv`
 
 ```python
-install_uv() → bool
+def install_uv() -> bool: ...
 ```
 
 Install uv package manager for the current platform. 
@@ -399,7 +399,7 @@ Install uv package manager for the current platform.
 ### <kbd>function</kbd> `is_conda_forge_available`
 
 ```python
-is_conda_forge_available() → bool
+def is_conda_forge_available() -> bool: ...
 ```
 
 Check if conda-forge channel is configured. 
@@ -411,7 +411,7 @@ Check if conda-forge channel is configured.
 ### <kbd>function</kbd> `is_in_conda_env`
 
 ```python
-is_in_conda_env() → bool
+def is_in_conda_env() -> bool: ...
 ```
 
 Check if running in a conda/mamba environment. 
@@ -423,7 +423,7 @@ Check if running in a conda/mamba environment.
 ### <kbd>function</kbd> `is_in_venv`
 
 ```python
-is_in_venv() → bool
+def is_in_venv() -> bool: ...
 ```
 
 Check if running in a virtual environment. 
@@ -435,7 +435,7 @@ Check if running in a virtual environment.
 ### <kbd>function</kbd> `is_linux`
 
 ```python
-is_linux() → bool
+def is_linux() -> bool: ...
 ```
 
 Check if running on Linux. 
@@ -447,7 +447,7 @@ Check if running on Linux.
 ### <kbd>function</kbd> `is_macos`
 
 ```python
-is_macos() → bool
+def is_macos() -> bool: ...
 ```
 
 Check if running on macOS. 
@@ -459,7 +459,7 @@ Check if running on macOS.
 ### <kbd>function</kbd> `is_unix_like`
 
 ```python
-is_unix_like() → bool
+def is_unix_like() -> bool: ...
 ```
 
 Check if running on Unix-like system (macOS or Linux). 
@@ -471,7 +471,7 @@ Check if running on Unix-like system (macOS or Linux).
 ### <kbd>function</kbd> `is_windows`
 
 ```python
-is_windows() → bool
+def is_windows() -> bool: ...
 ```
 
 Check if running on Windows. 
@@ -483,7 +483,7 @@ Check if running on Windows.
 ### <kbd>function</kbd> `make_executable`
 
 ```python
-make_executable(path: Path) → bool
+def make_executable(path: Path) -> bool: ...
 ```
 
 Make a file executable (Unix-like systems only). 
@@ -495,7 +495,7 @@ Make a file executable (Unix-like systems only).
 ### <kbd>function</kbd> `remove_directory`
 
 ```python
-remove_directory(path: Path) → bool
+def remove_directory(path: Path) -> bool: ...
 ```
 
 Remove a directory with platform-appropriate method. 
@@ -507,11 +507,11 @@ Remove a directory with platform-appropriate method.
 ### <kbd>function</kbd> `run_command`
 
 ```python
-run_command(
+def run_command(
     cmd: str | list[str],
     shell: bool = False,
     **kwargs
-) → CompletedProcess
+) -> CompletedProcess
 ```
 
 Run a command with platform-appropriate settings. 

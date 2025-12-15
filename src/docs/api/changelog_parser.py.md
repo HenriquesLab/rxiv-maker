@@ -19,10 +19,10 @@ This module provides functionality to fetch, parse, and format changelog entries
 ## <kbd>function</kbd> `fetch_changelog`
 
 ```python
-fetch_changelog(
+def fetch_changelog(
     url: str = 'https://raw.githubusercontent.com/HenriquesLab/rxiv-maker/main/CHANGELOG.md',
     timeout: int = 5
-) → str
+) -> str
 ```
 
 Fetch CHANGELOG.md content from URL. 
@@ -54,7 +54,7 @@ Fetch CHANGELOG.md content from URL.
 ## <kbd>function</kbd> `parse_version_entry`
 
 ```python
-parse_version_entry(content: str, version: str) → Optional[ChangelogEntry]
+def parse_version_entry(content: str, version: str) -> Optional[ChangelogEntry]: ...
 ```
 
 Parse a specific version's changelog entry. 
@@ -79,7 +79,7 @@ Parse a specific version's changelog entry.
 ## <kbd>function</kbd> `parse_sections`
 
 ```python
-parse_sections(content: str) → Dict[str, List[str]]
+def parse_sections(content: str) -> Dict[str, List[str]]: ...
 ```
 
 Parse changelog sections (Added, Changed, Fixed, etc.). 
@@ -103,10 +103,10 @@ Parse changelog sections (Added, Changed, Fixed, etc.).
 ## <kbd>function</kbd> `extract_highlights`
 
 ```python
-extract_highlights(
+def extract_highlights(
     entry: ChangelogEntry,
     limit: int = 3
-) → List[Tuple[str, str]]
+) -> List[Tuple[str, str]]
 ```
 
 Extract the most important highlights from a changelog entry. 
@@ -133,7 +133,7 @@ Prioritizes: Added > Changed > Fixed > Others
 ## <kbd>function</kbd> `detect_breaking_changes`
 
 ```python
-detect_breaking_changes(entry: ChangelogEntry) → List[str]
+def detect_breaking_changes(entry: ChangelogEntry) -> List[str]: ...
 ```
 
 Detect breaking changes in a changelog entry. 
@@ -157,7 +157,7 @@ Detect breaking changes in a changelog entry.
 ## <kbd>function</kbd> `get_versions_between`
 
 ```python
-get_versions_between(content: str, current: str, latest: str) → List[str]
+def get_versions_between(content: str, current: str, latest: str) -> List[str]: ...
 ```
 
 Get all versions between current and latest (inclusive of latest). 
@@ -183,11 +183,11 @@ Get all versions between current and latest (inclusive of latest).
 ## <kbd>function</kbd> `format_summary`
 
 ```python
-format_summary(
+def format_summary(
     entries: List[ChangelogEntry],
     show_breaking: bool = True,
     highlights_per_version: int = 3
-) → str
+) -> str
 ```
 
 Format changelog entries for terminal display with rich markup. 
@@ -213,12 +213,12 @@ Format changelog entries for terminal display with rich markup.
 ## <kbd>function</kbd> `fetch_and_format_changelog`
 
 ```python
-fetch_and_format_changelog(
+def fetch_and_format_changelog(
     current_version: str,
     latest_version: str,
     changelog_url: str = 'https://raw.githubusercontent.com/HenriquesLab/rxiv-maker/main/CHANGELOG.md',
     highlights_per_version: int = 3
-) → Tuple[Optional[str], Optional[str]]
+) -> Tuple[Optional[str], Optional[str]]
 ```
 
 Fetch changelog and format summary for version range. 

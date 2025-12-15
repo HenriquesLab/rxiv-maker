@@ -22,10 +22,10 @@ Note: Before upgrading with Homebrew, always run 'brew update' first to fetch th
 ## <kbd>function</kbd> `check_brew_outdated`
 
 ```python
-check_brew_outdated(
+def check_brew_outdated(
     package: str = 'rxiv-maker',
     timeout: int = 5
-) → Optional[Tuple[str, str]]
+) -> Optional[Tuple[str, str]]
 ```
 
 Check if package is outdated using `brew outdated` command. 
@@ -50,10 +50,10 @@ Check if package is outdated using `brew outdated` command.
 ## <kbd>function</kbd> `check_formula_github`
 
 ```python
-check_formula_github(
+def check_formula_github(
     formula_url: str = 'https://raw.githubusercontent.com/henriqueslab/homebrew-formulas/main/Formula/rxiv-maker.rb',
     timeout: int = 5
-) → Optional[str]
+) -> Optional[str]
 ```
 
 Check the latest version from the GitHub formula file. 
@@ -78,7 +78,7 @@ Check the latest version from the GitHub formula file.
 ## <kbd>function</kbd> `check_homebrew_update`
 
 ```python
-check_homebrew_update(current_version: str) → Optional[Tuple[bool, str]]
+def check_homebrew_update(current_version: str) -> Optional[Tuple[bool, str]]: ...
 ```
 
 Check if a Homebrew update is available. 

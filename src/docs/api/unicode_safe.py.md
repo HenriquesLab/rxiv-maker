@@ -15,7 +15,7 @@ This module provides cross-platform safe console output functions that handle Un
 ## <kbd>function</kbd> `supports_unicode`
 
 ```python
-supports_unicode() → bool
+def supports_unicode() -> bool: ...
 ```
 
 Check if the current environment supports Unicode characters. 
@@ -34,7 +34,7 @@ Check if the current environment supports Unicode characters.
 ## <kbd>function</kbd> `get_safe_icon`
 
 ```python
-get_safe_icon(emoji: str, fallback: str) → str
+def get_safe_icon(emoji: str, fallback: str) -> str: ...
 ```
 
 Get a safe icon that works across different terminals. 
@@ -60,7 +60,7 @@ Get a safe icon that works across different terminals.
 ## <kbd>function</kbd> `convert_to_ascii`
 
 ```python
-convert_to_ascii(message: str) → str
+def convert_to_ascii(message: str) -> str: ...
 ```
 
 Convert Unicode emoji and symbols to ASCII equivalents. 
@@ -84,7 +84,7 @@ Convert Unicode emoji and symbols to ASCII equivalents.
 ## <kbd>function</kbd> `safe_print`
 
 ```python
-safe_print(message: str, **kwargs) → None
+def safe_print(message: str, **kwargs) -> None: ...
 ```
 
 Print a message with Unicode safety fallbacks. 
@@ -104,12 +104,12 @@ Print a message with Unicode safety fallbacks.
 ## <kbd>function</kbd> `safe_console_print`
 
 ```python
-safe_console_print(
+def safe_console_print(
     console,
     message: str,
     style: str | None = None,
     **kwargs
-) → None
+) -> None
 ```
 
 Print a message using Rich console with cross-platform Unicode fallback. 
@@ -131,7 +131,7 @@ Print a message using Rich console with cross-platform Unicode fallback.
 ## <kbd>function</kbd> `print_success`
 
 ```python
-print_success(message: str) → None
+def print_success(message: str) -> None: ...
 ```
 
 Print a success message with safe Unicode handling. 
@@ -144,7 +144,7 @@ Print a success message with safe Unicode handling.
 ## <kbd>function</kbd> `print_error`
 
 ```python
-print_error(message: str) → None
+def print_error(message: str) -> None: ...
 ```
 
 Print an error message with safe Unicode handling. 
@@ -157,7 +157,7 @@ Print an error message with safe Unicode handling.
 ## <kbd>function</kbd> `print_warning`
 
 ```python
-print_warning(message: str) → None
+def print_warning(message: str) -> None: ...
 ```
 
 Print a warning message with safe Unicode handling. 
@@ -170,7 +170,7 @@ Print a warning message with safe Unicode handling.
 ## <kbd>function</kbd> `print_info`
 
 ```python
-print_info(message: str) → None
+def print_info(message: str) -> None: ...
 ```
 
 Print an info message with safe Unicode handling. 
@@ -183,7 +183,7 @@ Print an info message with safe Unicode handling.
 ## <kbd>function</kbd> `console_success`
 
 ```python
-console_success(console, message: str) → None
+def console_success(console, message: str) -> None: ...
 ```
 
 Print a success message using Rich console with safe Unicode handling. 
@@ -196,7 +196,7 @@ Print a success message using Rich console with safe Unicode handling.
 ## <kbd>function</kbd> `console_error`
 
 ```python
-console_error(console, message: str) → None
+def console_error(console, message: str) -> None: ...
 ```
 
 Print an error message using Rich console with safe Unicode handling. 
@@ -209,7 +209,7 @@ Print an error message using Rich console with safe Unicode handling.
 ## <kbd>function</kbd> `console_warning`
 
 ```python
-console_warning(console, message: str) → None
+def console_warning(console, message: str) -> None: ...
 ```
 
 Print a warning message using Rich console with safe Unicode handling. 
@@ -222,7 +222,7 @@ Print a warning message using Rich console with safe Unicode handling.
 ## <kbd>function</kbd> `console_info`
 
 ```python
-console_info(console, message: str) → None
+def console_info(console, message: str) -> None: ...
 ```
 
 Print an info message using Rich console with safe Unicode handling. 

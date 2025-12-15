@@ -13,7 +13,7 @@ Operation ID management for debugging and tracing.
 ## <kbd>function</kbd> `get_operation_history`
 
 ```python
-get_operation_history() → OperationHistory
+def get_operation_history() -> OperationHistory: ...
 ```
 
 Get or create the global operation history instance. 
@@ -26,7 +26,7 @@ Get or create the global operation history instance.
 ## <kbd>function</kbd> `create_operation`
 
 ```python
-create_operation(operation_type: str, **metadata) → OperationContext
+def create_operation(operation_type: str, **metadata) -> OperationContext: ...
 ```
 
 Create a new operation context. 
@@ -51,7 +51,7 @@ Create a new operation context.
 ## <kbd>function</kbd> `get_current_operation_id`
 
 ```python
-get_current_operation_id() → str | None
+def get_current_operation_id() -> str | None: ...
 ```
 
 Get the ID of the most recent operation. 
@@ -67,7 +67,7 @@ Context manager for operation tracking with unique IDs.
 ### <kbd>function</kbd> `__init__`
 
 ```python
-__init__(operation_type: str, metadata: dict[str, Any] | None = None)
+def __init__(operation_type: str, metadata: dict[str, Any] | None = None): ...
 ```
 
 Initialize operation context. 
@@ -89,7 +89,7 @@ Initialize operation context.
 ### <kbd>function</kbd> `add_metadata`
 
 ```python
-add_metadata(key: str, value: Any) → None
+def add_metadata(key: str, value: Any) -> None: ...
 ```
 
 Add metadata to the operation. 
@@ -101,7 +101,7 @@ Add metadata to the operation.
 ### <kbd>function</kbd> `log`
 
 ```python
-log(message: str) → None
+def log(message: str) -> None: ...
 ```
 
 Add a log entry to the operation. 
@@ -117,7 +117,7 @@ Manages history of operations for debugging.
 ### <kbd>function</kbd> `__init__`
 
 ```python
-__init__(max_operations: int = 100)
+def __init__(max_operations: int = 100): ...
 ```
 
 Initialize operation history. 
@@ -138,7 +138,7 @@ Initialize operation history.
 ### <kbd>function</kbd> `add_operation`
 
 ```python
-add_operation(operation: OperationContext) → None
+def add_operation(operation: OperationContext) -> None: ...
 ```
 
 Add operation to history. 
@@ -150,7 +150,7 @@ Add operation to history.
 ### <kbd>function</kbd> `clear`
 
 ```python
-clear() → None
+def clear() -> None: ...
 ```
 
 Clear operation history. 
@@ -162,7 +162,7 @@ Clear operation history.
 ### <kbd>function</kbd> `generate_debug_report`
 
 ```python
-generate_debug_report() → dict[str, Any]
+def generate_debug_report() -> dict[str, Any]: ...
 ```
 
 Generate debug report with operation history. 
@@ -174,7 +174,7 @@ Generate debug report with operation history.
 ### <kbd>function</kbd> `get_failed_operations`
 
 ```python
-get_failed_operations() → list[OperationContext]
+def get_failed_operations() -> list[OperationContext]: ...
 ```
 
 Get all failed operations. 
@@ -186,7 +186,7 @@ Get all failed operations.
 ### <kbd>function</kbd> `get_operation`
 
 ```python
-get_operation(operation_id: str) → OperationContext | None
+def get_operation(operation_id: str) -> OperationContext | None: ...
 ```
 
 Get operation by ID. 
@@ -198,7 +198,7 @@ Get operation by ID.
 ### <kbd>function</kbd> `get_operations_by_type`
 
 ```python
-get_operations_by_type(operation_type: str) → list[OperationContext]
+def get_operations_by_type(operation_type: str) -> list[OperationContext]: ...
 ```
 
 Get operations by type. 
@@ -210,7 +210,7 @@ Get operations by type.
 ### <kbd>function</kbd> `get_recent_operations`
 
 ```python
-get_recent_operations(count: int = 10) → list[OperationContext]
+def get_recent_operations(count: int = 10) -> list[OperationContext]: ...
 ```
 
 Get recent operations. 

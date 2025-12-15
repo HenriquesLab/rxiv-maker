@@ -15,7 +15,7 @@ This module provides GitHub CLI (gh) integration for creating, cloning, and mana
 ## <kbd>function</kbd> `validate_github_name`
 
 ```python
-validate_github_name(name: str, name_type: str = 'name') → None
+def validate_github_name(name: str, name_type: str = 'name') -> None: ...
 ```
 
 Validate GitHub organization or repository name. 
@@ -43,7 +43,7 @@ GitHub names (orgs and repos) can only contain alphanumeric characters and hyphe
 ## <kbd>function</kbd> `check_gh_cli_installed`
 
 ```python
-check_gh_cli_installed() → bool
+def check_gh_cli_installed() -> bool: ...
 ```
 
 Check if GitHub CLI (gh) is installed. 
@@ -61,7 +61,7 @@ Check if GitHub CLI (gh) is installed.
 ## <kbd>function</kbd> `check_gh_auth`
 
 ```python
-check_gh_auth() → bool
+def check_gh_auth() -> bool: ...
 ```
 
 Check if user is authenticated with GitHub CLI. 
@@ -79,7 +79,7 @@ Check if user is authenticated with GitHub CLI.
 ## <kbd>function</kbd> `check_git_installed`
 
 ```python
-check_git_installed() → bool
+def check_git_installed() -> bool: ...
 ```
 
 Check if git is installed. 
@@ -97,7 +97,7 @@ Check if git is installed.
 ## <kbd>function</kbd> `check_github_repo_exists`
 
 ```python
-check_github_repo_exists(org: str, repo_name: str) → bool
+def check_github_repo_exists(org: str, repo_name: str) -> bool: ...
 ```
 
 Check if a GitHub repository exists. 
@@ -129,7 +129,7 @@ Check if a GitHub repository exists.
 ## <kbd>function</kbd> `create_github_repo`
 
 ```python
-create_github_repo(org: str, repo_name: str, visibility: str = 'public') → str
+def create_github_repo(org: str, repo_name: str, visibility: str = 'public') -> str: ...
 ```
 
 Create a new GitHub repository. 
@@ -162,7 +162,7 @@ Create a new GitHub repository.
 ## <kbd>function</kbd> `clone_github_repo`
 
 ```python
-clone_github_repo(org: str, repo_name: str, target_path: Path) → None
+def clone_github_repo(org: str, repo_name: str, target_path: Path) -> None: ...
 ```
 
 Clone a GitHub repository. 
@@ -190,7 +190,7 @@ Clone a GitHub repository.
 ## <kbd>function</kbd> `list_github_repos`
 
 ```python
-list_github_repos(org: str, pattern: str = 'manuscript-') → List[Dict[str, str]]
+def list_github_repos(org: str, pattern: str = 'manuscript-') -> List[Dict[str, str]]: ...
 ```
 
 List GitHub repositories matching a pattern. 
@@ -222,11 +222,11 @@ List GitHub repositories matching a pattern.
 ## <kbd>function</kbd> `setup_git_remote`
 
 ```python
-setup_git_remote(
+def setup_git_remote(
     repo_path: Path,
     remote_url: str,
     remote_name: str = 'origin'
-) → None
+) -> None
 ```
 
 Add a git remote to a repository. 
@@ -253,11 +253,11 @@ Add a git remote to a repository.
 ## <kbd>function</kbd> `push_to_remote`
 
 ```python
-push_to_remote(
+def push_to_remote(
     repo_path: Path,
     branch: str = 'main',
     remote_name: str = 'origin'
-) → None
+) -> None
 ```
 
 Push commits to remote repository. 
@@ -284,7 +284,7 @@ Push commits to remote repository.
 ## <kbd>function</kbd> `get_github_orgs`
 
 ```python
-get_github_orgs() → List[str]
+def get_github_orgs() -> List[str]: ...
 ```
 
 Get list of GitHub organizations the user has access to. 

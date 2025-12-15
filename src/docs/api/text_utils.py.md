@@ -13,7 +13,7 @@ Text processing utilities for rxiv-maker.
 ## <kbd>function</kbd> `count_words_in_text`
 
 ```python
-count_words_in_text(text: Optional[str]) → int
+def count_words_in_text(text: Optional[str]) -> int: ...
 ```
 
 Count words in text, excluding code blocks and LaTeX commands. 
@@ -51,7 +51,7 @@ This function provides robust word counting for academic manuscripts by filterin
 ## <kbd>function</kbd> `clean_text_for_analysis`
 
 ```python
-clean_text_for_analysis(text: Optional[str]) → str
+def clean_text_for_analysis(text: Optional[str]) -> str: ...
 ```
 
 Clean text by removing code blocks and LaTeX commands for analysis. 
