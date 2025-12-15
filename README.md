@@ -33,56 +33,29 @@ Rxiv-Maker converts enhanced Markdown into professional PDFs with automated figu
 
 ## 🚀 Installation
 
-**⚠️ Choose ONE installation method below** (don't run all of them):
-
-**🍎 macOS (Recommended):**
-```bash
-brew tap henriqueslab/formulas
-brew install rxiv-maker
-rxiv check-installation
-```
-
-**🐧 Linux / 🪟 Windows WSL (Recommended):**
+**Recommended (All Platforms):**
 ```bash
 pipx install rxiv-maker
 rxiv check-installation
 ```
 
-**🔧 Alternative Methods:**
-```bash
-# Using pip (simpler, but may conflict with system packages)
-pip install rxiv-maker
-
-# Using uv (modern, fast package manager)
-uv tool install rxiv-maker
-
-# Verify installation
-rxiv check-installation
-```
-
 **📋 Requirements:**
 > [!IMPORTANT]
-> **LaTeX** is required for PDF generation. When installing via **Homebrew** (`brew install rxiv-maker`), LaTeX is included automatically. For other installation methods (pip, pipx, uv), you'll need to install LaTeX separately. Run `rxiv check-installation` to verify your setup.
+> **LaTeX** is required for PDF generation. Run `rxiv check-installation` to verify your setup.
 
 - **Python 3.11+**: For rxiv-maker CLI and figure generation
-- **LaTeX Distribution**: Included with Homebrew installation, or install separately:
-  - **macOS**: MacTeX (recommended) or BasicTeX
-  - **Windows**: MiKTeX or TeX Live
-  - **Linux**: TeX Live (via system package manager)
+- **LaTeX Distribution**: Install via your system package manager or see the [installation guide](https://rxiv-maker.henriqueslab.org/getting-started/installation/)
+
+> **🍎 macOS Users:** Prefer Homebrew? `brew install rxiv-maker` includes LaTeX automatically.
+> **📖 Need help?** See the [complete installation guide](https://rxiv-maker.henriqueslab.org/getting-started/installation/) for platform-specific instructions.
 
 **Upgrading:**
 ```bash
 # Automatic upgrade (detects your installation method)
 rxiv upgrade
 
-# Or use the same method you used to install:
-brew upgrade rxiv-maker              # If you installed with Homebrew
-pipx upgrade rxiv-maker              # If you installed with pipx
-pip install --upgrade rxiv-maker     # If you installed with pip
-uv tool upgrade rxiv-maker           # If you installed with uv
+# Or manually: pipx upgrade rxiv-maker
 ```
-
-**Need help?** 📖 **[Installation Guide](docs/installation.md)**
 
 ## 🔥 Quick Start
 
@@ -155,30 +128,24 @@ rxiv pdf
 ```markdown
 # Introduction
 
-{{py:exec
-import pandas as pd
-import numpy as np
+Rxiv-Maker enables collaborative manuscript writing with
+automated citations [@henriques2024rxivmaker] and figure
+generation [@smith2023; @jones2024].
 
-df = pd.read_csv("FIGURES/DATA/experimental_results.csv")
-
-# Calculate correlation between specific columns (safer than iloc)
-# Assuming the CSV has columns like 'treatment_effect' and 'baseline_score'
-correlation = df['treatment_effect'].corr(df['baseline_score'])
-sample_size = len(df)
-}}
-
-Our analysis of {{py:get sample_size}} samples in Figure @fig:results shows 
-significant improvement over previous methods [@smith2023; @jones2024].
-
-![Research Results](https://github.com/HenriquesLab/manuscript-rxiv-maker/blob/main/MANUSCRIPT/FIGURES/SFigure__arxiv_growth.py)
+![Example Results](FIGURES/results_plot.py)
 {#fig:results}
 
-The correlation coefficient was r = {{py:get correlation:.2f}} (p < 0.001).
+Our findings in Figure @fig:results demonstrate this approach.
+
+DOI: 10.1038/s41467-024-12345-x will auto-resolve to citation.
 
 ## References
 ```
 
-**Output:** Professional PDF with numbered figures, live data integration, citations, and LaTeX-quality typesetting.
+**Output:** Professional PDF with auto-numbered figures, resolved citations, and LaTeX typesetting.
+
+> **💡 See the complete working example:**
+> `rxiv get-rxiv-preprint` - clones [manuscript-rxiv-maker](https://github.com/HenriquesLab/manuscript-rxiv-maker) with advanced features including Python execution, data analysis, and more.
 
 ## 📖 Documentation
 
@@ -197,6 +164,9 @@ Visit our **[official documentation website](https://rxiv-maker.henriqueslab.org
 
 ## 🎯 Use Cases
 
+<details>
+<summary>📄 <strong>Research Preprints, Reproducible Figures, and Collaborative Workflows</strong></summary>
+
 ### 📄 **Research Preprints**
 - arXiv preprints with automated submission packages
 - bioRxiv and other preprint servers with professional formatting
@@ -212,9 +182,17 @@ Visit our **[official documentation website](https://rxiv-maker.henriqueslab.org
 - **Collaborative preprint writing** with version control
 - **Supplementary materials** with automated generation
 
+</details>
+
 ## 🏃‍♀️ Ecosystem & Workflows
 
-**The rxiv-maker ecosystem consists of interconnected repositories:**
+**Three ways to use rxiv-maker:**
+- 🖥️ **Local Installation**: Install directly on your system (recommended)
+- 🐳 **Docker**: Pre-configured container with all dependencies
+- ☁️ **Cloud**: GitHub Actions or Google Colab for browser-based editing
+
+<details>
+<summary>🔗 <strong>Ecosystem Details</strong> - Core repositories, development tools, and integration patterns</summary>
 
 ### 📦 **Core Repositories**
 
@@ -254,7 +232,7 @@ Visit our **[official documentation website](https://rxiv-maker.henriqueslab.org
 - **🌐 Google Colab**: Browser-based editing without local installation
 - **🐳 Containers**: Docker for reproducible environments
 
-### 📦 **Simplified Architecture**
+### 📦 **Architecture Diagram**
 
 ```mermaid
 graph LR
@@ -273,11 +251,6 @@ graph LR
     style H fill:#e8f5e9
 ```
 
-> **Note**: As of v1.8.4, we've streamlined the ecosystem while maintaining multiple installation options (Homebrew, pip, pipx, uv) with optional Docker support for containerized workflows.
->
-> **📋 [Ecosystem Guide](docs/ECOSYSTEM.md)** - Complete architecture and integration patterns
-> **📋 [Migration Guide](docs/migration-v1.7.9.md)** - For users upgrading from previous versions
-
 ### 🔗 **Repository Cross-Reference**
 
 | Repository | Purpose | Install/Access | Dependencies |
@@ -288,10 +261,29 @@ graph LR
 | **[vscode-rxiv-maker](https://github.com/HenriquesLab/vscode-rxiv-maker)** | VS Code extension | VS Code Marketplace | rxiv-maker |
 | **[website-rxiv-maker](https://github.com/HenriquesLab/website-rxiv-maker)** | Documentation website | [rxiv-maker.henriqueslab.org](https://rxiv-maker.henriqueslab.org) | - |
 
-## 🚀 Essential Commands
+> **Note**: As of v1.8.4, we've streamlined the ecosystem while maintaining multiple installation options (Homebrew, pip, pipx, uv) with optional Docker support for containerized workflows.
+>
+> **📋 [Ecosystem Guide](docs/ECOSYSTEM.md)** - Complete architecture and integration patterns
+> **📋 [Migration Guide](docs/migration-v1.7.9.md)** - For users upgrading from previous versions
+
+</details>
+
+## 🚀 Quick Commands
+
+**Essential commands to get started:**
 
 ```bash
-# Core Commands
+rxiv init my-paper       # Create new manuscript
+rxiv pdf                 # Generate PDF
+rxiv validate           # Check manuscript quality
+rxiv upgrade            # Upgrade to latest version
+```
+
+<details>
+<summary>📋 <strong>Complete Command Reference</strong> - Repository management, export options, and advanced workflows</summary>
+
+### Core Commands
+```bash
 rxiv init my-paper          # Create new manuscript
 rxiv get-rxiv-preprint     # Clone complete example manuscript
 rxiv pdf                    # Generate PDF
@@ -299,84 +291,37 @@ rxiv docx                   # Export to DOCX for collaborative review
 rxiv validate              # Check manuscript quality
 rxiv arxiv                 # Prepare arXiv submission
 rxiv track-changes v1 v2   # Visual version comparison
+```
 
-# Repository Management
-rxiv create-repo           # Create new manuscript repository (with GitHub integration)
-rxiv repos                 # List all manuscript repositories
-rxiv repos-search          # Search and clone from GitHub
+### Repository Management
+```bash
+# Initial setup
+rxiv repo-init             # Interactive setup
 rxiv config                # Interactive configuration menu
 
-# Maintenance
+# Create and manage repositories
+rxiv create-repo my-paper  # Create new manuscript repository (with GitHub integration)
+rxiv repos                 # List all manuscript repositories
+rxiv repos-search          # Search and clone from GitHub
+
+# Configuration
+rxiv config set-repo-parent-dir ~/manuscripts
+rxiv config set-repo-org YourGitHubOrg
+rxiv config --non-interactive  # Show current settings
+```
+
+### Maintenance
+```bash
 rxiv upgrade               # Upgrade to latest version
 rxiv changelog             # View changelog and release notes
 rxiv changelog --recent 5  # View last 5 versions
 ```
 
-### 📂 Repository Management
-
-Manage multiple manuscript repositories with GitHub integration:
-
-```bash
-# Initial setup (interactive)
-rxiv repo-init
-
-# Or configure manually
-rxiv config set-repo-parent-dir ~/manuscripts
-rxiv config set-repo-org YourGitHubOrg
-
-# Create new repository (manuscript-{name})
-rxiv create-repo my-paper
-
-# List all repositories with git status
-rxiv repos
-
-# Search and clone from GitHub
-rxiv repos-search my-paper
-
-# Interactive configuration
-rxiv config                 # Interactive menu
-rxiv config --non-interactive  # Show current settings
-```
-
 > **💡 CI/Automation Note:** All interactive commands support non-interactive mode or configuration files for use in CI/CD pipelines and automated workflows. Use `--non-interactive` flag or configure via `~/.rxiv-maker/config` for non-TTY environments.
 
-### 📄 DOCX Export for Collaborative Review
+**📖 [Complete CLI Reference](https://rxiv-maker.henriqueslab.org/getting-started/quick-reference/)** - Full command documentation with examples and options.
 
-Share your manuscript with non-LaTeX collaborators by exporting to Microsoft Word format. The easiest way is to add the `--docx` flag when building your PDF:
-
-```bash
-# Build PDF and also export to DOCX
-rxiv pdf --docx
-
-# With DOI resolution for missing entries
-rxiv pdf --docx --resolve-dois
-
-# Or use the standalone command
-rxiv docx                     # Just DOCX (without rebuilding PDF)
-rxiv docx --resolve-dois      # With DOI resolution
-rxiv docx --no-footnotes      # Without DOI footnotes
-```
-
-**Output Location:**
-- Automatically saved to `MANUSCRIPT/YEAR__lastname_et_al__rxiv.docx`
-- Uses the same naming pattern as the PDF for easy identification
-- Saved directly in the manuscript directory
-
-**Features:**
-- ✅ **Numbered Citations**: Converts `@cite` to superscript [1], [2], etc.
-- ✅ **References Section**: Complete bibliography with clickable DOI links
-- ✅ **Embedded Figures**: Automatically converts PDF figures to PNG and embeds them
-- ✅ **Figure Captions**: Properly formatted with labels
-- ✅ **Formatting Preserved**: Maintains bold, italic, and inline code
-- ✅ **Supplementary Info**: Automatically includes 02_SUPPLEMENTARY_INFO.md
-- ✅ **Missing DOI Resolution**: Attempts to fetch DOIs from CrossRef/DataCite
-
-**Content Scope:**
-- Includes: Main manuscript (01_MAIN.md), supplementary information (02_SUPPLEMENTARY_INFO.md), and figures
-- Converts: PDF figures to embedded PNG images (150 DPI, max 6" width)
-- Excludes: YAML metadata headers
-
-**[📖 CLI Reference](docs/cli-reference.md)**
+</details>
 
 ## 🤝 Community
 
@@ -429,6 +374,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 *"Because science is hard enough without fighting with LaTeX."*
 
-**[🚀 Start Writing](docs/first-manuscript.md)** | **[📚 User Guide](docs/user_guide.md)** | **[⚙️ CLI Reference](docs/cli-reference.md)**
+**[🚀 Start Writing](https://rxiv-maker.henriqueslab.org/getting-started/first-manuscript/)** | **[📚 User Guide](https://rxiv-maker.henriqueslab.org/guides/)** | **[⚙️ CLI Reference](https://rxiv-maker.henriqueslab.org/getting-started/quick-reference/)**
 
 </div>
