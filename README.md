@@ -141,26 +141,22 @@ rxiv pdf
 
 **Input Markdown:**
 ```markdown
-# Introduction
+## Introduction
 
-Rxiv-Maker enables collaborative manuscript writing with
-automated citations [@henriques2024rxivmaker] and figure
-generation [@smith2023; @jones2024].
+Recent advances in microscopy have enabled new insights into
+cellular dynamics [@smith2023; @jones2024].
 
-![Example Results](FIGURES/results_plot.py)
+![Experimental Results](FIGURES/results_plot.py)
 {#fig:results}
 
-Our findings in Figure @fig:results demonstrate this approach.
-
-DOI: 10.1038/s41467-024-12345-x will auto-resolve to citation.
-
-## References
+Our analysis (Figure @fig:results) shows significant improvement
+over previous methods. Statistical analysis revealed p < 0.001.
 ```
 
-**Output:** Professional PDF with auto-numbered figures, resolved citations, and LaTeX typesetting.
+**Output:** Professional PDF with auto-numbered figures, formatted citations, and LaTeX typesetting.
 
 > **💡 See the complete working example:**
-> `rxiv get-rxiv-preprint` - clones [manuscript-rxiv-maker](https://github.com/HenriquesLab/manuscript-rxiv-maker) with advanced features including Python execution, data analysis, and more.
+> `rxiv get-rxiv-preprint` - clones [manuscript-rxiv-maker](https://github.com/HenriquesLab/manuscript-rxiv-maker) with advanced features including Python execution, DOI auto-resolution, and dynamic data integration.
 
 ## 📖 Documentation
 
