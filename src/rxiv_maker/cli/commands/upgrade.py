@@ -5,12 +5,12 @@ import subprocess
 import sys
 
 import click
+from henriqueslab_updater import force_update_check
 from rich.console import Console
 
 from ... import __version__
 from ...utils.changelog_parser import fetch_and_format_changelog
 from ...utils.install_detector import detect_install_method, get_friendly_install_name, get_upgrade_command
-from ...utils.update_checker import force_update_check
 from ..interactive import prompt_confirm
 
 console = Console()
