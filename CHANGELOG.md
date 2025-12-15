@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Upgrade Command Refactoring**: Migrated to centralized upgrade executor from `henriqueslab-updater>=1.1.1`
+  - Removed custom subprocess and compound command handling logic
+  - Now uses `execute_upgrade()` function for consistent upgrade behavior
+  - Reduced code complexity and improved maintainability
+  - Eliminates ~50 lines of duplicate upgrade execution code
+
 ## [1.16.3] - 2025-12-15
 
 ### Fixed
