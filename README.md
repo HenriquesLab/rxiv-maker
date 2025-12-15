@@ -296,10 +296,12 @@ rxiv changelog --recent 5  # View last 5 versions
 
 | Publication | Authors | Venue | DOI |
 |-------------|---------|-------|-----|
-| [Rxiv-Maker: an automated template engine for streamlined scientific publications](https://arxiv.org/abs/2508.00836) | BM Saraiva et al. | arXiv (2025) | `10.48550/arXiv.2508.00836` |
-| [Customizable FDM-based zebrafish embryo mold for live imaging](https://www.biorxiv.org/content/10.1101/2025.11.24.689779) | MX Rivera Pineda et al. | bioRxiv (2025) | `10.1101/2025.11.24.689779` |
-| [mAIcrobe: an open-source framework for high-throughput bacterial image analysis](https://www.biorxiv.org/content/10.1101/2025.10.21.683709) | AD Brito et al. | bioRxiv (2025) | `10.1101/2025.10.21.683709` |
-| [Filopodome proteomics identifies CCT8 as a MYO10 interactor critical for filopodia functions](https://www.biorxiv.org/content/10.64898/2025.12.03.691809v1) | A Popović et al. | bioRxiv (2025) | `10.64898/2025.12.03.691809` |
+| Rxiv-Maker: an automated template engine for streamlined scientific publications | BM Saraiva et al. | arXiv (2025) | `10.48550/arXiv.2508.00836` |
+| Customizable FDM-based zebrafish embryo mold for live imaging | MX Rivera Pineda et al. | bioRxiv (2025) | `10.1101/2025.11.24.689779` |
+| mAIcrobe: an open-source framework for high-throughput bacterial image analysis | AD Brito et al. | bioRxiv (2025) | `10.1101/2025.10.21.683709` |
+| Filopodome proteomics identifies CCT8 as a MYO10 interactor critical for filopodia functions | A Popović et al. | bioRxiv (2025) | `10.64898/2025.12.03.691809` |
+
+**📸 [View Publication Previews](https://rxiv-maker.henriqueslab.org/examples/showcase/)** - See manuscript thumbnails and access preprints
 
 > **Using Rxiv-Maker for your research?** Submit your publication via [GitHub Issue](https://github.com/HenriquesLab/rxiv-maker/issues/new?template=publication_submission.yml)
 
