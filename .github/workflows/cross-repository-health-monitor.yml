@@ -249,7 +249,7 @@ jobs:
 
     steps:
       - name: Checkout main repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: 🔄 Check cross-repository synchronization
         id: sync
@@ -333,7 +333,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: 🔒 Run security validation
         id: audit
