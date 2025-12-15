@@ -35,7 +35,7 @@ jobs:
             --max-retries 3
             --timeout 20
             --accept 200,204,206,301,302,307,308,429
-            --header "accept=text/html"
+            --header "accept: text/html"
             '**.md'
 
           # Fail the action on broken links
