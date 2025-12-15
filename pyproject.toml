@@ -53,7 +53,7 @@ dependencies = [
     "GitPython>=3.1.0",
     "prompt_toolkit>=3.0.0",
     # Update checking
-    "henriqueslab-updater>=1.0.0",
+    "henriqueslab-updater>=1.1.3",
 ]
 
 [project.urls]

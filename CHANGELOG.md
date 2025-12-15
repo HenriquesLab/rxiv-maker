@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.4] - 2025-12-15
+
+### Fixed
+
+- **Stale Update Notification Cache**: Updated to `henriqueslab-updater>=1.1.3` to fix stale update notifications
+  - Cache now invalidates when current version changes
+  - Prevents showing "update available" after already upgrading
+
+### Changed
+
+- **Upgrade Command Refactoring**: Migrated to centralized upgrade executor from henriqueslab-updater
+  - Removed custom subprocess and compound command handling logic
+  - Now uses `execute_upgrade()` function for consistent upgrade behavior
+  - Reduced code complexity and improved maintainability
+  - Eliminates ~50 lines of duplicate upgrade execution code
+
 ## [1.16.3] - 2025-12-15
 
 ### Fixed
