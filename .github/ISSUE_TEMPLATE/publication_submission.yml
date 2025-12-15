@@ -1,0 +1,64 @@
+name: Publication Submission
+description: Submit your publication to be featured in the Rxiv-Maker showcase
+title: "[Publication]: "
+labels: ["publication", "showcase"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for using Rxiv-Maker! We'd love to feature your publication in our showcase.
+
+  - type: input
+    id: title
+    attributes:
+      label: Paper Title
+      description: Full title of your publication
+    validations:
+      required: true
+
+  - type: input
+    id: authors
+    attributes:
+      label: Authors
+      description: All authors (use et al. for long lists)
+    validations:
+      required: true
+
+  - type: input
+    id: link
+    attributes:
+      label: Link to Publication
+      description: URL to preprint or published paper
+      placeholder: https://www.biorxiv.org/...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: venue
+    attributes:
+      label: Venue
+      description: Where is this published?
+      options:
+        - arXiv
+        - bioRxiv
+        - medRxiv
+        - Other preprint server
+        - Peer-reviewed journal
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Brief Description (Optional)
+      description: Short summary of the research (1-2 sentences)
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I confirm this publication was created using Rxiv-Maker
+          required: true
+        - label: I have permission to share this publication
+          required: true
