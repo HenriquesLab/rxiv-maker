@@ -1,0 +1,384 @@
+"""Version update checking for rxiv-maker.
+
+This module handles checking for newer versions of rxiv-maker on PyPI
+and notifying users about available updates in a non-intrusive way.
+"""
+
+import json
+import os
+import threading
+from datetime import datetime, timedelta
+from urllib.error import HTTPError, URLError
+from urllib.request import urlopen
+
+try:
+    from packaging import version as pkg_version  # type: ignore
+except ImportError:
+    pkg_version = None  # type: ignore
+
+from rich.console import Console
+from rich.panel import Panel
+
+from rxiv_maker.utils.unicode_safe import safe_print
+
+from ..core.cache.cache_utils import get_manuscript_cache_dir
+from .changelog_parser import fetch_and_format_changelog
+from .homebrew_checker import check_homebrew_update
+from .install_detector import detect_install_method, get_friendly_install_name, get_upgrade_command
+
+console = Console()
+
+
+class UpdateChecker:
+    """Handles version checking and update notifications."""
+
+    def __init__(self, package_name: str = "rxiv-maker", current_version: str | None = None):
+        """Initialize the update checker.
+
+        Args:
+            package_name: Name of the package on PyPI
+            current_version: Current version of the package
+        """
+        self.package_name = package_name
+        self.current_version = current_version or self._get_current_version()
+        self.pypi_url = f"https://pypi.org/pypi/{package_name}/json"
+
+        # Use manuscript cache directory if available, otherwise disable update checking
+        try:
+            self.cache_dir = get_manuscript_cache_dir("updates")
+        except RuntimeError:
+            # No manuscript directory found, disable update checking
+            self.cache_dir = None
+
+        self.cache_file = self.cache_dir / "update_cache.json" if self.cache_dir else None
+
+        self.check_interval = timedelta(hours=24)  # Check once per day
+
+        # Ensure cache directory exists (only if caching is enabled)
+        if self.cache_dir:
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
+
+    def _get_current_version(self) -> str:
+        """Get the current version of the package."""
+        try:
+            from .. import __version__
+
+            return __version__
+        except ImportError:
+            return "unknown"
+
+    def should_check_for_updates(self) -> bool:
+        """Determine if we should check for updates.
+
+        Returns:
+            bool: True if we should check for updates, False otherwise
+        """
+        # Check environment variables for opt-out
+        if os.getenv("RXIV_NO_UPDATE_CHECK", "").lower() in ("1", "true", "yes"):
+            return False
+
+        if os.getenv("NO_UPDATE_NOTIFIER", ""):
+            return False
+
+        # If no cache directory available, disable update checking
+        if not self.cache_dir:
+            return False
+
+        # Check configuration (will be implemented when config integration is added)
+        try:
+            from ..cli.config import config
+
+            if not config.get("general.check_updates", True):
+                return False
+        except (ImportError, AttributeError):
+            # Config not available or check_updates setting not set
+            pass
+
+        # Check if enough time has passed since last check
+        cache_data = self._load_cache()
+        if cache_data:
+            last_check = datetime.fromisoformat(cache_data.get("last_check", ""))
+            if datetime.now() - last_check < self.check_interval:
+                return False
+
+        return True
+
+    def _load_cache(self) -> dict | None:
+        """Load cached update information.
+
+        Returns:
+            Dict or None: Cached data if available and valid
+        """
+        if not self.cache_file:
+            return None
+
+        try:
+            if self.cache_file.exists():
+                with open(self.cache_file, encoding="utf-8") as f:
+                    return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            pass
+        return None
+
+    def _save_cache(self, data: dict) -> None:
+        """Save update information to cache.
+
+        Args:
+            data: Data to cache
+        """
+        if not self.cache_file:
+            return  # Caching disabled
+
+        try:
+            with open(self.cache_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+        except OSError:
+            pass  # Ignore cache write failures
+
+    def _fetch_latest_version(self) -> str | None:
+        """Fetch the latest version from PyPI.
+
+        Returns:
+            str or None: Latest version if available
+        """
+        try:
+            with urlopen(self.pypi_url, timeout=5) as response:
+                data = json.loads(response.read().decode())
+                return data["info"]["version"]
+        except (URLError, HTTPError, json.JSONDecodeError, KeyError):
+            return None
+
+    def _compare_versions(self, current: str, latest: str) -> bool:
+        """Compare two version strings.
+
+        Args:
+            current: Current version string
+            latest: Latest version string
+
+        Returns:
+            bool: True if latest is newer than current
+        """
+        if pkg_version is None:
+            # Fallback to simple string comparison if packaging not available
+            return latest != current
+
+        try:
+            return pkg_version.parse(latest) > pkg_version.parse(current)
+        except pkg_version.InvalidVersion:
+            # Fallback to string comparison for invalid versions
+            return latest != current
+
+    def check_for_updates_async(self) -> None:
+        """Check for updates in a background thread."""
+        if not self.should_check_for_updates():
+            return
+
+        def _check():
+            self._check_and_cache_update()
+
+        # Run check in background thread to avoid blocking CLI
+        thread = threading.Thread(target=_check, daemon=True)
+        thread.start()
+
+    def _check_and_cache_update(self) -> None:
+        """Check for updates and cache the result."""
+        # Try Homebrew first if installed via Homebrew
+        install_method = detect_install_method()
+        if install_method == "homebrew":
+            brew_result = check_homebrew_update(self.current_version)
+            if brew_result is not None:
+                has_update, latest_version = brew_result
+                now = datetime.now()
+                cache_data = {
+                    "last_check": now.isoformat(),
+                    "latest_version": latest_version,
+                    "current_version": self.current_version,
+                    "update_available": has_update,
+                }
+                self._save_cache(cache_data)
+                return
+
+        # Fall back to PyPI for all other methods
+        latest_version = self._fetch_latest_version()
+        now = datetime.now()
+
+        cache_data = {
+            "last_check": now.isoformat(),
+            "latest_version": latest_version,
+            "current_version": self.current_version,
+            "update_available": False,
+        }
+
+        if latest_version and self.current_version != "unknown":
+            cache_data["update_available"] = self._compare_versions(self.current_version, latest_version)
+
+        self._save_cache(cache_data)
+
+    def get_update_notification(self) -> str | None:
+        """Get update notification message if an update is available.
+
+        Returns:
+            str or None: Notification message if update available
+        """
+        cache_data = self._load_cache()
+        if not cache_data or not cache_data.get("update_available"):
+            return None
+
+        # Always use the current runtime version, not cached version
+        current = self.current_version
+        latest = cache_data.get("latest_version", "unknown")
+
+        if current == "unknown" or latest == "unknown":
+            return None
+
+        # Don't show notification if versions are the same
+        if current == latest:
+            return None
+
+        # Detect installation method and get appropriate upgrade command
+        install_method = detect_install_method()
+        upgrade_cmd = get_upgrade_command(install_method)
+        install_name = get_friendly_install_name(install_method)
+
+        # Build the update message with rich formatting
+        content_lines = []
+
+        # Version update line with gradient colors
+        content_lines.append(
+            f"[bold cyan]{self.package_name}[/bold cyan] "
+            f"[dim]v{current}[/dim] [bold yellow]→[/bold yellow] [bold green]v{latest}[/bold green]"
+        )
+        content_lines.append("")
+
+        # Try to fetch and add changelog summary
+        changelog_summary = self._get_changelog_summary(current, latest)
+        if changelog_summary:
+            content_lines.append(changelog_summary)
+            content_lines.append("")
+
+        # Installation info with color
+        content_lines.append(f"[bold]Installed via:[/bold] [cyan]{install_name}[/cyan]")
+        content_lines.append(f"[bold]Upgrade:[/bold] [yellow]{upgrade_cmd}[/yellow]")
+        content_lines.append("")
+        content_lines.append(
+            f"[dim]📖 Full details: https://github.com/henriqueslab/rxiv-maker/releases/tag/v{latest}[/dim]"
+        )
+
+        message_text = "\n".join(content_lines)
+        return message_text
+
+    def _get_changelog_summary(self, current: str, latest: str) -> str | None:
+        """Fetch and format changelog summary for version range.
+
+        Args:
+            current: Current version
+            latest: Latest version
+
+        Returns:
+            Formatted changelog summary or None if unavailable
+        """
+        # Check if we have a cached changelog summary
+        cache_data = self._load_cache()
+        changelog_cache_key = f"changelog_{current}_{latest}"
+
+        if cache_data and changelog_cache_key in cache_data:
+            return cache_data[changelog_cache_key]
+
+        # Fetch changelog summary (with highlights_per_version=3 for brief summary)
+        summary, error = fetch_and_format_changelog(
+            current_version=current,
+            latest_version=latest,
+            highlights_per_version=3,
+        )
+
+        # Cache the result (even if None/error, to avoid repeated failed attempts)
+        if cache_data:
+            cache_data[changelog_cache_key] = summary
+            self._save_cache(cache_data)
+
+        if error:
+            # Log debug info but don't show error to user
+            # Gracefully degrade to basic notification
+            return None
+
+        return summary
+
+    def show_update_notification(self) -> None:
+        """Show update notification if available."""
+        notification = self.get_update_notification()
+        if notification:
+            try:
+                # Create a colorful panel for the update notification
+                panel = Panel(
+                    notification,
+                    title="[bold magenta]📦 Update Available[/bold magenta]",
+                    title_align="left",
+                    border_style="bright_blue",
+                    padding=(1, 2),
+                )
+                console.print()
+                console.print(panel)
+            except Exception:
+                # Fallback to safe print for environments with encoding issues
+                safe_print(f"\n📦 Update Available\n{notification}")
+
+    def force_check(self) -> tuple[bool, str | None]:
+        """Force an immediate update check.
+
+        Returns:
+            Tuple[bool, Optional[str]]: (update_available, latest_version)
+        """
+        latest_version = self._fetch_latest_version()
+
+        if not latest_version:
+            return False, None
+
+        if self.current_version == "unknown":
+            return False, latest_version
+
+        update_available = self._compare_versions(self.current_version, latest_version)
+
+        # Update cache with forced check
+        cache_data = {
+            "last_check": datetime.now().isoformat(),
+            "latest_version": latest_version,
+            "current_version": self.current_version,
+            "update_available": update_available,
+        }
+        self._save_cache(cache_data)
+
+        return update_available, latest_version
+
+
+# Global instance for easy access
+_update_checker = None
+
+
+def get_update_checker() -> UpdateChecker:
+    """Get the global update checker instance."""
+    global _update_checker
+    if _update_checker is None:
+        _update_checker = UpdateChecker()
+    return _update_checker
+
+
+def check_for_updates_async() -> None:
+    """Convenience function to check for updates asynchronously."""
+    checker = get_update_checker()
+    checker.check_for_updates_async()
+
+
+def show_update_notification() -> None:
+    """Convenience function to show update notification if available."""
+    checker = get_update_checker()
+    checker.show_update_notification()
+
+
+def force_update_check() -> tuple[bool, str | None]:
+    """Convenience function to force an update check.
+
+    Returns:
+        Tuple[bool, Optional[str]]: (update_available, latest_version)
+    """
+    checker = get_update_checker()
+    return checker.force_check()
