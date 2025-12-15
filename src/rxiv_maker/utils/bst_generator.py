@@ -50,12 +50,29 @@ def generate_bst_file(format_type: str, output_dir: Path) -> Path:
     format_string = BST_FORMAT_MAP[format_type]
 
     # Find the template .bst file in the package
-    # The template is located at src/tex/style/rxiv_maker_style.bst
-    package_root = Path(__file__).parent.parent.parent
-    template_path = package_root / "tex" / "style" / "rxiv_maker_style.bst"
+    # Try multiple locations for development and installed configurations
+    possible_template_paths = [
+        # Installed package location (site-packages/rxiv_maker/tex/style/)
+        Path(__file__).parent.parent / "tex" / "style" / "rxiv_maker_style.bst",
+        # Development location (src/tex/style/)
+        Path(__file__).parent.parent.parent / "tex" / "style" / "rxiv_maker_style.bst",
+        # Alternative development location
+        Path(__file__).parent.parent.parent.parent / "src" / "tex" / "style" / "rxiv_maker_style.bst",
+    ]
 
-    if not template_path.exists():
-        raise FileNotFoundError(f"Template .bst file not found at: {template_path}")
+    template_path = None
+    for path in possible_template_paths:
+        if path.exists():
+            template_path = path
+            break
+
+    if template_path is None:
+        searched_paths = "\n".join(f"  - {p}" for p in possible_template_paths)
+        raise FileNotFoundError(
+            f"Template .bst file not found.\n"
+            f"Searched locations:\n{searched_paths}\n"
+            f"This may indicate a corrupted installation."
+        )
 
     # Read the template file
     try:
