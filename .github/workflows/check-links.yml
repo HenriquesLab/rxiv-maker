@@ -36,7 +36,7 @@ jobs:
             --timeout 20
             --accept 200,204,206,301,302,307,308,429
             --header "accept: text/html"
-            '**.md'
+            '**/*.md'
 
           # Fail the action on broken links
           fail: true
