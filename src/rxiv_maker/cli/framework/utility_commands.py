@@ -422,9 +422,11 @@ class VersionCommand(BaseCommand):
         if check_updates:
             self.console.print("🔍 Checking for updates...", style="blue")
             try:
-                from rxiv_maker.utils.update_checker import force_update_check
+                from henriqueslab_updater import force_update_check
 
-                update_available, latest_version = force_update_check()
+                update_available, latest_version = force_update_check(
+                    package_name="rxiv-maker", current_version=__version__
+                )
 
                 if update_available:
                     self.console.print(f"📦 Update available: {__version__} → {latest_version}", style="green")

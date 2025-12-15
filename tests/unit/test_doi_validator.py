@@ -772,33 +772,17 @@ class TestNetworkOperationTimeouts(unittest.TestCase):
     def test_update_checker_timeout(self, mock_get):
         """Test update checker handles timeouts."""
         import requests
-
-        from rxiv_maker.utils.update_checker import force_update_check
+        from henriqueslab_updater import force_update_check
 
         # Simulate timeout
         mock_get.side_effect = requests.exceptions.Timeout("PyPI timeout")
 
         # Should handle timeout gracefully and return False
-        has_update, _ = force_update_check()
+        has_update, _ = force_update_check(package_name="rxiv-maker", current_version="0.0.1")
         self.assertFalse(has_update)
 
-    @patch("urllib.request.urlopen")
-    def test_network_check_with_timeout(self, mock_urlopen):
-        """Test network connectivity check with timeout."""
-        from urllib.error import URLError
-
-        # Simulate timeout
-        mock_urlopen.side_effect = URLError(TimeoutError("Network timeout"))
-
-        # Should handle gracefully
-        try:
-            from rxiv_maker.utils.update_checker import has_internet_connection
-
-            result = has_internet_connection()
-            self.assertFalse(result)
-        except Exception:
-            # If function doesn't exist, that's OK - just testing the pattern
-            pass
+    # Note: test_network_check_with_timeout removed as henriqueslab_updater
+    # handles network checks internally and doesn't expose has_internet_connection()
 
 
 if __name__ == "__main__":
