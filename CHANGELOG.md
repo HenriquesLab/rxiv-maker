@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.3] - 2025-12-15
+
+### Fixed
+- **BibTeX Style Template Resolution**: Fixed `.bst` template file path resolution in `bst_generator.py`
+  - Corrected path traversal to properly locate template files in both installed and development environments
+  - Added fallback locations for robust template detection
+  - Eliminates "Template .bst file not found" warnings during PDF generation with custom bibliography formats
+  - Improved error messages to show all searched locations when template is not found
+
 ## [1.16.2] - 2025-12-15
 
 ### Changed
