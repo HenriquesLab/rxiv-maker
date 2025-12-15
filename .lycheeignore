@@ -27,3 +27,7 @@ https://doi.org/10.1234
 
 # Private repositories (if any)
 # Add private repo URLs if needed
+
+# Local files not tracked in git (gitignored)
+file:///*/CLAUDE.md
+file:///*/RELEASING.md
