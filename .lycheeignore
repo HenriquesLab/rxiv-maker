@@ -1,0 +1,59 @@
+# Lychee link checker ignore patterns
+# These patterns are excluded from link checking
+
+# Social media (often blocks automated checks)
+https://linkedin.com
+https://twitter.com
+https://x.com
+
+# localhost and local development URLs
+http://localhost
+http://127.0.0.1
+
+# Placeholder URLs in examples
+https://example.com
+https://your-repo-url
+https://github.com/user/repo
+
+# URLs that require authentication
+https://github.com/settings
+
+# Known temporary unavailability (remove when fixed)
+# Add specific URLs here if they're temporarily down
+
+# Example DOIs in documentation (not real)
+https://doi.org/10.XXXX
+https://doi.org/10.1234
+https://doi.org/%7BDOI%7D
+
+# DOI links that may return 403 (rate limiting or bot detection)
+https://doi.org/10.1101
+https://doi.org/10.64898
+
+# Private repositories (if any)
+https://github.com/HenriquesLab/website-rxiv-maker
+
+# Discussions not enabled on repository
+https://github.com/henriqueslab/rxiv-maker/discussions
+https://github.com/HenriquesLab/rxiv-maker/discussions
+
+# Website pages that don't exist yet
+https://rxiv-maker.henriqueslab.org/getting-started/citations-tutorial/
+https://rxiv-maker.henriqueslab.org/guides/citations-and-references/
+
+# Docker Hub blocks automated checkers
+https://hub.docker.com
+
+# Local files not tracked in git (gitignored)
+# Using relative paths that lychee can match
+CLAUDE.md
+RELEASING.md
+CI-LOCAL-TESTING.md
+
+# Missing doc files (referenced but not created yet)
+docs/configuration.md
+docs/citation-syntax.md
+docs/bibliography.md
+
+# Test fixture files (may not always exist)
+tests/fixtures/FIGURES/Fig4.png

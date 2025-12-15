@@ -8,7 +8,7 @@ signatures.
 
 import os
 import shutil
-import subprocess
+import subprocess  # nosec B404
 from pathlib import Path
 
 
@@ -103,7 +103,10 @@ def generate_enhanced_index(docs_dir, successful_modules):
                 f.write(f"## {category.capitalize()} Modules\n\n")
                 for module in sorted(modules):
                     module_name = str(module).replace("/", ".")
-                    file_name = str(module).replace("/", "_") + ".md"
+                    # lazydocs generates files with just the basename + .md
+                    from pathlib import Path as ModPath
+
+                    file_name = ModPath(str(module)).name + ".md"
                     f.write(f"- [{module_name}]({file_name})\n")
                 f.write("\n")
 
@@ -216,7 +219,7 @@ def generate_api_docs(project_root: Path | None = None) -> bool:
                     "--no-watermark",
                     "--remove-package-prefix",
                     "--src-base-url",
-                    "https://github.com/henriqueslab/rxiv-maker/blob/main/src",
+                    "https://github.com/henriqueslab/rxiv-maker/blob/main",
                 ]
 
                 subprocess.run(

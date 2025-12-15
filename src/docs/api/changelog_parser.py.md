@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/changelog_parser.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/changelog_parser.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `changelog_parser.py`
 Parse and extract information from CHANGELOG.md. 
@@ -14,15 +14,15 @@ This module provides functionality to fetch, parse, and format changelog entries
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/changelog_parser.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/changelog_parser.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `fetch_changelog`
 
 ```python
-def fetch_changelog(
+fetch_changelog(
     url: str = 'https://raw.githubusercontent.com/HenriquesLab/rxiv-maker/main/CHANGELOG.md',
     timeout: int = 5
-) -> str
+) → str
 ```
 
 Fetch CHANGELOG.md content from URL. 
@@ -49,12 +49,12 @@ Fetch CHANGELOG.md content from URL.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/changelog_parser.py#L67"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/changelog_parser.py#L67"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `parse_version_entry`
 
 ```python
-def parse_version_entry(content: str, version: str) -> Optional[ChangelogEntry]: ...
+parse_version_entry(content: str, version: str) → Optional[ChangelogEntry]
 ```
 
 Parse a specific version's changelog entry. 
@@ -74,12 +74,12 @@ Parse a specific version's changelog entry.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/changelog_parser.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/changelog_parser.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `parse_sections`
 
 ```python
-def parse_sections(content: str) -> Dict[str, List[str]]: ...
+parse_sections(content: str) → Dict[str, List[str]]
 ```
 
 Parse changelog sections (Added, Changed, Fixed, etc.). 
@@ -98,15 +98,15 @@ Parse changelog sections (Added, Changed, Fixed, etc.).
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/changelog_parser.py#L153"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/changelog_parser.py#L153"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `extract_highlights`
 
 ```python
-def extract_highlights(
+extract_highlights(
     entry: ChangelogEntry,
     limit: int = 3
-) -> List[Tuple[str, str]]
+) → List[Tuple[str, str]]
 ```
 
 Extract the most important highlights from a changelog entry. 
@@ -128,12 +128,12 @@ Prioritizes: Added > Changed > Fixed > Others
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/changelog_parser.py#L203"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/changelog_parser.py#L203"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `detect_breaking_changes`
 
 ```python
-def detect_breaking_changes(entry: ChangelogEntry) -> List[str]: ...
+detect_breaking_changes(entry: ChangelogEntry) → List[str]
 ```
 
 Detect breaking changes in a changelog entry. 
@@ -152,12 +152,12 @@ Detect breaking changes in a changelog entry.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/changelog_parser.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/changelog_parser.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_versions_between`
 
 ```python
-def get_versions_between(content: str, current: str, latest: str) -> List[str]: ...
+get_versions_between(content: str, current: str, latest: str) → List[str]
 ```
 
 Get all versions between current and latest (inclusive of latest). 
@@ -178,16 +178,16 @@ Get all versions between current and latest (inclusive of latest).
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/changelog_parser.py#L270"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/changelog_parser.py#L270"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `format_summary`
 
 ```python
-def format_summary(
+format_summary(
     entries: List[ChangelogEntry],
     show_breaking: bool = True,
     highlights_per_version: int = 3
-) -> str
+) → str
 ```
 
 Format changelog entries for terminal display with rich markup. 
@@ -208,17 +208,17 @@ Format changelog entries for terminal display with rich markup.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/changelog_parser.py#L323"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/changelog_parser.py#L323"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `fetch_and_format_changelog`
 
 ```python
-def fetch_and_format_changelog(
+fetch_and_format_changelog(
     current_version: str,
     latest_version: str,
     changelog_url: str = 'https://raw.githubusercontent.com/HenriquesLab/rxiv-maker/main/CHANGELOG.md',
     highlights_per_version: int = 3
-) -> Tuple[Optional[str], Optional[str]]
+) → Tuple[Optional[str], Optional[str]]
 ```
 
 Fetch changelog and format summary for version range. 

@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/email_encoder.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/email_encoder.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `email_encoder.py`
 Email encoding/decoding utilities for Rxiv-Maker. 
@@ -10,12 +10,12 @@ This module handles the encoding of email addresses to base64 for privacy in YAM
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/email_encoder.py#L12"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/email_encoder.py#L12"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `encode_email`
 
 ```python
-def encode_email(email): ...
+encode_email(email)
 ```
 
 Encode an email address to base64. 
@@ -41,12 +41,12 @@ Encode an email address to base64.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/email_encoder.py#L39"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/email_encoder.py#L39"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `decode_email`
 
 ```python
-def decode_email(encoded_email): ...
+decode_email(encoded_email)
 ```
 
 Decode a base64 encoded email address. 
@@ -72,12 +72,12 @@ Decode a base64 encoded email address.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/email_encoder.py#L70"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/email_encoder.py#L70"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `process_author_emails`
 
 ```python
-def process_author_emails(authors): ...
+process_author_emails(authors)
 ```
 
 Process author list to decode any base64 encoded emails. 
@@ -99,12 +99,12 @@ This function looks for 'email64' fields in author entries and converts them to 
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/email_encoder.py#L120"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/email_encoder.py#L120"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `encode_author_emails`
 
 ```python
-def encode_author_emails(authors): ...
+encode_author_emails(authors)
 ```
 
 Process author list to encode emails to base64. 

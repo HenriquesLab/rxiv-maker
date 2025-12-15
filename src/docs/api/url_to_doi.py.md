@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/url_to_doi.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/url_to_doi.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `url_to_doi.py`
 Utility functions for extracting DOIs from URLs. 
@@ -8,12 +8,12 @@ Utility functions for extracting DOIs from URLs.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/url_to_doi.py#L8"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/url_to_doi.py#L8"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `extract_doi_from_url`
 
 ```python
-def extract_doi_from_url(url: str) -> Optional[str]: ...
+extract_doi_from_url(url: str) → Optional[str]
 ```
 
 Extract DOI from a URL. 
@@ -50,12 +50,12 @@ This function handles various URL formats from different publishers and converts
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/url_to_doi.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/url_to_doi.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `normalize_doi_input`
 
 ```python
-def normalize_doi_input(input_str: str) -> str: ...
+normalize_doi_input(input_str: str) → str
 ```
 
 Normalize input that could be either a DOI or URL containing a DOI. 

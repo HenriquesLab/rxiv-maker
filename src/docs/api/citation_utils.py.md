@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/citation_utils.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/citation_utils.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `citation_utils.py`
 Citation handling utilities for Rxiv-Maker. 
@@ -11,12 +11,12 @@ Citation handling utilities for Rxiv-Maker.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/citation_utils.py#L21"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/citation_utils.py#L21"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `extract_existing_citation`
 
 ```python
-def extract_existing_citation(bib_content: str) -> Optional[Tuple[str, int, int]]: ...
+extract_existing_citation(bib_content: str) → Optional[Tuple[str, int, int]]
 ```
 
 Extract existing rxiv-maker citation from bibliography content. 
@@ -35,12 +35,12 @@ Extract existing rxiv-maker citation from bibliography content.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/citation_utils.py#L39"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/citation_utils.py#L39"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `is_citation_outdated`
 
 ```python
-def is_citation_outdated(existing_citation: str) -> bool: ...
+is_citation_outdated(existing_citation: str) → bool
 ```
 
 Check if the existing citation is outdated compared to canonical version. 
@@ -59,12 +59,12 @@ Check if the existing citation is outdated compared to canonical version.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/citation_utils.py#L64"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/citation_utils.py#L64"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `inject_rxiv_citation`
 
 ```python
-def inject_rxiv_citation(yaml_metadata: dict[str, Any]) -> None: ...
+inject_rxiv_citation(yaml_metadata: dict[str, Any]) → None
 ```
 
 Inject Rxiv-Maker citation into bibliography if acknowledge_rxiv_maker is true. 

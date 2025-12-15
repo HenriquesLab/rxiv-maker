@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/github.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/github.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `github.py`
 GitHub integration utilities for rxiv-maker repository management. 
@@ -10,12 +10,12 @@ This module provides GitHub CLI (gh) integration for creating, cloning, and mana
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/github.py#L24"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/github.py#L24"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `validate_github_name`
 
 ```python
-def validate_github_name(name: str, name_type: str = 'name') -> None: ...
+validate_github_name(name: str, name_type: str = 'name') → None
 ```
 
 Validate GitHub organization or repository name. 
@@ -38,12 +38,12 @@ GitHub names (orgs and repos) can only contain alphanumeric characters and hyphe
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/github.py#L62"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/github.py#L62"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_gh_cli_installed`
 
 ```python
-def check_gh_cli_installed() -> bool: ...
+check_gh_cli_installed() → bool
 ```
 
 Check if GitHub CLI (gh) is installed. 
@@ -56,12 +56,12 @@ Check if GitHub CLI (gh) is installed.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/github.py#L71"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/github.py#L71"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_gh_auth`
 
 ```python
-def check_gh_auth() -> bool: ...
+check_gh_auth() → bool
 ```
 
 Check if user is authenticated with GitHub CLI. 
@@ -74,12 +74,12 @@ Check if user is authenticated with GitHub CLI.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/github.py#L93"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/github.py#L93"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_git_installed`
 
 ```python
-def check_git_installed() -> bool: ...
+check_git_installed() → bool
 ```
 
 Check if git is installed. 
@@ -92,12 +92,12 @@ Check if git is installed.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/github.py#L102"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/github.py#L102"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_github_repo_exists`
 
 ```python
-def check_github_repo_exists(org: str, repo_name: str) -> bool: ...
+check_github_repo_exists(org: str, repo_name: str) → bool
 ```
 
 Check if a GitHub repository exists. 
@@ -124,12 +124,12 @@ Check if a GitHub repository exists.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/github.py#L141"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/github.py#L141"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_github_repo`
 
 ```python
-def create_github_repo(org: str, repo_name: str, visibility: str = 'public') -> str: ...
+create_github_repo(org: str, repo_name: str, visibility: str = 'public') → str
 ```
 
 Create a new GitHub repository. 
@@ -157,12 +157,12 @@ Create a new GitHub repository.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/github.py#L224"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/github.py#L224"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `clone_github_repo`
 
 ```python
-def clone_github_repo(org: str, repo_name: str, target_path: Path) -> None: ...
+clone_github_repo(org: str, repo_name: str, target_path: Path) → None
 ```
 
 Clone a GitHub repository. 
@@ -185,12 +185,12 @@ Clone a GitHub repository.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/github.py#L273"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/github.py#L273"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `list_github_repos`
 
 ```python
-def list_github_repos(org: str, pattern: str = 'manuscript-') -> List[Dict[str, str]]: ...
+list_github_repos(org: str, pattern: str = 'manuscript-') → List[Dict[str, str]]
 ```
 
 List GitHub repositories matching a pattern. 
@@ -217,16 +217,16 @@ List GitHub repositories matching a pattern.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/github.py#L328"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/github.py#L328"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `setup_git_remote`
 
 ```python
-def setup_git_remote(
+setup_git_remote(
     repo_path: Path,
     remote_url: str,
     remote_name: str = 'origin'
-) -> None
+) → None
 ```
 
 Add a git remote to a repository. 
@@ -248,16 +248,16 @@ Add a git remote to a repository.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/github.py#L383"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/github.py#L383"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `push_to_remote`
 
 ```python
-def push_to_remote(
+push_to_remote(
     repo_path: Path,
     branch: str = 'main',
     remote_name: str = 'origin'
-) -> None
+) → None
 ```
 
 Push commits to remote repository. 
@@ -279,12 +279,12 @@ Push commits to remote repository.
 
 ---
 
-<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/src/rxiv_maker/utils/github.py#L422"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/henriqueslab/rxiv-maker/blob/main/src/rxiv_maker/utils/github.py#L422"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_github_orgs`
 
 ```python
-def get_github_orgs() -> List[str]: ...
+get_github_orgs() → List[str]
 ```
 
 Get list of GitHub organizations the user has access to. 
