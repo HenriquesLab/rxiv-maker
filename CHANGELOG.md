@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.1] - 2025-12-15
+
+### Changed
+- **Update Checker Modernization**: Migrated to `henriqueslab-updater` package for centralized update checking
+  - Removed internal update_checker.py, install_detector.py, homebrew_checker.py, and changelog_parser.py
+  - Now uses `henriqueslab-updater>=1.0.0` with RichNotifier and ChangelogPlugin
+  - Enhanced update notifications with changelog highlights (up to 3 per version)
+  - Maintains same user experience with improved code maintainability
+  - Reduces code duplication across HenriquesLab packages
+
+### Dependencies
+- Added `henriqueslab-updater>=1.0.0` dependency
+
+## [1.16.0] - 2025-12-14
+
+### Added
+- Added support for visual figure diffs in `track-changes` command by correctly separating tag and current figure paths.
+
 ## [1.15.9] - 2025-12-09
 
 ### Added
