@@ -124,7 +124,7 @@ rxiv pdf
 - CrossRef/DataCite DOI validation and metadata fetching
 
 
-> 📖 **Learn more**: [10-Minute Tutorial](https://rxiv-maker.henriqueslab.org/getting-started/citations-tutorial/) | [Complete Guide](https://rxiv-maker.henriqueslab.org/guides/citations-and-references/)
+> 📖 **Learn more**: [Citation Syntax Reference](https://rxiv-maker.henriqueslab.org/getting-started/quick-reference/#citations--references) | [Complete User Guide](https://rxiv-maker.henriqueslab.org/guides/)
 
 ### 🔧 **Developer Experience**
 - Modern CLI with rich output and progress bars
