@@ -13,7 +13,7 @@ This file provides developer shortcuts for testing rxiv-maker functionality.
 **🔗 [rxiv-maker.henriqueslab.org/getting-started/first-manuscript](https://rxiv-maker.henriqueslab.org/getting-started/first-manuscript/)**
 
 The website guide includes:
-- Step-by-step walkthrough (5 minutes)
+- Step-by-step walkthrough
 - Sample content and examples
 - Troubleshooting tips
 - Next steps and learning path

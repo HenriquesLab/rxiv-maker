@@ -897,10 +897,12 @@ class BuildManager:
                             verbose=self.verbose,
                         )
                         success = tracker.generate_change_tracked_pdf()
-                        
+
                         if self.performance_tracker:
-                            self.performance_tracker.end_operation("complete_build", metadata={"result": "success" if success else "failure"})
-                        
+                            self.performance_tracker.end_operation(
+                                "complete_build", metadata={"result": "success" if success else "failure"}
+                            )
+
                         op.add_metadata("build_successful", success)
                         op.add_metadata("track_changes", True)
                         return success

@@ -314,7 +314,7 @@ def get_latest_stats():
 {{py:exec
 from data_updater import update_arxiv_data, get_latest_stats
 
-# Uncomment to fetch fresh data (takes ~30 seconds):
+# Uncomment to fetch fresh data:
 # update_arxiv_data()
 
 # Get current statistics

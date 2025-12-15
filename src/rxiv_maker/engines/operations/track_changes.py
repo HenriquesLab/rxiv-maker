@@ -499,7 +499,7 @@ class TrackChangesManager:
             # Copy tag figures to output/Figures_tag
             tag_figures_src = target_manuscript_dir / "FIGURES"
             tag_figures_dst = self.output_dir / "Figures_tag"
-            
+
             if tag_figures_src.exists():
                 if tag_figures_dst.exists():
                     shutil.rmtree(tag_figures_dst)

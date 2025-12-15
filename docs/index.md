@@ -5,7 +5,7 @@ Write scientific preprints in Markdown. Generate publication-ready PDFs.
 ## Getting Started
 
 1. **[Installation](installation.md)** - Install Rxiv-Maker and dependencies
-2. **[First Manuscript](first-manuscript.md)** - Create your first PDF in 5 minutes
+2. **[First Manuscript](first-manuscript.md)** - Create your first PDF
 3. **[User Guide](user_guide.md)** - Complete features and workflows
 
 ## Core Features

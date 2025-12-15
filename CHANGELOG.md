@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.16.1] - 2025-12-15
+## [1.16.0] - 2025-12-14
 
 ### Changed
 - **Update Checker Modernization**: Migrated to `henriqueslab-updater` package for centralized update checking
@@ -19,11 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Dependencies
 - Added `henriqueslab-updater>=1.0.0` dependency
-
-## [1.16.0] - 2025-12-14
-
-### Added
-- Added support for visual figure diffs in `track-changes` command by correctly separating tag and current figure paths.
 
 ## [1.15.9] - 2025-12-09
 
