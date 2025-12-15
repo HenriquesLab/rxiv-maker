@@ -1,9 +1,10 @@
 """Upgrade command for rxiv-maker CLI."""
 
+import subprocess  # nosec B404 - needed for executing upgrade commands
 import sys
 
 import click
-from henriqueslab_updater import execute_upgrade, force_update_check
+from henriqueslab_updater import force_update_check
 from rich.console import Console
 
 from ... import __version__
@@ -119,11 +120,32 @@ def upgrade(ctx: click.Context, yes: bool, check_only: bool) -> None:
             console.print("❌ Upgrade cancelled", style="yellow")
             sys.exit(0)
 
-    # Execute upgrade command using centralized executor
+    # Execute upgrade command directly
     console.print("\n🚀 Upgrading rxiv-maker...", style="blue")
     console.print(f"   Running: {upgrade_cmd}", style="dim")
 
-    success, error = execute_upgrade(upgrade_cmd, show_output=True, timeout=300)
+    try:
+        # Split command for safer execution without shell=True
+        import shlex
+
+        cmd_parts = shlex.split(upgrade_cmd)
+        result = subprocess.run(
+            cmd_parts,
+            check=True,
+            capture_output=False,
+            timeout=300,
+        )  # nosec B603 - upgrade_cmd comes from trusted install_detector module
+        success = result.returncode == 0
+        error = None
+    except subprocess.CalledProcessError as e:
+        success = False
+        error = f"Command failed with exit code {e.returncode}"
+    except subprocess.TimeoutExpired:
+        success = False
+        error = "Upgrade timed out after 5 minutes"
+    except Exception as e:
+        success = False
+        error = str(e)
 
     if success:
         console.print("\n✅ Upgrade completed successfully!", style="green")
