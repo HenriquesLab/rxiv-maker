@@ -187,13 +187,16 @@ class CheckInstallationCommand(BaseCommand):
         """Show next steps after dependency check."""
         if not missing_results:
             self.console.print("\n🚀 Next steps:", style="blue")
-            self.console.print("  • Test PDF generation: rxiv pdf ../manuscript-rxiv-maker/MANUSCRIPT")
+            self.console.print("  • Get example manuscript: rxiv get-rxiv-preprint")
+            self.console.print("  • Navigate to manuscript: cd manuscript-rxiv-maker/MANUSCRIPT")
+            self.console.print("  • Generate PDF: rxiv pdf")
             return
 
         self.console.print("\n🔧 Next steps:", style="blue")
         self.console.print("  • Install missing dependencies shown above")
         self.console.print("  • Re-run: rxiv check-installation")
-        self.console.print("  • Test PDF generation: rxiv pdf ../manuscript-rxiv-maker/MANUSCRIPT")
+        self.console.print("  • Get example manuscript: rxiv get-rxiv-preprint")
+        self.console.print("  • Generate PDF: cd manuscript-rxiv-maker/MANUSCRIPT && rxiv pdf")
 
     def _show_basic_results(self, results: dict) -> None:
         """Show basic installation results."""
