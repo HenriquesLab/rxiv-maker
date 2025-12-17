@@ -250,31 +250,95 @@ class FigureGenerator:
                         response = get_with_retry(mermaid_url, max_attempts=5, timeout=30)
                     else:
                         response = requests.get(mermaid_url, timeout=30)
-                except Exception:
-                    # If retry fails, fall back to placeholder
-                    return self._create_fallback_mermaid_diagram(input_file, output_file)
+                except requests.Timeout:
+                    # Timeout - likely diagram too complex or service slow
+                    return self._create_fallback_mermaid_diagram(
+                        input_file, output_file, reason="timeout", details="30s timeout exceeded"
+                    )
+                except requests.HTTPError as e:
+                    # HTTP error (400, 503, etc.) - extract status code
+                    status_code = e.response.status_code if hasattr(e, "response") else "unknown"
+                    if status_code == 400:
+                        details = "syntax error or diagram too complex"
+                    elif status_code == 503:
+                        details = "service timeout (diagram too complex)"
+                    else:
+                        details = f"HTTP {status_code}"
+                    return self._create_fallback_mermaid_diagram(
+                        input_file, output_file, reason="http_error", details=details
+                    )
+                except Exception as e:
+                    # Network or other error during request
+                    error_msg = str(e)
+                    # Try to extract status code from error message if it's there
+                    if "400" in error_msg:
+                        details = "syntax error or diagram too complex"
+                    elif "503" in error_msg:
+                        details = "service timeout (diagram too complex)"
+                    elif "429" in error_msg:
+                        details = "rate limit exceeded"
+                    else:
+                        details = "connection error"
+                    return self._create_fallback_mermaid_diagram(
+                        input_file, output_file, reason="network_error", details=details
+                    )
 
                 if response.status_code == 200:
                     with open(output_file, "wb") as f:
                         f.write(response.content)
                     return True
                 else:
-                    print(f"mermaid.ink service returned status {response.status_code}")
-                    print(
-                        "💡 Tip: If this is a syntax error, check your Mermaid diagram at https://www.mermaidchart.com/"
+                    # Determine failure reason from status code
+                    if response.status_code == 400:
+                        reason_msg = "syntax error or diagram too complex"
+                    elif response.status_code == 429:
+                        reason_msg = "rate limit exceeded"
+                    elif response.status_code == 503:
+                        reason_msg = "service timeout (diagram too complex)"
+                    elif response.status_code >= 500:
+                        reason_msg = "service unavailable"
+                    else:
+                        reason_msg = f"HTTP {response.status_code}"
+
+                    return self._create_fallback_mermaid_diagram(
+                        input_file, output_file, reason="http_error", details=reason_msg
                     )
-                    return self._create_fallback_mermaid_diagram(input_file, output_file)
             else:
-                print("requests library not available for Mermaid generation")
-                return self._create_fallback_mermaid_diagram(input_file, output_file)
+                return self._create_fallback_mermaid_diagram(
+                    input_file, output_file, reason="no_requests_lib", details="requests library not available"
+                )
 
         except Exception as e:
-            print(f"mermaid.ink service error: {e}")
-            print("💡 Tip: Check your Mermaid diagram syntax at https://www.mermaidchart.com/")
-            return self._create_fallback_mermaid_diagram(input_file, output_file)
+            return self._create_fallback_mermaid_diagram(
+                input_file, output_file, reason="unexpected_error", details=str(e)
+            )
 
-    def _create_fallback_mermaid_diagram(self, input_file: Path, output_file: Path) -> bool:
-        """Create a fallback placeholder diagram when Mermaid service is unavailable."""
+    def _create_fallback_mermaid_diagram(
+        self, input_file: Path, output_file: Path, reason: str = "unknown", details: str = "service unavailable"
+    ) -> bool:
+        """Create a fallback placeholder diagram when Mermaid service is unavailable.
+
+        Args:
+            input_file: Source mermaid file
+            output_file: Output file path
+            reason: Failure reason category (timeout, http_error, network_error, etc.)
+            details: Detailed error message
+
+        Returns:
+            True if placeholder was created successfully
+        """
+        # Generate user-friendly warning message based on failure reason
+        if reason == "timeout":
+            warning_msg = f"diagram rendering timed out ({details})"
+        elif reason == "http_error":
+            warning_msg = f"{details}"
+        elif reason == "network_error":
+            warning_msg = f"network error: {details}"
+        elif reason == "no_requests_lib":
+            warning_msg = "requests library not available"
+        else:
+            warning_msg = f"{details}"
+
         try:
             if self.output_format.lower() == "svg":
                 # Create SVG placeholder
@@ -294,6 +358,7 @@ class FigureGenerator:
 </svg>"""
                 with open(output_file, "w", encoding="utf-8") as f:
                     f.write(svg_content)
+                print(f"⚠️  Created placeholder SVG for {input_file.name} ({warning_msg})")
                 return True
             elif self.output_format.lower() == "png":
                 # Create minimal PNG placeholder (1x1 white pixel)
@@ -303,7 +368,7 @@ class FigureGenerator:
                 )
                 with open(output_file, "wb") as f:
                     f.write(png_data)
-                print(f"⚠️  Created placeholder PNG for {input_file.name} (mermaid.ink unavailable)")
+                print(f"⚠️  Created placeholder PNG for {input_file.name} ({warning_msg})")
                 return True
             elif self.output_format.lower() == "pdf":
                 # Create minimal PDF placeholder
@@ -374,19 +439,82 @@ startxref
 """
                 with open(output_file, "w", encoding="utf-8") as f:
                     f.write(pdf_content)
-                print(f"⚠️  Created placeholder PDF for {input_file.name} (mermaid.ink unavailable)")
+                print(f"⚠️  Created placeholder PDF for {input_file.name} ({warning_msg})")
                 return True
             else:
                 # Fallback for other formats - create text file with warning
                 with open(output_file.with_suffix(".txt"), "w", encoding="utf-8") as f:
                     f.write(f"Mermaid diagram placeholder for {input_file.name}\n")
-                    f.write("mermaid.ink service unavailable - diagram generation failed\n")
+                    f.write(f"Reason: {warning_msg}\n")
                     f.write("\n💡 Tip: Check your Mermaid diagram syntax at https://www.mermaidchart.com/\n")
-                print(f"⚠️  Created text placeholder for {input_file.name} (mermaid.ink unavailable)")
+                print(f"⚠️  Created text placeholder for {input_file.name} ({warning_msg})")
                 return True
         except Exception as e:
             print(f"Failed to create fallback diagram: {e}")
             return False
+
+    def validate_mermaid_diagram(self, mmd_file: Path) -> tuple[bool, str, dict]:
+        """Validate a Mermaid diagram for mermaid.ink compatibility.
+
+        Args:
+            mmd_file: Path to .mmd file
+
+        Returns:
+            Tuple of (is_valid, message, details_dict)
+            - is_valid: True if diagram will render successfully
+            - message: Human-readable validation result
+            - details_dict: Dict with complexity metrics and suggestions
+        """
+        if not requests:
+            return False, "requests library not available for validation", {}
+
+        try:
+            # Read and analyze the diagram
+            with open(mmd_file, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+
+            # Analyze complexity
+            details = {
+                "file_size": len(content),
+                "line_count": content.count("\n") + 1,
+                "subgraph_count": content.count("subgraph"),
+                "node_count": len(re.findall(r"\w+\[", content)),
+                "class_def_count": content.count("classDef"),
+            }
+
+            # Check for known problematic patterns
+            warnings = []
+            if details["file_size"] > 2500:
+                warnings.append(f"Large diagram ({details['file_size']} chars, limit ~2500)")
+            if details["subgraph_count"] > 5:
+                warnings.append(f"Many subgraphs ({details['subgraph_count']}, limit ~5)")
+            if details["class_def_count"] > 6:
+                warnings.append(f"Heavy styling ({details['class_def_count']} classes, limit ~6)")
+
+            # Test with mermaid.ink
+            encoded = base64.b64encode(content.encode("utf-8")).decode("ascii")
+            test_url = f"https://mermaid.ink/svg/{encoded}"  # Use SVG for faster testing
+
+            try:
+                response = requests.get(test_url, timeout=10)
+                if response.status_code == 200:
+                    if warnings:
+                        msg = f"✓ Valid (but complex: {', '.join(warnings)})"
+                        return True, msg, details
+                    return True, "✓ Valid and will render successfully", details
+                elif response.status_code == 400:
+                    return False, "✗ Syntax error or too complex for mermaid.ink", details
+                elif response.status_code == 503:
+                    return False, "✗ Diagram too complex (service timeout)", details
+                else:
+                    return False, f"✗ HTTP {response.status_code}", details
+            except requests.Timeout:
+                return False, "✗ Validation timeout (diagram likely too complex)", details
+            except Exception as e:
+                return False, f"✗ Network error: {str(e)[:50]}", details
+
+        except Exception as e:
+            return False, f"✗ Error reading diagram: {str(e)[:50]}", {}
 
     def _execute_python_files(self, progress=None, task_id=None, use_rich: bool = True):
         """Execute Python scripts to generate figures using local Python."""
