@@ -854,8 +854,17 @@ class SyntaxValidator(BaseValidator):
         heading_texts = {}
         previous_level = 0
 
-        for line_num, line in enumerate(lines, 1):
-            match = heading_pattern.match(line)
+        # Protect code blocks (including {{py:exec}}) from being treated as headings
+        content = "\n".join(lines)
+        protected_content = self._protect_validation_sensitive_content(content)
+        protected_lines = protected_content.split("\n")
+
+        for line_num, (original_line, protected_line) in enumerate(zip(lines, protected_lines, strict=False), 1):
+            # Skip protected code blocks (they might contain # comments)
+            if "XXPROTECTEDCODEXX" in protected_line:
+                continue
+
+            match = heading_pattern.match(protected_line)
             if match:
                 hashes = match.group(1)
                 heading_text = match.group(2).strip()
@@ -904,7 +913,7 @@ class SyntaxValidator(BaseValidator):
                             f"Heading hierarchy skips levels: {previous_level} → {level}",
                             file_path=file_path,
                             line_number=line_num,
-                            context=line.strip(),
+                            context=original_line.strip(),
                             suggestion=(
                                 f"Consider using {'#' * (previous_level + 1)} instead of {'#' * level}.\n"
                                 f"   Skipping heading levels (e.g., ## to ####) makes document structure unclear."
@@ -927,7 +936,7 @@ class SyntaxValidator(BaseValidator):
                                 f"Standard section '{heading_text}' using level 1 heading (#)",
                                 file_path=file_path,
                                 line_number=line_num,
-                                context=line.strip(),
+                                context=original_line.strip(),
                                 suggestion=(
                                     f"Change to level 2 heading: ## {heading_text}\n"
                                     f"   Level 1 (#) should only be used for the document title.\n"
