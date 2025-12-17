@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.6] - 2025-12-17
+
+### Fixed
+
+- **Check Installation Guidance**: Improved fresh install experience
+  - Updated `rxiv check-installation` next steps to guide users on downloading example manuscript
+  - Replaced assumption of existing manuscript with `rxiv get-rxiv-preprint` guidance
+  - Enhanced user onboarding for first-time users
+
+- **Mermaid Diagram Error Messages**: Enhanced error reporting for figure generation
+  - Distinguished between timeout, HTTP errors (400/503/429), and network failures
+  - Shows specific error reasons: "syntax error or diagram too complex" for 400, "service timeout" for 503
+  - Improved diagnostic information for troubleshooting diagram rendering issues
+
+- **Heading Validation False Positives**: Fixed validator treating Python comments as markdown headings
+  - Modified `_validate_headings()` to exclude `{{py:exec}}` code blocks from heading analysis
+  - Prevents false positives where Python `# comments` were flagged as H1 markdown headings
+  - Applies existing content protection mechanism to heading validation
+
 ## [1.16.5] - 2025-12-15
 
 ### Fixed
