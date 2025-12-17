@@ -52,7 +52,6 @@ output.txt
 *~
 
 # Claude Code configuration
-!CLAUDE.md
 .claude
 
 # Byte-compiled / optimized / DLL files
@@ -316,6 +315,7 @@ GEMINI.md
 !CHANGELOG.md
 !CONTRIBUTING.md
 !CODE_OF_CONDUCT.md
+!CLAUDE.md
 !docs/**/*.md
 !EXAMPLE_MANUSCRIPT/**/*.md
 !MANUSCRIPT/**/*.md
@@ -330,7 +330,6 @@ GEMINI.md
 todo*.md
 DOCKER_ACCELERATION.md
 GEMINI.md
-CLAUDE.md
 output.md
 
 # Temporary analysis files
