@@ -196,7 +196,7 @@ rxiv config set-repo-editor EDITOR   # Set default editor
 - **Parent directory**: All manuscript repos stored in configured parent directory
 
 ### Integration with PythonRepoMaster
-Repository management is designed to work with [PythonRepoMaster](../PythonRepoMaster) alignment checks. See `../PythonRepoMaster/config/repo_relationships.yaml` for relationship definitions.
+Repository management is designed to work with PythonRepoMaster alignment checks. See `PythonRepoMaster/config/repo_relationships.yaml` for relationship definitions if using the PythonRepoMaster tool locally.
 
 ## Engine Configuration
 
