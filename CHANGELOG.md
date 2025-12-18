@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.7] - 2025-12-18
+
+### Changed
+
+- **Upgrade Workflow Centralization**: Migrated to henriqueslab-updater v1.2.0 for centralized upgrade management
+  - Simplified upgrade command implementation from 165 to 53 lines (68% reduction)
+  - Created custom `RxivUpgradeNotifier` implementing `UpgradeNotifier` protocol
+  - Integrated with existing changelog parser for rich change summaries with breaking change highlighting
+  - Maintains backward compatibility with all existing flags (`--yes`, `--check-only`)
+  - Reduces code duplication across HenriquesLab CLI tools
+  - Provides consistent upgrade UX across all HenriquesLab projects
+
 ## [1.16.6] - 2025-12-17
 
 ### Fixed
