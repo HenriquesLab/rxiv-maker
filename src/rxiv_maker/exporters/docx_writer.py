@@ -404,6 +404,19 @@ class DocxWriter:
         paragraph_format = paragraph.paragraph_format
         paragraph_format.left_indent = Pt(36)  # Indent code blocks
 
+    def _check_poppler_availability(self) -> bool:
+        """Check if poppler is available for PDF conversion.
+
+        Returns:
+            True if poppler is available, False otherwise
+        """
+        from ..core.managers.dependency_manager import DependencyStatus, get_dependency_manager
+
+        manager = get_dependency_manager()
+        result = manager.check_dependency("pdftoppm")
+
+        return result.status == DependencyStatus.AVAILABLE
+
     def _add_figure(self, doc: Document, section: Dict[str, Any], figure_number: int = None):
         """Add figure to document with caption.
 
@@ -425,9 +438,31 @@ class DocxWriter:
         if not figure_path.exists():
             logger.warning(f"Figure file not found: {figure_path}")
         elif figure_path.suffix.lower() == ".pdf":
-            # Convert PDF to image
-            img_source = convert_pdf_to_image(figure_path)
-            logger.debug(f"  PDF converted: {img_source is not None}")
+            # Check poppler availability first (cached after first check)
+            if not hasattr(self, "_poppler_checked"):
+                self._poppler_available = self._check_poppler_availability()
+                self._poppler_checked = True
+
+                if not self._poppler_available:
+                    logger.warning(
+                        "Poppler not installed - PDF figures will be shown as placeholders. "
+                        "Install with: brew install poppler (macOS) or sudo apt install poppler-utils (Linux)"
+                    )
+
+            if self._poppler_available:
+                # Convert PDF to image
+                try:
+                    from pdf2image.exceptions import PDFInfoNotInstalledError, PopplerNotInstalledError
+
+                    img_source = convert_pdf_to_image(figure_path)
+                    logger.debug(f"  PDF converted: {img_source is not None}")
+                except (PopplerNotInstalledError, PDFInfoNotInstalledError) as e:
+                    logger.error(f"Poppler utilities not found: {e}")
+                    img_source = None
+                    # Update our cached status
+                    self._poppler_available = False
+            else:
+                img_source = None
         elif figure_path.suffix.lower() in [".png", ".jpg", ".jpeg", ".gif", ".bmp"]:
             # Use image file directly
             img_source = str(figure_path)

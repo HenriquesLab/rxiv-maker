@@ -81,21 +81,41 @@ def generate_bst_file(format_type: str, output_dir: Path) -> Path:
     except IOError as e:
         raise IOError(f"Failed to read template .bst file: {e}") from e
 
-    # Replace the format string on line 222
+    # Replace the format string in the format.names function (line ~222)
     # The line looks like: s nameptr "{ff~}{vv~}{ll}{, jj}" format.name$ 't :=
-    # We need to replace the format string in quotes
-    pattern = r'(s\s+nameptr\s+")([^"]+)("\s+format\.name\$)'
+    # We need to replace ONLY in format.names, NOT in format.full.names
+    #
+    # Strategy: Match the FUNCTION {format.names} block specifically
+    # This ensures we don't modify format.full.names which is used for citation labels
+    #
+    # Pattern explanation:
+    # 1. Match "FUNCTION {format.names}" to find the start of the function
+    # 2. Use non-greedy match (.*?) to capture until we find our target line
+    # 3. Match and capture the format string in quotes
+    # 4. This avoids matching format.full.names which appears later in the file
+    pattern = r'(FUNCTION\s+\{format\.names\}.*?s\s+nameptr\s+")([^"]+)("\s+format\.name\$)'
     replacement = rf"\1{format_string}\3"
 
-    modified_content, num_subs = re.subn(pattern, replacement, bst_content)
+    modified_content, num_subs = re.subn(pattern, replacement, bst_content, flags=re.DOTALL)
 
     if num_subs == 0:
-        logger.warning("No format string pattern found in .bst file. The .bst file may have been modified.")
+        logger.warning(
+            "No format string pattern found in format.names function. "
+            "The .bst file structure may have changed. "
+            "Citation formatting may not work as expected."
+        )
         # Still write the file but log a warning
     elif num_subs > 1:
-        logger.warning(
-            f"Found {num_subs} format string patterns in .bst file. Expected only 1. All have been replaced."
+        # This should never happen with the new pattern, but keep the check
+        logger.error(
+            f"Found {num_subs} matches in .bst file. Expected exactly 1. "
+            "This indicates an unexpected .bst file structure. "
+            "Please report this issue."
         )
+        raise ValueError(f"Unexpected .bst file structure: found {num_subs} matches for format.names, expected 1")
+    else:
+        # Success - exactly one match
+        logger.debug(f"Successfully updated format.names function with format '{format_type}'")
 
     # Create output directory if it doesn't exist
     output_dir = Path(output_dir)

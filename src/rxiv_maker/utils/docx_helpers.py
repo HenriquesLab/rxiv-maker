@@ -8,6 +8,7 @@ This module provides utility functions for DOCX generation including:
 """
 
 import io
+import logging
 import re
 from pathlib import Path
 from typing import Optional
@@ -17,6 +18,8 @@ from PIL import Image
 from rxiv_maker.utils.author_name_formatter import format_author_list
 
 from ..utils.bibliography_parser import BibEntry
+
+logger = logging.getLogger(__name__)
 
 
 def remove_yaml_header(content: str) -> str:
@@ -395,6 +398,12 @@ def convert_pdf_to_image(pdf_path: Path, dpi: int = 150, max_width: int = 6) -> 
     """
     try:
         from pdf2image import convert_from_path
+        from pdf2image.exceptions import (
+            PDFInfoNotInstalledError,
+            PDFPageCountError,
+            PDFSyntaxError,
+            PopplerNotInstalledError,
+        )
 
         # Convert first page of PDF to image
         images = convert_from_path(
@@ -427,7 +436,19 @@ def convert_pdf_to_image(pdf_path: Path, dpi: int = 150, max_width: int = 6) -> 
 
         return img_bytes
 
+    except (PopplerNotInstalledError, PDFInfoNotInstalledError):
+        # Re-raise poppler errors so caller can handle them appropriately
+        # (e.g., CLI can offer to install poppler)
+        raise
+    except PDFSyntaxError as e:
+        # PDF file is malformed/corrupted
+        logger.warning(f"PDF file appears to be corrupted: {pdf_path.name} - {e}")
+        return None
+    except PDFPageCountError as e:
+        # Issue getting page count
+        logger.warning(f"Could not determine PDF page count for {pdf_path.name}: {e}")
+        return None
     except Exception as e:
-        # Log error but don't crash - return None to indicate failure
-        print(f"Warning: Failed to convert PDF to image: {e}")
+        # Other unexpected errors
+        logger.warning(f"Failed to convert {pdf_path.name} to image: {e}")
         return None
