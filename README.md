@@ -281,9 +281,14 @@ rxiv config --non-interactive  # Show current settings
 
 ### Maintenance
 ```bash
-rxiv upgrade               # Upgrade to latest version
-rxiv changelog             # View changelog and release notes
-rxiv changelog --recent 5  # View last 5 versions
+# Upgrade commands (auto-detects Homebrew, pip, uv, pipx)
+rxiv upgrade                 # Interactive upgrade with confirmation
+rxiv upgrade --yes           # Upgrade without confirmation
+rxiv upgrade --check-only    # Check for updates only
+
+# Changelog and version information
+rxiv changelog               # View changelog and release notes
+rxiv changelog --recent 5    # View last 5 versions
 ```
 
 > **💡 CI/Automation Note:** All interactive commands support non-interactive mode or configuration files for use in CI/CD pipelines and automated workflows. Use `--non-interactive` flag or configure via `~/.rxiv-maker/config` for non-TTY environments.

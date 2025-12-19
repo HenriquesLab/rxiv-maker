@@ -196,7 +196,7 @@ rxiv config set-repo-editor EDITOR   # Set default editor
 - **Parent directory**: All manuscript repos stored in configured parent directory
 
 ### Integration with PythonRepoMaster
-Repository management is designed to work with [PythonRepoMaster](../PythonRepoMaster) alignment checks. See `../PythonRepoMaster/config/repo_relationships.yaml` for relationship definitions.
+Repository management is designed to work with PythonRepoMaster alignment checks. See `PythonRepoMaster/config/repo_relationships.yaml` for relationship definitions if using the PythonRepoMaster tool locally.
 
 ## Engine Configuration
 
@@ -272,10 +272,33 @@ pytest tests/integration/test_article_generation.py -v  # Test article generatio
 ### Performance and Cleanup
 ```bash
 # Cleanup commands
-nox -s clean                 # Clean nox environments  
+nox -s clean                 # Clean nox environments
 nox -s clean_all            # Aggressive cleanup
 nox -s disk_usage          # Check disk usage
 ```
+
+### Upgrade Workflow
+
+rxiv-maker uses henriqueslab-updater v1.2.0 for centralized upgrade management:
+
+**Upgrade commands:**
+```bash
+rxiv upgrade                # Interactive upgrade with confirmation
+rxiv upgrade --yes          # Skip confirmation
+rxiv upgrade --check-only   # Check for updates only
+```
+
+**Implementation:**
+- Custom `RxivUpgradeNotifier` in `src/rxiv_maker/utils/rich_upgrade_notifier.py`
+- Integrates with changelog parser for rich change summaries
+- Handles Homebrew, pip, uv, pipx, dev installations automatically
+- Shows breaking changes prominently in red
+- Uses centralized `handle_upgrade_workflow()` from henriqueslab-updater
+
+**Files:**
+- `src/rxiv_maker/cli/commands/upgrade.py` - Simplified upgrade command (~53 lines)
+- `src/rxiv_maker/utils/rich_upgrade_notifier.py` - Custom notifier adapter
+- `src/rxiv_maker/utils/install_detector.py` - Installation method detection
 
 ## Project Context
 
