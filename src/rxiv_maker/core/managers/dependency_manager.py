@@ -487,6 +487,18 @@ class DependencyManager:
                 )
             )
 
+        # Poppler utilities for PDF to image conversion (DOCX export)
+        self.register_dependency(
+            DependencySpec(
+                name="pdftoppm",
+                type=DependencyType.SYSTEM_BINARY,
+                required=False,  # Only needed for DOCX export with PDF figures
+                alternatives=["pdfinfo"],
+                contexts={"docx", "export"},
+                install_hint="macOS: brew install poppler | Linux: sudo apt install poppler-utils",
+            )
+        )
+
     def register_dependency(self, spec: DependencySpec) -> None:
         """Register a dependency specification.
 

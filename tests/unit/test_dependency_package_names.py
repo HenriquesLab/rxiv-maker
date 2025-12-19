@@ -90,3 +90,40 @@ class TestDependencyPackageNames:
 
         # yaml should be installed for the test suite
         assert result.status == DependencyStatus.AVAILABLE, "yaml package should be available for test suite"
+
+    def test_poppler_registered_as_system_binary(self):
+        """Test that poppler is registered as a system binary dependency."""
+        dm = get_dependency_manager()
+
+        # Should have 'pdftoppm' registered (main poppler utility)
+        assert "pdftoppm" in dm.dependencies
+        assert dm.dependencies["pdftoppm"].type == DependencyType.SYSTEM_BINARY
+
+        # Should be optional (not required)
+        assert not dm.dependencies["pdftoppm"].required
+
+        # Should have docx/export context
+        assert "docx" in dm.dependencies["pdftoppm"].contexts
+
+    def test_poppler_has_alternatives(self):
+        """Test that poppler has pdfinfo as an alternative check."""
+        dm = get_dependency_manager()
+
+        # pdftoppm should have pdfinfo as an alternative
+        assert "pdfinfo" in dm.dependencies["pdftoppm"].alternatives
+
+    def test_poppler_dependency_check(self):
+        """Test that poppler dependency can be checked."""
+        dm = get_dependency_manager()
+
+        # Check the pdftoppm dependency
+        result = dm.check_dependency("pdftoppm")
+
+        # Should be able to check it (whether installed or not)
+        assert result is not None
+        assert result.spec.name == "pdftoppm"
+
+        # Status should be either AVAILABLE or MISSING (not UNKNOWN)
+        from rxiv_maker.core.managers.dependency_manager import DependencyStatus
+
+        assert result.status in [DependencyStatus.AVAILABLE, DependencyStatus.MISSING]

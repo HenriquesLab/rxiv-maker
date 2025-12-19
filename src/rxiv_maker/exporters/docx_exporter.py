@@ -318,9 +318,13 @@ class DocxExporter:
             # Get DOI from entry
             doi = entry.fields.get("doi")
 
-            # TODO: Implement DOI resolution if requested and DOI missing
-            # if self.resolve_dois and not doi:
-            #     doi = self._resolve_doi_from_metadata(entry)
+            # Attempt DOI resolution if requested and DOI missing
+            if self.resolve_dois and not doi:
+                doi = self._resolve_doi_from_metadata(entry)
+                if doi:
+                    # Store in entry for this export
+                    entry.fields["doi"] = doi
+                    logger.info(f"Resolved DOI for {key}: {doi}")
 
             # Format entry (full format for DOCX bibliography)
             formatted = format_bibliography_entry(entry, doi, slim=False, author_format=self.author_format)
@@ -331,6 +335,99 @@ class DocxExporter:
             logger.warning(f"{len(missing_keys)} citation(s) not found in bibliography: {', '.join(missing_keys)}")
 
         return bibliography
+
+    def _resolve_doi_from_metadata(self, entry) -> str | None:
+        """Resolve DOI from entry metadata using CrossRef API.
+
+        Args:
+            entry: Bibliography entry to resolve DOI for
+
+        Returns:
+            Resolved DOI if found, None otherwise
+        """
+        import requests
+
+        # Try to construct a search query from available fields
+        title = entry.fields.get("title", "").strip()
+        year = entry.fields.get("year", "").strip()
+
+        if not title:
+            logger.debug(f"Cannot resolve DOI for {entry.key}: no title")
+            return None
+
+        # Clean title for search (remove LaTeX commands, braces, etc.)
+        search_title = self._clean_title_for_search(title)
+
+        # Try CrossRef search API
+        try:
+            url = "https://api.crossref.org/works"
+            params = {
+                "query.title": search_title,
+                "rows": 5,  # Get top 5 results
+            }
+
+            response = requests.get(url, params=params, timeout=10)
+
+            if response.status_code == 200:
+                data = response.json()
+                items = data.get("message", {}).get("items", [])
+
+                # Find best match
+                for item in items:
+                    item_title = item.get("title", [""])[0].lower()
+                    search_title_lower = search_title.lower()
+
+                    # Simple similarity check - titles should be very similar
+                    if item_title and (search_title_lower in item_title or item_title in search_title_lower):
+                        # Verify year matches if available
+                        if year:
+                            item_year = item.get("published", {}).get("date-parts", [[None]])[0][0]
+                            if item_year and str(item_year) != year:
+                                continue
+
+                        doi = item.get("DOI")
+                        if doi:
+                            logger.info(f"Resolved DOI for {entry.key}: {doi}")
+                            return doi
+
+            logger.debug(f"Could not resolve DOI for {entry.key} via CrossRef")
+            return None
+
+        except requests.exceptions.Timeout:
+            logger.debug(f"CrossRef API timeout resolving DOI for {entry.key}")
+            return None
+        except requests.exceptions.ConnectionError:
+            logger.debug(f"CrossRef API connection error for {entry.key}")
+            return None
+        except Exception as e:
+            logger.debug(f"Error resolving DOI for {entry.key}: {e}")
+            return None
+
+    def _clean_title_for_search(self, title: str) -> str:
+        """Clean title for CrossRef search by removing LaTeX commands.
+
+        Args:
+            title: Raw title from BibTeX entry
+
+        Returns:
+            Cleaned title suitable for search
+        """
+        import re
+
+        # Remove LaTeX commands
+        title = re.sub(r"\\[a-zA-Z]+\{([^}]*)\}", r"\1", title)  # \textit{foo} -> foo
+        title = re.sub(r"\\[a-zA-Z]+", "", title)  # \LaTeX -> LaTeX
+
+        # Remove braces
+        title = title.replace("{", "").replace("}", "")
+
+        # Remove special characters
+        title = re.sub(r"[^a-zA-Z0-9\s\-]", " ", title)
+
+        # Normalize whitespace
+        title = " ".join(title.split())
+
+        return title.strip()
 
     def _get_metadata(self) -> Dict[str, Any]:
         """Extract metadata for title page.

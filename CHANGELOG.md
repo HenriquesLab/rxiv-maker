@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.8] - 2025-12-19
+
+### Added
+
+- **Automatic Poppler Installation**: Interactive installation prompt for DOCX export on macOS
+  - Detects missing poppler utilities when exporting to DOCX with PDF figures
+  - Offers automatic installation via Homebrew with user confirmation
+  - Shows clear installation instructions for Linux (apt) and other platforms
+  - Gracefully falls back to placeholders when poppler unavailable
+- **DOI Resolution Implementation**: `--resolve-dois` flag now fully functional for DOCX export
+  - Resolves missing DOIs using CrossRef API with intelligent title matching
+  - Cleans LaTeX commands from titles for accurate search results
+  - Validates matches using year information when available
+  - Handles network failures and timeouts gracefully
+  - Logs resolved DOIs for transparency
+- **Poppler Dependency Tracking**: Registered poppler in DependencyManager
+  - Added as system binary dependency with alternatives (pdftoppm, pdfinfo)
+  - Included in `rxiv check-installation` output
+  - Provides platform-specific installation hints
+
+### Fixed
+
+- **BST File Regex Bug**: Corrected bibliography style file generation to only modify `format.names`
+  - Previous regex matched both `format.names` and `format.full.names` functions
+  - Now specifically targets only `format.names` function using DOTALL flag
+  - Prevents corruption of citation labels in natbib
+  - Eliminates warning: "Found 2 format string patterns in .bst file"
+  - Raises error if unexpected matches found (defensive programming)
+- **PDF to Image Conversion**: Improved error handling for missing poppler utilities
+  - Distinguishes between poppler not installed, corrupted PDFs, and other errors
+  - Uses proper logging instead of print statements
+  - Re-raises poppler errors to allow CLI to offer installation
+  - Provides specific error messages for different failure types
+
+### Changed
+
+- **DOCX Export Experience**: Enhanced PDF figure embedding workflow
+  - Pre-flight check detects poppler availability before attempting conversion
+  - Caches poppler status to avoid repeated checks
+  - Shows helpful warnings with installation instructions
+  - PDF figures embed correctly when poppler is installed
+- **Homebrew Formula**: Added poppler as dependency
+  - Users installing via `brew install rxiv-maker` now get poppler automatically
+  - Ensures DOCX export works out of the box for Homebrew users
+
 ## [1.16.7] - 2025-12-18
 
 ### Changed

@@ -1,13 +1,84 @@
 """DOCX export command for rxiv-maker CLI."""
 
+import platform
+import shutil
+import subprocess
+
 import rich_click as click
 from rich.console import Console
 
 from ...core.logging_config import get_logger
+from ...core.managers.dependency_manager import DependencyStatus, get_dependency_manager
 from ...exporters.docx_exporter import DocxExporter
 
 logger = get_logger()
 console = Console()
+
+
+def _check_and_offer_poppler_installation(console: Console, quiet: bool, verbose: bool) -> None:
+    """Check poppler availability and offer automatic installation via brew.
+
+    Args:
+        console: Rich console for output
+        quiet: Whether to suppress output
+        verbose: Whether verbose mode is enabled
+    """
+    # Check if poppler is installed
+    manager = get_dependency_manager()
+    result = manager.check_dependency("pdftoppm")
+
+    if result.status == DependencyStatus.AVAILABLE:
+        if verbose:
+            console.print("[dim]✓ Poppler utilities available[/dim]")
+        return
+
+    # Poppler is missing - offer to install
+    system = platform.system()
+
+    if system == "Darwin" and shutil.which("brew"):
+        # macOS with Homebrew
+        if not quiet:
+            console.print("[yellow]⚠️  Poppler not found[/yellow]")
+            console.print("   Poppler is needed to embed PDF figures in DOCX files.")
+            console.print("   Without it, PDF figures will appear as placeholders.")
+            console.print()
+
+        if click.confirm("   Would you like to install poppler now via Homebrew?", default=True):
+            console.print("[cyan]Installing poppler...[/cyan]")
+            try:
+                result = subprocess.run(
+                    ["brew", "install", "poppler"],
+                    capture_output=True,
+                    text=True,
+                    timeout=300,
+                )
+
+                if result.returncode == 0:
+                    console.print("[green]✅ Poppler installed successfully![/green]")
+                    # Clear dependency cache so it gets re-checked
+                    manager.clear_cache()
+                else:
+                    console.print(f"[red]❌ Installation failed:[/red] {result.stderr}")
+                    console.print("   You can install manually with: brew install poppler")
+            except subprocess.TimeoutExpired:
+                console.print("[red]❌ Installation timed out[/red]")
+            except Exception as e:
+                console.print(f"[red]❌ Installation error:[/red] {e}")
+        else:
+            console.print("   [dim]Skipping poppler installation. PDF figures will show as placeholders.[/dim]")
+
+    elif system == "Linux":
+        # Linux
+        if not quiet:
+            console.print("[yellow]⚠️  Poppler not found[/yellow]")
+            console.print("   Install with: sudo apt install poppler-utils")
+            console.print()
+    else:
+        # Other platforms or brew not available
+        if not quiet:
+            console.print("[yellow]⚠️  Poppler not found[/yellow]")
+            console.print(f"   Install instructions: {result.resolution_hint}")
+            console.print()
 
 
 @click.command(context_settings={"help_option_names": ["-h", "--help"]})
@@ -85,6 +156,9 @@ def docx(
             resolve_dois=resolve_dois,
             include_footnotes=not no_footnotes,
         )
+
+        # Pre-flight check for poppler (if manuscript contains PDF figures)
+        _check_and_offer_poppler_installation(console, quiet, verbose)
 
         # Perform export
         docx_path = exporter.export()
