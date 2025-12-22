@@ -363,10 +363,11 @@ class DocxContentProcessor:
         runs = []
 
         # Find all formatting markers, links, and citations
-        # Pattern to match: <<HIGHLIGHT_YELLOW>>text<</HIGHLIGHT_YELLOW>>, <<XREF:type>>text<</XREF>>, [text](url), **bold**, __underlined__, *italic*, _italic_, ~subscript~, ^superscript^, `code`, $math$, [number]
+        # Pattern to match: <<HIGHLIGHT_YELLOW>>text<</HIGHLIGHT_YELLOW>>, <<XREF:type>>text<</XREF>>, <!-- comment -->, [text](url), **bold**, __underlined__, *italic*, _italic_, ~subscript~, ^superscript^, `code`, $math$, [number]
         pattern = re.compile(
             r"(<<HIGHLIGHT_YELLOW>>([^<]+)<</HIGHLIGHT_YELLOW>>)"  # Yellow highlight (must be first)
             r"|(<<XREF:(\w+)>>([^<]+)<</XREF>>)"  # Cross-reference with type
+            r"|(<!--\s*(.+?)\s*-->)"  # HTML comments (inline)
             r"|(\[([^\]]+)\]\(([^)]+)\))"  # Markdown link [text](url) (before citations)
             r"|(\*\*([^*]+)\*\*)"  # Bold
             r"|(__([^_]+)__)"  # Underline with double underscores (must come before single underscore)
@@ -421,42 +422,38 @@ class DocxContentProcessor:
                         "xref_type": match.group(4),  # Type is in group 4
                     }
                 )
-            elif match.group(6):  # Markdown link [text](url)
+            elif match.group(6):  # Inline HTML comment
+                comment_text = match.group(7).strip()
+                # Skip metadata comments that start with "Note:"
+                if comment_text and not comment_text.startswith("Note:"):
+                    runs.append({"type": "inline_comment", "text": comment_text})
+            elif match.group(8):  # Markdown link [text](url)
                 runs.append(
                     {
                         "type": "hyperlink",
-                        "text": match.group(7),
-                        "url": match.group(8),
+                        "text": match.group(9),
+                        "url": match.group(10),
                     }
                 )
-            elif match.group(9):  # Bold
+            elif match.group(11):  # Bold
                 # Recursively parse inner text for underline/italic/other formatting
-                inner_text = match.group(10)
+                inner_text = match.group(12)
                 inner_runs = self._parse_inline_formatting(inner_text, citation_map)
                 # Add bold to all inner runs
                 for run in inner_runs:
                     if run["type"] == "text":
                         run["bold"] = True
                     runs.append(run)
-            elif match.group(11):  # Underline
+            elif match.group(13):  # Underline
                 # Recursively parse inner text for bold/italic/other formatting
-                inner_text = match.group(12)
+                inner_text = match.group(14)
                 inner_runs = self._parse_inline_formatting(inner_text, citation_map)
                 # Add underline to all inner runs
                 for run in inner_runs:
                     if run["type"] == "text":
                         run["underline"] = True
                     runs.append(run)
-            elif match.group(13):  # Italic with asterisks
-                # Recursively parse inner text for bold/underline/other formatting
-                inner_text = match.group(14)
-                inner_runs = self._parse_inline_formatting(inner_text, citation_map)
-                # Add italic to all inner runs
-                for run in inner_runs:
-                    if run["type"] == "text":
-                        run["italic"] = True
-                    runs.append(run)
-            elif match.group(15):  # Italic with underscores
+            elif match.group(15):  # Italic with asterisks
                 # Recursively parse inner text for bold/underline/other formatting
                 inner_text = match.group(16)
                 inner_runs = self._parse_inline_formatting(inner_text, citation_map)
@@ -465,20 +462,16 @@ class DocxContentProcessor:
                     if run["type"] == "text":
                         run["italic"] = True
                     runs.append(run)
-            elif match.group(17):  # Subscript
-                runs.append(
-                    {
-                        "type": "text",
-                        "text": match.group(18),
-                        "bold": False,
-                        "italic": False,
-                        "underline": False,
-                        "code": False,
-                        "xref": False,
-                        "subscript": True,
-                    }
-                )
-            elif match.group(19):  # Superscript
+            elif match.group(17):  # Italic with underscores
+                # Recursively parse inner text for bold/underline/other formatting
+                inner_text = match.group(18)
+                inner_runs = self._parse_inline_formatting(inner_text, citation_map)
+                # Add italic to all inner runs
+                for run in inner_runs:
+                    if run["type"] == "text":
+                        run["italic"] = True
+                    runs.append(run)
+            elif match.group(19):  # Subscript
                 runs.append(
                     {
                         "type": "text",
@@ -488,10 +481,10 @@ class DocxContentProcessor:
                         "underline": False,
                         "code": False,
                         "xref": False,
-                        "superscript": True,
+                        "subscript": True,
                     }
                 )
-            elif match.group(21):  # Code
+            elif match.group(21):  # Superscript
                 runs.append(
                     {
                         "type": "text",
@@ -499,15 +492,28 @@ class DocxContentProcessor:
                         "bold": False,
                         "italic": False,
                         "underline": False,
+                        "code": False,
+                        "xref": False,
+                        "superscript": True,
+                    }
+                )
+            elif match.group(23):  # Code
+                runs.append(
+                    {
+                        "type": "text",
+                        "text": match.group(24),
+                        "bold": False,
+                        "italic": False,
+                        "underline": False,
                         "code": True,
                         "xref": False,
                     }
                 )
-            elif match.group(23):  # Inline math
-                runs.append({"type": "inline_equation", "latex": match.group(24)})
-            elif match.group(25):  # Citation
+            elif match.group(25):  # Inline math
+                runs.append({"type": "inline_equation", "latex": match.group(26)})
+            elif match.group(27):  # Citation
                 # Parse citation numbers (may be multiple: [1, 2, 3])
-                numbers_str = match.group(26)
+                numbers_str = match.group(28)
                 numbers = [int(n.strip()) for n in numbers_str.split(",")]
                 for num in numbers:
                     runs.append({"type": "citation", "number": num})

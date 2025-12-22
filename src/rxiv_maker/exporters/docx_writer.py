@@ -26,12 +26,12 @@ class DocxWriter:
 
     # Color mapping for different reference types
     XREF_COLORS = {
-        "fig": WD_COLOR_INDEX.BRIGHT_GREEN,  # Figures
-        "sfig": WD_COLOR_INDEX.GREEN,  # Supplementary figures
-        "stable": WD_COLOR_INDEX.TEAL,  # Supplementary tables
+        "fig": WD_COLOR_INDEX.BRIGHT_GREEN,  # Figures (bright green)
+        "sfig": WD_COLOR_INDEX.TURQUOISE,  # Supplementary figures (lighter than GREEN)
+        "stable": WD_COLOR_INDEX.PINK,  # Supplementary tables (lighter than TEAL)
         "table": WD_COLOR_INDEX.BLUE,  # Main tables
         "eq": WD_COLOR_INDEX.VIOLET,  # Equations
-        "snote": WD_COLOR_INDEX.PINK,  # Supplementary notes
+        "snote": WD_COLOR_INDEX.TEAL,  # Supplementary notes (moved from PINK)
         "cite": WD_COLOR_INDEX.YELLOW,  # Citations
     }
 
@@ -369,6 +369,14 @@ class DocxWriter:
             latex_content = run_data.get("latex", "")
             self._add_inline_equation(paragraph, latex_content)
 
+        elif run_data["type"] == "inline_comment":
+            # Add inline comment with gray highlighting
+            comment_text = run_data["text"]
+            run = paragraph.add_run(f"[Comment: {comment_text}]")
+            run.font.highlight_color = WD_COLOR_INDEX.GRAY_25
+            run.italic = True
+            run.font.size = Pt(10)
+
         elif run_data["type"] == "citation":
             cite_num = run_data["number"]
             # Add citation as [NN] inline with yellow highlighting
@@ -425,6 +433,13 @@ class DocxWriter:
                     # Add inline equation as Office Math
                     latex_content = run_data.get("latex", "")
                     self._add_inline_equation(paragraph, latex_content)
+                elif run_data["type"] == "inline_comment":
+                    # Add inline comment with gray highlighting
+                    comment_text = run_data["text"]
+                    run = paragraph.add_run(f"[Comment: {comment_text}]")
+                    run.font.highlight_color = WD_COLOR_INDEX.GRAY_25
+                    run.italic = True
+                    run.font.size = Pt(10)
                 elif run_data["type"] == "citation":
                     cite_num = run_data["number"]
                     run = paragraph.add_run(f"[{cite_num}]")
@@ -452,7 +467,7 @@ class DocxWriter:
         paragraph_format.left_indent = Pt(36)  # Indent code blocks
 
     def _add_comment(self, doc: Document, section: Dict[str, Any]):
-        """Add comment to document with turquoise highlighting.
+        """Add comment to document with gray highlighting.
 
         Args:
             doc: Document object
@@ -461,9 +476,9 @@ class DocxWriter:
         comment_text = section["text"]
         paragraph = doc.add_paragraph()
 
-        # Add comment text with turquoise highlighting to distinguish from yellow xrefs
+        # Add comment text with light gray highlighting to distinguish from colored xrefs
         run = paragraph.add_run(f"[Comment: {comment_text}]")
-        run.font.highlight_color = WD_COLOR_INDEX.TURQUOISE
+        run.font.highlight_color = WD_COLOR_INDEX.GRAY_25
         run.italic = True
         run.font.size = Pt(10)
 
@@ -623,6 +638,13 @@ class DocxWriter:
                     # Add inline equation as Office Math
                     latex_content = run_data.get("latex", "")
                     self._add_inline_equation(caption_para, latex_content)
+                elif run_data["type"] == "inline_comment":
+                    # Add inline comment with gray highlighting
+                    comment_text = run_data["text"]
+                    run = caption_para.add_run(f"[Comment: {comment_text}]")
+                    run.font.highlight_color = WD_COLOR_INDEX.GRAY_25
+                    run.italic = True
+                    run.font.size = Pt(7)
                 elif run_data["type"] == "citation":
                     cite_num = run_data["number"]
                     run = caption_para.add_run(f"[{cite_num}]")
