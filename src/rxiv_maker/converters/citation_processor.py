@@ -202,9 +202,11 @@ def extract_citations_from_text(text: MarkdownContent) -> list[CitationKey]:
         backtick_patterns.append(match.group(0))
         return f"__BACKTICK_PATTERN_{len(backtick_patterns) - 1}__"
 
-    # Match both single backticks `...` and triple backticks ```...```
-    text_cleaned = re.sub(r"`[^`]+`", protect_backticks, text)
-    text_cleaned = re.sub(r"```.*?```", protect_backticks, text_cleaned, flags=re.DOTALL)
+    # IMPORTANT: Match triple backticks FIRST, then single backticks
+    # This prevents the single-backtick pattern from matching across triple-backtick blocks
+    # (e.g., from a ` before ```latex to the first ` inside the code block)
+    text_cleaned = re.sub(r"```.*?```", protect_backticks, text, flags=re.DOTALL)
+    text_cleaned = re.sub(r"`[^`]+`", protect_backticks, text_cleaned)
 
     # Find bracketed multiple citations
     bracketed_matches = re.findall(r"\[(@[^]]+)\]", text_cleaned)
