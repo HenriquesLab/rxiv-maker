@@ -195,11 +195,10 @@ Results show [1, 2] support."""
         result = processor.parse(markdown, {})
 
         section = result["sections"][0]
-        citation_runs = [r for r in section["runs"] if r["type"] == "citation"]
-        assert len(citation_runs) == 3
-        assert citation_runs[0]["number"] == 1
-        assert citation_runs[1]["number"] == 2
-        assert citation_runs[2]["number"] == 3
+        # Multiple citations are treated as a single yellow-highlighted text run
+        yellow_runs = [r for r in section["runs"] if r.get("highlight_yellow")]
+        assert len(yellow_runs) == 1
+        assert yellow_runs[0]["text"] == "[1, 2, 3]"
 
     def test_parse_preserves_text_order(self):
         """Test that text order is preserved with formatting."""
