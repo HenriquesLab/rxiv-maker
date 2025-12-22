@@ -11,6 +11,26 @@ from typing import Any, Dict, List, Optional
 class DocxContentProcessor:
     """Parses markdown content into structured format for DOCX writing."""
 
+    @staticmethod
+    def _is_metadata_comment(comment_text: str) -> bool:
+        """Check if a comment is metadata/informational and should be skipped.
+
+        Args:
+            comment_text: The comment text to check
+
+        Returns:
+            True if comment should be skipped, False if it should be included
+        """
+        if not comment_text:
+            return True
+
+        # Normalize to lowercase for case-insensitive matching
+        normalized = comment_text.lower().strip()
+
+        # Skip comments that start with common metadata keywords
+        metadata_prefixes = ["note:", "note ", "comment:", "comment "]
+        return any(normalized.startswith(prefix) for prefix in metadata_prefixes)
+
     def parse(self, markdown: str, citation_map: Dict[str, int]) -> Dict[str, Any]:
         """Parse markdown into structured sections for DOCX.
 
@@ -62,8 +82,8 @@ class DocxContentProcessor:
                 if line.strip().endswith("-->"):
                     # Single-line comment
                     comment_text = line.strip()[4:-3].strip()
-                    # Skip metadata comments that start with "Note:"
-                    if comment_text and not comment_text.startswith("Note:"):
+                    # Skip metadata comments (e.g., "note that...", "Comment: ...")
+                    if comment_text and not self._is_metadata_comment(comment_text):
                         sections.append({"type": "comment", "text": comment_text})
                     i += 1
                     continue
@@ -83,8 +103,8 @@ class DocxContentProcessor:
 
                     # Join and add comment
                     comment_text = " ".join(comment_lines).strip()
-                    # Skip metadata comments that start with "Note:"
-                    if comment_text and not comment_text.startswith("Note:"):
+                    # Skip metadata comments (e.g., "note that...", "Comment: ...")
+                    if comment_text and not self._is_metadata_comment(comment_text):
                         sections.append({"type": "comment", "text": comment_text})
                     continue
 
@@ -377,7 +397,7 @@ class DocxContentProcessor:
             r"|(\^([^^]+)\^)"  # Superscript
             r"|(`([^`]+)`)"  # Code
             r"|(\$([^\$]+)\$)"  # Inline math
-            r"|(\[(\d+(?:,\s*\d+)*)\])"  # Citation numbers
+            r"|(\[(\d+(?:[-,]\s*\d+)*)\])"  # Citation numbers (supports both ranges [1-3] and lists [1, 2])
         )
 
         last_end = 0
@@ -424,8 +444,8 @@ class DocxContentProcessor:
                 )
             elif match.group(6):  # Inline HTML comment
                 comment_text = match.group(7).strip()
-                # Skip metadata comments that start with "Note:"
-                if comment_text and not comment_text.startswith("Note:"):
+                # Skip metadata comments (e.g., "note that...", "Comment: ...")
+                if comment_text and not self._is_metadata_comment(comment_text):
                     runs.append({"type": "inline_comment", "text": comment_text})
             elif match.group(8):  # Markdown link [text](url)
                 runs.append(
@@ -512,11 +532,20 @@ class DocxContentProcessor:
             elif match.group(25):  # Inline math
                 runs.append({"type": "inline_equation", "latex": match.group(26)})
             elif match.group(27):  # Citation
-                # Parse citation numbers (may be multiple: [1, 2, 3])
-                numbers_str = match.group(28)
-                numbers = [int(n.strip()) for n in numbers_str.split(",")]
-                for num in numbers:
-                    runs.append({"type": "citation", "number": num})
+                # Keep citation as formatted text with yellow highlighting
+                # The citation mapper has already formatted ranges (e.g., [1-3], [1, 4-6, 8])
+                citation_text = match.group(0)  # Full match including brackets
+                runs.append(
+                    {
+                        "type": "text",
+                        "text": citation_text,
+                        "bold": False,
+                        "italic": False,
+                        "underline": False,
+                        "code": False,
+                        "highlight_yellow": True,  # Highlight citations in yellow
+                    }
+                )
 
             last_end = match.end()
 
@@ -694,7 +723,8 @@ class DocxContentProcessor:
         if i < len(lines):
             caption_line = lines[i].strip()
             # Match {#stable:label} Caption or {#table:label} Caption
-            caption_match = re.match(r"^\{#(stable|table):(\w+)\}\s*(.+)$", caption_line)
+            # Allow hyphens and underscores in label names (e.g., "tool-comparison")
+            caption_match = re.match(r"^\{#(stable|table):([\w-]+)\}\s*(.+)$", caption_line)
             if caption_match:
                 label = f"{caption_match.group(1)}:{caption_match.group(2)}"
                 caption = caption_match.group(3).strip()

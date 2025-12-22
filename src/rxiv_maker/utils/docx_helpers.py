@@ -7,6 +7,7 @@ This module provides utility functions for DOCX generation including:
 - PDF to image conversion
 """
 
+import html
 import io
 import logging
 import re
@@ -201,6 +202,9 @@ def clean_latex_commands(text: str) -> str:
         >>> clean_latex_commands("Griffi{\\'e}")
         'Griffié'
     """
+    # First, decode HTML entities (&#233; -> é, &#225; -> á, &#8230; -> …, etc.)
+    text = html.unescape(text)
+
     # Convert LaTeX accent commands to Unicode
     # Handle both with and without backslashes (BibTeX parser may strip them)
     # Also handle variant forms where backslash is replaced with the literal character
@@ -338,7 +342,21 @@ def clean_latex_commands(text: str) -> str:
     # Remove lone backslashes
     text = re.sub(r"\\(?![a-zA-Z])", "", text)
 
-    return text
+    # Remove braces around single characters or short words (common BibTeX artifact)
+    # This handles cases like {P} or {n} that appear after HTML entity decoding issues
+    text = re.sub(r"\{([A-Za-z]{1,3})\}", r"\1", text)
+
+    # Remove unmatched opening braces at start of words (e.g., "{Sperr" -> "Sperr")
+    text = re.sub(r"\{([A-Za-z])", r"\1", text)
+
+    # Remove unmatched closing braces at end of words (e.g., "Team}" -> "Team")
+    text = re.sub(r"([A-Za-z])\}", r"\1", text)
+
+    # Clean up any remaining empty braces or double spaces
+    text = re.sub(r"\{\}", "", text)
+    text = re.sub(r"\s+", " ", text)
+
+    return text.strip()
 
 
 def truncate_text(text: str, max_length: int = 100, suffix: str = "...") -> str:

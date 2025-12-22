@@ -26,13 +26,13 @@ class DocxWriter:
 
     # Color mapping for different reference types
     XREF_COLORS = {
-        "fig": WD_COLOR_INDEX.BRIGHT_GREEN,  # Figures (bright green)
-        "sfig": WD_COLOR_INDEX.TURQUOISE,  # Supplementary figures (lighter than GREEN)
-        "stable": WD_COLOR_INDEX.PINK,  # Supplementary tables (lighter than TEAL)
+        "fig": WD_COLOR_INDEX.BRIGHT_GREEN,  # Figures (bright green - lighter)
+        "sfig": WD_COLOR_INDEX.TURQUOISE,  # Supplementary figures (turquoise - lighter cyan)
+        "stable": WD_COLOR_INDEX.TURQUOISE,  # Supplementary tables (turquoise - lighter cyan)
         "table": WD_COLOR_INDEX.BLUE,  # Main tables
         "eq": WD_COLOR_INDEX.VIOLET,  # Equations
-        "snote": WD_COLOR_INDEX.TEAL,  # Supplementary notes (moved from PINK)
-        "cite": WD_COLOR_INDEX.YELLOW,  # Citations
+        "snote": WD_COLOR_INDEX.TURQUOISE,  # Supplementary notes (turquoise - lighter cyan)
+        "cite": WD_COLOR_INDEX.YELLOW,  # Citations (yellow)
     }
 
     @staticmethod
@@ -56,6 +56,7 @@ class DocxWriter:
         base_path: Optional[Path] = None,
         metadata: Optional[Dict[str, Any]] = None,
         table_map: Optional[Dict[str, int]] = None,
+        figures_at_end: bool = False,
     ) -> Path:
         """Write DOCX file from structured content.
 
@@ -67,6 +68,7 @@ class DocxWriter:
             base_path: Base path for resolving relative figure paths
             metadata: Document metadata (title, authors, affiliations)
             table_map: Mapping from table labels to numbers (for supplementary tables)
+            figures_at_end: Place main figures at end before SI/bibliography
 
         Returns:
             Path to created DOCX file
@@ -95,20 +97,35 @@ class DocxWriter:
         # Store figure map for use in text processing
         self.figure_map = figure_map
 
-        # Process each section INCLUDING figures inline
+        # Collect main figures if figures_at_end is True
+        collected_main_figures = []
+
+        # Process each section
         figure_counter = 0
         sfigure_counter = 0
         for section in doc_structure["sections"]:
             if section["type"] == "figure":
                 is_supplementary = section.get("is_supplementary", False)
                 if is_supplementary:
+                    # Supplementary figures always go inline (in SI section)
                     sfigure_counter += 1
                     self._add_figure(doc, section, figure_number=sfigure_counter, is_supplementary=True)
                 else:
+                    # Main figures: collect if figures_at_end, otherwise add inline
                     figure_counter += 1
-                    self._add_figure(doc, section, figure_number=figure_counter, is_supplementary=False)
+                    if figures_at_end:
+                        collected_main_figures.append((section, figure_counter))
+                    else:
+                        self._add_figure(doc, section, figure_number=figure_counter, is_supplementary=False)
             else:
                 self._add_section(doc, section, bibliography, include_footnotes)
+
+        # Add collected main figures at the end (before bibliography)
+        if figures_at_end and collected_main_figures:
+            doc.add_page_break()
+            doc.add_heading("Figures", level=1)
+            for section, fig_num in collected_main_figures:
+                self._add_figure(doc, section, figure_number=fig_num, is_supplementary=False)
 
         # Add bibliography section at the end
         if include_footnotes and bibliography:
@@ -124,14 +141,14 @@ class DocxWriter:
                 num_run = para.add_run(f"[{num}] ")
                 num_run.bold = True
 
-                # Add formatted bibliography text (slim format)
+                # Add formatted bibliography text (without DOI - added separately below)
                 para.add_run(bib_entry["formatted"])
 
                 # Add DOI as hyperlink with yellow highlighting if present
                 if bib_entry.get("doi"):
                     doi = bib_entry["doi"]
                     doi_url = f"https://doi.org/{doi}" if not doi.startswith("http") else doi
-                    para.add_run(" ")
+                    para.add_run("\nDOI: ")
                     self._add_hyperlink(para, doi_url, doi_url, highlight=True)
 
                 # Add spacing between entries
@@ -564,22 +581,32 @@ class DocxWriter:
                 max_width = Inches(6.5)  # 8.5 - 2*1
                 max_height = Inches(9)  # 11 - 2*1
 
+                # Add figure centered
+                # Note: add_picture() creates a paragraph automatically, but we need to add it explicitly
+                # to control alignment
+                fig_para = doc.add_paragraph()
+                fig_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
                 # Calculate optimal size maintaining aspect ratio
                 if aspect_ratio > (6.5 / 9):  # Wide image - constrain by width
-                    doc.add_picture(img_source, width=max_width)
+                    run = fig_para.add_run()
+                    run.add_picture(img_source, width=max_width)
                 else:  # Tall image - constrain by height
-                    doc.add_picture(img_source, height=max_height)
+                    run = fig_para.add_run()
+                    run.add_picture(img_source, height=max_height)
 
                 logger.debug(f"Embedded figure: {figure_path} ({img_width}x{img_height})")
             except Exception as e:
                 logger.warning(f"Failed to embed figure {figure_path}: {e}")
-                # Add placeholder text
+                # Add placeholder text (centered)
                 p = doc.add_paragraph()
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 run = p.add_run(f"[Figure: {figure_path.name}]")
                 run.italic = True
         else:
-            # Add placeholder if embedding failed
+            # Add placeholder if embedding failed (centered)
             p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             run = p.add_run(f"[Figure: {figure_path.name}]")
             run.italic = True
             logger.warning(f"Could not embed figure: {figure_path}")

@@ -35,14 +35,14 @@ class CitationMapper:
             'text [1][3-4] more'
         """
 
-        # Pattern 1: Handle adjacent bracketed citations [1][2][3]
+        # Pattern 1: Handle adjacent bracketed citations [1][2][3] or [1] [2] [3]
         def combine_adjacent(match_obj):
-            # Extract all numbers from consecutive brackets
+            # Extract all numbers from consecutive brackets (allowing spaces between)
             numbers = [int(n) for n in re.findall(r"\[(\d+)\]", match_obj.group(0))]
             return CitationMapper._format_number_list(numbers)
 
-        # Find sequences of adjacent bracketed numbers
-        text = re.sub(r"(?:\[\d+\]){2,}", combine_adjacent, text)
+        # Find sequences of adjacent bracketed numbers (with optional spaces between)
+        text = re.sub(r"(?:\[\d+\]\s*){2,}", combine_adjacent, text)
 
         # Pattern 2: Handle comma-separated citations within single brackets [1, 2, 3]
         def combine_comma_separated(match_obj):
