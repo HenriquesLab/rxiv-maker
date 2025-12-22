@@ -151,8 +151,49 @@ class DocxExporter:
         logger.debug(f"Mapped {len(sfig_map)} supplementary figure labels to numbers")
 
         # Find all tables and create mapping (looking for {#stable:label} tags)
-        # Allow hyphens and underscores in label names
-        table_labels = re.findall(r"\{#stable:([\w-]+)\}", markdown_with_numbers)
+        # Priority ordering: caption references (%{#stable:label}) define order, then remaining tables
+        # This ensures PDF and DOCX numbering match when caption references are used
+
+        # First, extract caption references (e.g., %{#stable:parameters}**Title**) to get intended order
+        caption_ref_labels = re.findall(r"^%\{#stable:([\w-]+)\}", markdown_with_numbers, flags=re.MULTILINE)
+
+        # Then find all table labels in the document
+        all_table_labels = re.findall(r"\{#stable:([\w-]+)\}", markdown_with_numbers)
+
+        # Build ordered list: caption refs first (defining order), then any remaining tables
+        table_labels = []
+        seen = set()
+
+        # Add caption reference labels in order (this is the intended order for PDF)
+        for label in caption_ref_labels:
+            if label not in seen:
+                table_labels.append(label)
+                seen.add(label)
+
+        # Add any remaining table labels not in caption refs (for backwards compatibility)
+        tables_without_caption_refs = []
+        for label in all_table_labels:
+            if label not in seen:
+                table_labels.append(label)
+                tables_without_caption_refs.append(label)
+                seen.add(label)
+
+        # Validation: Warn about potential numbering issues
+        if caption_ref_labels and tables_without_caption_refs:
+            logger.warning(
+                f"⚠️  Numbering mismatch risk: Found {len(tables_without_caption_refs)} table(s) "
+                f"without caption references: {', '.join(tables_without_caption_refs)}. "
+                f"These will be numbered after caption-referenced tables, which may differ from PDF ordering."
+            )
+
+        # Validation: Check for caption refs without corresponding tables
+        missing_tables = [label for label in caption_ref_labels if label not in all_table_labels]
+        if missing_tables:
+            logger.warning(
+                f"⚠️  Validation warning: Found {len(missing_tables)} caption reference(s) without "
+                f"corresponding table definitions: {', '.join(missing_tables)}"
+            )
+
         table_map = {label: i + 1 for i, label in enumerate(table_labels)}
 
         # Replace @stable:label with "Supp. Table X" in text
@@ -161,7 +202,9 @@ class DocxExporter:
                 rf"@stable:{label}\b", f"<<XREF>>Supp. Table {num}<</XREF>>", markdown_with_numbers
             )
 
-        logger.debug(f"Mapped {len(table_map)} supplementary table labels to numbers")
+        logger.debug(
+            f"Mapped {len(table_map)} supplementary table labels to numbers (caption refs: {len(caption_ref_labels)})"
+        )
 
         # Find all supplementary notes and create mapping (looking for {#snote:label} tags)
         # Allow hyphens and underscores in label names
@@ -216,6 +259,7 @@ class DocxExporter:
             include_footnotes=self.include_footnotes,
             base_path=self.path_manager.manuscript_path,
             metadata=metadata,
+            table_map=table_map,
         )
         logger.info(f"DOCX exported successfully: {docx_path}")
 

@@ -32,6 +32,7 @@ class DocxWriter:
         include_footnotes: bool = True,
         base_path: Optional[Path] = None,
         metadata: Optional[Dict[str, Any]] = None,
+        table_map: Optional[Dict[str, int]] = None,
     ) -> Path:
         """Write DOCX file from structured content.
 
@@ -42,6 +43,7 @@ class DocxWriter:
             include_footnotes: Whether to add DOI footnotes
             base_path: Base path for resolving relative figure paths
             metadata: Document metadata (title, authors, affiliations)
+            table_map: Mapping from table labels to numbers (for supplementary tables)
 
         Returns:
             Path to created DOCX file
@@ -49,6 +51,7 @@ class DocxWriter:
         self.base_path = base_path or Path.cwd()
         self.bibliography = bibliography
         self.include_footnotes = include_footnotes
+        self.table_map = table_map or {}
         doc = Document()
 
         # Add title and author information if metadata provided
@@ -662,16 +665,28 @@ class DocxWriter:
             # Add small space before caption to separate from table
             caption_para.paragraph_format.space_before = Pt(3)
 
-            # Determine table number from label (e.g., "stable:structural_models" -> "Supp. Table 1")
+            # Determine table number from label using table_map
             if label and label.startswith("stable:"):
-                # Count how many supplementary tables we've seen so far
-                # For now, we'll just format as "Supp. Table: caption"
-                # A more sophisticated approach would track table numbers
-                run = caption_para.add_run("Supp. Table: ")
+                # Extract label name (e.g., "stable:parameters" -> "parameters")
+                label_name = label.split(":", 1)[1] if ":" in label else label
+                # Look up number in table_map
+                table_num = self.table_map.get(label_name)
+                if table_num:
+                    run = caption_para.add_run(f"Supp. Table S{table_num}. ")
+                else:
+                    # Fallback if label not in map
+                    run = caption_para.add_run("Supp. Table: ")
                 run.bold = True
                 run.font.size = Pt(7)
             elif label and label.startswith("table:"):
-                run = caption_para.add_run("Table: ")
+                # Extract label name for main tables
+                label_name = label.split(":", 1)[1] if ":" in label else label
+                # Look up number in table_map (though main tables may not be in map)
+                table_num = self.table_map.get(label_name)
+                if table_num:
+                    run = caption_para.add_run(f"Table {table_num}. ")
+                else:
+                    run = caption_para.add_run("Table: ")
                 run.bold = True
                 run.font.size = Pt(7)
 

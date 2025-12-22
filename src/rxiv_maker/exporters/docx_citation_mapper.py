@@ -13,6 +13,106 @@ from ..converters.citation_processor import extract_citations_from_text
 class CitationMapper:
     """Maps citation keys to sequential numbers for DOCX export."""
 
+    @staticmethod
+    def _format_citation_ranges(text: str) -> str:
+        """Format consecutive citations as ranges.
+
+        Converts patterns like [1][2][3] to [1-3], [15][16] to [15-16], etc.
+        Also formats comma-separated lists like [1, 2, 3] to [1-3].
+
+        Args:
+            text: Text with numbered citations
+
+        Returns:
+            Text with consecutive citations formatted as ranges
+
+        Example:
+            >>> CitationMapper._format_citation_ranges("text [1][2][3] more")
+            'text [1-3] more'
+            >>> CitationMapper._format_citation_ranges("text [1, 2, 3] more")
+            'text [1-3] more'
+            >>> CitationMapper._format_citation_ranges("text [1][3][4] more")
+            'text [1][3-4] more'
+        """
+
+        # Pattern 1: Handle adjacent bracketed citations [1][2][3]
+        def combine_adjacent(match_obj):
+            # Extract all numbers from consecutive brackets
+            numbers = [int(n) for n in re.findall(r"\[(\d+)\]", match_obj.group(0))]
+            return CitationMapper._format_number_list(numbers)
+
+        # Find sequences of adjacent bracketed numbers
+        text = re.sub(r"(?:\[\d+\]){2,}", combine_adjacent, text)
+
+        # Pattern 2: Handle comma-separated citations within single brackets [1, 2, 3]
+        def combine_comma_separated(match_obj):
+            # Extract all numbers from comma-separated list
+            numbers_str = match_obj.group(1)
+            numbers = [int(n.strip()) for n in numbers_str.split(",")]
+            return CitationMapper._format_number_list(numbers)
+
+        text = re.sub(r"\[([\d,\s]+)\]", combine_comma_separated, text)
+
+        return text
+
+    @staticmethod
+    def _format_number_list(numbers: List[int]) -> str:
+        """Format a list of citation numbers as ranges.
+
+        Args:
+            numbers: List of citation numbers
+
+        Returns:
+            Formatted string with ranges
+
+        Example:
+            >>> CitationMapper._format_number_list([1, 2, 3, 5, 6, 8])
+            '[1-3, 5-6, 8]'
+            >>> CitationMapper._format_number_list([1, 3, 5])
+            '[1, 3, 5]'
+        """
+        if not numbers:
+            return "[]"
+
+        # Sort numbers
+        sorted_nums = sorted(set(numbers))
+
+        # Build ranges
+        ranges = []
+        start = sorted_nums[0]
+        end = sorted_nums[0]
+
+        for num in sorted_nums[1:]:
+            if num == end + 1:
+                # Continue current range
+                end = num
+            else:
+                # End current range and start new one
+                if start == end:
+                    ranges.append(str(start))
+                elif end == start + 1:
+                    # Two consecutive numbers - show as comma-separated
+                    ranges.append(str(start))
+                    ranges.append(str(end))
+                    start = num
+                    end = num
+                    continue
+                else:
+                    ranges.append(f"{start}-{end}")
+                start = num
+                end = num
+
+        # Add final range
+        if start == end:
+            ranges.append(str(start))
+        elif end == start + 1:
+            ranges.append(str(start))
+            ranges.append(str(end))
+        else:
+            ranges.append(f"{start}-{end}")
+
+        return f"[{', '.join(ranges)}]"
+
     def create_mapping(self, citations: List[str]) -> Dict[str, int]:
         """Create citation key → number mapping.
 
@@ -120,5 +220,8 @@ class CitationMapper:
         # Restore protected email patterns
         for i, pattern in enumerate(email_patterns):
             text = text.replace(f"__EMAIL_PATTERN_{i}__", pattern)
+
+        # Format consecutive citations as ranges (e.g., [1][2][3] -> [1-3])
+        text = self._format_citation_ranges(text)
 
         return text
