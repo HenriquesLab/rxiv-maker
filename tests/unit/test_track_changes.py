@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -106,10 +106,15 @@ class TestTrackChangesManager(unittest.TestCase):
 
         self.assertFalse(result)
 
-    @patch("subprocess.run")
-    def test_extract_files_from_tag_success(self, mock_run):
+    @patch("subprocess.check_call")
+    @patch("subprocess.Popen")
+    def test_extract_files_from_tag_success(self, mock_popen, mock_check_call):
         """Test successful file extraction from git tag."""
-        mock_run.return_value = MagicMock(stdout="file content", returncode=0)
+        # Mock the git archive process
+        mock_process = MagicMock()
+        mock_process.wait.return_value = None
+        mock_process.returncode = 0
+        mock_popen.return_value = mock_process
 
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -119,41 +124,27 @@ class TestTrackChangesManager(unittest.TestCase):
             # Check that tag_manuscript directory was created
             self.assertTrue((temp_path / "tag_manuscript").exists())
 
-            # Verify git show was called for each manuscript file
-            expected_calls = []
-            for file_name in self.track_changes.manuscript_files:
-                expected_calls.append(
-                    call(
-                        [
-                            "git",
-                            "show",
-                            f"test-tag:{self.manuscript_path.name}/{file_name}",
-                        ],
-                        capture_output=True,
-                        text=True,
-                        check=True,
-                    )
-                )
+            # Verify git archive was called
+            mock_popen.assert_called_once()
+            # Verify tar was called
+            mock_check_call.assert_called_once()
 
-            self.assertEqual(mock_run.call_count, len(expected_calls))
-
-    @patch("subprocess.run")
-    def test_extract_files_from_tag_missing_file(self, mock_run):
-        """Test file extraction when some files are missing from tag."""
-        # First call succeeds, second fails
-        mock_run.side_effect = [
-            MagicMock(stdout="file content", returncode=0),  # 01_MAIN.md
-            subprocess.CalledProcessError(1, "git"),  # 02_SUPPLEMENTARY_INFO.md
-            MagicMock(stdout="config content", returncode=0),  # 00_CONFIG.yml
-            MagicMock(stdout="bib content", returncode=0),  # 03_REFERENCES.bib
-        ]
+    @patch("subprocess.check_call")
+    @patch("subprocess.Popen")
+    def test_extract_files_from_tag_missing_file(self, mock_popen, mock_check_call):
+        """Test file extraction when git archive fails."""
+        # Mock the git archive process to fail
+        mock_process = MagicMock()
+        mock_process.wait.return_value = None
+        mock_process.returncode = 128  # Git error code
+        mock_popen.return_value = mock_process
 
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
             result = self.track_changes.extract_files_from_tag(temp_path)
 
-            self.assertTrue(result)  # Should still return True
-            self.assertTrue((temp_path / "tag_manuscript").exists())
+            self.assertFalse(result)  # Should return False on failure
+            self.assertTrue((temp_path / "tag_manuscript").exists())  # Directory still created
 
     @patch("subprocess.run")
     def test_generate_latex_files_success(self, mock_run):
@@ -170,7 +161,8 @@ class TestTrackChangesManager(unittest.TestCase):
 
         # Check that the correct command was called
         args, kwargs = mock_run.call_args
-        self.assertIn("src/rxiv_maker/commands/generate_preprint.py", args[0])
+        self.assertIn("-m", args[0])
+        self.assertIn("rxiv_maker.engines.operations.generate_preprint", args[0])
         self.assertIn("--output-dir", args[0])
 
         # Check environment variables
