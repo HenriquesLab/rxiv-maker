@@ -27,6 +27,17 @@ def sample_changelog():
     # Include current version to match __version__
     return """# Changelog
 
+## [v1.17.0] - 2025-12-22
+
+### Added
+- PDF splitting with supplementary information
+- Color-coded DOCX references
+- Citation range formatting
+
+### Fixed
+- Citation extraction for code blocks
+- Bibliography formatting improvements
+
 ## [v1.13.7] - 2025-12-02
 
 ### Fixed
