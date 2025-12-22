@@ -141,13 +141,15 @@ class TestCleanLatexCommands:
         text = "Reference \\cite{smith2021} here"
         result = clean_latex_commands(text)
         assert "\\cite" not in result
-        assert "Reference  here" in result
+        # Whitespace is normalized (double space becomes single space)
+        assert "Reference here" in result
 
     def test_clean_multiple_commands(self):
         """Test removing multiple commands."""
         text = "Text with \\textbf{bold} and \\textit{italic} and \\cite{ref}"
         result = clean_latex_commands(text)
-        assert result == "Text with bold and italic and "
+        # Trailing whitespace is stripped
+        assert result == "Text with bold and italic and"
 
 
 class TestTruncateText:
