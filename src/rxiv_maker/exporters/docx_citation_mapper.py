@@ -68,6 +68,8 @@ class CitationMapper:
         Example:
             >>> CitationMapper._format_number_list([1, 2, 3, 5, 6, 8])
             '[1-3, 5-6, 8]'
+            >>> CitationMapper._format_number_list([15, 16])
+            '[15-16]'
             >>> CitationMapper._format_number_list([1, 3, 5])
             '[1, 3, 5]'
         """
@@ -89,26 +91,20 @@ class CitationMapper:
             else:
                 # End current range and start new one
                 if start == end:
+                    # Single number
                     ranges.append(str(start))
-                elif end == start + 1:
-                    # Two consecutive numbers - show as comma-separated
-                    ranges.append(str(start))
-                    ranges.append(str(end))
-                    start = num
-                    end = num
-                    continue
                 else:
+                    # Range (including 2 consecutive numbers like 15-16)
                     ranges.append(f"{start}-{end}")
                 start = num
                 end = num
 
         # Add final range
         if start == end:
+            # Single number
             ranges.append(str(start))
-        elif end == start + 1:
-            ranges.append(str(start))
-            ranges.append(str(end))
         else:
+            # Range (including 2 consecutive numbers like 15-16)
             ranges.append(f"{start}-{end}")
 
         return f"[{', '.join(ranges)}]"
