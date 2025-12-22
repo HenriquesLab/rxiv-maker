@@ -7,6 +7,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.0] - 2025-12-22
+
+### Added
+
+- **PDF Splitting Feature**: New `--split-si` flag for `rxiv pdf` command
+  - Automatically splits generated PDFs into main manuscript and supplementary information sections
+  - Auto-detects SI markers ("Supplementary Information", "Supplementary Material", "Supporting Information", etc.)
+  - Generates properly named split files: `{year}__{author}_et_al__rxiv__main.pdf` and `{year}__{author}_et_al__rxiv__si.pdf`
+  - Places split files in MANUSCRIPT directory with consistent naming convention
+  - Addresses common journal submission requirements for separate main and SI files
+- **Color-Coded DOCX References**: Visual distinction for different reference types
+  - Main figures: bright green highlighting
+  - Main tables: blue highlighting
+  - Supplementary elements (figures, tables, notes): turquoise highlighting
+  - Citations: yellow highlighting
+  - Equations: violet highlighting
+  - Improves readability and helps track different element types during review
+- **Citation Range Formatting**: Automatic formatting of adjacent citations
+  - Formats `[4][5][6]` as `[4-6]` for cleaner presentation
+  - Handles both adjacent bracket citations and comma-separated citations
+  - Maintains readability while reducing visual clutter
+- **DOCX Configuration Options**: New manuscript config options
+  - `docx.hide_si`: Control supplementary information visibility (default: false)
+  - `docx.figures_at_end`: Place main figures at end before bibliography (default: false)
+  - Clearer semantics than previous `add_si` option
+  - Supports different journal formatting requirements
+- **Subscript/Superscript Support**: Chemical formulas and mathematical notation in DOCX
+  - Supports `~subscript~` and `^superscript^` markdown syntax
+  - Enables proper formatting of chemical formulas (H~2~O) and exponents (x^2^)
+
+### Fixed
+
+- **Citation Extraction Bug**: Citations between triple-backtick code blocks now extract correctly
+  - Fixed regex processing order to handle triple backticks before single backticks
+  - Prevents citations from being incorrectly marked as "protected code content"
+  - Resolves issue where `[@key]` citations remained unconverted in DOCX output
+  - Added regression tests to prevent future occurrences
+- **Bibliography Formatting**: Enhanced cleanup for malformed BibTeX entries
+  - HTML entity decoding: `&#233;` → `é`, `&#225;` → `á`, `&#8230;` → `…`
+  - Malformed name repair: fixes split author names (e.g., "Pé and Rez, Fernando" → "Pérez, Fernando")
+  - Brace cleanup: removes stray braces after Unicode characters
+  - Handles escaped HTML entities from BibTeX (`\&\#233` → `é`)
+  - Whitespace normalization for cleaner bibliography entries
+- **Table Caption Formatting**: Supplementary tables now show proper labels
+  - Displays "Supp. Table SX." prefix with correct font sizing
+  - Preserves table label identifiers during processing
+  - Supports hyphens in table label names
+- **Comment Filtering**: Markdown metadata comments no longer appear in DOCX
+  - Filters comments starting with "note:", "comment:" (case-insensitive)
+  - Prevents manuscript-specific metadata from appearing in final output
+  - Improves multi-line comment parsing
+
+### Changed
+
+- **Figure Centering**: All figures now centered by default in DOCX exports
+  - Improves visual presentation and alignment with journal standards
+  - Consistent formatting across all figure types
+- **Citation Handling**: Citations treated as highlighted text instead of separate objects
+  - Maintains citation ranges in yellow highlighting
+  - Simplifies DOCX structure while preserving visual distinction
+- **PDF Spacing**: Optimized manuscript spacing for increased content density
+  - Tighter spacing between back matter section headers and text
+  - Improved overall visual hierarchy
+  - More content per page without sacrificing readability
+
+### Documentation
+
+- **Updated CLAUDE.md**: Enhanced development documentation
+  - Removed Docker/Podman engine references (moved to separate docker-rxiv-maker repository)
+  - Added PDF splitting feature documentation
+  - Clarified testing workflows and CI requirements
+
 ## [1.16.8] - 2025-12-19
 
 ### Added
