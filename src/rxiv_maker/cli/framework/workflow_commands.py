@@ -258,11 +258,11 @@ class BuildCommand(BaseCommand):
                 self.console.print(f"[green]✅ DOCX exported:[/green] {docx_path}")
 
         except Exception as e:
-            self.console.print(f"[yellow]⚠️  DOCX export failed:[/yellow] {e}", err=True)
+            self.console.print(f"[yellow]⚠️  DOCX export failed:[/yellow] {e}")
             if debug:
                 import traceback
 
-                self.console.print(f"[dim]{traceback.format_exc()}[/dim]", err=True)
+                self.console.print(f"[dim]{traceback.format_exc()}[/dim]")
 
     def _split_pdf(self, pdf_path: Path, quiet: bool = False, debug: bool = False) -> None:
         """Split PDF into main and SI sections after successful PDF build.
@@ -273,7 +273,10 @@ class BuildCommand(BaseCommand):
             debug: Enable debug output
         """
         try:
+            from ...processors.yaml_processor import extract_yaml_metadata
+            from ...utils.file_helpers import find_manuscript_md
             from ...utils.pdf_splitter import split_pdf
+            from ...utils.pdf_utils import get_custom_pdf_filename
 
             if not quiet:
                 self.console.print("\n[cyan]✂️  Splitting PDF into main and SI sections...[/cyan]")
@@ -282,26 +285,42 @@ class BuildCommand(BaseCommand):
             main_path, si_path = split_pdf(pdf_path)
 
             if main_path and si_path:
+                # Extract metadata to generate custom filename
+                manuscript_md = find_manuscript_md(str(self.path_manager.manuscript_path))
+                yaml_metadata = extract_yaml_metadata(str(manuscript_md))
+
+                # Get base filename (e.g., "2025__saraiva_et_al__rxiv.pdf")
+                base_filename = get_custom_pdf_filename(yaml_metadata)
+                base_name = base_filename.replace(".pdf", "")
+
+                # Generate final filenames with __main and __si suffixes
+                main_filename = f"{base_name}__main.pdf"
+                si_filename = f"{base_name}__si.pdf"
+
+                # Copy split files to manuscript directory
+                final_main_path = self.path_manager.manuscript_path / main_filename
+                final_si_path = self.path_manager.manuscript_path / si_filename
+
+                shutil.copy2(main_path, final_main_path)
+                shutil.copy2(si_path, final_si_path)
+
                 if not quiet:
                     self.console.print("[green]✅ PDF split successfully:[/green]")
-                    self.console.print(f"   📄 Main: {main_path}")
-                    self.console.print(f"   📄 SI: {si_path}")
+                    self.console.print(f"   📄 Main: {final_main_path}")
+                    self.console.print(f"   📄 SI: {final_si_path}")
             elif main_path is None and si_path is None:
                 if not quiet:
-                    self.console.print(
-                        "[yellow]⚠️  Could not split PDF: SI section marker not found[/yellow]",
-                        err=True,
-                    )
+                    self.console.print("[yellow]⚠️  Could not split PDF: SI section marker not found[/yellow]")
             else:
                 if not quiet:
-                    self.console.print("[yellow]⚠️  PDF splitting partially failed[/yellow]", err=True)
+                    self.console.print("[yellow]⚠️  PDF splitting partially failed[/yellow]")
 
         except Exception as e:
-            self.console.print(f"[yellow]⚠️  PDF splitting failed:[/yellow] {e}", err=True)
+            self.console.print(f"[yellow]⚠️  PDF splitting failed:[/yellow] {e}")
             if debug:
                 import traceback
 
-                self.console.print(f"[dim]{traceback.format_exc()}[/dim]", err=True)
+                self.console.print(f"[dim]{traceback.format_exc()}[/dim]")
 
     def _show_build_tips(self) -> None:
         """Show helpful tips after successful PDF build."""
