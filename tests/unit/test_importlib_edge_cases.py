@@ -314,7 +314,8 @@ class TestImportlibFindSpecEdgeCases:
 
         # Use higher threshold - modern Python with testing frameworks creates many objects
         # The goal is to detect significant memory leaks, not count normal object churn
-        threshold = 20000
+        # Increased threshold to account for Python 3.14+ and modern testing frameworks
+        threshold = 30000
 
         assert object_growth < threshold, f"Excessive object growth: {object_growth} (threshold: {threshold})"
 

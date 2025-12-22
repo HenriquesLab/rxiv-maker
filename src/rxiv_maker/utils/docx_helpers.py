@@ -7,6 +7,7 @@ This module provides utility functions for DOCX generation including:
 - PDF to image conversion
 """
 
+import html
 import io
 import logging
 import re
@@ -201,6 +202,13 @@ def clean_latex_commands(text: str) -> str:
         >>> clean_latex_commands("Griffi{\\'e}")
         'Griffié'
     """
+    # First, handle escaped HTML entities from BibTeX (\&\#233 -> &#233)
+    text = text.replace("\\&\\#", "&#")
+    text = text.replace("\\&#", "&#")  # Handle partially escaped variants
+
+    # Then decode HTML entities (&#233; -> é, &#225; -> á, &#8230; -> …, etc.)
+    text = html.unescape(text)
+
     # Convert LaTeX accent commands to Unicode
     # Handle both with and without backslashes (BibTeX parser may strip them)
     # Also handle variant forms where backslash is replaced with the literal character
@@ -338,7 +346,37 @@ def clean_latex_commands(text: str) -> str:
     # Remove lone backslashes
     text = re.sub(r"\\(?![a-zA-Z])", "", text)
 
-    return text
+    # Remove braces around single characters or short words (common BibTeX artifact)
+    # This handles cases like {P} or {n} that appear after HTML entity decoding issues
+    text = re.sub(r"\{([A-Za-z]{1,3})\}", r"\1", text)
+
+    # Remove unmatched opening braces at start of words (e.g., "{Sperr" -> "Sperr")
+    text = re.sub(r"\{([A-Za-z])", r"\1", text)
+
+    # Remove unmatched closing braces at end of words or after accented characters (e.g., "Team}" -> "Team", "Pé}" -> "Pé")
+    text = re.sub(r"([A-Za-zÀ-ÿ])\}", r"\1", text)
+
+    # Remove isolated braces (opening or closing)
+    text = re.sub(r"\{(?![A-Za-z])", "", text)  # Opening brace not followed by letter
+    text = re.sub(r"(?<![A-Za-z])\}", "", text)  # Closing brace not preceded by letter
+
+    # Fix common malformed author name patterns from bad BibTeX encoding
+    # Pattern: "Pé and Rez, Fernando" -> "Pérez, Fernando" (very short word with accent + capitalized word + comma)
+    # Only match if first word is 2-4 chars and ends with accented character
+    def fix_name_case(match):
+        part1, part2 = match.group(1), match.group(2)
+        # Lowercase the second part since it's continuation of first name
+        return f"{part1}{part2.lower()},"
+
+    text = re.sub(r"\b([A-ZÀ-Ÿ][à-ÿ]{1,3}) and ([A-Z][a-z]+),", fix_name_case, text)
+    # Pattern: "Damiá and n and" -> "Damián and" (word ending in accent + isolated letter + " and")
+    text = re.sub(r"\b([A-ZÀ-Ÿ][a-zà-ÿ]+[à-ÿ]) and ([a-zà-ÿ])\s+and\s+", r"\1\2 and ", text)
+
+    # Clean up any remaining empty braces or double spaces
+    text = re.sub(r"\{\}", "", text)
+    text = re.sub(r"\s+", " ", text)
+
+    return text.strip()
 
 
 def truncate_text(text: str, max_length: int = 100, suffix: str = "...") -> str:

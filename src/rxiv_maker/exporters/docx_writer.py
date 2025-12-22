@@ -24,6 +24,29 @@ logger = get_logger()
 class DocxWriter:
     """Writes structured content to DOCX files using python-docx."""
 
+    # Color mapping for different reference types
+    XREF_COLORS = {
+        "fig": WD_COLOR_INDEX.BRIGHT_GREEN,  # Figures (bright green - lighter)
+        "sfig": WD_COLOR_INDEX.TURQUOISE,  # Supplementary figures (turquoise - lighter cyan)
+        "stable": WD_COLOR_INDEX.TURQUOISE,  # Supplementary tables (turquoise - lighter cyan)
+        "table": WD_COLOR_INDEX.BLUE,  # Main tables
+        "eq": WD_COLOR_INDEX.VIOLET,  # Equations
+        "snote": WD_COLOR_INDEX.TURQUOISE,  # Supplementary notes (turquoise - lighter cyan)
+        "cite": WD_COLOR_INDEX.YELLOW,  # Citations (yellow)
+    }
+
+    @staticmethod
+    def get_xref_color(xref_type: str):
+        """Get highlight color for a cross-reference type.
+
+        Args:
+            xref_type: Type of cross-reference (fig, sfig, stable, table, eq, snote, cite)
+
+        Returns:
+            WD_COLOR_INDEX color for the xref type, or YELLOW as default
+        """
+        return DocxWriter.XREF_COLORS.get(xref_type, WD_COLOR_INDEX.YELLOW)
+
     def write(
         self,
         doc_structure: Dict[str, Any],
@@ -32,6 +55,8 @@ class DocxWriter:
         include_footnotes: bool = True,
         base_path: Optional[Path] = None,
         metadata: Optional[Dict[str, Any]] = None,
+        table_map: Optional[Dict[str, int]] = None,
+        figures_at_end: bool = False,
     ) -> Path:
         """Write DOCX file from structured content.
 
@@ -42,6 +67,8 @@ class DocxWriter:
             include_footnotes: Whether to add DOI footnotes
             base_path: Base path for resolving relative figure paths
             metadata: Document metadata (title, authors, affiliations)
+            table_map: Mapping from table labels to numbers (for supplementary tables)
+            figures_at_end: Place main figures at end before SI/bibliography
 
         Returns:
             Path to created DOCX file
@@ -49,6 +76,7 @@ class DocxWriter:
         self.base_path = base_path or Path.cwd()
         self.bibliography = bibliography
         self.include_footnotes = include_footnotes
+        self.table_map = table_map or {}
         doc = Document()
 
         # Add title and author information if metadata provided
@@ -69,14 +97,35 @@ class DocxWriter:
         # Store figure map for use in text processing
         self.figure_map = figure_map
 
-        # Process each section INCLUDING figures inline
+        # Collect main figures if figures_at_end is True
+        collected_main_figures = []
+
+        # Process each section
         figure_counter = 0
+        sfigure_counter = 0
         for section in doc_structure["sections"]:
             if section["type"] == "figure":
-                figure_counter += 1
-                self._add_figure(doc, section, figure_number=figure_counter)
+                is_supplementary = section.get("is_supplementary", False)
+                if is_supplementary:
+                    # Supplementary figures always go inline (in SI section)
+                    sfigure_counter += 1
+                    self._add_figure(doc, section, figure_number=sfigure_counter, is_supplementary=True)
+                else:
+                    # Main figures: collect if figures_at_end, otherwise add inline
+                    figure_counter += 1
+                    if figures_at_end:
+                        collected_main_figures.append((section, figure_counter))
+                    else:
+                        self._add_figure(doc, section, figure_number=figure_counter, is_supplementary=False)
             else:
                 self._add_section(doc, section, bibliography, include_footnotes)
+
+        # Add collected main figures at the end (before bibliography)
+        if figures_at_end and collected_main_figures:
+            doc.add_page_break()
+            doc.add_heading("Figures", level=1)
+            for section, fig_num in collected_main_figures:
+                self._add_figure(doc, section, figure_number=fig_num, is_supplementary=False)
 
         # Add bibliography section at the end
         if include_footnotes and bibliography:
@@ -92,14 +141,14 @@ class DocxWriter:
                 num_run = para.add_run(f"[{num}] ")
                 num_run.bold = True
 
-                # Add formatted bibliography text (slim format)
+                # Add formatted bibliography text (without DOI - added separately below)
                 para.add_run(bib_entry["formatted"])
 
                 # Add DOI as hyperlink with yellow highlighting if present
                 if bib_entry.get("doi"):
                     doi = bib_entry["doi"]
                     doi_url = f"https://doi.org/{doi}" if not doi.startswith("http") else doi
-                    para.add_run(" ")
+                    para.add_run("\nDOI: ")
                     self._add_hyperlink(para, doi_url, doi_url, highlight=True)
 
                 # Add spacing between entries
@@ -228,6 +277,8 @@ class DocxWriter:
             self._add_list(doc, section)
         elif section_type == "code_block":
             self._add_code_block(doc, section)
+        elif section_type == "comment":
+            self._add_comment(doc, section)
         elif section_type == "figure":
             self._add_figure(doc, section)
         elif section_type == "table":
@@ -310,11 +361,17 @@ class DocxWriter:
                 run.italic = True
             if run_data.get("underline"):
                 run.underline = True
+            if run_data.get("subscript"):
+                run.font.subscript = True
+            if run_data.get("superscript"):
+                run.font.superscript = True
             if run_data.get("code"):
                 run.font.name = "Courier New"
                 run.font.size = Pt(10)
             if run_data.get("xref"):
-                run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                # Use color based on xref type (fig, sfig, stable, eq, etc.)
+                xref_type = run_data.get("xref_type", "cite")
+                run.font.highlight_color = self.get_xref_color(xref_type)
             if run_data.get("highlight_yellow"):
                 run.font.highlight_color = WD_COLOR_INDEX.YELLOW
 
@@ -328,6 +385,14 @@ class DocxWriter:
             # Add inline equation as Office Math
             latex_content = run_data.get("latex", "")
             self._add_inline_equation(paragraph, latex_content)
+
+        elif run_data["type"] == "inline_comment":
+            # Add inline comment with gray highlighting
+            comment_text = run_data["text"]
+            run = paragraph.add_run(f"[Comment: {comment_text}]")
+            run.font.highlight_color = WD_COLOR_INDEX.GRAY_25
+            run.italic = True
+            run.font.size = Pt(10)
 
         elif run_data["type"] == "citation":
             cite_num = run_data["number"]
@@ -362,10 +427,16 @@ class DocxWriter:
                         run.bold = True
                     if run_data.get("italic"):
                         run.italic = True
+                    if run_data.get("subscript"):
+                        run.font.subscript = True
+                    if run_data.get("superscript"):
+                        run.font.superscript = True
                     if run_data.get("code"):
                         run.font.name = "Courier New"
                     if run_data.get("xref"):
-                        run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                        # Use color based on xref type
+                        xref_type = run_data.get("xref_type", "cite")
+                        run.font.highlight_color = self.get_xref_color(xref_type)
                     if run_data.get("highlight_yellow"):
                         run.font.highlight_color = WD_COLOR_INDEX.YELLOW
                         run.font.size = Pt(10)
@@ -379,11 +450,19 @@ class DocxWriter:
                     # Add inline equation as Office Math
                     latex_content = run_data.get("latex", "")
                     self._add_inline_equation(paragraph, latex_content)
+                elif run_data["type"] == "inline_comment":
+                    # Add inline comment with gray highlighting
+                    comment_text = run_data["text"]
+                    run = paragraph.add_run(f"[Comment: {comment_text}]")
+                    run.font.highlight_color = WD_COLOR_INDEX.GRAY_25
+                    run.italic = True
+                    run.font.size = Pt(10)
                 elif run_data["type"] == "citation":
                     cite_num = run_data["number"]
                     run = paragraph.add_run(f"[{cite_num}]")
                     run.bold = True
                     run.font.size = Pt(10)
+                    run.font.highlight_color = WD_COLOR_INDEX.YELLOW
 
     def _add_code_block(self, doc: Document, section: Dict[str, Any]):
         """Add code block to document.
@@ -404,6 +483,22 @@ class DocxWriter:
         paragraph_format = paragraph.paragraph_format
         paragraph_format.left_indent = Pt(36)  # Indent code blocks
 
+    def _add_comment(self, doc: Document, section: Dict[str, Any]):
+        """Add comment to document with gray highlighting.
+
+        Args:
+            doc: Document object
+            section: Comment section data with 'text'
+        """
+        comment_text = section["text"]
+        paragraph = doc.add_paragraph()
+
+        # Add comment text with light gray highlighting to distinguish from colored xrefs
+        run = paragraph.add_run(f"[Comment: {comment_text}]")
+        run.font.highlight_color = WD_COLOR_INDEX.GRAY_25
+        run.italic = True
+        run.font.size = Pt(10)
+
     def _check_poppler_availability(self) -> bool:
         """Check if poppler is available for PDF conversion.
 
@@ -417,13 +512,16 @@ class DocxWriter:
 
         return result.status == DependencyStatus.AVAILABLE
 
-    def _add_figure(self, doc: Document, section: Dict[str, Any], figure_number: int = None):
+    def _add_figure(
+        self, doc: Document, section: Dict[str, Any], figure_number: int = None, is_supplementary: bool = False
+    ):
         """Add figure to document with caption.
 
         Args:
             doc: Document object
             section: Figure section data with 'path', 'caption', 'label'
             figure_number: Figure number (1-indexed)
+            is_supplementary: Whether this is a supplementary figure
         """
         figure_path = Path(section["path"])
         caption = section.get("caption", "")
@@ -470,19 +568,45 @@ class DocxWriter:
             logger.warning(f"Unsupported image format: {figure_path.suffix}")
 
         if img_source:
-            # Add image
+            # Add image with proper sizing to fit page
             try:
-                doc.add_picture(img_source, width=Inches(6))
-                logger.debug(f"Embedded figure: {figure_path}")
+                from PIL import Image as PILImage
+
+                # Get image dimensions
+                with PILImage.open(img_source) as img:
+                    img_width, img_height = img.size
+                    aspect_ratio = img_width / img_height
+
+                # Page dimensions with margins (Letter size: 8.5 x 11 inches, 1 inch margins)
+                max_width = Inches(6.5)  # 8.5 - 2*1
+                max_height = Inches(9)  # 11 - 2*1
+
+                # Add figure centered
+                # Note: add_picture() creates a paragraph automatically, but we need to add it explicitly
+                # to control alignment
+                fig_para = doc.add_paragraph()
+                fig_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+                # Calculate optimal size maintaining aspect ratio
+                if aspect_ratio > (6.5 / 9):  # Wide image - constrain by width
+                    run = fig_para.add_run()
+                    run.add_picture(img_source, width=max_width)
+                else:  # Tall image - constrain by height
+                    run = fig_para.add_run()
+                    run.add_picture(img_source, height=max_height)
+
+                logger.debug(f"Embedded figure: {figure_path} ({img_width}x{img_height})")
             except Exception as e:
                 logger.warning(f"Failed to embed figure {figure_path}: {e}")
-                # Add placeholder text
+                # Add placeholder text (centered)
                 p = doc.add_paragraph()
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 run = p.add_run(f"[Figure: {figure_path.name}]")
                 run.italic = True
         else:
-            # Add placeholder if embedding failed
+            # Add placeholder if embedding failed (centered)
             p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             run = p.add_run(f"[Figure: {figure_path.name}]")
             run.italic = True
             logger.warning(f"Could not embed figure: {figure_path}")
@@ -494,9 +618,12 @@ class DocxWriter:
             # Add small space before caption to separate from figure
             caption_para.paragraph_format.space_before = Pt(3)
 
-            # Format as "Figure number: "
+            # Format as "Figure number: " or "Supp. Fig. number: "
             if figure_number:
-                run = caption_para.add_run(f"Figure {figure_number}: ")
+                if is_supplementary:
+                    run = caption_para.add_run(f"Supp. Fig. S{figure_number}. ")
+                else:
+                    run = caption_para.add_run(f"Fig. {figure_number}. ")
                 run.bold = True
                 run.font.size = Pt(7)
             else:
@@ -522,21 +649,35 @@ class DocxWriter:
                         run.bold = True
                     if run_data.get("italic"):
                         run.italic = True
+                    if run_data.get("subscript"):
+                        run.font.subscript = True
+                    if run_data.get("superscript"):
+                        run.font.superscript = True
                     if run_data.get("code"):
                         run.font.name = "Courier New"
                     if run_data.get("xref"):
-                        run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                        # Use color based on xref type
+                        xref_type = run_data.get("xref_type", "cite")
+                        run.font.highlight_color = self.get_xref_color(xref_type)
                     if run_data.get("highlight_yellow"):
                         run.font.highlight_color = WD_COLOR_INDEX.YELLOW
                 elif run_data["type"] == "inline_equation":
                     # Add inline equation as Office Math
                     latex_content = run_data.get("latex", "")
                     self._add_inline_equation(caption_para, latex_content)
+                elif run_data["type"] == "inline_comment":
+                    # Add inline comment with gray highlighting
+                    comment_text = run_data["text"]
+                    run = caption_para.add_run(f"[Comment: {comment_text}]")
+                    run.font.highlight_color = WD_COLOR_INDEX.GRAY_25
+                    run.italic = True
+                    run.font.size = Pt(7)
                 elif run_data["type"] == "citation":
                     cite_num = run_data["number"]
                     run = caption_para.add_run(f"[{cite_num}]")
                     run.bold = True
                     run.font.size = Pt(7)
+                    run.font.highlight_color = WD_COLOR_INDEX.YELLOW
 
             # Add spacing after figure (reduced from 12 to 6 for compactness)
             caption_para.paragraph_format.space_after = Pt(6)
@@ -602,10 +743,16 @@ class DocxWriter:
                                 run.italic = True
                             if run_data.get("underline"):
                                 run.underline = True
+                            if run_data.get("subscript"):
+                                run.font.subscript = True
+                            if run_data.get("superscript"):
+                                run.font.superscript = True
                             if run_data.get("code"):
                                 run.font.name = "Courier New"
                             if run_data.get("xref"):
-                                run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                                # Use color based on xref type
+                                xref_type = run_data.get("xref_type", "cite")
+                                run.font.highlight_color = self.get_xref_color(xref_type)
 
         # Add table caption if present
         caption = section.get("caption")
@@ -616,16 +763,28 @@ class DocxWriter:
             # Add small space before caption to separate from table
             caption_para.paragraph_format.space_before = Pt(3)
 
-            # Determine table number from label (e.g., "stable:structural_models" -> "Supp. Table 1")
+            # Determine table number from label using table_map
             if label and label.startswith("stable:"):
-                # Count how many supplementary tables we've seen so far
-                # For now, we'll just format as "Supp. Table: caption"
-                # A more sophisticated approach would track table numbers
-                run = caption_para.add_run("Supp. Table: ")
+                # Extract label name (e.g., "stable:parameters" -> "parameters")
+                label_name = label.split(":", 1)[1] if ":" in label else label
+                # Look up number in table_map
+                table_num = self.table_map.get(label_name)
+                if table_num:
+                    run = caption_para.add_run(f"Supp. Table S{table_num}. ")
+                else:
+                    # Fallback if label not in map
+                    run = caption_para.add_run("Supp. Table: ")
                 run.bold = True
                 run.font.size = Pt(7)
             elif label and label.startswith("table:"):
-                run = caption_para.add_run("Table: ")
+                # Extract label name for main tables
+                label_name = label.split(":", 1)[1] if ":" in label else label
+                # Look up number in table_map (though main tables may not be in map)
+                table_num = self.table_map.get(label_name)
+                if table_num:
+                    run = caption_para.add_run(f"Table {table_num}. ")
+                else:
+                    run = caption_para.add_run("Table: ")
                 run.bold = True
                 run.font.size = Pt(7)
 
@@ -642,10 +801,16 @@ class DocxWriter:
                         run.italic = True
                     if run_data.get("underline"):
                         run.underline = True
+                    if run_data.get("subscript"):
+                        run.font.subscript = True
+                    if run_data.get("superscript"):
+                        run.font.superscript = True
                     if run_data.get("code"):
                         run.font.name = "Courier New"
                     if run_data.get("xref"):
-                        run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                        # Use color based on xref type
+                        xref_type = run_data.get("xref_type", "cite")
+                        run.font.highlight_color = self.get_xref_color(xref_type)
 
             # Add spacing after table (reduced from 12 to 6 for compactness)
             caption_para.paragraph_format.space_after = Pt(6)

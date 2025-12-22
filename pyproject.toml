@@ -93,6 +93,8 @@ dev = [
     # Type checking
     "types-requests>=2.32.4.20250611",
     "types-PyYAML>=6.0.0",
+    # PDF utilities
+    "PyPDF2>=3.0.0",
     # Documentation and utilities
     "coverage[toml]>=7.0",
     "nbstripout>=0.7.1",

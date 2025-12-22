@@ -45,10 +45,15 @@ class DocxExporter:
         self.resolve_dois = resolve_dois
         self.include_footnotes = include_footnotes
 
-        # Load config to get author name format preference
+        # Load config to get author name format preference and DOCX options
         config_manager = ConfigManager(base_dir=Path(manuscript_path))
         config = config_manager.load_config()
         self.author_format = config.get("bibliography_author_format", "lastname_firstname")
+
+        # DOCX export options
+        docx_config = config.get("docx", {})
+        self.hide_si = docx_config.get("hide_si", False)  # Default to False (don't hide SI) for backwards compatibility
+        self.figures_at_end = docx_config.get("figures_at_end", False)  # Default to False (inline figures)
 
         # Components
         self.citation_mapper = CitationMapper()
@@ -98,6 +103,13 @@ class DocxExporter:
         markdown_content = self._load_markdown()
         logger.debug(f"Loaded {len(markdown_content)} characters of markdown")
 
+        # Step 2.5: If SI is hidden from export, still load it for label mapping
+        si_content_for_mapping = ""
+        if self.hide_si:
+            si_content_for_mapping = self._load_si_for_mapping()
+            if si_content_for_mapping:
+                logger.info("📋 Loaded SI content for label mapping (SI section hidden from export)")
+
         # Step 3: Extract and map citations
         citations = self.citation_mapper.extract_citations_from_markdown(markdown_content)
         citation_map = self.citation_mapper.create_mapping(citations)
@@ -120,14 +132,14 @@ class DocxExporter:
 
         # Replace @fig:label with "Fig. X" in text, handling optional panel letters
         # Pattern matches: @fig:label optionally followed by space and panel letter(s)
-        # Use special markers <<XREF>> to enable yellow highlighting in DOCX
+        # Use special markers <<XREF:type>> to enable color-coded highlighting in DOCX
         for label, num in figure_map.items():
             # Match @fig:label with optional panel letters like " a", " a,b", " a-c"
             # Use negative lookahead (?![a-z]) to prevent matching start of words like " is", " and"
             # Panel letters must be followed by non-letter (space, punctuation, end of string)
             markdown_with_numbers = re.sub(
                 rf"@fig:{label}\b(\s+[a-z](?:[,\-][a-z])*(?![a-z]))?",
-                lambda m, num=num: f"<<XREF>>Fig. {num}{m.group(1) if m.group(1) else ''}<</XREF>>",
+                lambda m, num=num: f"<<XREF:fig>>Fig. {num}{m.group(1) if m.group(1) else ''}<</XREF>>",
                 markdown_with_numbers,
             )
 
@@ -135,7 +147,9 @@ class DocxExporter:
 
         # Find all supplementary figures and create mapping
         # Allow hyphens and underscores in label names
-        sfig_labels = re.findall(r"!\[[^\]]*\]\([^)]+\)\s*\n\s*\{#sfig:([\w-]+)", markdown_with_numbers)
+        # IMPORTANT: When SI is excluded, extract from SI content (where figures are defined)
+        content_to_scan_for_sfigs = si_content_for_mapping if si_content_for_mapping else markdown_with_numbers
+        sfig_labels = re.findall(r"!\[[^\]]*\]\([^)]+\)\s*\n\s*\{#sfig:([\w-]+)", content_to_scan_for_sfigs)
         sfig_map = {label: i + 1 for i, label in enumerate(sfig_labels)}
 
         # Replace @sfig:label with "Supp. Fig. X" in text, handling optional panel letters
@@ -144,34 +158,51 @@ class DocxExporter:
             # Negative lookahead prevents matching start of words
             markdown_with_numbers = re.sub(
                 rf"@sfig:{label}\b(\s+[a-z](?:[,\-][a-z])*(?![a-z]))?",
-                lambda m, num=num: f"<<XREF>>Supp. Fig. {num}{m.group(1) if m.group(1) else ''}<</XREF>>",
+                lambda m, num=num: f"<<XREF:sfig>>Supp. Fig. {num}{m.group(1) if m.group(1) else ''}<</XREF>>",
                 markdown_with_numbers,
             )
 
         logger.debug(f"Mapped {len(sfig_map)} supplementary figure labels to numbers")
 
-        # Find all tables and create mapping (looking for {#stable:label} tags)
-        # Allow hyphens and underscores in label names
-        table_labels = re.findall(r"\{#stable:([\w-]+)\}", markdown_with_numbers)
+        # Find all tables and create mapping (looking for {#stable:label} or \label{stable:label} tags)
+        # IMPORTANT: PDF uses the order that tables are DEFINED in the document (order of \label{stable:X})
+        # NOT the order of caption references (%{#stable:X}) which are just metadata
+        # When SI is excluded from export, we still need to extract labels from SI
+
+        content_to_scan_for_tables = si_content_for_mapping if si_content_for_mapping else markdown_with_numbers
+
+        # Extract table labels in document order (both {#stable:label} markdown format and \label{stable:label} LaTeX format)
+        # The PDF numbering follows the order these labels appear in the document
+        markdown_labels = re.findall(r"\{#stable:([\w-]+)\}", content_to_scan_for_tables)
+        latex_labels = re.findall(r"\\label\{stable:([\w-]+)\}", content_to_scan_for_tables)
+
+        # Combine both formats, preferring LaTeX labels if present (since that's what PDF uses)
+        table_labels = latex_labels if latex_labels else markdown_labels
+
+        # Remove duplicates while preserving order
+        seen = set()
+        table_labels = [label for label in table_labels if not (label in seen or seen.add(label))]
+
         table_map = {label: i + 1 for i, label in enumerate(table_labels)}
+        logger.debug(f"Mapped {len(table_map)} supplementary tables: {table_map}")
 
         # Replace @stable:label with "Supp. Table X" in text
         for label, num in table_map.items():
             markdown_with_numbers = re.sub(
-                rf"@stable:{label}\b", f"<<XREF>>Supp. Table {num}<</XREF>>", markdown_with_numbers
+                rf"@stable:{label}\b", f"<<XREF:stable>>Supp. Table {num}<</XREF>>", markdown_with_numbers
             )
-
-        logger.debug(f"Mapped {len(table_map)} supplementary table labels to numbers")
 
         # Find all supplementary notes and create mapping (looking for {#snote:label} tags)
         # Allow hyphens and underscores in label names
-        snote_labels = re.findall(r"\{#snote:([\w-]+)\}", markdown_with_numbers)
+        # IMPORTANT: When SI is excluded, extract from SI content (where notes are defined)
+        content_to_scan_for_snotes = si_content_for_mapping if si_content_for_mapping else markdown_with_numbers
+        snote_labels = re.findall(r"\{#snote:([\w-]+)\}", content_to_scan_for_snotes)
         snote_map = {label: i + 1 for i, label in enumerate(snote_labels)}
 
         # Replace @snote:label with "Supp. Note X" in text
         for label, num in snote_map.items():
             markdown_with_numbers = re.sub(
-                rf"@snote:{label}\b", f"<<XREF>>Supp. Note {num}<</XREF>>", markdown_with_numbers
+                rf"@snote:{label}\b", f"<<XREF:snote>>Supp. Note {num}<</XREF>>", markdown_with_numbers
             )
 
         logger.debug(f"Mapped {len(snote_map)} supplementary note labels to numbers")
@@ -186,18 +217,17 @@ class DocxExporter:
         for label, num in equation_map.items():
             # Replace (@eq:label) with (Eq. X)
             markdown_with_numbers = re.sub(
-                rf"\(@eq:{label}\b\)", f"(<<XREF>>Eq. {num}<</XREF>>)", markdown_with_numbers
+                rf"\(@eq:{label}\b\)", f"(<<XREF:eq>>Eq. {num}<</XREF>>)", markdown_with_numbers
             )
             # Replace @eq:label with Eq. X
-            markdown_with_numbers = re.sub(rf"@eq:{label}\b", f"<<XREF>>Eq. {num}<</XREF>>", markdown_with_numbers)
+            markdown_with_numbers = re.sub(rf"@eq:{label}\b", f"<<XREF:eq>>Eq. {num}<</XREF>>", markdown_with_numbers)
 
         logger.debug(f"Mapped {len(equation_map)} equation labels to numbers")
 
         # Step 5.6: Remove label markers now that mapping is complete
         # These metadata markers should not appear in the final output
-        markdown_with_numbers = re.sub(
-            r"^\{#(?:fig|sfig|snote|stable|table|eq):[^}]+\}\s*", "", markdown_with_numbers, flags=re.MULTILINE
-        )
+        # NOTE: Keep fig/sfig/stable/table labels - they're needed by content processor and removed during caption parsing
+        markdown_with_numbers = re.sub(r"^\{#(?:snote|eq):[^}]+\}\s*", "", markdown_with_numbers, flags=re.MULTILINE)
 
         # Step 6: Convert content to DOCX structure
         doc_structure = self.content_processor.parse(markdown_with_numbers, citation_map)
@@ -215,6 +245,8 @@ class DocxExporter:
             include_footnotes=self.include_footnotes,
             base_path=self.path_manager.manuscript_path,
             metadata=metadata,
+            table_map=table_map,
+            figures_at_end=self.figures_at_end,
         )
         logger.info(f"DOCX exported successfully: {docx_path}")
 
@@ -265,9 +297,9 @@ class DocxExporter:
 
         content.append(main_content)
 
-        # Load 02_SUPPLEMENTARY_INFO.md if exists
+        # Load 02_SUPPLEMENTARY_INFO.md if exists and not configured to hide SI
         supp_md = self.path_manager.manuscript_path / "02_SUPPLEMENTARY_INFO.md"
-        if supp_md.exists():
+        if supp_md.exists() and not self.hide_si:
             logger.info("Including supplementary information")
             supp_content = supp_md.read_text(encoding="utf-8")
             supp_content = remove_yaml_header(supp_content)
@@ -281,10 +313,35 @@ class DocxExporter:
             content.append("<!-- PAGE_BREAK -->")
             content.append("# Supplementary Information")
             content.append(supp_content)
+        elif supp_md.exists() and self.hide_si:
+            logger.info("Supplementary information exists but hidden per config (docx.hide_si: true)")
         else:
             logger.debug("No supplementary information file found")
 
         return "\n\n".join(content)
+
+    def _load_si_for_mapping(self) -> str:
+        r"""Load SI content for label mapping without including in export.
+
+        This method is used when hide_si is True but we still need to extract
+        SI labels (stable, sfig, snote) for cross-references in the main text.
+
+        IMPORTANT: We return RAW content (before preprocessing) because we need to
+        extract LaTeX labels (\label{stable:X}) which determine the PDF numbering order.
+        The preprocessor strips out {{tex: blocks, losing this ordering information.
+
+        Returns:
+            SI content as string (raw, before preprocessing), or empty string if SI doesn't exist
+        """
+        supp_md = self.path_manager.manuscript_path / "02_SUPPLEMENTARY_INFO.md"
+        if not supp_md.exists():
+            return ""
+
+        # Load RAW SI content (don't preprocess - we need LaTeX labels for ordering)
+        supp_content = supp_md.read_text(encoding="utf-8")
+        supp_content = remove_yaml_header(supp_content)
+
+        return supp_content
 
     def _build_bibliography(self, citation_map: Dict[str, int]) -> Dict[int, Dict]:
         """Build bibliography with optional DOI resolution.
@@ -327,7 +384,8 @@ class DocxExporter:
                     logger.info(f"Resolved DOI for {key}: {doi}")
 
             # Format entry (full format for DOCX bibliography)
-            formatted = format_bibliography_entry(entry, doi, slim=False, author_format=self.author_format)
+            # Don't include DOI in formatted text - it will be added separately as a hyperlink by the writer
+            formatted = format_bibliography_entry(entry, doi=None, slim=False, author_format=self.author_format)
 
             bibliography[number] = {"key": key, "entry": entry, "doi": doi, "formatted": formatted}
 

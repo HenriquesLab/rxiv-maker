@@ -11,6 +11,26 @@ from typing import Any, Dict, List, Optional
 class DocxContentProcessor:
     """Parses markdown content into structured format for DOCX writing."""
 
+    @staticmethod
+    def _is_metadata_comment(comment_text: str) -> bool:
+        """Check if a comment is metadata/informational and should be skipped.
+
+        Args:
+            comment_text: The comment text to check
+
+        Returns:
+            True if comment should be skipped, False if it should be included
+        """
+        if not comment_text:
+            return True
+
+        # Normalize to lowercase for case-insensitive matching
+        normalized = comment_text.lower().strip()
+
+        # Skip comments that start with common metadata keywords
+        metadata_prefixes = ["note:", "note ", "comment:", "comment "]
+        return any(normalized.startswith(prefix) for prefix in metadata_prefixes)
+
     def parse(self, markdown: str, citation_map: Dict[str, int]) -> Dict[str, Any]:
         """Parse markdown into structured sections for DOCX.
 
@@ -55,10 +75,38 @@ class DocxContentProcessor:
                 i += 1
                 continue
 
-            # Skip HTML/markdown comments
+            # Parse HTML/markdown comments (single-line and multi-line)
+            # Skip informational/metadata comments (those starting with "Note:")
             if line.strip().startswith("<!--"):
-                i += 1
-                continue
+                # Check if it's a single-line comment
+                if line.strip().endswith("-->"):
+                    # Single-line comment
+                    comment_text = line.strip()[4:-3].strip()
+                    # Skip metadata comments (e.g., "note that...", "Comment: ...")
+                    if comment_text and not self._is_metadata_comment(comment_text):
+                        sections.append({"type": "comment", "text": comment_text})
+                    i += 1
+                    continue
+                else:
+                    # Multi-line comment - collect all lines until -->
+                    comment_lines = [line.strip()[4:]]  # Remove <!--
+                    i += 1
+                    while i < len(lines):
+                        if lines[i].strip().endswith("-->"):
+                            # Last line of comment
+                            comment_lines.append(lines[i].strip()[:-3])  # Remove -->
+                            i += 1
+                            break
+                        else:
+                            comment_lines.append(lines[i].strip())
+                            i += 1
+
+                    # Join and add comment
+                    comment_text = " ".join(comment_lines).strip()
+                    # Skip metadata comments (e.g., "note that...", "Comment: ...")
+                    if comment_text and not self._is_metadata_comment(comment_text):
+                        sections.append({"type": "comment", "text": comment_text})
+                    continue
 
             # Skip LaTeX commands like <clearpage>
             if line.strip().startswith("<") and line.strip().endswith(">") and " " not in line.strip():
@@ -335,18 +383,21 @@ class DocxContentProcessor:
         runs = []
 
         # Find all formatting markers, links, and citations
-        # Pattern to match: <<HIGHLIGHT_YELLOW>>text<</HIGHLIGHT_YELLOW>>, <<XREF>>text<</XREF>>, [text](url), **bold**, __underlined__, *italic*, _italic_, `code`, $math$, [number]
+        # Pattern to match: <<HIGHLIGHT_YELLOW>>text<</HIGHLIGHT_YELLOW>>, <<XREF:type>>text<</XREF>>, <!-- comment -->, [text](url), **bold**, __underlined__, *italic*, _italic_, ~subscript~, ^superscript^, `code`, $math$, [number]
         pattern = re.compile(
             r"(<<HIGHLIGHT_YELLOW>>([^<]+)<</HIGHLIGHT_YELLOW>>)"  # Yellow highlight (must be first)
-            r"|(<<XREF>>([^<]+)<</XREF>>)"  # Cross-reference
+            r"|(<<XREF:(\w+)>>([^<]+)<</XREF>>)"  # Cross-reference with type
+            r"|(<!--\s*(.+?)\s*-->)"  # HTML comments (inline)
             r"|(\[([^\]]+)\]\(([^)]+)\))"  # Markdown link [text](url) (before citations)
             r"|(\*\*([^*]+)\*\*)"  # Bold
             r"|(__([^_]+)__)"  # Underline with double underscores (must come before single underscore)
             r"|(\*([^*]+)\*)"  # Italic with asterisks
             r"|(_([^_]+)_)"  # Italic with underscores
+            r"|(~([^~]+)~)"  # Subscript
+            r"|(\^([^^]+)\^)"  # Superscript
             r"|(`([^`]+)`)"  # Code
             r"|(\$([^\$]+)\$)"  # Inline math
-            r"|(\[(\d+(?:,\s*\d+)*)\])"  # Citation numbers
+            r"|(\[(\d+(?:[-,]\s*\d+)*)\])"  # Citation numbers (supports both ranges [1-3] and lists [1, 2])
         )
 
         last_end = 0
@@ -378,67 +429,99 @@ class DocxContentProcessor:
                     if run["type"] == "text":
                         run["highlight_yellow"] = True
                     runs.append(run)
-            elif match.group(3):  # Cross-reference
+            elif match.group(3):  # Cross-reference with type
                 runs.append(
                     {
                         "type": "text",
-                        "text": match.group(4),
+                        "text": match.group(5),  # Text is now in group 5
                         "bold": False,
                         "italic": False,
                         "underline": False,
                         "code": False,
                         "xref": True,
+                        "xref_type": match.group(4),  # Type is in group 4
                     }
                 )
-            elif match.group(5):  # Markdown link [text](url)
+            elif match.group(6):  # Inline HTML comment
+                comment_text = match.group(7).strip()
+                # Skip metadata comments (e.g., "note that...", "Comment: ...")
+                if comment_text and not self._is_metadata_comment(comment_text):
+                    runs.append({"type": "inline_comment", "text": comment_text})
+            elif match.group(8):  # Markdown link [text](url)
                 runs.append(
                     {
                         "type": "hyperlink",
-                        "text": match.group(6),
-                        "url": match.group(7),
+                        "text": match.group(9),
+                        "url": match.group(10),
                     }
                 )
-            elif match.group(8):  # Bold
+            elif match.group(11):  # Bold
                 # Recursively parse inner text for underline/italic/other formatting
-                inner_text = match.group(9)
+                inner_text = match.group(12)
                 inner_runs = self._parse_inline_formatting(inner_text, citation_map)
                 # Add bold to all inner runs
                 for run in inner_runs:
                     if run["type"] == "text":
                         run["bold"] = True
                     runs.append(run)
-            elif match.group(10):  # Underline
+            elif match.group(13):  # Underline
                 # Recursively parse inner text for bold/italic/other formatting
-                inner_text = match.group(11)
+                inner_text = match.group(14)
                 inner_runs = self._parse_inline_formatting(inner_text, citation_map)
                 # Add underline to all inner runs
                 for run in inner_runs:
                     if run["type"] == "text":
                         run["underline"] = True
                     runs.append(run)
-            elif match.group(12):  # Italic with asterisks
+            elif match.group(15):  # Italic with asterisks
                 # Recursively parse inner text for bold/underline/other formatting
-                inner_text = match.group(13)
+                inner_text = match.group(16)
                 inner_runs = self._parse_inline_formatting(inner_text, citation_map)
                 # Add italic to all inner runs
                 for run in inner_runs:
                     if run["type"] == "text":
                         run["italic"] = True
                     runs.append(run)
-            elif match.group(14):  # Italic with underscores
+            elif match.group(17):  # Italic with underscores
                 # Recursively parse inner text for bold/underline/other formatting
-                inner_text = match.group(15)
+                inner_text = match.group(18)
                 inner_runs = self._parse_inline_formatting(inner_text, citation_map)
                 # Add italic to all inner runs
                 for run in inner_runs:
                     if run["type"] == "text":
                         run["italic"] = True
                     runs.append(run)
-            elif match.group(16):  # Code
+            elif match.group(19):  # Subscript
                 runs.append(
                     {
                         "type": "text",
-                        "text": match.group(17),
+                        "text": match.group(20),
+                        "bold": False,
+                        "italic": False,
+                        "underline": False,
+                        "code": False,
+                        "xref": False,
+                        "subscript": True,
+                    }
+                )
+            elif match.group(21):  # Superscript
+                runs.append(
+                    {
+                        "type": "text",
+                        "text": match.group(22),
+                        "bold": False,
+                        "italic": False,
+                        "underline": False,
+                        "code": False,
+                        "xref": False,
+                        "superscript": True,
+                    }
+                )
+            elif match.group(23):  # Code
+                runs.append(
+                    {
+                        "type": "text",
+                        "text": match.group(24),
                         "bold": False,
                         "italic": False,
                         "underline": False,
@@ -446,14 +529,23 @@ class DocxContentProcessor:
                         "xref": False,
                     }
                 )
-            elif match.group(18):  # Inline math
-                runs.append({"type": "inline_equation", "latex": match.group(19)})
-            elif match.group(20):  # Citation
-                # Parse citation numbers (may be multiple: [1, 2, 3])
-                numbers_str = match.group(21)
-                numbers = [int(n.strip()) for n in numbers_str.split(",")]
-                for num in numbers:
-                    runs.append({"type": "citation", "number": num})
+            elif match.group(25):  # Inline math
+                runs.append({"type": "inline_equation", "latex": match.group(26)})
+            elif match.group(27):  # Citation
+                # Keep citation as formatted text with yellow highlighting
+                # The citation mapper has already formatted ranges (e.g., [1-3], [1, 4-6, 8])
+                citation_text = match.group(0)  # Full match including brackets
+                runs.append(
+                    {
+                        "type": "text",
+                        "text": citation_text,
+                        "bold": False,
+                        "italic": False,
+                        "underline": False,
+                        "code": False,
+                        "highlight_yellow": True,  # Highlight citations in yellow
+                    }
+                )
 
             last_end = match.end()
 
@@ -516,6 +608,7 @@ class DocxContentProcessor:
         # Look ahead for caption line (skip empty lines)
         caption = ""
         label = ""
+        is_supplementary = False  # Default to main figure
         next_i = start_idx + 1
 
         # Skip empty lines to find caption
@@ -529,6 +622,9 @@ class DocxContentProcessor:
 
             # Check for {#fig:label ...} or {#sfig:label ...} **Caption**
             if next_line and (next_line.startswith("{#fig:") or next_line.startswith("{#sfig:")):
+                # Detect if it's a supplementary figure
+                is_supplementary = next_line.startswith("{#sfig:")
+
                 # Extract label if present
                 label_match = re.match(r"\{#s?fig:(\w+)[^}]*\}", next_line)
                 if label_match:
@@ -572,6 +668,7 @@ class DocxContentProcessor:
             "alt": alt_text,
             "caption": caption,
             "label": label,
+            "is_supplementary": is_supplementary,
         }, next_i
 
     def _parse_table(self, lines: List[str], start_idx: int) -> tuple[Optional[Dict[str, Any]], int]:
@@ -626,7 +723,8 @@ class DocxContentProcessor:
         if i < len(lines):
             caption_line = lines[i].strip()
             # Match {#stable:label} Caption or {#table:label} Caption
-            caption_match = re.match(r"^\{#(stable|table):(\w+)\}\s*(.+)$", caption_line)
+            # Allow hyphens and underscores in label names (e.g., "tool-comparison")
+            caption_match = re.match(r"^\{#(stable|table):([\w-]+)\}\s*(.+)$", caption_line)
             if caption_match:
                 label = f"{caption_match.group(1)}:{caption_match.group(2)}"
                 caption = caption_match.group(3).strip()

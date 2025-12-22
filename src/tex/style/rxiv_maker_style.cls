@@ -425,10 +425,10 @@
   {}
   {0em}
   {#1}
-\titlespacing*{\section}{0pc}{3ex \@plus4pt \@minus3pt}{5pt}
-\titlespacing*{\subsection}{0pc}{2.5ex \@plus3pt \@minus2pt}{2pt}
-\titlespacing*{\subsubsection}{0pc}{2ex \@plus2.5pt \@minus1.5pt}{2pt}
-\titlespacing*{\paragraph}{0pc}{1.5ex \@plus2pt \@minus1pt}{12pt}
+\titlespacing*{\section}{0pc}{1.5ex \@plus2pt \@minus1pt}{2pt}
+\titlespacing*{\subsection}{0pc}{1.2ex \@plus2pt \@minus1pt}{1pt}
+\titlespacing*{\subsubsection}{0pc}{1ex \@plus1pt \@minus0.5pt}{1pt}
+\titlespacing*{\paragraph}{0pc}{0.8ex \@plus1pt \@minus0.5pt}{8pt}
 
 %% Figure caption style
 \DeclareCaptionFormat{smallformat}{\normalfont\sffamily\fontsize{7}{9}\selectfont#1#2#3}
@@ -536,7 +536,7 @@
 \def\abstract{%\vspace{-.3em}
   \ifbfabstract\small\bfseries\else\footnotesize\fi}
 
-\def\endabstract{\vspace{1.0em}\par\normalsize}
+\def\endabstract{\vspace{0.2em}\par\normalsize}
 
 % \def\keywords{%\vspace{-.3em}
 % \noindent\ifbfabstract\Affilfont\bfseries\itshape\else\footnotesize\fi  Keywords --- }
@@ -549,44 +549,44 @@
 
 \def\keywords{%\vspace{-.3em}
 \ifbfabstract\Affilfont\bfseries\else\footnotesize\fi}
-\def\endkeywords{\vspace{0.3em}\par\normalsize}
+\def\endkeywords{\vspace{-0.3em}\par\normalsize}
 
 \newcommand{\at}{\makeatletter @\makeatother}
-\def\corrauthor{%\vspace{-.3em}
+\def\corrauthor{\vspace{-.2em}
 \noindent\ifbfabstract\Affilfont\bfseries\else\footnotesize\fi  Correspondence:\itshape}
-\def\endcorrauthor{\vspace{0.3em}\par\normalsize}
+\def\endcorrauthor{\vspace{0.1em}\par\normalsize}
 
-\def\acknowledgements{\vspace{.3em}
-\Affilfont\bfseries ACKNOWLEDGEMENTS\par\mdseries}
-\def\endacknowledgements{\vspace{0.3em}\par\normalsize}
+\def\acknowledgements{\vspace{.1em}
+\Affilfont\bfseries ACKNOWLEDGEMENTS\par\vspace{-0.2em}\mdseries}
+\def\endacknowledgements{\vspace{0.1em}\par\normalsize}
 
-\def\manuscriptinfo{\vspace{.3em}
-\Affilfont\bfseries ABOUT THIS MANUSCRIPT\par\mdseries}
-\def\endmanuscriptinfo{\vspace{0.3em}\par\normalsize}
+\def\manuscriptinfo{\vspace{.1em}
+\Affilfont\bfseries ABOUT THIS MANUSCRIPT\par\vspace{-0.2em}\mdseries}
+\def\endmanuscriptinfo{\vspace{0.1em}\par\normalsize}
 
-\def\contributions{\vspace{.3em}
-\Affilfont\bfseries AUTHOR CONTRIBUTIONS\par\mdseries}
-\def\endcontributions{\vspace{0.3em}\par\normalsize}
+\def\contributions{\vspace{.1em}
+\Affilfont\bfseries AUTHOR CONTRIBUTIONS\par\vspace{-0.2em}\mdseries}
+\def\endcontributions{\vspace{0.1em}\par\normalsize}
 
-\def\data{\vspace{.3em}
-\Affilfont\bfseries DATA AVAILABILITY\par\mdseries}
-\def\enddata{\vspace{0.3em}\par\normalsize}
+\def\data{\vspace{.1em}
+\Affilfont\bfseries DATA AVAILABILITY\par\vspace{-0.2em}\mdseries}
+\def\enddata{\vspace{0.1em}\par\normalsize}
 
-\def\code{\vspace{.3em}
-\Affilfont\bfseries CODE AVAILABILITY\par\mdseries}
-\def\endcode{\vspace{0.3em}\par\normalsize}
+\def\code{\vspace{.1em}
+\Affilfont\bfseries CODE AVAILABILITY\par\vspace{-0.2em}\mdseries}
+\def\endcode{\vspace{0.1em}\par\normalsize}
 
-\def\funding{\vspace{.3em}
-\Affilfont\bfseries FUNDING\par\mdseries}
-\def\endfunding{\vspace{0.3em}\par\normalsize}
+\def\funding{\vspace{.1em}
+\Affilfont\bfseries FUNDING\par\vspace{-0.2em}\mdseries}
+\def\endfunding{\vspace{0.1em}\par\normalsize}
 
-\def\interests{\vspace{.3em}
-\Affilfont\bfseries COMPETING FINANCIAL INTERESTS\par\mdseries}
-\def\endinterests{\vspace{0.3em}\par\normalsize}
+\def\interests{\vspace{.1em}
+\Affilfont\bfseries COMPETING FINANCIAL INTERESTS\par\vspace{-0.2em}\mdseries}
+\def\endinterests{\vspace{0.1em}\par\normalsize}
 
-\def\exauthor{\vspace{.3em}
-\Affilfont\bfseries EXTENDED AUTHOR INFORMATION \par\mdseries}
-\def\endexauthor{\vspace{0.3em}\par\normalsize}
+\def\exauthor{\vspace{.1em}
+\Affilfont\bfseries EXTENDED AUTHOR INFORMATION \par\vspace{-0.2em}\mdseries}
+\def\endexauthor{\vspace{0.1em}\par\normalsize}
 
 %% Custom environment for extended author info with reduced indentation
 \newenvironment{extendedauthorlist}{%
@@ -714,5 +714,5 @@
 
 % Paragraph formatting: no indentation, space between paragraphs
 \parindent=0pt
-\parskip=0.75\baselineskip plus 3pt minus 2pt
+\parskip=0.35\baselineskip plus 2pt minus 1pt
 \endinput

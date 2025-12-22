@@ -30,6 +30,7 @@ from ..framework import BuildCommand
 @click.option("--keep-output", is_flag=True, help="Preserve existing output directory (default: clear before build)")
 @click.option("--docx", is_flag=True, help="Also export to DOCX format for collaborative review")
 @click.option("--resolve-dois", "-r", is_flag=True, help="Attempt to resolve missing DOIs (when using --docx)")
+@click.option("--split-si", is_flag=True, help="Split PDF into main and SI sections (__main.pdf and __si.pdf)")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.option("--quiet", "-q", is_flag=True, help="Suppress non-essential output")
 @click.option("--debug", "-d", is_flag=True, help="Enable debug output")
@@ -49,6 +50,7 @@ def build(
     keep_output: bool,
     docx: bool,
     resolve_dois: bool,
+    split_si: bool,
     verbose: bool,
     quiet: bool,
     debug: bool,
@@ -81,6 +83,10 @@ def build(
 
         $ rxiv pdf --docx --resolve-dois
 
+    **Split PDF into main and SI sections:**
+
+        $ rxiv pdf --split-si
+
     **Force regenerate all figures:**
 
         $ rxiv pdf --force-figures
@@ -108,6 +114,7 @@ def build(
         keep_output=keep_output,
         docx=docx,
         resolve_dois=resolve_dois,
+        split_si=split_si,
         debug=debug or verbose,
         quiet=quiet,
         container_mode=container_mode,

@@ -2,6 +2,7 @@
 
 from rxiv_maker.converters.citation_processor import (
     convert_citations_to_latex,
+    extract_citations_from_text,
     process_citations_outside_tables,
 )
 
@@ -201,3 +202,92 @@ class TestEdgeCases:
         expected = rf"Citation \cite{{{long_key}}} test."
         result = convert_citations_to_latex(text)
         assert result == expected
+
+
+class TestExtractCitationsFromText:
+    """Test citation extraction from markdown text."""
+
+    def test_extract_simple_citations(self):
+        """Test extraction of simple citations."""
+        text = "See @smith2021 and [@jones2020;@brown2019]."
+        citations = extract_citations_from_text(text)
+        # Bracketed citations are processed first, then single citations
+        assert citations == ["jones2020", "brown2019", "smith2021"]
+
+    def test_extract_citations_with_underscores(self):
+        """Test extraction of citations with underscores."""
+        text = "Reference @first_author_2021 and @second_author_2020."
+        citations = extract_citations_from_text(text)
+        assert citations == ["first_author_2021", "second_author_2020"]
+
+    def test_extract_citations_with_triple_backticks(self):
+        """Test that citations are extracted even with triple backtick code blocks.
+
+        This is a regression test for a bug where the single-backtick protection
+        regex would incorrectly match across triple-backtick blocks, causing
+        citations between the blocks to be excluded from extraction.
+        """
+        text = """Some text with `inline code`.
+
+```latex
+\\begin{figure}
+  \\includegraphics{figure.pdf}
+\\end{figure}
+```
+
+The framework integrates [@schmidt_cell_2018], CellPose [@stringer_cellpose_2021],
+and U-Net [@ronneberger_u-net_2015] models from [@von_chamier_democratising_2021].
+
+```python
+def example():
+    pass
+```
+
+More citations: @smith2021 and @jones2020.
+"""
+        citations = extract_citations_from_text(text)
+        # All citations should be extracted, even those between code blocks
+        expected = [
+            "schmidt_cell_2018",
+            "stringer_cellpose_2021",
+            "ronneberger_u-net_2015",
+            "von_chamier_democratising_2021",
+            "smith2021",
+            "jones2020",
+        ]
+        assert citations == expected
+
+    def test_extract_excludes_backtick_protected_citations(self):
+        """Test that citations inside backticks are excluded."""
+        text = "See `@example_citation` and @real_citation."
+        citations = extract_citations_from_text(text)
+        # Only the real citation should be extracted
+        assert citations == ["real_citation"]
+
+    def test_extract_excludes_triple_backtick_protected_citations(self):
+        """Test that citations inside triple-backtick blocks are excluded."""
+        text = """Citation before: @before
+
+```markdown
+Example citation: @example_in_code
+```
+
+Citation after: @after
+"""
+        citations = extract_citations_from_text(text)
+        # Citations in code blocks should be excluded
+        assert citations == ["before", "after"]
+
+    def test_extract_excludes_figure_references(self):
+        """Test that figure references are not extracted as citations."""
+        text = "See @fig:example, @eq:formula, and @smith2021."
+        citations = extract_citations_from_text(text)
+        # Only the actual citation should be extracted
+        assert citations == ["smith2021"]
+
+    def test_extract_deduplicates_citations(self):
+        """Test that duplicate citations are not included multiple times."""
+        text = "First @smith2021, second @jones2020, and again @smith2021."
+        citations = extract_citations_from_text(text)
+        # Should preserve order of first appearance but not duplicate
+        assert citations == ["smith2021", "jones2020"]

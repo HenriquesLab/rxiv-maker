@@ -27,25 +27,25 @@ This file provides comprehensive guidance for AI assistants working on rxiv-make
 ### Initial Setup
 - **NEVER install packages at system level**
 - **ALWAYS use the virtual environment (.venv)**
-- **Use uv for modern dependency management when available**
+- **ALWAYS use UV for package management** (fast and modern)
 
 ```bash
-# Recommended setup
-pip install -e ".[dev]"
+# Recommended setup with UV (primary method)
+uv pip install -e ".[dev]"
 pre-commit install
 
-# Alternative with uv (if available)
-uv pip install -e ".[dev]"
+# Legacy method (only if UV unavailable)
+pip install -e ".[dev]"
 ```
 
 ### Development Dependencies
 Install development dependencies for full functionality:
 ```bash
-# Full development environment
-pip install -e ".[dev]"  # Includes pytest, ruff, mypy, pre-commit, etc.
+# Full development environment (UV - recommended)
+uv pip install -e ".[dev]"  # Includes pytest, ruff, mypy, pre-commit, PyPDF2, etc.
 
-# Or specify directly
-pip install pytest pytest-cov pytest-xdist ruff mypy pre-commit hatch build
+# Or install specific packages with UV
+uv pip install pytest pytest-cov pytest-xdist ruff mypy pre-commit hatch build PyPDF2
 ```
 
 ## Testing Commands
@@ -317,12 +317,12 @@ rxiv upgrade --check-only   # Check for updates only
   - Recommended for CI/CD and testing without local LaTeX
 
 ### Key Tools
+- **UV**: Fast Python package installer and resolver (primary package manager)
 - **Nox**: Task automation and testing orchestration
 - **Ruff**: Modern Python linting and formatting (replaces black, isort, flake8)
 - **MyPy**: Static type checking
 - **Pytest**: Testing framework with extensive plugin ecosystem
 - **Hatch**: Modern Python build backend
-- **uv**: Fast Python package installer (when available)
 
 ### Ecosystem Repositories
 The rxiv-maker ecosystem consists of interconnected repositories:
