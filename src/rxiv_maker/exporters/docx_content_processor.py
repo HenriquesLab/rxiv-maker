@@ -56,12 +56,14 @@ class DocxContentProcessor:
                 continue
 
             # Parse HTML/markdown comments (single-line and multi-line)
+            # Skip informational/metadata comments (those starting with "Note:")
             if line.strip().startswith("<!--"):
                 # Check if it's a single-line comment
                 if line.strip().endswith("-->"):
                     # Single-line comment
                     comment_text = line.strip()[4:-3].strip()
-                    if comment_text:
+                    # Skip metadata comments that start with "Note:"
+                    if comment_text and not comment_text.startswith("Note:"):
                         sections.append({"type": "comment", "text": comment_text})
                     i += 1
                     continue
@@ -81,7 +83,8 @@ class DocxContentProcessor:
 
                     # Join and add comment
                     comment_text = " ".join(comment_lines).strip()
-                    if comment_text:
+                    # Skip metadata comments that start with "Note:"
+                    if comment_text and not comment_text.startswith("Note:"):
                         sections.append({"type": "comment", "text": comment_text})
                     continue
 
