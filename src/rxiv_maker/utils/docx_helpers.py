@@ -202,7 +202,11 @@ def clean_latex_commands(text: str) -> str:
         >>> clean_latex_commands("Griffi{\\'e}")
         'Griffié'
     """
-    # First, decode HTML entities (&#233; -> é, &#225; -> á, &#8230; -> …, etc.)
+    # First, handle escaped HTML entities from BibTeX (\&\#233 -> &#233)
+    text = text.replace("\\&\\#", "&#")
+    text = text.replace("\\&#", "&#")  # Handle partially escaped variants
+
+    # Then decode HTML entities (&#233; -> é, &#225; -> á, &#8230; -> …, etc.)
     text = html.unescape(text)
 
     # Convert LaTeX accent commands to Unicode
@@ -349,8 +353,24 @@ def clean_latex_commands(text: str) -> str:
     # Remove unmatched opening braces at start of words (e.g., "{Sperr" -> "Sperr")
     text = re.sub(r"\{([A-Za-z])", r"\1", text)
 
-    # Remove unmatched closing braces at end of words (e.g., "Team}" -> "Team")
-    text = re.sub(r"([A-Za-z])\}", r"\1", text)
+    # Remove unmatched closing braces at end of words or after accented characters (e.g., "Team}" -> "Team", "Pé}" -> "Pé")
+    text = re.sub(r"([A-Za-zÀ-ÿ])\}", r"\1", text)
+
+    # Remove isolated braces (opening or closing)
+    text = re.sub(r"\{(?![A-Za-z])", "", text)  # Opening brace not followed by letter
+    text = re.sub(r"(?<![A-Za-z])\}", "", text)  # Closing brace not preceded by letter
+
+    # Fix common malformed author name patterns from bad BibTeX encoding
+    # Pattern: "Pé and Rez, Fernando" -> "Pérez, Fernando" (very short word with accent + capitalized word + comma)
+    # Only match if first word is 2-4 chars and ends with accented character
+    def fix_name_case(match):
+        part1, part2 = match.group(1), match.group(2)
+        # Lowercase the second part since it's continuation of first name
+        return f"{part1}{part2.lower()},"
+
+    text = re.sub(r"\b([A-ZÀ-Ÿ][à-ÿ]{1,3}) and ([A-Z][a-z]+),", fix_name_case, text)
+    # Pattern: "Damiá and n and" -> "Damián and" (word ending in accent + isolated letter + " and")
+    text = re.sub(r"\b([A-ZÀ-Ÿ][a-zà-ÿ]+[à-ÿ]) and ([a-zà-ÿ])\s+and\s+", r"\1\2 and ", text)
 
     # Clean up any remaining empty braces or double spaces
     text = re.sub(r"\{\}", "", text)
