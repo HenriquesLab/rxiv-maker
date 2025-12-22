@@ -203,7 +203,17 @@ class TestCitationMapper:
         result = mapper.replace_citations_in_text(text, mapping)
         # Check that all citations were replaced with numbers
         assert f"[{mapping['smith2021']}]" in result
-        assert f"[{mapping['jones2022']}, {mapping['brown2023']}]" in result
+        # If jones2022 and brown2023 are consecutive numbers, they should be formatted as a range
+        jones_num = mapping["jones2022"]
+        brown_num = mapping["brown2023"]
+        if abs(jones_num - brown_num) == 1:
+            # Consecutive numbers - should be formatted as range [X-Y]
+            min_num = min(jones_num, brown_num)
+            max_num = max(jones_num, brown_num)
+            assert f"[{min_num}-{max_num}]" in result
+        else:
+            # Non-consecutive - should be comma-separated
+            assert f"[{jones_num}, {brown_num}]" in result or f"[{brown_num}, {jones_num}]" in result
         assert "@fig:example" in result  # Preserved
         assert "@smith2021" not in result  # Replaced
         assert "@jones2022" not in result  # Replaced
