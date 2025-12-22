@@ -55,14 +55,35 @@ class DocxContentProcessor:
                 i += 1
                 continue
 
-            # Parse HTML/markdown comments and include with yellow highlighting
-            if line.strip().startswith("<!--") and line.strip().endswith("-->"):
-                # Extract comment text (remove <!-- and -->)
-                comment_text = line.strip()[4:-3].strip()
-                if comment_text:
-                    sections.append({"type": "comment", "text": comment_text})
-                i += 1
-                continue
+            # Parse HTML/markdown comments (single-line and multi-line)
+            if line.strip().startswith("<!--"):
+                # Check if it's a single-line comment
+                if line.strip().endswith("-->"):
+                    # Single-line comment
+                    comment_text = line.strip()[4:-3].strip()
+                    if comment_text:
+                        sections.append({"type": "comment", "text": comment_text})
+                    i += 1
+                    continue
+                else:
+                    # Multi-line comment - collect all lines until -->
+                    comment_lines = [line.strip()[4:]]  # Remove <!--
+                    i += 1
+                    while i < len(lines):
+                        if lines[i].strip().endswith("-->"):
+                            # Last line of comment
+                            comment_lines.append(lines[i].strip()[:-3])  # Remove -->
+                            i += 1
+                            break
+                        else:
+                            comment_lines.append(lines[i].strip())
+                            i += 1
+
+                    # Join and add comment
+                    comment_text = " ".join(comment_lines).strip()
+                    if comment_text:
+                        sections.append({"type": "comment", "text": comment_text})
+                    continue
 
             # Skip LaTeX commands like <clearpage>
             if line.strip().startswith("<") and line.strip().endswith(">") and " " not in line.strip():
@@ -339,7 +360,7 @@ class DocxContentProcessor:
         runs = []
 
         # Find all formatting markers, links, and citations
-        # Pattern to match: <<HIGHLIGHT_YELLOW>>text<</HIGHLIGHT_YELLOW>>, <<XREF:type>>text<</XREF>>, [text](url), **bold**, __underlined__, *italic*, _italic_, `code`, $math$, [number]
+        # Pattern to match: <<HIGHLIGHT_YELLOW>>text<</HIGHLIGHT_YELLOW>>, <<XREF:type>>text<</XREF>>, [text](url), **bold**, __underlined__, *italic*, _italic_, ~subscript~, ^superscript^, `code`, $math$, [number]
         pattern = re.compile(
             r"(<<HIGHLIGHT_YELLOW>>([^<]+)<</HIGHLIGHT_YELLOW>>)"  # Yellow highlight (must be first)
             r"|(<<XREF:(\w+)>>([^<]+)<</XREF>>)"  # Cross-reference with type
@@ -348,6 +369,8 @@ class DocxContentProcessor:
             r"|(__([^_]+)__)"  # Underline with double underscores (must come before single underscore)
             r"|(\*([^*]+)\*)"  # Italic with asterisks
             r"|(_([^_]+)_)"  # Italic with underscores
+            r"|(~([^~]+)~)"  # Subscript
+            r"|(\^([^^]+)\^)"  # Superscript
             r"|(`([^`]+)`)"  # Code
             r"|(\$([^\$]+)\$)"  # Inline math
             r"|(\[(\d+(?:,\s*\d+)*)\])"  # Citation numbers
@@ -439,7 +462,7 @@ class DocxContentProcessor:
                     if run["type"] == "text":
                         run["italic"] = True
                     runs.append(run)
-            elif match.group(17):  # Code
+            elif match.group(17):  # Subscript
                 runs.append(
                     {
                         "type": "text",
@@ -447,15 +470,41 @@ class DocxContentProcessor:
                         "bold": False,
                         "italic": False,
                         "underline": False,
+                        "code": False,
+                        "xref": False,
+                        "subscript": True,
+                    }
+                )
+            elif match.group(19):  # Superscript
+                runs.append(
+                    {
+                        "type": "text",
+                        "text": match.group(20),
+                        "bold": False,
+                        "italic": False,
+                        "underline": False,
+                        "code": False,
+                        "xref": False,
+                        "superscript": True,
+                    }
+                )
+            elif match.group(21):  # Code
+                runs.append(
+                    {
+                        "type": "text",
+                        "text": match.group(22),
+                        "bold": False,
+                        "italic": False,
+                        "underline": False,
                         "code": True,
                         "xref": False,
                     }
                 )
-            elif match.group(19):  # Inline math
-                runs.append({"type": "inline_equation", "latex": match.group(20)})
-            elif match.group(21):  # Citation
+            elif match.group(23):  # Inline math
+                runs.append({"type": "inline_equation", "latex": match.group(24)})
+            elif match.group(25):  # Citation
                 # Parse citation numbers (may be multiple: [1, 2, 3])
-                numbers_str = match.group(22)
+                numbers_str = match.group(26)
                 numbers = [int(n.strip()) for n in numbers_str.split(",")]
                 for num in numbers:
                     runs.append({"type": "citation", "number": num})

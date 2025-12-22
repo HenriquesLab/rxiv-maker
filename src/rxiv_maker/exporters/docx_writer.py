@@ -344,6 +344,10 @@ class DocxWriter:
                 run.italic = True
             if run_data.get("underline"):
                 run.underline = True
+            if run_data.get("subscript"):
+                run.font.subscript = True
+            if run_data.get("superscript"):
+                run.font.superscript = True
             if run_data.get("code"):
                 run.font.name = "Courier New"
                 run.font.size = Pt(10)
@@ -398,6 +402,10 @@ class DocxWriter:
                         run.bold = True
                     if run_data.get("italic"):
                         run.italic = True
+                    if run_data.get("subscript"):
+                        run.font.subscript = True
+                    if run_data.get("superscript"):
+                        run.font.superscript = True
                     if run_data.get("code"):
                         run.font.name = "Courier New"
                     if run_data.get("xref"):
@@ -599,6 +607,10 @@ class DocxWriter:
                         run.bold = True
                     if run_data.get("italic"):
                         run.italic = True
+                    if run_data.get("subscript"):
+                        run.font.subscript = True
+                    if run_data.get("superscript"):
+                        run.font.superscript = True
                     if run_data.get("code"):
                         run.font.name = "Courier New"
                     if run_data.get("xref"):
@@ -682,6 +694,10 @@ class DocxWriter:
                                 run.italic = True
                             if run_data.get("underline"):
                                 run.underline = True
+                            if run_data.get("subscript"):
+                                run.font.subscript = True
+                            if run_data.get("superscript"):
+                                run.font.superscript = True
                             if run_data.get("code"):
                                 run.font.name = "Courier New"
                             if run_data.get("xref"):
@@ -736,6 +752,10 @@ class DocxWriter:
                         run.italic = True
                     if run_data.get("underline"):
                         run.underline = True
+                    if run_data.get("subscript"):
+                        run.font.subscript = True
+                    if run_data.get("superscript"):
+                        run.font.superscript = True
                     if run_data.get("code"):
                         run.font.name = "Courier New"
                     if run_data.get("xref"):
