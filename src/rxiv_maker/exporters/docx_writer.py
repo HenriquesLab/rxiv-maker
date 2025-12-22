@@ -71,10 +71,16 @@ class DocxWriter:
 
         # Process each section INCLUDING figures inline
         figure_counter = 0
+        sfigure_counter = 0
         for section in doc_structure["sections"]:
             if section["type"] == "figure":
-                figure_counter += 1
-                self._add_figure(doc, section, figure_number=figure_counter)
+                is_supplementary = section.get("is_supplementary", False)
+                if is_supplementary:
+                    sfigure_counter += 1
+                    self._add_figure(doc, section, figure_number=sfigure_counter, is_supplementary=True)
+                else:
+                    figure_counter += 1
+                    self._add_figure(doc, section, figure_number=figure_counter, is_supplementary=False)
             else:
                 self._add_section(doc, section, bibliography, include_footnotes)
 
@@ -417,13 +423,16 @@ class DocxWriter:
 
         return result.status == DependencyStatus.AVAILABLE
 
-    def _add_figure(self, doc: Document, section: Dict[str, Any], figure_number: int = None):
+    def _add_figure(
+        self, doc: Document, section: Dict[str, Any], figure_number: int = None, is_supplementary: bool = False
+    ):
         """Add figure to document with caption.
 
         Args:
             doc: Document object
             section: Figure section data with 'path', 'caption', 'label'
             figure_number: Figure number (1-indexed)
+            is_supplementary: Whether this is a supplementary figure
         """
         figure_path = Path(section["path"])
         caption = section.get("caption", "")
@@ -494,9 +503,12 @@ class DocxWriter:
             # Add small space before caption to separate from figure
             caption_para.paragraph_format.space_before = Pt(3)
 
-            # Format as "Figure number: "
+            # Format as "Figure number: " or "Supp. Fig. number: "
             if figure_number:
-                run = caption_para.add_run(f"Figure {figure_number}: ")
+                if is_supplementary:
+                    run = caption_para.add_run(f"Supp. Fig. S{figure_number}. ")
+                else:
+                    run = caption_para.add_run(f"Fig. {figure_number}. ")
                 run.bold = True
                 run.font.size = Pt(7)
             else:

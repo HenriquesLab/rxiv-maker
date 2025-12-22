@@ -516,6 +516,7 @@ class DocxContentProcessor:
         # Look ahead for caption line (skip empty lines)
         caption = ""
         label = ""
+        is_supplementary = False  # Default to main figure
         next_i = start_idx + 1
 
         # Skip empty lines to find caption
@@ -529,6 +530,9 @@ class DocxContentProcessor:
 
             # Check for {#fig:label ...} or {#sfig:label ...} **Caption**
             if next_line and (next_line.startswith("{#fig:") or next_line.startswith("{#sfig:")):
+                # Detect if it's a supplementary figure
+                is_supplementary = next_line.startswith("{#sfig:")
+
                 # Extract label if present
                 label_match = re.match(r"\{#s?fig:(\w+)[^}]*\}", next_line)
                 if label_match:
@@ -572,6 +576,7 @@ class DocxContentProcessor:
             "alt": alt_text,
             "caption": caption,
             "label": label,
+            "is_supplementary": is_supplementary,
         }, next_i
 
     def _parse_table(self, lines: List[str], start_idx: int) -> tuple[Optional[Dict[str, Any]], int]:

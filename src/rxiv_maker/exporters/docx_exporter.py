@@ -195,8 +195,9 @@ class DocxExporter:
 
         # Step 5.6: Remove label markers now that mapping is complete
         # These metadata markers should not appear in the final output
+        # NOTE: Keep fig/sfig labels - they're needed by content processor and removed during caption parsing
         markdown_with_numbers = re.sub(
-            r"^\{#(?:fig|sfig|snote|stable|table|eq):[^}]+\}\s*", "", markdown_with_numbers, flags=re.MULTILINE
+            r"^\{#(?:snote|stable|table|eq):[^}]+\}\s*", "", markdown_with_numbers, flags=re.MULTILINE
         )
 
         # Step 6: Convert content to DOCX structure
