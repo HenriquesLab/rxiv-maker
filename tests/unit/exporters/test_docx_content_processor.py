@@ -89,10 +89,10 @@ class TestDocxContentProcessor:
         section = result["sections"][0]
         runs = section["runs"]
 
-        # Should have citation run
-        citation_runs = [r for r in runs if r["type"] == "citation"]
-        assert len(citation_runs) == 1
-        assert citation_runs[0]["number"] == 1
+        # Citations should be yellow-highlighted text (not separate citation objects)
+        yellow_runs = [r for r in runs if r.get("highlight_yellow")]
+        assert len(yellow_runs) == 1
+        assert yellow_runs[0]["text"] == "[1]"
 
     def test_parse_bullet_list(self):
         """Test parsing bullet list."""
