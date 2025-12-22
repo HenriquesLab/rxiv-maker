@@ -55,8 +55,12 @@ class DocxContentProcessor:
                 i += 1
                 continue
 
-            # Skip HTML/markdown comments
-            if line.strip().startswith("<!--"):
+            # Parse HTML/markdown comments and include with yellow highlighting
+            if line.strip().startswith("<!--") and line.strip().endswith("-->"):
+                # Extract comment text (remove <!-- and -->)
+                comment_text = line.strip()[4:-3].strip()
+                if comment_text:
+                    sections.append({"type": "comment", "text": comment_text})
                 i += 1
                 continue
 

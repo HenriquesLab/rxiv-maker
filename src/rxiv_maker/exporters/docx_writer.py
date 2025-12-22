@@ -234,6 +234,8 @@ class DocxWriter:
             self._add_list(doc, section)
         elif section_type == "code_block":
             self._add_code_block(doc, section)
+        elif section_type == "comment":
+            self._add_comment(doc, section)
         elif section_type == "figure":
             self._add_figure(doc, section)
         elif section_type == "table":
@@ -410,6 +412,22 @@ class DocxWriter:
         paragraph_format = paragraph.paragraph_format
         paragraph_format.left_indent = Pt(36)  # Indent code blocks
 
+    def _add_comment(self, doc: Document, section: Dict[str, Any]):
+        """Add comment to document with turquoise highlighting.
+
+        Args:
+            doc: Document object
+            section: Comment section data with 'text'
+        """
+        comment_text = section["text"]
+        paragraph = doc.add_paragraph()
+
+        # Add comment text with turquoise highlighting to distinguish from yellow xrefs
+        run = paragraph.add_run(f"[Comment: {comment_text}]")
+        run.font.highlight_color = WD_COLOR_INDEX.TURQUOISE
+        run.italic = True
+        run.font.size = Pt(10)
+
     def _check_poppler_availability(self) -> bool:
         """Check if poppler is available for PDF conversion.
 
@@ -479,10 +497,26 @@ class DocxWriter:
             logger.warning(f"Unsupported image format: {figure_path.suffix}")
 
         if img_source:
-            # Add image
+            # Add image with proper sizing to fit page
             try:
-                doc.add_picture(img_source, width=Inches(6))
-                logger.debug(f"Embedded figure: {figure_path}")
+                from PIL import Image as PILImage
+
+                # Get image dimensions
+                with PILImage.open(img_source) as img:
+                    img_width, img_height = img.size
+                    aspect_ratio = img_width / img_height
+
+                # Page dimensions with margins (Letter size: 8.5 x 11 inches, 1 inch margins)
+                max_width = Inches(6.5)  # 8.5 - 2*1
+                max_height = Inches(9)  # 11 - 2*1
+
+                # Calculate optimal size maintaining aspect ratio
+                if aspect_ratio > (6.5 / 9):  # Wide image - constrain by width
+                    doc.add_picture(img_source, width=max_width)
+                else:  # Tall image - constrain by height
+                    doc.add_picture(img_source, height=max_height)
+
+                logger.debug(f"Embedded figure: {figure_path} ({img_width}x{img_height})")
             except Exception as e:
                 logger.warning(f"Failed to embed figure {figure_path}: {e}")
                 # Add placeholder text
