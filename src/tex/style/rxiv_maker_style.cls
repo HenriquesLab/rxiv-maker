@@ -557,35 +557,35 @@
 \def\endcorrauthor{\vspace{0.1em}\par\normalsize}
 
 \def\acknowledgements{\vspace{.1em}
-\Affilfont\bfseries ACKNOWLEDGEMENTS\par\mdseries}
+\Affilfont\bfseries ACKNOWLEDGEMENTS\par\vspace{-0.2em}\mdseries}
 \def\endacknowledgements{\vspace{0.1em}\par\normalsize}
 
 \def\manuscriptinfo{\vspace{.1em}
-\Affilfont\bfseries ABOUT THIS MANUSCRIPT\par\mdseries}
+\Affilfont\bfseries ABOUT THIS MANUSCRIPT\par\vspace{-0.2em}\mdseries}
 \def\endmanuscriptinfo{\vspace{0.1em}\par\normalsize}
 
 \def\contributions{\vspace{.1em}
-\Affilfont\bfseries AUTHOR CONTRIBUTIONS\par\mdseries}
+\Affilfont\bfseries AUTHOR CONTRIBUTIONS\par\vspace{-0.2em}\mdseries}
 \def\endcontributions{\vspace{0.1em}\par\normalsize}
 
 \def\data{\vspace{.1em}
-\Affilfont\bfseries DATA AVAILABILITY\par\mdseries}
+\Affilfont\bfseries DATA AVAILABILITY\par\vspace{-0.2em}\mdseries}
 \def\enddata{\vspace{0.1em}\par\normalsize}
 
 \def\code{\vspace{.1em}
-\Affilfont\bfseries CODE AVAILABILITY\par\mdseries}
+\Affilfont\bfseries CODE AVAILABILITY\par\vspace{-0.2em}\mdseries}
 \def\endcode{\vspace{0.1em}\par\normalsize}
 
 \def\funding{\vspace{.1em}
-\Affilfont\bfseries FUNDING\par\mdseries}
+\Affilfont\bfseries FUNDING\par\vspace{-0.2em}\mdseries}
 \def\endfunding{\vspace{0.1em}\par\normalsize}
 
 \def\interests{\vspace{.1em}
-\Affilfont\bfseries COMPETING FINANCIAL INTERESTS\par\mdseries}
+\Affilfont\bfseries COMPETING FINANCIAL INTERESTS\par\vspace{-0.2em}\mdseries}
 \def\endinterests{\vspace{0.1em}\par\normalsize}
 
 \def\exauthor{\vspace{.1em}
-\Affilfont\bfseries EXTENDED AUTHOR INFORMATION \par\mdseries}
+\Affilfont\bfseries EXTENDED AUTHOR INFORMATION \par\vspace{-0.2em}\mdseries}
 \def\endexauthor{\vspace{0.1em}\par\normalsize}
 
 %% Custom environment for extended author info with reduced indentation
