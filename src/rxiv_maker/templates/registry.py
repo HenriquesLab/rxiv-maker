@@ -286,6 +286,7 @@ output/
 .rxiv_cache/
 *.pdf
 *.docx
+*.zip
 *.log
 *.aux
 *.fdb_latexmk
