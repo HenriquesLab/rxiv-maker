@@ -120,14 +120,14 @@ class DocxExporter:
 
         # Replace @fig:label with "Fig. X" in text, handling optional panel letters
         # Pattern matches: @fig:label optionally followed by space and panel letter(s)
-        # Use special markers <<XREF>> to enable yellow highlighting in DOCX
+        # Use special markers <<XREF:type>> to enable color-coded highlighting in DOCX
         for label, num in figure_map.items():
             # Match @fig:label with optional panel letters like " a", " a,b", " a-c"
             # Use negative lookahead (?![a-z]) to prevent matching start of words like " is", " and"
             # Panel letters must be followed by non-letter (space, punctuation, end of string)
             markdown_with_numbers = re.sub(
                 rf"@fig:{label}\b(\s+[a-z](?:[,\-][a-z])*(?![a-z]))?",
-                lambda m, num=num: f"<<XREF>>Fig. {num}{m.group(1) if m.group(1) else ''}<</XREF>>",
+                lambda m, num=num: f"<<XREF:fig>>Fig. {num}{m.group(1) if m.group(1) else ''}<</XREF>>",
                 markdown_with_numbers,
             )
 
@@ -144,7 +144,7 @@ class DocxExporter:
             # Negative lookahead prevents matching start of words
             markdown_with_numbers = re.sub(
                 rf"@sfig:{label}\b(\s+[a-z](?:[,\-][a-z])*(?![a-z]))?",
-                lambda m, num=num: f"<<XREF>>Supp. Fig. {num}{m.group(1) if m.group(1) else ''}<</XREF>>",
+                lambda m, num=num: f"<<XREF:sfig>>Supp. Fig. {num}{m.group(1) if m.group(1) else ''}<</XREF>>",
                 markdown_with_numbers,
             )
 
@@ -199,7 +199,7 @@ class DocxExporter:
         # Replace @stable:label with "Supp. Table X" in text
         for label, num in table_map.items():
             markdown_with_numbers = re.sub(
-                rf"@stable:{label}\b", f"<<XREF>>Supp. Table {num}<</XREF>>", markdown_with_numbers
+                rf"@stable:{label}\b", f"<<XREF:stable>>Supp. Table {num}<</XREF>>", markdown_with_numbers
             )
 
         logger.debug(
@@ -214,7 +214,7 @@ class DocxExporter:
         # Replace @snote:label with "Supp. Note X" in text
         for label, num in snote_map.items():
             markdown_with_numbers = re.sub(
-                rf"@snote:{label}\b", f"<<XREF>>Supp. Note {num}<</XREF>>", markdown_with_numbers
+                rf"@snote:{label}\b", f"<<XREF:snote>>Supp. Note {num}<</XREF>>", markdown_with_numbers
             )
 
         logger.debug(f"Mapped {len(snote_map)} supplementary note labels to numbers")
@@ -229,10 +229,10 @@ class DocxExporter:
         for label, num in equation_map.items():
             # Replace (@eq:label) with (Eq. X)
             markdown_with_numbers = re.sub(
-                rf"\(@eq:{label}\b\)", f"(<<XREF>>Eq. {num}<</XREF>>)", markdown_with_numbers
+                rf"\(@eq:{label}\b\)", f"(<<XREF:eq>>Eq. {num}<</XREF>>)", markdown_with_numbers
             )
             # Replace @eq:label with Eq. X
-            markdown_with_numbers = re.sub(rf"@eq:{label}\b", f"<<XREF>>Eq. {num}<</XREF>>", markdown_with_numbers)
+            markdown_with_numbers = re.sub(rf"@eq:{label}\b", f"<<XREF:eq>>Eq. {num}<</XREF>>", markdown_with_numbers)
 
         logger.debug(f"Mapped {len(equation_map)} equation labels to numbers")
 

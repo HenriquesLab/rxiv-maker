@@ -24,6 +24,29 @@ logger = get_logger()
 class DocxWriter:
     """Writes structured content to DOCX files using python-docx."""
 
+    # Color mapping for different reference types
+    XREF_COLORS = {
+        "fig": WD_COLOR_INDEX.BRIGHT_GREEN,  # Figures
+        "sfig": WD_COLOR_INDEX.GREEN,  # Supplementary figures
+        "stable": WD_COLOR_INDEX.TEAL,  # Supplementary tables
+        "table": WD_COLOR_INDEX.BLUE,  # Main tables
+        "eq": WD_COLOR_INDEX.VIOLET,  # Equations
+        "snote": WD_COLOR_INDEX.PINK,  # Supplementary notes
+        "cite": WD_COLOR_INDEX.YELLOW,  # Citations
+    }
+
+    @staticmethod
+    def get_xref_color(xref_type: str):
+        """Get highlight color for a cross-reference type.
+
+        Args:
+            xref_type: Type of cross-reference (fig, sfig, stable, table, eq, snote, cite)
+
+        Returns:
+            WD_COLOR_INDEX color for the xref type, or YELLOW as default
+        """
+        return DocxWriter.XREF_COLORS.get(xref_type, WD_COLOR_INDEX.YELLOW)
+
     def write(
         self,
         doc_structure: Dict[str, Any],
@@ -325,7 +348,9 @@ class DocxWriter:
                 run.font.name = "Courier New"
                 run.font.size = Pt(10)
             if run_data.get("xref"):
-                run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                # Use color based on xref type (fig, sfig, stable, eq, etc.)
+                xref_type = run_data.get("xref_type", "cite")
+                run.font.highlight_color = self.get_xref_color(xref_type)
             if run_data.get("highlight_yellow"):
                 run.font.highlight_color = WD_COLOR_INDEX.YELLOW
 
@@ -376,7 +401,9 @@ class DocxWriter:
                     if run_data.get("code"):
                         run.font.name = "Courier New"
                     if run_data.get("xref"):
-                        run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                        # Use color based on xref type
+                        xref_type = run_data.get("xref_type", "cite")
+                        run.font.highlight_color = self.get_xref_color(xref_type)
                     if run_data.get("highlight_yellow"):
                         run.font.highlight_color = WD_COLOR_INDEX.YELLOW
                         run.font.size = Pt(10)
@@ -395,6 +422,7 @@ class DocxWriter:
                     run = paragraph.add_run(f"[{cite_num}]")
                     run.bold = True
                     run.font.size = Pt(10)
+                    run.font.highlight_color = WD_COLOR_INDEX.YELLOW
 
     def _add_code_block(self, doc: Document, section: Dict[str, Any]):
         """Add code block to document.
@@ -574,7 +602,9 @@ class DocxWriter:
                     if run_data.get("code"):
                         run.font.name = "Courier New"
                     if run_data.get("xref"):
-                        run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                        # Use color based on xref type
+                        xref_type = run_data.get("xref_type", "cite")
+                        run.font.highlight_color = self.get_xref_color(xref_type)
                     if run_data.get("highlight_yellow"):
                         run.font.highlight_color = WD_COLOR_INDEX.YELLOW
                 elif run_data["type"] == "inline_equation":
@@ -586,6 +616,7 @@ class DocxWriter:
                     run = caption_para.add_run(f"[{cite_num}]")
                     run.bold = True
                     run.font.size = Pt(7)
+                    run.font.highlight_color = WD_COLOR_INDEX.YELLOW
 
             # Add spacing after figure (reduced from 12 to 6 for compactness)
             caption_para.paragraph_format.space_after = Pt(6)
@@ -654,7 +685,9 @@ class DocxWriter:
                             if run_data.get("code"):
                                 run.font.name = "Courier New"
                             if run_data.get("xref"):
-                                run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                                # Use color based on xref type
+                                xref_type = run_data.get("xref_type", "cite")
+                                run.font.highlight_color = self.get_xref_color(xref_type)
 
         # Add table caption if present
         caption = section.get("caption")
@@ -706,7 +739,9 @@ class DocxWriter:
                     if run_data.get("code"):
                         run.font.name = "Courier New"
                     if run_data.get("xref"):
-                        run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                        # Use color based on xref type
+                        xref_type = run_data.get("xref_type", "cite")
+                        run.font.highlight_color = self.get_xref_color(xref_type)
 
             # Add spacing after table (reduced from 12 to 6 for compactness)
             caption_para.paragraph_format.space_after = Pt(6)
