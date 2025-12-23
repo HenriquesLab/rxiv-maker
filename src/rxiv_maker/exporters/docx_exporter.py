@@ -54,6 +54,7 @@ class DocxExporter:
         docx_config = config.get("docx", {})
         self.hide_si = docx_config.get("hide_si", False)  # Default to False (don't hide SI) for backwards compatibility
         self.figures_at_end = docx_config.get("figures_at_end", False)  # Default to False (inline figures)
+        self.hide_highlighting = docx_config.get("hide_highlighting", False)  # Default to False (show highlights)
 
         # Components
         self.citation_mapper = CitationMapper()
@@ -247,6 +248,7 @@ class DocxExporter:
             metadata=metadata,
             table_map=table_map,
             figures_at_end=self.figures_at_end,
+            hide_highlighting=self.hide_highlighting,
         )
         logger.info(f"DOCX exported successfully: {docx_path}")
 
