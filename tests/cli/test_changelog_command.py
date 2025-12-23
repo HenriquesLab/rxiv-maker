@@ -27,6 +27,19 @@ def sample_changelog():
     # Include current version to match __version__
     return """# Changelog
 
+## [v1.18.0] - 2025-12-23
+
+### Added
+- DOCX configuration options (hide_highlighting, hide_comments)
+- Co-first author support
+- Corresponding author support
+
+### Changed
+- DOCX typography improvements (Arial font, 8pt sizing)
+
+### Fixed
+- Init command environment variable issue
+
 ## [v1.17.0] - 2025-12-22
 
 ### Added
