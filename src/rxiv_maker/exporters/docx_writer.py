@@ -87,6 +87,9 @@ class DocxWriter:
         self.hide_comments = hide_comments
         doc = Document()
 
+        # Set default font to Arial for entire document
+        self._set_default_font(doc, "Arial")
+
         # Add title and author information if metadata provided
         if metadata:
             self._add_title_page(doc, metadata)
@@ -169,6 +172,28 @@ class DocxWriter:
         # Save document
         doc.save(str(output_path))
         return output_path
+
+    def _set_default_font(self, doc: Document, font_name: str):
+        """Set the default font for the entire document.
+
+        Args:
+            doc: Document object
+            font_name: Font name to use (e.g., "Arial", "Times New Roman")
+        """
+        # Set font on Normal style (base style for most content)
+        style = doc.styles["Normal"]
+        font = style.font
+        font.name = font_name
+        font.size = Pt(10)  # Default body font size
+
+        # Also set on heading styles to ensure consistency
+        for i in range(1, 10):
+            try:
+                heading_style = doc.styles[f"Heading {i}"]
+                heading_style.font.name = font_name
+            except KeyError:
+                # Heading style doesn't exist, skip
+                pass
 
     def _apply_highlight(self, run, color: WD_COLOR_INDEX):
         """Apply highlight color to a run, unless highlighting is disabled.
@@ -264,6 +289,7 @@ class DocxWriter:
                 # Add superscript number
                 num_run = affil_para.add_run(str(affil_num))
                 num_run.font.superscript = True
+                num_run.font.size = Pt(8)
 
                 # Add affiliation text
                 affil_run = affil_para.add_run(f" {affil_text}")
