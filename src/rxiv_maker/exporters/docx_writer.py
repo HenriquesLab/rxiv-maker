@@ -152,12 +152,12 @@ class DocxWriter:
                 # Add formatted bibliography text (without DOI - added separately below)
                 para.add_run(bib_entry["formatted"])
 
-                # Add DOI as hyperlink with yellow highlighting if present
+                # Add DOI as hyperlink with yellow highlighting if present (unless hide_highlighting is enabled)
                 if bib_entry.get("doi"):
                     doi = bib_entry["doi"]
                     doi_url = f"https://doi.org/{doi}" if not doi.startswith("http") else doi
                     para.add_run("\nDOI: ")
-                    self._add_hyperlink(para, doi_url, doi_url, highlight=True)
+                    self._add_hyperlink(para, doi_url, doi_url, highlight=not self.hide_highlighting)
 
                 # Add spacing between entries
                 para.paragraph_format.space_after = Pt(6)
@@ -267,9 +267,9 @@ class DocxWriter:
                 num_run.font.superscript = True
 
                 # Add affiliation text
-                affil_para.add_run(f" {affil_text}")
+                affil_run = affil_para.add_run(f" {affil_text}")
+                affil_run.font.size = Pt(8)
                 affil_para.paragraph_format.space_after = Pt(4)
-                affil_para.runs[1].font.size = Pt(10)
 
             # Extra space after last affiliation
             affil_para.paragraph_format.space_after = Pt(12)
@@ -280,11 +280,15 @@ class DocxWriter:
             corr_para = doc.add_paragraph()
             corr_marker = corr_para.add_run("*")
             corr_marker.font.superscript = True
-            corr_para.add_run(" Correspondence: ")
+            corr_marker.font.size = Pt(8)
+
+            corr_label = corr_para.add_run(" Correspondence: ")
+            corr_label.font.size = Pt(8)
 
             for i, author in enumerate(corresponding_authors):
                 if i > 0:
-                    corr_para.add_run("; ")
+                    sep_run = corr_para.add_run("; ")
+                    sep_run.font.size = Pt(8)
 
                 name = author.get("name", "")
                 email = author.get("email", "")
@@ -299,12 +303,12 @@ class DocxWriter:
                             email = ""
 
                 if email:
-                    corr_para.add_run(f"{name} ({email})")
+                    info_run = corr_para.add_run(f"{name} ({email})")
                 else:
-                    corr_para.add_run(name)
+                    info_run = corr_para.add_run(name)
+                info_run.font.size = Pt(8)
 
             corr_para.paragraph_format.space_after = Pt(12)
-            corr_para.runs[-1].font.size = Pt(10)
 
     def _add_section(
         self,
@@ -684,11 +688,11 @@ class DocxWriter:
                 else:
                     run = caption_para.add_run(f"Fig. {figure_number}. ")
                 run.bold = True
-                run.font.size = Pt(7)
+                run.font.size = Pt(8)
             else:
                 run = caption_para.add_run("Figure: ")
                 run.bold = True
-                run.font.size = Pt(7)
+                run.font.size = Pt(8)
 
             # Parse and add caption with inline formatting
             # Import the processor to parse inline formatting
@@ -701,7 +705,7 @@ class DocxWriter:
                 if run_data["type"] == "text":
                     text = run_data["text"]
                     run = caption_para.add_run(text)
-                    run.font.size = Pt(7)
+                    run.font.size = Pt(8)
 
                     # Apply formatting
                     if run_data.get("bold"):
@@ -730,12 +734,12 @@ class DocxWriter:
                     run = caption_para.add_run(f"[Comment: {comment_text}]")
                     self._apply_highlight(run, WD_COLOR_INDEX.GRAY_25)
                     run.italic = True
-                    run.font.size = Pt(7)
+                    run.font.size = Pt(8)
                 elif run_data["type"] == "citation":
                     cite_num = run_data["number"]
                     run = caption_para.add_run(f"[{cite_num}]")
                     run.bold = True
-                    run.font.size = Pt(7)
+                    run.font.size = Pt(8)
                     self._apply_highlight(run, WD_COLOR_INDEX.YELLOW)
 
             # Add spacing after figure (reduced from 12 to 6 for compactness)
@@ -834,7 +838,7 @@ class DocxWriter:
                     # Fallback if label not in map
                     run = caption_para.add_run("Supp. Table: ")
                 run.bold = True
-                run.font.size = Pt(7)
+                run.font.size = Pt(8)
             elif label and label.startswith("table:"):
                 # Extract label name for main tables
                 label_name = label.split(":", 1)[1] if ":" in label else label
@@ -845,7 +849,7 @@ class DocxWriter:
                 else:
                     run = caption_para.add_run("Table: ")
                 run.bold = True
-                run.font.size = Pt(7)
+                run.font.size = Pt(8)
 
             # Parse and add caption with inline formatting
             caption_runs = processor._parse_inline_formatting(caption, {})
@@ -853,7 +857,7 @@ class DocxWriter:
                 if run_data["type"] == "text":
                     text = run_data["text"]
                     run = caption_para.add_run(text)
-                    run.font.size = Pt(7)
+                    run.font.size = Pt(8)
                     if run_data.get("bold"):
                         run.bold = True
                     if run_data.get("italic"):
