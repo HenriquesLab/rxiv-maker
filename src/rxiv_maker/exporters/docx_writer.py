@@ -4,6 +4,7 @@ This module handles the actual generation of DOCX files using python-docx,
 writing structured content with formatting, citations, and references.
 """
 
+import base64
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -213,7 +214,7 @@ class DocxWriter:
                     affil_text = f"{full_name}, {location}" if location else full_name
                     all_affiliations.append(affil_text)
 
-        # Add authors with superscript affiliation numbers
+        # Add authors with superscript affiliation numbers and corresponding author markers
         if authors:
             author_para = doc.add_paragraph()
             for i, author in enumerate(authors):
@@ -230,6 +231,12 @@ class DocxWriter:
                     affil_nums = [str(affiliation_map[a]) for a in author_affils]
                     sup_run = author_para.add_run(",".join(affil_nums))
                     sup_run.font.superscript = True
+
+                # Add corresponding author marker (asterisk) if applicable
+                is_corresponding = author.get("corresponding_author", False)
+                if is_corresponding:
+                    corr_run = author_para.add_run("*")
+                    corr_run.font.superscript = True
 
             author_para.paragraph_format.space_after = Pt(8)
 
@@ -249,6 +256,38 @@ class DocxWriter:
 
             # Extra space after last affiliation
             affil_para.paragraph_format.space_after = Pt(12)
+
+        # Add corresponding author information if any
+        corresponding_authors = [a for a in authors if a.get("corresponding_author", False)]
+        if corresponding_authors:
+            corr_para = doc.add_paragraph()
+            corr_marker = corr_para.add_run("*")
+            corr_marker.font.superscript = True
+            corr_para.add_run(" Correspondence: ")
+
+            for i, author in enumerate(corresponding_authors):
+                if i > 0:
+                    corr_para.add_run("; ")
+
+                name = author.get("name", "")
+                email = author.get("email", "")
+
+                # Decode email if it's base64 encoded
+                if not email:
+                    email64 = author.get("email64", "")
+                    if email64:
+                        try:
+                            email = base64.b64decode(email64).decode("utf-8")
+                        except Exception:
+                            email = ""
+
+                if email:
+                    corr_para.add_run(f"{name} ({email})")
+                else:
+                    corr_para.add_run(name)
+
+            corr_para.paragraph_format.space_after = Pt(12)
+            corr_para.runs[-1].font.size = Pt(10)
 
     def _add_section(
         self,
