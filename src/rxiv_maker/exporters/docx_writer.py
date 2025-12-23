@@ -12,7 +12,7 @@ from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_COLOR_INDEX
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Inches, Pt
+from docx.shared import Inches, Pt, RGBColor
 from latex2mathml.converter import convert as latex_to_mathml
 from lxml import etree
 
@@ -132,7 +132,7 @@ class DocxWriter:
             doc.add_page_break()
             heading = doc.add_heading("Figures", level=1)
             for run in heading.runs:
-                run.font.color.rgb = None  # Ensure black text
+                run.font.color.rgb = RGBColor(0, 0, 0)  # Ensure black text
             for section, fig_num in collected_main_figures:
                 self._add_figure(doc, section, figure_number=fig_num, is_supplementary=False)
 
@@ -141,7 +141,7 @@ class DocxWriter:
             doc.add_page_break()
             heading = doc.add_heading("Bibliography", level=1)
             for run in heading.runs:
-                run.font.color.rgb = None  # Ensure black text
+                run.font.color.rgb = RGBColor(0, 0, 0)  # Ensure black text
 
             # Add numbered bibliography entries
             for num in sorted(bibliography.keys()):
@@ -368,6 +368,7 @@ class DocxWriter:
         run = para.add_run(text)
         run.bold = True
         run.font.size = Pt(12)
+        run.font.color.rgb = RGBColor(0, 0, 0)  # Ensure black text
 
     def _add_heading(self, doc: Document, section: Dict[str, Any]):
         """Add heading to document.
@@ -381,7 +382,7 @@ class DocxWriter:
         heading = doc.add_heading(text, level=level)
         # Ensure heading text is black (not blue)
         for run in heading.runs:
-            run.font.color.rgb = None  # Reset to black (default)
+            run.font.color.rgb = RGBColor(0, 0, 0)  # Explicitly set to black
 
     def _add_paragraph(
         self,
