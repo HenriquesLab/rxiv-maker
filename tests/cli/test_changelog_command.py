@@ -27,6 +27,19 @@ def sample_changelog():
     # Include current version to match __version__
     return """# Changelog
 
+## [v1.18.0] - 2025-12-23
+
+### Added
+- DOCX configuration options (hide_highlighting, hide_comments)
+- Co-first author support
+- Corresponding author support
+
+### Changed
+- DOCX typography improvements (Arial font, 8pt sizing)
+
+### Fixed
+- Init command environment variable issue
+
 ## [v1.17.0] - 2025-12-22
 
 ### Added
@@ -131,7 +144,7 @@ class TestChangelogCommand:
         """Test --breaking-only flag."""
         mock_fetch.return_value = sample_changelog
 
-        result = runner.invoke(changelog, ["--recent", "6", "--breaking-only"])
+        result = runner.invoke(changelog, ["--recent", "7", "--breaking-only"])
 
         assert result.exit_code == 0
         # Should show v1.12.0 which has breaking changes
@@ -186,7 +199,7 @@ class TestChangelogCommand:
         mock_fetch.return_value = sample_changelog
 
         # Use the latest version to ensure no versions after it
-        result = runner.invoke(changelog, ["--since", "v1.17.0"])
+        result = runner.invoke(changelog, ["--since", "v1.18.0"])
 
         assert result.exit_code == 0
         output = strip_ansi(result.output)

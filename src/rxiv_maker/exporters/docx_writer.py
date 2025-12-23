@@ -4,6 +4,7 @@ This module handles the actual generation of DOCX files using python-docx,
 writing structured content with formatting, citations, and references.
 """
 
+import base64
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -11,11 +12,12 @@ from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_COLOR_INDEX
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Inches, Pt
+from docx.shared import Inches, Pt, RGBColor
 from latex2mathml.converter import convert as latex_to_mathml
 from lxml import etree
 
 from ..core.logging_config import get_logger
+from ..utils.author_affiliation_processor import AuthorAffiliationProcessor
 from ..utils.docx_helpers import convert_pdf_to_image
 
 logger = get_logger()
@@ -57,6 +59,8 @@ class DocxWriter:
         metadata: Optional[Dict[str, Any]] = None,
         table_map: Optional[Dict[str, int]] = None,
         figures_at_end: bool = False,
+        hide_highlighting: bool = False,
+        hide_comments: bool = False,
     ) -> Path:
         """Write DOCX file from structured content.
 
@@ -69,6 +73,8 @@ class DocxWriter:
             metadata: Document metadata (title, authors, affiliations)
             table_map: Mapping from table labels to numbers (for supplementary tables)
             figures_at_end: Place main figures at end before SI/bibliography
+            hide_highlighting: Disable colored highlighting on references and citations
+            hide_comments: Exclude all comments (block and inline) from output
 
         Returns:
             Path to created DOCX file
@@ -77,7 +83,12 @@ class DocxWriter:
         self.bibliography = bibliography
         self.include_footnotes = include_footnotes
         self.table_map = table_map or {}
+        self.hide_highlighting = hide_highlighting
+        self.hide_comments = hide_comments
         doc = Document()
+
+        # Set default font to Arial for entire document
+        self._set_default_font(doc, "Arial")
 
         # Add title and author information if metadata provided
         if metadata:
@@ -123,14 +134,18 @@ class DocxWriter:
         # Add collected main figures at the end (before bibliography)
         if figures_at_end and collected_main_figures:
             doc.add_page_break()
-            doc.add_heading("Figures", level=1)
+            heading = doc.add_heading("Figures", level=1)
+            for run in heading.runs:
+                run.font.color.rgb = RGBColor(0, 0, 0)  # Ensure black text
             for section, fig_num in collected_main_figures:
                 self._add_figure(doc, section, figure_number=fig_num, is_supplementary=False)
 
         # Add bibliography section at the end
         if include_footnotes and bibliography:
             doc.add_page_break()
-            doc.add_heading("Bibliography", level=1)
+            heading = doc.add_heading("Bibliography", level=1)
+            for run in heading.runs:
+                run.font.color.rgb = RGBColor(0, 0, 0)  # Ensure black text
 
             # Add numbered bibliography entries
             for num in sorted(bibliography.keys()):
@@ -144,12 +159,12 @@ class DocxWriter:
                 # Add formatted bibliography text (without DOI - added separately below)
                 para.add_run(bib_entry["formatted"])
 
-                # Add DOI as hyperlink with yellow highlighting if present
+                # Add DOI as hyperlink with yellow highlighting if present (unless hide_highlighting is enabled)
                 if bib_entry.get("doi"):
                     doi = bib_entry["doi"]
                     doi_url = f"https://doi.org/{doi}" if not doi.startswith("http") else doi
                     para.add_run("\nDOI: ")
-                    self._add_hyperlink(para, doi_url, doi_url, highlight=True)
+                    self._add_hyperlink(para, doi_url, doi_url, highlight=not self.hide_highlighting)
 
                 # Add spacing between entries
                 para.paragraph_format.space_after = Pt(6)
@@ -157,6 +172,38 @@ class DocxWriter:
         # Save document
         doc.save(str(output_path))
         return output_path
+
+    def _set_default_font(self, doc: Document, font_name: str):
+        """Set the default font for the entire document.
+
+        Args:
+            doc: Document object
+            font_name: Font name to use (e.g., "Arial", "Times New Roman")
+        """
+        # Set font on Normal style (base style for most content)
+        style = doc.styles["Normal"]
+        font = style.font
+        font.name = font_name
+        font.size = Pt(10)  # Default body font size
+
+        # Also set on heading styles to ensure consistency
+        for i in range(1, 10):
+            try:
+                heading_style = doc.styles[f"Heading {i}"]
+                heading_style.font.name = font_name
+            except KeyError:
+                # Heading style doesn't exist, skip
+                pass
+
+    def _apply_highlight(self, run, color: WD_COLOR_INDEX):
+        """Apply highlight color to a run, unless highlighting is disabled.
+
+        Args:
+            run: The run object to apply highlighting to
+            color: The WD_COLOR_INDEX color to apply
+        """
+        if not self.hide_highlighting:
+            run.font.highlight_color = color
 
     def _add_title_page(self, doc: Document, metadata: Dict[str, Any]):
         """Add title, author and affiliation information.
@@ -193,27 +240,16 @@ class DocxWriter:
         if not authors:
             return  # Nothing more to add
 
-        # Collect unique affiliations and build mapping
-        all_affiliations = []
-        affiliation_map = {}  # Maps affiliation shortname to number
+        # Process author and affiliation metadata using centralized processor
+        processor = AuthorAffiliationProcessor()
+        processed = processor.process(metadata)
 
-        # Get full affiliation details from metadata
-        affiliation_details = {a.get("shortname"): a for a in metadata.get("affiliations", [])}
+        affiliation_map = processed["affiliation_map"]
+        ordered_affiliations = processed["ordered_affiliations"]
+        cofirst_authors = processed["cofirst_authors"]
+        corresponding_authors = processed["corresponding_authors"]
 
-        for author in authors:
-            author_affils = author.get("affiliations", [])
-            for affil_shortname in author_affils:
-                if affil_shortname not in affiliation_map:
-                    affiliation_map[affil_shortname] = len(affiliation_map) + 1
-                    # Look up full affiliation info
-                    affil_info = affiliation_details.get(affil_shortname, {})
-                    full_name = affil_info.get("full_name", affil_shortname)
-                    location = affil_info.get("location", "")
-                    # Format: "Full Name, Location" or just "Full Name" if no location
-                    affil_text = f"{full_name}, {location}" if location else full_name
-                    all_affiliations.append(affil_text)
-
-        # Add authors with superscript affiliation numbers
+        # Add authors with superscript affiliation numbers and corresponding author markers
         if authors:
             author_para = doc.add_paragraph()
             for i, author in enumerate(authors):
@@ -231,24 +267,93 @@ class DocxWriter:
                     sup_run = author_para.add_run(",".join(affil_nums))
                     sup_run.font.superscript = True
 
+                # Add co-first author marker (dagger) if applicable
+                is_cofirst = author.get("co_first_author", False)
+                if is_cofirst:
+                    cofirst_run = author_para.add_run("†")
+                    cofirst_run.font.superscript = True
+
+                # Add corresponding author marker (asterisk) if applicable
+                is_corresponding = author.get("corresponding_author", False)
+                if is_corresponding:
+                    corr_run = author_para.add_run("*")
+                    corr_run.font.superscript = True
+
             author_para.paragraph_format.space_after = Pt(8)
 
         # Add affiliations
-        if all_affiliations:
-            for i, affil_text in enumerate(all_affiliations, start=1):
+        if ordered_affiliations:
+            for affil_num, _affil_shortname, affil_text in ordered_affiliations:
                 affil_para = doc.add_paragraph()
 
                 # Add superscript number
-                num_run = affil_para.add_run(str(i))
+                num_run = affil_para.add_run(str(affil_num))
                 num_run.font.superscript = True
+                num_run.font.size = Pt(8)
 
                 # Add affiliation text
-                affil_para.add_run(f" {affil_text}")
+                affil_run = affil_para.add_run(f" {affil_text}")
+                affil_run.font.size = Pt(8)
                 affil_para.paragraph_format.space_after = Pt(4)
-                affil_para.runs[1].font.size = Pt(10)
 
             # Extra space after last affiliation
             affil_para.paragraph_format.space_after = Pt(12)
+
+        # Add co-first author information if any (already extracted by processor)
+        if cofirst_authors:
+            cofirst_para = doc.add_paragraph()
+            cofirst_marker = cofirst_para.add_run("†")
+            cofirst_marker.font.superscript = True
+            cofirst_marker.font.size = Pt(8)
+
+            cofirst_label = cofirst_para.add_run(" These authors contributed equally: ")
+            cofirst_label.font.size = Pt(8)
+
+            for i, author in enumerate(cofirst_authors):
+                if i > 0:
+                    sep_run = cofirst_para.add_run(", ")
+                    sep_run.font.size = Pt(8)
+
+                name = author.get("name", "")
+                name_run = cofirst_para.add_run(name)
+                name_run.font.size = Pt(8)
+
+            cofirst_para.paragraph_format.space_after = Pt(12)
+
+        # Add corresponding author information if any (already extracted by processor)
+        if corresponding_authors:
+            corr_para = doc.add_paragraph()
+            corr_marker = corr_para.add_run("*")
+            corr_marker.font.superscript = True
+            corr_marker.font.size = Pt(8)
+
+            corr_label = corr_para.add_run(" Correspondence: ")
+            corr_label.font.size = Pt(8)
+
+            for i, author in enumerate(corresponding_authors):
+                if i > 0:
+                    sep_run = corr_para.add_run("; ")
+                    sep_run.font.size = Pt(8)
+
+                name = author.get("name", "")
+                email = author.get("email", "")
+
+                # Decode email if it's base64 encoded
+                if not email:
+                    email64 = author.get("email64", "")
+                    if email64:
+                        try:
+                            email = base64.b64decode(email64).decode("utf-8")
+                        except Exception:
+                            email = ""
+
+                if email:
+                    info_run = corr_para.add_run(f"{name} ({email})")
+                else:
+                    info_run = corr_para.add_run(name)
+                info_run.font.size = Pt(8)
+
+            corr_para.paragraph_format.space_after = Pt(12)
 
     def _add_section(
         self,
@@ -278,7 +383,8 @@ class DocxWriter:
         elif section_type == "code_block":
             self._add_code_block(doc, section)
         elif section_type == "comment":
-            self._add_comment(doc, section)
+            if not self.hide_comments:
+                self._add_comment(doc, section)
         elif section_type == "figure":
             self._add_figure(doc, section)
         elif section_type == "table":
@@ -304,6 +410,7 @@ class DocxWriter:
         run = para.add_run(text)
         run.bold = True
         run.font.size = Pt(12)
+        run.font.color.rgb = RGBColor(0, 0, 0)  # Ensure black text
 
     def _add_heading(self, doc: Document, section: Dict[str, Any]):
         """Add heading to document.
@@ -314,7 +421,10 @@ class DocxWriter:
         """
         level = section["level"]
         text = section["text"]
-        doc.add_heading(text, level=level)
+        heading = doc.add_heading(text, level=level)
+        # Ensure heading text is black (not blue)
+        for run in heading.runs:
+            run.font.color.rgb = RGBColor(0, 0, 0)  # Explicitly set to black
 
     def _add_paragraph(
         self,
@@ -371,9 +481,9 @@ class DocxWriter:
             if run_data.get("xref"):
                 # Use color based on xref type (fig, sfig, stable, eq, etc.)
                 xref_type = run_data.get("xref_type", "cite")
-                run.font.highlight_color = self.get_xref_color(xref_type)
+                self._apply_highlight(run, self.get_xref_color(xref_type))
             if run_data.get("highlight_yellow"):
-                run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                self._apply_highlight(run, WD_COLOR_INDEX.YELLOW)
 
         elif run_data["type"] == "hyperlink":
             # Add hyperlink with yellow highlighting
@@ -387,18 +497,19 @@ class DocxWriter:
             self._add_inline_equation(paragraph, latex_content)
 
         elif run_data["type"] == "inline_comment":
-            # Add inline comment with gray highlighting
-            comment_text = run_data["text"]
-            run = paragraph.add_run(f"[Comment: {comment_text}]")
-            run.font.highlight_color = WD_COLOR_INDEX.GRAY_25
-            run.italic = True
-            run.font.size = Pt(10)
+            # Add inline comment with gray highlighting (unless hide_comments is enabled)
+            if not self.hide_comments:
+                comment_text = run_data["text"]
+                run = paragraph.add_run(f"[Comment: {comment_text}]")
+                self._apply_highlight(run, WD_COLOR_INDEX.GRAY_25)
+                run.italic = True
+                run.font.size = Pt(10)
 
         elif run_data["type"] == "citation":
             cite_num = run_data["number"]
             # Add citation as [NN] inline with yellow highlighting
             run = paragraph.add_run(f"[{cite_num}]")
-            run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+            self._apply_highlight(run, WD_COLOR_INDEX.YELLOW)
             run.font.size = Pt(10)
 
     def _add_list(self, doc: Document, section: Dict[str, Any]):
@@ -436,12 +547,12 @@ class DocxWriter:
                     if run_data.get("xref"):
                         # Use color based on xref type
                         xref_type = run_data.get("xref_type", "cite")
-                        run.font.highlight_color = self.get_xref_color(xref_type)
+                        self._apply_highlight(run, self.get_xref_color(xref_type))
                     if run_data.get("highlight_yellow"):
-                        run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                        self._apply_highlight(run, WD_COLOR_INDEX.YELLOW)
                         run.font.size = Pt(10)
                     if run_data.get("highlight_yellow"):
-                        run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                        self._apply_highlight(run, WD_COLOR_INDEX.YELLOW)
                 elif run_data["type"] == "hyperlink":
                     text = run_data.get("text", "")
                     url = run_data.get("url", "")
@@ -451,18 +562,19 @@ class DocxWriter:
                     latex_content = run_data.get("latex", "")
                     self._add_inline_equation(paragraph, latex_content)
                 elif run_data["type"] == "inline_comment":
-                    # Add inline comment with gray highlighting
-                    comment_text = run_data["text"]
-                    run = paragraph.add_run(f"[Comment: {comment_text}]")
-                    run.font.highlight_color = WD_COLOR_INDEX.GRAY_25
-                    run.italic = True
-                    run.font.size = Pt(10)
+                    # Add inline comment with gray highlighting (unless hide_comments is enabled)
+                    if not self.hide_comments:
+                        comment_text = run_data["text"]
+                        run = paragraph.add_run(f"[Comment: {comment_text}]")
+                        self._apply_highlight(run, WD_COLOR_INDEX.GRAY_25)
+                        run.italic = True
+                        run.font.size = Pt(10)
                 elif run_data["type"] == "citation":
                     cite_num = run_data["number"]
                     run = paragraph.add_run(f"[{cite_num}]")
                     run.bold = True
                     run.font.size = Pt(10)
-                    run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                    self._apply_highlight(run, WD_COLOR_INDEX.YELLOW)
 
     def _add_code_block(self, doc: Document, section: Dict[str, Any]):
         """Add code block to document.
@@ -495,7 +607,7 @@ class DocxWriter:
 
         # Add comment text with light gray highlighting to distinguish from colored xrefs
         run = paragraph.add_run(f"[Comment: {comment_text}]")
-        run.font.highlight_color = WD_COLOR_INDEX.GRAY_25
+        self._apply_highlight(run, WD_COLOR_INDEX.GRAY_25)
         run.italic = True
         run.font.size = Pt(10)
 
@@ -625,11 +737,11 @@ class DocxWriter:
                 else:
                     run = caption_para.add_run(f"Fig. {figure_number}. ")
                 run.bold = True
-                run.font.size = Pt(7)
+                run.font.size = Pt(8)
             else:
                 run = caption_para.add_run("Figure: ")
                 run.bold = True
-                run.font.size = Pt(7)
+                run.font.size = Pt(8)
 
             # Parse and add caption with inline formatting
             # Import the processor to parse inline formatting
@@ -642,7 +754,7 @@ class DocxWriter:
                 if run_data["type"] == "text":
                     text = run_data["text"]
                     run = caption_para.add_run(text)
-                    run.font.size = Pt(7)
+                    run.font.size = Pt(8)
 
                     # Apply formatting
                     if run_data.get("bold"):
@@ -658,26 +770,27 @@ class DocxWriter:
                     if run_data.get("xref"):
                         # Use color based on xref type
                         xref_type = run_data.get("xref_type", "cite")
-                        run.font.highlight_color = self.get_xref_color(xref_type)
+                        self._apply_highlight(run, self.get_xref_color(xref_type))
                     if run_data.get("highlight_yellow"):
-                        run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                        self._apply_highlight(run, WD_COLOR_INDEX.YELLOW)
                 elif run_data["type"] == "inline_equation":
                     # Add inline equation as Office Math
                     latex_content = run_data.get("latex", "")
                     self._add_inline_equation(caption_para, latex_content)
                 elif run_data["type"] == "inline_comment":
-                    # Add inline comment with gray highlighting
-                    comment_text = run_data["text"]
-                    run = caption_para.add_run(f"[Comment: {comment_text}]")
-                    run.font.highlight_color = WD_COLOR_INDEX.GRAY_25
-                    run.italic = True
-                    run.font.size = Pt(7)
+                    # Add inline comment with gray highlighting (unless hide_comments is enabled)
+                    if not self.hide_comments:
+                        comment_text = run_data["text"]
+                        run = caption_para.add_run(f"[Comment: {comment_text}]")
+                        self._apply_highlight(run, WD_COLOR_INDEX.GRAY_25)
+                        run.italic = True
+                        run.font.size = Pt(8)
                 elif run_data["type"] == "citation":
                     cite_num = run_data["number"]
                     run = caption_para.add_run(f"[{cite_num}]")
                     run.bold = True
-                    run.font.size = Pt(7)
-                    run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                    run.font.size = Pt(8)
+                    self._apply_highlight(run, WD_COLOR_INDEX.YELLOW)
 
             # Add spacing after figure (reduced from 12 to 6 for compactness)
             caption_para.paragraph_format.space_after = Pt(6)
@@ -752,7 +865,7 @@ class DocxWriter:
                             if run_data.get("xref"):
                                 # Use color based on xref type
                                 xref_type = run_data.get("xref_type", "cite")
-                                run.font.highlight_color = self.get_xref_color(xref_type)
+                                self._apply_highlight(run, self.get_xref_color(xref_type))
 
         # Add table caption if present
         caption = section.get("caption")
@@ -775,7 +888,7 @@ class DocxWriter:
                     # Fallback if label not in map
                     run = caption_para.add_run("Supp. Table: ")
                 run.bold = True
-                run.font.size = Pt(7)
+                run.font.size = Pt(8)
             elif label and label.startswith("table:"):
                 # Extract label name for main tables
                 label_name = label.split(":", 1)[1] if ":" in label else label
@@ -786,7 +899,7 @@ class DocxWriter:
                 else:
                     run = caption_para.add_run("Table: ")
                 run.bold = True
-                run.font.size = Pt(7)
+                run.font.size = Pt(8)
 
             # Parse and add caption with inline formatting
             caption_runs = processor._parse_inline_formatting(caption, {})
@@ -794,7 +907,7 @@ class DocxWriter:
                 if run_data["type"] == "text":
                     text = run_data["text"]
                     run = caption_para.add_run(text)
-                    run.font.size = Pt(7)
+                    run.font.size = Pt(8)
                     if run_data.get("bold"):
                         run.bold = True
                     if run_data.get("italic"):
@@ -810,7 +923,7 @@ class DocxWriter:
                     if run_data.get("xref"):
                         # Use color based on xref type
                         xref_type = run_data.get("xref_type", "cite")
-                        run.font.highlight_color = self.get_xref_color(xref_type)
+                        self._apply_highlight(run, self.get_xref_color(xref_type))
 
             # Add spacing after table (reduced from 12 to 6 for compactness)
             caption_para.paragraph_format.space_after = Pt(6)

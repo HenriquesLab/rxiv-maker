@@ -7,29 +7,11 @@ DOCX generation with python-docx.
 import re
 from typing import Any, Dict, List, Optional
 
+from ..utils.comment_filter import is_metadata_comment
+
 
 class DocxContentProcessor:
     """Parses markdown content into structured format for DOCX writing."""
-
-    @staticmethod
-    def _is_metadata_comment(comment_text: str) -> bool:
-        """Check if a comment is metadata/informational and should be skipped.
-
-        Args:
-            comment_text: The comment text to check
-
-        Returns:
-            True if comment should be skipped, False if it should be included
-        """
-        if not comment_text:
-            return True
-
-        # Normalize to lowercase for case-insensitive matching
-        normalized = comment_text.lower().strip()
-
-        # Skip comments that start with common metadata keywords
-        metadata_prefixes = ["note:", "note ", "comment:", "comment "]
-        return any(normalized.startswith(prefix) for prefix in metadata_prefixes)
 
     def parse(self, markdown: str, citation_map: Dict[str, int]) -> Dict[str, Any]:
         """Parse markdown into structured sections for DOCX.
@@ -83,7 +65,7 @@ class DocxContentProcessor:
                     # Single-line comment
                     comment_text = line.strip()[4:-3].strip()
                     # Skip metadata comments (e.g., "note that...", "Comment: ...")
-                    if comment_text and not self._is_metadata_comment(comment_text):
+                    if comment_text and not is_metadata_comment(comment_text):
                         sections.append({"type": "comment", "text": comment_text})
                     i += 1
                     continue
@@ -104,7 +86,7 @@ class DocxContentProcessor:
                     # Join and add comment
                     comment_text = " ".join(comment_lines).strip()
                     # Skip metadata comments (e.g., "note that...", "Comment: ...")
-                    if comment_text and not self._is_metadata_comment(comment_text):
+                    if comment_text and not is_metadata_comment(comment_text):
                         sections.append({"type": "comment", "text": comment_text})
                     continue
 
@@ -445,7 +427,7 @@ class DocxContentProcessor:
             elif match.group(6):  # Inline HTML comment
                 comment_text = match.group(7).strip()
                 # Skip metadata comments (e.g., "note that...", "Comment: ...")
-                if comment_text and not self._is_metadata_comment(comment_text):
+                if comment_text and not is_metadata_comment(comment_text):
                     runs.append({"type": "inline_comment", "text": comment_text})
             elif match.group(8):  # Markdown link [text](url)
                 runs.append(

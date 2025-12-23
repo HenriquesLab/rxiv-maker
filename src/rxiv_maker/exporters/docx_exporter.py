@@ -54,6 +54,8 @@ class DocxExporter:
         docx_config = config.get("docx", {})
         self.hide_si = docx_config.get("hide_si", False)  # Default to False (don't hide SI) for backwards compatibility
         self.figures_at_end = docx_config.get("figures_at_end", False)  # Default to False (inline figures)
+        self.hide_highlighting = docx_config.get("hide_highlighting", False)  # Default to False (show highlights)
+        self.hide_comments = docx_config.get("hide_comments", False)  # Default to False (include comments)
 
         # Components
         self.citation_mapper = CitationMapper()
@@ -125,10 +127,13 @@ class DocxExporter:
         # Step 5.5: Replace figure and equation references with numbers
         import re
 
+        # Extract all labels using centralized utility
+        from ..utils.label_extractor import LabelExtractor
+
+        label_extractor = LabelExtractor()
+
         # Find all figures and create mapping
-        # Allow hyphens and underscores in label names
-        figure_labels = re.findall(r"!\[[^\]]*\]\([^)]+\)\s*\n\s*\{#fig:([\w-]+)", markdown_with_numbers)
-        figure_map = {label: i + 1 for i, label in enumerate(figure_labels)}
+        figure_map = label_extractor.extract_figure_labels(markdown_with_numbers)
 
         # Replace @fig:label with "Fig. X" in text, handling optional panel letters
         # Pattern matches: @fig:label optionally followed by space and panel letter(s)
@@ -146,11 +151,9 @@ class DocxExporter:
         logger.debug(f"Mapped {len(figure_map)} figure labels to numbers")
 
         # Find all supplementary figures and create mapping
-        # Allow hyphens and underscores in label names
         # IMPORTANT: When SI is excluded, extract from SI content (where figures are defined)
         content_to_scan_for_sfigs = si_content_for_mapping if si_content_for_mapping else markdown_with_numbers
-        sfig_labels = re.findall(r"!\[[^\]]*\]\([^)]+\)\s*\n\s*\{#sfig:([\w-]+)", content_to_scan_for_sfigs)
-        sfig_map = {label: i + 1 for i, label in enumerate(sfig_labels)}
+        sfig_map = label_extractor.extract_supplementary_figure_labels(content_to_scan_for_sfigs)
 
         # Replace @sfig:label with "Supp. Fig. X" in text, handling optional panel letters
         for label, num in sfig_map.items():
@@ -166,24 +169,9 @@ class DocxExporter:
 
         # Find all tables and create mapping (looking for {#stable:label} or \label{stable:label} tags)
         # IMPORTANT: PDF uses the order that tables are DEFINED in the document (order of \label{stable:X})
-        # NOT the order of caption references (%{#stable:X}) which are just metadata
         # When SI is excluded from export, we still need to extract labels from SI
-
         content_to_scan_for_tables = si_content_for_mapping if si_content_for_mapping else markdown_with_numbers
-
-        # Extract table labels in document order (both {#stable:label} markdown format and \label{stable:label} LaTeX format)
-        # The PDF numbering follows the order these labels appear in the document
-        markdown_labels = re.findall(r"\{#stable:([\w-]+)\}", content_to_scan_for_tables)
-        latex_labels = re.findall(r"\\label\{stable:([\w-]+)\}", content_to_scan_for_tables)
-
-        # Combine both formats, preferring LaTeX labels if present (since that's what PDF uses)
-        table_labels = latex_labels if latex_labels else markdown_labels
-
-        # Remove duplicates while preserving order
-        seen = set()
-        table_labels = [label for label in table_labels if not (label in seen or seen.add(label))]
-
-        table_map = {label: i + 1 for i, label in enumerate(table_labels)}
+        table_map = label_extractor.extract_supplementary_table_labels(content_to_scan_for_tables)
         logger.debug(f"Mapped {len(table_map)} supplementary tables: {table_map}")
 
         # Replace @stable:label with "Supp. Table X" in text
@@ -193,11 +181,9 @@ class DocxExporter:
             )
 
         # Find all supplementary notes and create mapping (looking for {#snote:label} tags)
-        # Allow hyphens and underscores in label names
         # IMPORTANT: When SI is excluded, extract from SI content (where notes are defined)
         content_to_scan_for_snotes = si_content_for_mapping if si_content_for_mapping else markdown_with_numbers
-        snote_labels = re.findall(r"\{#snote:([\w-]+)\}", content_to_scan_for_snotes)
-        snote_map = {label: i + 1 for i, label in enumerate(snote_labels)}
+        snote_map = label_extractor.extract_supplementary_note_labels(content_to_scan_for_snotes)
 
         # Replace @snote:label with "Supp. Note X" in text
         for label, num in snote_map.items():
@@ -208,9 +194,7 @@ class DocxExporter:
         logger.debug(f"Mapped {len(snote_map)} supplementary note labels to numbers")
 
         # Find all equations and create mapping (looking for {#eq:label} tags)
-        # Allow hyphens and underscores in label names
-        equation_labels = re.findall(r"\{#eq:([\w-]+)\}", markdown_with_numbers)
-        equation_map = {label: i + 1 for i, label in enumerate(equation_labels)}
+        equation_map = label_extractor.extract_equation_labels(markdown_with_numbers)
 
         # Replace @eq:label with "Eq. X"
         # Handle both @eq:label and (@eq:label) formats
@@ -247,6 +231,8 @@ class DocxExporter:
             metadata=metadata,
             table_map=table_map,
             figures_at_end=self.figures_at_end,
+            hide_highlighting=self.hide_highlighting,
+            hide_comments=self.hide_comments,
         )
         logger.info(f"DOCX exported successfully: {docx_path}")
 

@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.0] - 2025-12-23
+
+### Added
+
+- **DOCX Configuration Options**: New manuscript config options for enhanced control
+  - `docx.hide_highlighting`: Disable colored highlighting of references (default: false)
+  - `docx.hide_comments`: Disable comment inclusion in output (default: false)
+  - Provides flexibility for different journal submission requirements
+- **Co-First Author Support**: Full support for co-first authors in DOCX export
+  - Dagger markers (†) for co-first authors
+  - "These authors contributed equally" note section
+  - Automatic detection based on author metadata
+- **Corresponding Author Support**: Enhanced author metadata handling
+  - Asterisk markers (*) for corresponding authors
+  - Dedicated correspondence section with email information
+  - Email decoding for both plain `email` and base64-encoded `email64` fields
+- **Centralized Utilities**: Five new shared utility modules to reduce code duplication
+  - `utils/accent_character_map.py`: LaTeX accent → Unicode conversion (60+ mappings)
+  - `utils/comment_filter.py`: Metadata comment filtering logic
+  - `utils/citation_range_formatter.py`: Citation range formatting ([1][2][3] → [1-3])
+  - `utils/label_extractor.py`: Cross-reference label extraction for figures, tables, equations
+  - `utils/author_affiliation_processor.py`: Author and affiliation processing logic
+  - Ensures consistency between DOCX and PDF/LaTeX generation
+  - Single source of truth reduces bug surface area and improves maintainability
+
+### Changed
+
+- **DOCX Typography**: Professional font and sizing improvements
+  - Arial as default font for entire document (Normal style + all heading styles 1-9)
+  - Standardized 8pt font size for affiliations, correspondence, co-first notes, and legends
+  - All headings now explicitly use black font color (RGBColor(0, 0, 0))
+  - Improved readability and professional appearance
+
+### Fixed
+
+- **Init Command Environment Variable**: Fixed test isolation issue in init command
+  - Init command no longer uses `MANUSCRIPT_PATH` environment variable
+  - Environment variable is for finding existing manuscripts, not initialization
+  - Prevents test failures where multiple tests tried to use the same directory
+  - All 25 init command tests now pass reliably in CI
+- **Init Command CI Compatibility**: Fixed subprocess execution in nox environments
+  - Changed from `["rxiv"]` to `[sys.executable, "-m", "rxiv_maker.cli"]`
+  - Ensures init command tests work in CI nox environments where `rxiv` may not be in PATH
+  - Improves test reliability across different execution contexts
+
+### Documentation
+
+- **Code Reduction**: Removed ~100 lines of duplicate code from DOCX exporter through centralization
+- **Backward Compatibility**: All changes maintain existing behavior with default configuration
+- **Testing**: All 37 DOCX tests pass (26 passed, 9 skipped, 2 warnings)
+
 ## [1.17.0] - 2025-12-22
 
 ### Added

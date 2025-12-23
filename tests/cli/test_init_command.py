@@ -7,8 +7,19 @@ Note: The init command is fully non-interactive and uses sensible defaults.
 """
 
 import subprocess
+import sys
 
 import pytest
+
+
+def get_rxiv_command():
+    """Get rxiv command that works in CI and local environments.
+
+    Uses sys.executable to ensure we use the correct Python environment,
+    which is critical for nox-based CI environments where 'rxiv' may not
+    be directly in PATH.
+    """
+    return [sys.executable, "-m", "rxiv_maker.cli"]
 
 
 @pytest.mark.fast
@@ -20,7 +31,7 @@ class TestInitCommand:
         monkeypatch.chdir(temp_dir)
 
         result = subprocess.run(
-            ["rxiv", "init"],
+            [*get_rxiv_command(), "init"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -45,7 +56,7 @@ class TestInitCommand:
 
         custom_name = "MY_CUSTOM_PAPER"
         result = subprocess.run(
-            ["rxiv", "init", custom_name],
+            [*get_rxiv_command(), "init", custom_name],
             capture_output=True,
             text=True,
             timeout=30,
@@ -63,7 +74,7 @@ class TestInitCommand:
 
         nested_path = "papers/2024/MY_PAPER"
         result = subprocess.run(
-            ["rxiv", "init", nested_path],
+            [*get_rxiv_command(), "init", nested_path],
             capture_output=True,
             text=True,
             timeout=30,
@@ -85,7 +96,7 @@ class TestInitCommand:
 
         # Try to init without --force (should fail without prompting)
         result = subprocess.run(
-            ["rxiv", "init"],
+            [*get_rxiv_command(), "init"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -108,7 +119,7 @@ class TestInitCommand:
 
         # Init with --force (should succeed)
         result = subprocess.run(
-            ["rxiv", "init", "--force"],
+            [*get_rxiv_command(), "init", "--force"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -125,7 +136,7 @@ class TestInitCommand:
         monkeypatch.chdir(temp_dir)
 
         result = subprocess.run(
-            ["rxiv", "init"],
+            [*get_rxiv_command(), "init"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -145,7 +156,7 @@ class TestInitCommand:
         monkeypatch.chdir(temp_dir)
 
         result = subprocess.run(
-            ["rxiv", "init"],
+            [*get_rxiv_command(), "init"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -167,7 +178,7 @@ class TestInitCommand:
         monkeypatch.chdir(temp_dir)
 
         result = subprocess.run(
-            ["rxiv", "init"],
+            [*get_rxiv_command(), "init"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -191,7 +202,7 @@ class TestInitCommand:
         monkeypatch.chdir(temp_dir)
 
         result = subprocess.run(
-            ["rxiv", "init"],
+            [*get_rxiv_command(), "init"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -211,7 +222,7 @@ class TestInitCommand:
         monkeypatch.chdir(temp_dir)
 
         result = subprocess.run(
-            ["rxiv", "init"],
+            [*get_rxiv_command(), "init"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -230,7 +241,7 @@ class TestInitCommand:
         monkeypatch.chdir(temp_dir)
 
         result = subprocess.run(
-            ["rxiv", "init", "--no-interactive", "--validate"],
+            [*get_rxiv_command(), "init", "--no-interactive", "--validate"],
             capture_output=True,
             text=True,
             timeout=60,
@@ -248,7 +259,7 @@ class TestInitCommand:
         manuscript_dir = temp_dir / "ABS_PATH_MANUSCRIPT"
 
         result = subprocess.run(
-            ["rxiv", "init", str(manuscript_dir)],
+            [*get_rxiv_command(), "init", str(manuscript_dir)],
             capture_output=True,
             text=True,
             timeout=30,
@@ -263,7 +274,7 @@ class TestInitCommand:
         monkeypatch.chdir(temp_dir)
 
         result = subprocess.run(
-            ["rxiv", "init"],
+            [*get_rxiv_command(), "init"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -294,7 +305,7 @@ class TestInitCommand:
         monkeypatch.chdir(temp_dir)
 
         result = subprocess.run(
-            ["rxiv", "init"],
+            [*get_rxiv_command(), "init"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -312,7 +323,7 @@ class TestInitCommand:
         monkeypatch.chdir(temp_dir)
 
         result = subprocess.run(
-            ["rxiv", "init", "--help"],
+            [*get_rxiv_command(), "init", "--help"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -333,7 +344,7 @@ class TestInitCommand:
         manuscript_dir.mkdir()  # Pre-create to test --force
 
         result = subprocess.run(
-            ["rxiv", "init", str(manuscript_dir), "--force", "--validate"],
+            [*get_rxiv_command(), "init", str(manuscript_dir), "--force", "--validate"],
             capture_output=True,
             text=True,
             timeout=60,
@@ -349,7 +360,7 @@ class TestInitCommand:
         # Test with spaces and dashes
         manuscript_name = "My-Paper_2024"
         result = subprocess.run(
-            ["rxiv", "init", manuscript_name],
+            [*get_rxiv_command(), "init", manuscript_name],
             capture_output=True,
             text=True,
             timeout=30,
@@ -366,7 +377,7 @@ class TestInitCommand:
         monkeypatch.chdir(temp_dir)
 
         result = subprocess.run(
-            ["rxiv", "init"],
+            [*get_rxiv_command(), "init"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -396,7 +407,7 @@ class TestInitCommand:
         manuscript_dir.mkdir()
 
         result = subprocess.run(
-            ["rxiv", "init"],
+            [*get_rxiv_command(), "init"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -420,7 +431,7 @@ class TestInitValidation:
 
         # Init manuscript
         init_result = subprocess.run(
-            ["rxiv", "init"],
+            [*get_rxiv_command(), "init"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -432,7 +443,7 @@ class TestInitValidation:
 
         # Validate it
         validate_result = subprocess.run(
-            ["rxiv", "validate", str(manuscript_dir)],
+            [*get_rxiv_command(), "validate", str(manuscript_dir)],
             capture_output=True,
             text=True,
             timeout=60,
@@ -448,7 +459,7 @@ class TestInitValidation:
         monkeypatch.chdir(temp_dir)
 
         result = subprocess.run(
-            ["rxiv", "init"],
+            [*get_rxiv_command(), "init"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -472,7 +483,7 @@ class TestInitValidation:
         monkeypatch.chdir(temp_dir)
 
         result = subprocess.run(
-            ["rxiv", "init"],
+            [*get_rxiv_command(), "init"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -505,7 +516,7 @@ class TestInitEdgeCases:
         monkeypatch.chdir(subdir)
 
         result = subprocess.run(
-            ["rxiv", "init", ".", "--no-interactive", "--force"],
+            [*get_rxiv_command(), "init", ".", "--no-interactive", "--force"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -522,7 +533,7 @@ class TestInitEdgeCases:
         # Mixed case directory name
         manuscript_name = "MyPaper_ABC"
         result = subprocess.run(
-            ["rxiv", "init", manuscript_name],
+            [*get_rxiv_command(), "init", manuscript_name],
             capture_output=True,
             text=True,
             timeout=30,
@@ -542,7 +553,7 @@ class TestInitEdgeCases:
         for i in range(3):
             manuscript_name = f"MANUSCRIPT_{i}"
             result = subprocess.run(
-                ["rxiv", "init", manuscript_name],
+                [*get_rxiv_command(), "init", manuscript_name],
                 capture_output=True,
                 text=True,
                 timeout=30,
@@ -558,7 +569,7 @@ class TestInitEdgeCases:
         # Nested path where parent doesn't exist
         nested_path = "nonexistent/parent/MANUSCRIPT"
         result = subprocess.run(
-            ["rxiv", "init", nested_path],
+            [*get_rxiv_command(), "init", nested_path],
             capture_output=True,
             text=True,
             timeout=30,
