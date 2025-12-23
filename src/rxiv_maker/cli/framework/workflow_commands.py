@@ -30,8 +30,10 @@ class InitCommand(BaseCommand):
         self.engine = "local"  # Only local engine is supported
 
         # Store manuscript path without PathManager validation since we're creating the directory
+        # NOTE: For init command, we should NOT use environment variable MANUSCRIPT_PATH
+        # as it's meant for finding existing manuscripts, not determining where to initialize
         if manuscript_path is None:
-            manuscript_path = EnvironmentManager.get_manuscript_path() or "MANUSCRIPT"
+            manuscript_path = "MANUSCRIPT"
 
         # Store the raw path for use in execute_operation
         self.raw_manuscript_path = manuscript_path
