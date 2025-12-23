@@ -59,6 +59,7 @@ class DocxWriter:
         table_map: Optional[Dict[str, int]] = None,
         figures_at_end: bool = False,
         hide_highlighting: bool = False,
+        hide_comments: bool = False,
     ) -> Path:
         """Write DOCX file from structured content.
 
@@ -72,6 +73,7 @@ class DocxWriter:
             table_map: Mapping from table labels to numbers (for supplementary tables)
             figures_at_end: Place main figures at end before SI/bibliography
             hide_highlighting: Disable colored highlighting on references and citations
+            hide_comments: Exclude all comments (block and inline) from output
 
         Returns:
             Path to created DOCX file
@@ -81,6 +83,7 @@ class DocxWriter:
         self.include_footnotes = include_footnotes
         self.table_map = table_map or {}
         self.hide_highlighting = hide_highlighting
+        self.hide_comments = hide_comments
         doc = Document()
 
         # Add title and author information if metadata provided
@@ -338,7 +341,8 @@ class DocxWriter:
         elif section_type == "code_block":
             self._add_code_block(doc, section)
         elif section_type == "comment":
-            self._add_comment(doc, section)
+            if not self.hide_comments:
+                self._add_comment(doc, section)
         elif section_type == "figure":
             self._add_figure(doc, section)
         elif section_type == "table":
@@ -450,12 +454,13 @@ class DocxWriter:
             self._add_inline_equation(paragraph, latex_content)
 
         elif run_data["type"] == "inline_comment":
-            # Add inline comment with gray highlighting
-            comment_text = run_data["text"]
-            run = paragraph.add_run(f"[Comment: {comment_text}]")
-            self._apply_highlight(run, WD_COLOR_INDEX.GRAY_25)
-            run.italic = True
-            run.font.size = Pt(10)
+            # Add inline comment with gray highlighting (unless hide_comments is enabled)
+            if not self.hide_comments:
+                comment_text = run_data["text"]
+                run = paragraph.add_run(f"[Comment: {comment_text}]")
+                self._apply_highlight(run, WD_COLOR_INDEX.GRAY_25)
+                run.italic = True
+                run.font.size = Pt(10)
 
         elif run_data["type"] == "citation":
             cite_num = run_data["number"]
@@ -514,12 +519,13 @@ class DocxWriter:
                     latex_content = run_data.get("latex", "")
                     self._add_inline_equation(paragraph, latex_content)
                 elif run_data["type"] == "inline_comment":
-                    # Add inline comment with gray highlighting
-                    comment_text = run_data["text"]
-                    run = paragraph.add_run(f"[Comment: {comment_text}]")
-                    self._apply_highlight(run, WD_COLOR_INDEX.GRAY_25)
-                    run.italic = True
-                    run.font.size = Pt(10)
+                    # Add inline comment with gray highlighting (unless hide_comments is enabled)
+                    if not self.hide_comments:
+                        comment_text = run_data["text"]
+                        run = paragraph.add_run(f"[Comment: {comment_text}]")
+                        self._apply_highlight(run, WD_COLOR_INDEX.GRAY_25)
+                        run.italic = True
+                        run.font.size = Pt(10)
                 elif run_data["type"] == "citation":
                     cite_num = run_data["number"]
                     run = paragraph.add_run(f"[{cite_num}]")
@@ -729,12 +735,13 @@ class DocxWriter:
                     latex_content = run_data.get("latex", "")
                     self._add_inline_equation(caption_para, latex_content)
                 elif run_data["type"] == "inline_comment":
-                    # Add inline comment with gray highlighting
-                    comment_text = run_data["text"]
-                    run = caption_para.add_run(f"[Comment: {comment_text}]")
-                    self._apply_highlight(run, WD_COLOR_INDEX.GRAY_25)
-                    run.italic = True
-                    run.font.size = Pt(8)
+                    # Add inline comment with gray highlighting (unless hide_comments is enabled)
+                    if not self.hide_comments:
+                        comment_text = run_data["text"]
+                        run = caption_para.add_run(f"[Comment: {comment_text}]")
+                        self._apply_highlight(run, WD_COLOR_INDEX.GRAY_25)
+                        run.italic = True
+                        run.font.size = Pt(8)
                 elif run_data["type"] == "citation":
                     cite_num = run_data["number"]
                     run = caption_para.add_run(f"[{cite_num}]")
