@@ -252,6 +252,12 @@ class DocxWriter:
                     sup_run = author_para.add_run(",".join(affil_nums))
                     sup_run.font.superscript = True
 
+                # Add co-first author marker (dagger) if applicable
+                is_cofirst = author.get("co_first_author", False)
+                if is_cofirst:
+                    cofirst_run = author_para.add_run("†")
+                    cofirst_run.font.superscript = True
+
                 # Add corresponding author marker (asterisk) if applicable
                 is_corresponding = author.get("corresponding_author", False)
                 if is_corresponding:
@@ -276,6 +282,28 @@ class DocxWriter:
 
             # Extra space after last affiliation
             affil_para.paragraph_format.space_after = Pt(12)
+
+        # Add co-first author information if any
+        cofirst_authors = [a for a in authors if a.get("co_first_author", False)]
+        if cofirst_authors:
+            cofirst_para = doc.add_paragraph()
+            cofirst_marker = cofirst_para.add_run("†")
+            cofirst_marker.font.superscript = True
+            cofirst_marker.font.size = Pt(8)
+
+            cofirst_label = cofirst_para.add_run(" These authors contributed equally: ")
+            cofirst_label.font.size = Pt(8)
+
+            for i, author in enumerate(cofirst_authors):
+                if i > 0:
+                    sep_run = cofirst_para.add_run(", ")
+                    sep_run.font.size = Pt(8)
+
+                name = author.get("name", "")
+                name_run = cofirst_para.add_run(name)
+                name_run.font.size = Pt(8)
+
+            cofirst_para.paragraph_format.space_after = Pt(12)
 
         # Add corresponding author information if any
         corresponding_authors = [a for a in authors if a.get("corresponding_author", False)]
