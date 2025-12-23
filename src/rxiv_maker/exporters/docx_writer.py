@@ -17,6 +17,7 @@ from latex2mathml.converter import convert as latex_to_mathml
 from lxml import etree
 
 from ..core.logging_config import get_logger
+from ..utils.author_affiliation_processor import AuthorAffiliationProcessor
 from ..utils.docx_helpers import convert_pdf_to_image
 
 logger = get_logger()
@@ -214,25 +215,14 @@ class DocxWriter:
         if not authors:
             return  # Nothing more to add
 
-        # Collect unique affiliations and build mapping
-        all_affiliations = []
-        affiliation_map = {}  # Maps affiliation shortname to number
+        # Process author and affiliation metadata using centralized processor
+        processor = AuthorAffiliationProcessor()
+        processed = processor.process(metadata)
 
-        # Get full affiliation details from metadata
-        affiliation_details = {a.get("shortname"): a for a in metadata.get("affiliations", [])}
-
-        for author in authors:
-            author_affils = author.get("affiliations", [])
-            for affil_shortname in author_affils:
-                if affil_shortname not in affiliation_map:
-                    affiliation_map[affil_shortname] = len(affiliation_map) + 1
-                    # Look up full affiliation info
-                    affil_info = affiliation_details.get(affil_shortname, {})
-                    full_name = affil_info.get("full_name", affil_shortname)
-                    location = affil_info.get("location", "")
-                    # Format: "Full Name, Location" or just "Full Name" if no location
-                    affil_text = f"{full_name}, {location}" if location else full_name
-                    all_affiliations.append(affil_text)
+        affiliation_map = processed["affiliation_map"]
+        ordered_affiliations = processed["ordered_affiliations"]
+        cofirst_authors = processed["cofirst_authors"]
+        corresponding_authors = processed["corresponding_authors"]
 
         # Add authors with superscript affiliation numbers and corresponding author markers
         if authors:
@@ -267,12 +257,12 @@ class DocxWriter:
             author_para.paragraph_format.space_after = Pt(8)
 
         # Add affiliations
-        if all_affiliations:
-            for i, affil_text in enumerate(all_affiliations, start=1):
+        if ordered_affiliations:
+            for affil_num, _affil_shortname, affil_text in ordered_affiliations:
                 affil_para = doc.add_paragraph()
 
                 # Add superscript number
-                num_run = affil_para.add_run(str(i))
+                num_run = affil_para.add_run(str(affil_num))
                 num_run.font.superscript = True
 
                 # Add affiliation text
@@ -283,8 +273,7 @@ class DocxWriter:
             # Extra space after last affiliation
             affil_para.paragraph_format.space_after = Pt(12)
 
-        # Add co-first author information if any
-        cofirst_authors = [a for a in authors if a.get("co_first_author", False)]
+        # Add co-first author information if any (already extracted by processor)
         if cofirst_authors:
             cofirst_para = doc.add_paragraph()
             cofirst_marker = cofirst_para.add_run("†")
@@ -305,8 +294,7 @@ class DocxWriter:
 
             cofirst_para.paragraph_format.space_after = Pt(12)
 
-        # Add corresponding author information if any
-        corresponding_authors = [a for a in authors if a.get("corresponding_author", False)]
+        # Add corresponding author information if any (already extracted by processor)
         if corresponding_authors:
             corr_para = doc.add_paragraph()
             corr_marker = corr_para.add_run("*")
