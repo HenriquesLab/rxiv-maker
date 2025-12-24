@@ -190,6 +190,14 @@ Interpret your results in the context of existing literature and theory. Discuss
 
 Summarize your key findings and their significance. Reinforce the main contributions of your work and their broader impact on the field. Keep this section concise but impactful, leaving readers with a clear understanding of what your research has accomplished and why it matters.
 
+## Funding
+
+Provide information about funding sources, grant numbers, and supporting organizations. If no external funding was received, state "This research received no external funding."
+
+## Competing Interests
+
+The authors declare no competing interests.
+
 ## References
 
 Citations are automatically formatted from 03_REFERENCES.bib. Reference works using citation keys like [@smith2023] for single citations or [@smith2023; @johnson2022] for multiple citations.
@@ -436,6 +444,14 @@ Suggest future research directions.
 
 Summarize key conclusions.
 
+## Funding
+
+Provide information about funding sources, grant numbers, and supporting organizations. If no external funding was received, state "This research received no external funding."
+
+## Competing Interests
+
+The authors declare no competing interests.
+
 ## References
 
 [@ref]
@@ -484,6 +500,10 @@ Links to data repositories, code, and protocols for reproducibility.
 ## Author Contributions
 
 Detailed author contribution statements.
+
+## Funding
+
+Provide information about funding sources, grant numbers, and supporting organizations. If no external funding was received, state "This research received no external funding."
 
 ## Competing Interests
 
