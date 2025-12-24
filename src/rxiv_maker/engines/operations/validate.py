@@ -25,6 +25,7 @@ try:
     from ...validators.latex_error_parser import LaTeXErrorParser
     from ...validators.math_validator import MathValidator
     from ...validators.reference_validator import ReferenceValidator
+    from ...validators.section_validator import SectionValidator
     from ...validators.syntax_validator import SyntaxValidator
 
     VALIDATORS_AVAILABLE = True
@@ -42,6 +43,7 @@ except ImportError:
         from rxiv_maker.validators.latex_error_parser import LaTeXErrorParser  # type: ignore
         from rxiv_maker.validators.math_validator import MathValidator  # type: ignore
         from rxiv_maker.validators.reference_validator import ReferenceValidator  # type: ignore
+        from rxiv_maker.validators.section_validator import SectionValidator  # type: ignore
         from rxiv_maker.validators.syntax_validator import SyntaxValidator  # type: ignore
 
         VALIDATORS_AVAILABLE = True
@@ -95,6 +97,7 @@ class UnifiedValidator:
             print()
 
         validators = [
+            ("Structure", SectionValidator),
             ("Citations", CitationValidator),
             ("Cross-references", ReferenceValidator),
             ("Figures", FigureValidator),
