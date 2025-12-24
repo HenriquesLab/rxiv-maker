@@ -12,7 +12,7 @@ from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_COLOR_INDEX
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Inches, Pt, RGBColor
+from docx.shared import Pt, RGBColor
 from latex2mathml.converter import convert as latex_to_mathml
 from lxml import etree
 
@@ -689,9 +689,22 @@ class DocxWriter:
                     img_width, img_height = img.size
                     aspect_ratio = img_width / img_height
 
-                # Page dimensions with margins (Letter size: 8.5 x 11 inches, 1 inch margins)
-                max_width = Inches(6.5)  # 8.5 - 2*1
-                max_height = Inches(9)  # 11 - 2*1
+                # Calculate available width from document section settings
+                # Get the current section to read actual page dimensions and margins
+                section = doc.sections[-1]  # Use the most recent section
+
+                # Page width minus left and right margins
+                available_width = section.page_width - section.left_margin - section.right_margin
+
+                # Page height minus top and bottom margins
+                available_height = section.page_height - section.top_margin - section.bottom_margin
+
+                # Convert available width to Inches for comparison
+                max_width = available_width
+                max_height = available_height
+
+                # Calculate aspect ratio thresholds
+                page_aspect_ratio = available_width / available_height
 
                 # Add figure centered
                 # Note: add_picture() creates a paragraph automatically, but we need to add it explicitly
@@ -700,7 +713,7 @@ class DocxWriter:
                 fig_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
                 # Calculate optimal size maintaining aspect ratio
-                if aspect_ratio > (6.5 / 9):  # Wide image - constrain by width
+                if aspect_ratio > page_aspect_ratio:  # Wide image - constrain by width
                     run = fig_para.add_run()
                     run.add_picture(img_source, width=max_width)
                 else:  # Tall image - constrain by height
