@@ -190,6 +190,22 @@ Interpret your results in the context of existing literature and theory. Discuss
 
 Summarize your key findings and their significance. Reinforce the main contributions of your work and their broader impact on the field. Keep this section concise but impactful, leaving readers with a clear understanding of what your research has accomplished and why it matters.
 
+## Data Availability
+
+Describe where the data supporting the findings of this study are available. Include repository names, accession numbers, DOIs, or URLs. If data are available upon request, state this clearly with contact information.
+
+## Code Availability
+
+Provide information about the availability of code, software, or algorithms used in this study. Include repository URLs (e.g., GitHub), software package names with version numbers, and any licensing information.
+
+## Author Contributions
+
+Describe the specific contributions of each author to the work. Use initials to identify authors and describe their roles (e.g., "A.B. and C.D. designed the study. A.B. performed experiments. C.D. analyzed data. All authors contributed to writing the manuscript.").
+
+## Acknowledgements
+
+Acknowledge individuals, groups, or organizations that contributed to the work but do not meet authorship criteria. This may include technical assistance, discussions, or provision of materials.
+
 ## Funding
 
 Provide information about funding sources, grant numbers, and supporting organizations. If no external funding was received, state "This research received no external funding."
