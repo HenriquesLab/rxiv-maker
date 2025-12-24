@@ -7,7 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.18.0] - 2025-12-23
+## [1.18.1] - 2024-12-24
+
+### Added
+
+- **Complete Template Sections**: All standard manuscript sections now included by default in `rxiv init`
+  - Data Availability: Repository information and DOI guidance
+  - Code Availability: GitHub links, software versions, licensing details
+  - Author Contributions: Role descriptions with author initials
+  - Acknowledgements: Non-author contributors and assistance
+  - Funding: Grant information and funding declarations
+  - Competing Interests: Conflict of interest statements
+  - Ensures manuscripts include all sections required by most journals
+
+### Changed
+
+- **Template Standardization**: Consistent section structure across all template types
+  - Journal template now includes all standard sections (Data/Code Availability, Author Contributions, Acknowledgements)
+  - Preprint template now includes Acknowledgements section
+  - All templates use same section ordering for consistency
+
+### Fixed
+
+- **Funding Section in PDF**: Funding section now correctly appears in generated PDFs
+  - Added `<PY-RPL:FUNDING-BLOCK>` placeholder to LaTeX template
+  - Added funding block generation logic to template processor
+  - Funding environment was defined in style file but not used in pipeline
+- **DOCX Figure Width**: Figures no longer exceed text line width in DOCX output
+  - Changed from hardcoded 6.5" width to dynamic calculation from document dimensions
+  - Calculates available width from page width minus left/right margins
+  - Ensures figures fit properly regardless of page size or margin settings
+- **Template Clarity**: Removed confusing "References" heading from all templates
+  - Eliminates confusion between manual References heading and auto-generated Bibliography section
+  - Users no longer see duplicate or conflicting reference-related headings
+
+### Documentation
+
+- Template placeholder text provides clear guidance on what content to include in each section
+- Section ordering follows standard scientific manuscript structure
+
+## [1.18.0] - 2024-12-23
 
 ### Added
 

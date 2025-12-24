@@ -190,9 +190,29 @@ Interpret your results in the context of existing literature and theory. Discuss
 
 Summarize your key findings and their significance. Reinforce the main contributions of your work and their broader impact on the field. Keep this section concise but impactful, leaving readers with a clear understanding of what your research has accomplished and why it matters.
 
-## References
+## Data Availability
 
-Citations are automatically formatted from 03_REFERENCES.bib. Reference works using citation keys like [@smith2023] for single citations or [@smith2023; @johnson2022] for multiple citations.
+Describe where the data supporting the findings of this study are available. Include repository names, accession numbers, DOIs, or URLs. If data are available upon request, state this clearly with contact information.
+
+## Code Availability
+
+Provide information about the availability of code, software, or algorithms used in this study. Include repository URLs (e.g., GitHub), software package names with version numbers, and any licensing information.
+
+## Author Contributions
+
+Describe the specific contributions of each author to the work. Use initials to identify authors and describe their roles (e.g., "A.B. and C.D. designed the study. A.B. performed experiments. C.D. analyzed data. All authors contributed to writing the manuscript.").
+
+## Acknowledgements
+
+Acknowledge individuals, groups, or organizations that contributed to the work but do not meet authorship criteria. This may include technical assistance, discussions, or provision of materials.
+
+## Funding
+
+Provide information about funding sources, grant numbers, and supporting organizations. If no external funding was received, state "This research received no external funding."
+
+## Competing Interests
+
+The authors declare no competing interests.
 """
 
     def _get_default_supplementary_template(self) -> str:
@@ -353,10 +373,6 @@ Organize your content with additional sections as needed.
 ## Conclusions
 
 Summarize your conclusions.
-
-## References
-
-Add citations using [@ref_key].
 """
 
     def _get_minimal_supplementary_template(self) -> str:
@@ -436,9 +452,29 @@ Suggest future research directions.
 
 Summarize key conclusions.
 
-## References
+## Data Availability
 
-[@ref]
+Describe where the data supporting the findings of this study are available. Include repository names, accession numbers, DOIs, or URLs. If data are available upon request, state this clearly with contact information.
+
+## Code Availability
+
+Provide information about the availability of code, software, or algorithms used in this study. Include repository URLs (e.g., GitHub), software package names with version numbers, and any licensing information.
+
+## Author Contributions
+
+Describe the specific contributions of each author to the work. Use initials to identify authors and describe their roles (e.g., "A.B. and C.D. designed the study. A.B. performed experiments. C.D. analyzed data. All authors contributed to writing the manuscript.").
+
+## Acknowledgements
+
+Acknowledge individuals, groups, or organizations that contributed to the work but do not meet authorship criteria. This may include technical assistance, discussions, or provision of materials.
+
+## Funding
+
+Provide information about funding sources, grant numbers, and supporting organizations. If no external funding was received, state "This research received no external funding."
+
+## Competing Interests
+
+The authors declare no competing interests.
 """
 
     # Preprint template methods
@@ -485,13 +521,17 @@ Links to data repositories, code, and protocols for reproducibility.
 
 Detailed author contribution statements.
 
+## Acknowledgements
+
+Acknowledge individuals, groups, or organizations that contributed to the work but do not meet authorship criteria. This may include technical assistance, discussions, or provision of materials.
+
+## Funding
+
+Provide information about funding sources, grant numbers, and supporting organizations. If no external funding was received, state "This research received no external funding."
+
 ## Competing Interests
 
 Declaration of competing interests.
-
-## References
-
-[@ref]
 """
 
 
