@@ -639,6 +639,16 @@ def process_template_replacements(template_content, yaml_metadata, article_md, o
         acknowledgements_block = ""
     template_content = template_content.replace("<PY-RPL:ACKNOWLEDGEMENTS-BLOCK>", acknowledgements_block)
 
+    # Funding
+    funding = content_sections.get("funding", "").strip()
+    if funding:
+        funding_block = f"""\\begin{{funding}}
+{funding}
+\\end{{funding}}"""
+    else:
+        funding_block = ""
+    template_content = template_content.replace("<PY-RPL:FUNDING-BLOCK>", funding_block)
+
     # Competing Interests
     competing_interests = content_sections.get("competing_interests", "").strip()
     if competing_interests:
