@@ -16,10 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Cross-reference support: Table captions can now include references to figures, tables, and equations
   - Dynamic line-skipping logic: Intelligently determines how many lines to skip based on actual content
   - Fixes issues where captions separated from tables by comments or extra whitespace were not detected
-- **Supplementary Figure References**: Corrected nomenclature for supplementary figures
-  - Changed @sfig: references from "Fig." to "Suppl. Fig." in generated output
-  - Ensures proper distinction between main figures and supplementary materials
-  - Applies to both standalone references and panel-specific references (e.g., @sfig:example A)
 
 ## [1.18.1] - 2024-12-24
 
