@@ -139,9 +139,9 @@ def convert_tables_to_latex(
                     result_lines.pop()  # Remove caption line
 
             # Check for new format table caption after the table
-            new_format_caption, table_id, rotation_angle = _parse_table_caption(lines, i)
-            if new_format_caption:
-                i += 2  # Skip blank line and caption line
+            new_format_caption, table_id, rotation_angle, lines_to_skip = _parse_table_caption(lines, i)
+            if new_format_caption and lines_to_skip:
+                i += lines_to_skip  # Skip blank lines, comments, and caption line
 
             # Generate LaTeX table with the processed caption
             latex_table = generate_latex_table(
@@ -844,39 +844,68 @@ def _is_table_row(line: str) -> bool:
     return "|" in line and line.startswith("|") and line.endswith("|")
 
 
-def _parse_table_caption(lines: list[str], i: int) -> tuple[str | None, str | None, int | None]:
-    """Parse table caption in new format after table."""
+def _parse_table_caption(lines: list[str], i: int) -> tuple[str | None, str | None, int | None, int | None]:
+    """Parse table caption in new format after table.
+
+    Returns:
+        tuple of (caption, table_id, rotation_angle, lines_to_skip)
+        lines_to_skip indicates how many lines after position i should be skipped
+    """
     new_format_caption = None
     table_id = None
     rotation_angle = None
+    lines_to_skip = None
 
-    if (
-        i < len(lines)
-        and lines[i].strip() == ""
-        and i + 1 < len(lines)
-        and re.match(r"^\{#[a-zA-Z0-9_:-]+.*\}\s*\*\*.*\*\*", lines[i + 1].strip())
-    ):
-        # Found new format caption, parse it
-        caption_line = lines[i + 1].strip()
+    # Look ahead for caption, skipping blank lines and HTML comments
+    # Search up to 5 lines ahead to be flexible
+    search_limit = min(i + 5, len(lines))
 
-        # Parse caption with optional attributes like rotate=90
-        caption_match = re.match(r"^\{#([a-zA-Z0-9_:-]+)([^}]*)\}\s*(.+)$", caption_line)
-        if caption_match:
-            table_id = caption_match.group(1)
-            attributes_str = caption_match.group(2).strip()
-            caption_text = caption_match.group(3)
+    for offset in range(search_limit - i):
+        check_line = lines[i + offset].strip()
 
-            # Extract rotation attribute if present
-            if attributes_str:
-                rotation_match = re.search(r"rotate=(\d+)", attributes_str)
-                if rotation_match:
-                    rotation_angle = int(rotation_match.group(1))
+        # Skip blank lines and HTML comments
+        if check_line == "" or (check_line.startswith("<!--") and check_line.endswith("-->")):
+            continue
 
-            # Process caption text to handle markdown formatting
-            new_format_caption = re.sub(r"\*\*([^*]+)\*\*", r"\\textbf{\1}", caption_text)
-            new_format_caption = re.sub(r"\*([^*]+)\*", r"\\textit{\1}", new_format_caption)
+        # Check if this is a new-format caption
+        if re.match(r"^\{#[a-zA-Z0-9_:-]+.*\}\s*\*\*.*\*\*", check_line):
+            caption_line = check_line
 
-    return new_format_caption, table_id, rotation_angle
+            # Parse caption with optional attributes like rotate=90
+            caption_match = re.match(r"^\{#([a-zA-Z0-9_:-]+)([^}]*)\}\s*(.+)$", caption_line)
+            if caption_match:
+                table_id = caption_match.group(1)
+                attributes_str = caption_match.group(2).strip()
+                caption_text = caption_match.group(3)
+
+                # Extract rotation attribute if present
+                if attributes_str:
+                    rotation_match = re.search(r"rotate=(\d+)", attributes_str)
+                    if rotation_match:
+                        rotation_angle = int(rotation_match.group(1))
+
+                # Process caption text to handle markdown formatting
+                new_format_caption = re.sub(r"\*\*([^*]+)\*\*", r"\\textbf{\1}", caption_text)
+                new_format_caption = re.sub(r"\*([^*]+)\*", r"\\textit{\1}", new_format_caption)
+
+                # Convert cross-references (figures, tables, equations) in caption
+                from .figure_processor import (
+                    convert_equation_references_to_latex,
+                    convert_figure_references_to_latex,
+                )
+
+                new_format_caption = convert_figure_references_to_latex(new_format_caption)
+                new_format_caption = convert_table_references_to_latex(new_format_caption)
+                new_format_caption = convert_equation_references_to_latex(new_format_caption)
+
+                # Return how many lines to skip (all lines from i to caption, inclusive)
+                lines_to_skip = offset + 1
+                break
+        else:
+            # Found a non-blank, non-comment, non-caption line - stop searching
+            break
+
+    return new_format_caption, table_id, rotation_angle, lines_to_skip
 
 
 def _split_table_row_respecting_backticks(row: str) -> list[str]:

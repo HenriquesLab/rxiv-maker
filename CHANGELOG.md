@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.2] - 2026-01-06
+
+### Fixed
+
+- **Table Caption Parser Enhancement**: Improved robustness of table caption detection
+  - Flexible whitespace handling: Parser now skips blank lines and HTML comments between tables and captions
+  - Cross-reference support: Table captions can now include references to figures, tables, and equations
+  - Dynamic line-skipping logic: Intelligently determines how many lines to skip based on actual content
+  - Fixes issues where captions separated from tables by comments or extra whitespace were not detected
+
 ## [1.18.1] - 2024-12-24
 
 ### Added
