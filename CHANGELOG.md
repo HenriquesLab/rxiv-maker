@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.3] - 2026-01-07
+
+### Added
+
+- **Image-Based Equation Rendering in DOCX**: Equations now render as high-quality LaTeX-compiled PNG images
+  - Renders equations using pdflatex and pdftoppm at 300 DPI for perfect fidelity
+  - Smart two-tier sizing: 0.22" height for simple equations, 0.32" for equations with fractions
+  - Automatic image caching in temp directory for faster regeneration
+  - Fallback to formatted text if LaTeX tools unavailable
+- **Equation Numbering in DOCX**: Equations now display numbers on the right side matching PDF format
+  - Numbers aligned using tab stops at 6.5 inches
+  - Consistent with PDF equation numbering
+  - Equation references in text link to correct equation numbers
+
+### Changed
+
+- **Equation Reference Highlighting**: Changed from dark violet (hard to read) to pink for better visibility
+- **Panel Letter Formatting**: Figure references now format as "Fig. 2f" instead of "Fig. 2 f" (no space before panel letter)
+
+### Fixed
+
+- **Font Size Consistency in DOCX**: All text runs now explicitly set to 10pt to prevent size variations
+  - Previously subscript/superscript text lacked explicit sizing, causing inconsistent rendering
+  - Body text, subscripts, superscripts, and code blocks all use consistent sizing
+- **Subscript Pattern Matching**: Fixed false subscript formatting for tildes used as "approximately"
+  - Pattern now excludes punctuation (`,;:.!?()`) to avoid matching across sentences
+  - Tildes like `~4 nm` no longer incorrectly treated as subscript markers
+
 ## [1.18.2] - 2026-01-06
 
 ### Fixed

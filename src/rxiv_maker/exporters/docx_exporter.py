@@ -144,7 +144,7 @@ class DocxExporter:
             # Panel letters must be followed by non-letter (space, punctuation, end of string)
             markdown_with_numbers = re.sub(
                 rf"@fig:{label}\b(\s+[a-z](?:[,\-][a-z])*(?![a-z]))?",
-                lambda m, num=num: f"<<XREF:fig>>Fig. {num}{m.group(1) if m.group(1) else ''}<</XREF>>",
+                lambda m, num=num: f"<<XREF:fig>>Fig. {num}{m.group(1).strip() if m.group(1) else ''}<</XREF>>",
                 markdown_with_numbers,
             )
 
@@ -161,7 +161,7 @@ class DocxExporter:
             # Negative lookahead prevents matching start of words
             markdown_with_numbers = re.sub(
                 rf"@sfig:{label}\b(\s+[a-z](?:[,\-][a-z])*(?![a-z]))?",
-                lambda m, num=num: f"<<XREF:sfig>>Supp. Fig. {num}{m.group(1) if m.group(1) else ''}<</XREF>>",
+                lambda m, num=num: f"<<XREF:sfig>>Supp. Fig. {num}{m.group(1).strip() if m.group(1) else ''}<</XREF>>",
                 markdown_with_numbers,
             )
 
@@ -230,6 +230,7 @@ class DocxExporter:
             base_path=self.path_manager.manuscript_path,
             metadata=metadata,
             table_map=table_map,
+            equation_map=equation_map,
             figures_at_end=self.figures_at_end,
             hide_highlighting=self.hide_highlighting,
             hide_comments=self.hide_comments,
