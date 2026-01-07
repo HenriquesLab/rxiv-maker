@@ -164,7 +164,7 @@ class TestChangelogCommand:
         """Test --breaking-only flag."""
         mock_fetch.return_value = sample_changelog
 
-        result = runner.invoke(changelog, ["--recent", "8", "--breaking-only"])
+        result = runner.invoke(changelog, ["--recent", "9", "--breaking-only"])
 
         assert result.exit_code == 0
         # Should show v1.12.0 which has breaking changes
@@ -219,7 +219,7 @@ class TestChangelogCommand:
         mock_fetch.return_value = sample_changelog
 
         # Use the latest version to ensure no versions after it
-        result = runner.invoke(changelog, ["--since", "v1.18.2"])
+        result = runner.invoke(changelog, ["--since", "v1.18.3"])
 
         assert result.exit_code == 0
         output = strip_ansi(result.output)
