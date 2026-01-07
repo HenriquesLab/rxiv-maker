@@ -32,7 +32,7 @@ class DocxWriter:
         "sfig": WD_COLOR_INDEX.TURQUOISE,  # Supplementary figures (turquoise - lighter cyan)
         "stable": WD_COLOR_INDEX.TURQUOISE,  # Supplementary tables (turquoise - lighter cyan)
         "table": WD_COLOR_INDEX.BLUE,  # Main tables
-        "eq": WD_COLOR_INDEX.VIOLET,  # Equations
+        "eq": WD_COLOR_INDEX.PINK,  # Equations (pink - lighter than violet, easier to read)
         "snote": WD_COLOR_INDEX.TURQUOISE,  # Supplementary notes (turquoise - lighter cyan)
         "cite": WD_COLOR_INDEX.YELLOW,  # Citations (yellow)
     }
@@ -58,6 +58,7 @@ class DocxWriter:
         base_path: Optional[Path] = None,
         metadata: Optional[Dict[str, Any]] = None,
         table_map: Optional[Dict[str, int]] = None,
+        equation_map: Optional[Dict[str, int]] = None,
         figures_at_end: bool = False,
         hide_highlighting: bool = False,
         hide_comments: bool = False,
@@ -72,6 +73,7 @@ class DocxWriter:
             base_path: Base path for resolving relative figure paths
             metadata: Document metadata (title, authors, affiliations)
             table_map: Mapping from table labels to numbers (for supplementary tables)
+            equation_map: Mapping from equation labels to numbers
             figures_at_end: Place main figures at end before SI/bibliography
             hide_highlighting: Disable colored highlighting on references and citations
             hide_comments: Exclude all comments (block and inline) from output
@@ -83,6 +85,7 @@ class DocxWriter:
         self.bibliography = bibliography
         self.include_footnotes = include_footnotes
         self.table_map = table_map or {}
+        self.equation_map = equation_map or {}
         self.hide_highlighting = hide_highlighting
         self.hide_comments = hide_comments
         doc = Document()
@@ -464,6 +467,9 @@ class DocxWriter:
             text = run_data["text"]
             run = paragraph.add_run(text)
 
+            # Always set font size explicitly for consistency (body text is 10pt)
+            run.font.size = Pt(10)
+
             # Apply formatting
             if run_data.get("bold"):
                 run.bold = True
@@ -477,7 +483,7 @@ class DocxWriter:
                 run.font.superscript = True
             if run_data.get("code"):
                 run.font.name = "Courier New"
-                run.font.size = Pt(10)
+                # Font size already set to Pt(10) above
             if run_data.get("xref"):
                 # Use color based on xref type (fig, sfig, stable, eq, etc.)
                 xref_type = run_data.get("xref_type", "cite")
@@ -533,6 +539,9 @@ class DocxWriter:
                     text = run_data["text"]
                     run = paragraph.add_run(text)
 
+                    # Always set font size explicitly for consistency (body text is 10pt)
+                    run.font.size = Pt(10)
+
                     # Apply formatting
                     if run_data.get("bold"):
                         run.bold = True
@@ -544,13 +553,11 @@ class DocxWriter:
                         run.font.superscript = True
                     if run_data.get("code"):
                         run.font.name = "Courier New"
+                        # Font size already set to Pt(10) above
                     if run_data.get("xref"):
                         # Use color based on xref type
                         xref_type = run_data.get("xref_type", "cite")
                         self._apply_highlight(run, self.get_xref_color(xref_type))
-                    if run_data.get("highlight_yellow"):
-                        self._apply_highlight(run, WD_COLOR_INDEX.YELLOW)
-                        run.font.size = Pt(10)
                     if run_data.get("highlight_yellow"):
                         self._apply_highlight(run, WD_COLOR_INDEX.YELLOW)
                 elif run_data["type"] == "hyperlink":
@@ -975,7 +982,7 @@ class DocxWriter:
             run.font.size = Pt(10)
 
     def _add_equation(self, doc: Document, section: Dict[str, Any]):
-        """Add equation to document as native Office Math.
+        """Add equation to document as rendered image with numbering.
 
         Args:
             doc: Document object
@@ -984,75 +991,294 @@ class DocxWriter:
         import re
 
         latex_content = section.get("content", "")
-        _label = section.get("label", "")  # Reserved for future use (equation numbering)
+        label = section.get("label", "")  # e.g., "eq:bernoulli_labeling"
 
         if not latex_content:
             return
 
+        # Get equation number from label
+        equation_number = None
+        if label:
+            # Extract label name (e.g., "eq:bernoulli_labeling" -> "bernoulli_labeling")
+            label_name = label.split(":", 1)[1] if ":" in label else label
+            equation_number = self.equation_map.get(label_name)
+
+        # Create a paragraph for the equation
+        para = doc.add_paragraph()
+        para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        # Try to render equation as image
         try:
-            logger.debug(f"Converting equation to OMML: {latex_content[:50]}...")
+            equation_img = self._render_equation_to_image(latex_content)
+            if equation_img and equation_img.exists():
+                # Add equation image with two-tier sizing
+                run = para.add_run()
+                import re
 
-            # Check if equation is complex (has fractions, matrices, etc.)
-            # These don't convert well to Office Math with basic OMML
-            complex_patterns = [
-                r"\\frac",  # Fractions
-                r"\\begin\{matrix",  # Matrices
-                r"\\begin\{array",  # Arrays
-                r"\\sqrt\[",  # Nth roots
-                r"\\int_",  # Integrals with limits
-                r"\\sum_",  # Sums with limits
-                r"\\prod_",  # Products with limits
-            ]
+                from docx.shared import Inches
 
-            is_complex = any(re.search(pattern, latex_content) for pattern in complex_patterns)
+                # Detect if equation has fractions or other vertical elements
+                has_fractions = bool(re.search(r"\\frac|\\dfrac", latex_content))
 
-            if is_complex:
-                # Force fallback for complex equations
-                raise ValueError("Complex equation detected - using LaTeX source")
+                # Simple two-tier sizing:
+                # - Equations with fractions: 0.32 inches (taller for readability)
+                # - Simple equations without fractions: 0.22 inches (consistent with text)
+                if has_fractions:
+                    run.add_picture(str(equation_img), height=Inches(0.32))
+                    logger.debug("Equation with fractions: height=0.32in")
+                else:
+                    run.add_picture(str(equation_img), height=Inches(0.22))
+                    logger.debug("Simple equation: height=0.22in")
 
-            # Convert LaTeX to MathML
-            mathml_str = latex_to_mathml(latex_content)
-            logger.debug(f"MathML generated: {mathml_str[:100]}...")
-
-            # Parse MathML
-            mathml_root = etree.fromstring(mathml_str.encode("utf-8"))
-
-            # Convert MathML to OMML (Office Math Markup Language)
-            omml_root = self._mathml_to_omml(mathml_root)
-            logger.debug(f"OMML element created: {type(omml_root)}")
-
-            # Create a paragraph for the equation
-            para = doc.add_paragraph()
-            para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-            # Insert the OMML element into the paragraph
-            para._element.append(omml_root)
-            logger.info("Equation successfully added to document")
-
-            # Note: We don't display the equation label in DOCX since references
-            # are already converted to "Eq. X" format with yellow highlighting
-
-            # Add spacing after equation
-            para.paragraph_format.space_after = Pt(12)
-
+                logger.info(f"Equation rendered as image: {equation_img}")
+            else:
+                # Fallback to formatted text
+                logger.warning("Failed to render equation as image, using formatted text")
+                self._render_latex_formatted(para, latex_content)
         except Exception as e:
-            logger.warning(f"Equation rendering limitation - using LaTeX source: {e}")
-            logger.debug(f"LaTeX content: {latex_content}")
-            # Fallback: display LaTeX source with note
-            # (Complex equations with fractions, matrices, etc. don't convert well to Office Math)
-            para = doc.add_paragraph()
-            para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            logger.warning(f"Equation image rendering failed: {e}, using formatted text")
+            self._render_latex_formatted(para, latex_content)
 
-            # Add note in smaller text
-            note_run = para.add_run("[Equation - see PDF for proper rendering]\n")
-            note_run.font.size = Pt(9)
-            note_run.italic = True
+        # Add equation number on the right side if available
+        if equation_number:
+            # Add tab stop for right alignment
+            from docx.enum.text import WD_TAB_ALIGNMENT
+            from docx.shared import Inches
 
-            # Add LaTeX source in monospace
-            run = para.add_run(latex_content)
-            run.font.name = "Courier New"
-            run.font.size = Pt(10)
-            para.paragraph_format.space_after = Pt(12)
+            tab_stops = para.paragraph_format.tab_stops
+            tab_stops.add_tab_stop(Inches(6.5), WD_TAB_ALIGNMENT.RIGHT)
+
+            # Add tab and equation number
+            num_run = para.add_run(f"\t({equation_number})")
+            num_run.font.size = Pt(11)
+
+        logger.info("Equation successfully added to document")
+
+        # Add spacing after equation
+        para.paragraph_format.space_after = Pt(12)
+
+    def _render_equation_to_image(self, latex_content: str) -> Optional[Path]:
+        """Render LaTeX equation to PNG image.
+
+        Args:
+            latex_content: LaTeX equation content
+
+        Returns:
+            Path to generated PNG image, or None if rendering failed
+        """
+        import hashlib
+        import subprocess
+        import tempfile
+        from pathlib import Path
+
+        # Create a hash of the equation content for caching
+        eq_hash = hashlib.md5(latex_content.encode()).hexdigest()[:8]
+
+        # Use temp directory for equation images
+        temp_dir = Path(tempfile.gettempdir()) / "rxiv_equations"
+        temp_dir.mkdir(exist_ok=True)
+
+        output_png = temp_dir / f"eq_{eq_hash}.png"
+
+        # Check if we already rendered this equation
+        if output_png.exists():
+            logger.debug(f"Using cached equation image: {output_png}")
+            return output_png
+
+        # Create LaTeX document for standalone equation
+        latex_template = r"""\documentclass[preview,border=2pt]{standalone}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\begin{document}
+\begin{math}
+\displaystyle EQUATION_CONTENT
+\end{math}
+\end{document}
+"""
+        latex_doc = latex_template.replace("EQUATION_CONTENT", latex_content)
+
+        # Write to temporary .tex file
+        tex_file = temp_dir / f"eq_{eq_hash}.tex"
+        with open(tex_file, "w") as f:
+            f.write(latex_doc)
+
+        try:
+            # Compile LaTeX to PDF
+            result = subprocess.run(
+                ["pdflatex", "-interaction=nonstopmode", "-output-directory", str(temp_dir), str(tex_file)],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+
+            if result.returncode != 0:
+                logger.warning(f"pdflatex failed for equation: {latex_content[:50]}...")
+                logger.debug(f"pdflatex output: {result.stdout}")
+                return None
+
+            # Convert PDF to PNG using pdftoppm (high resolution for quality)
+            pdf_file = temp_dir / f"eq_{eq_hash}.pdf"
+            if not pdf_file.exists():
+                logger.warning(f"PDF not generated: {pdf_file}")
+                return None
+
+            # Use pdftoppm to convert to PNG at high DPI (300 for quality)
+            result = subprocess.run(
+                ["pdftoppm", "-png", "-singlefile", "-r", "300", str(pdf_file), str(temp_dir / f"eq_{eq_hash}")],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+
+            if result.returncode != 0:
+                logger.warning(f"pdftoppm failed: {result.stderr}")
+                return None
+
+            if output_png.exists():
+                logger.debug(f"Equation rendered to image: {output_png}")
+                return output_png
+            else:
+                logger.warning(f"PNG not generated: {output_png}")
+                return None
+
+        except subprocess.TimeoutExpired:
+            logger.warning("Equation rendering timed out")
+            return None
+        except FileNotFoundError as e:
+            logger.warning(f"LaTeX/pdftoppm not found: {e}")
+            return None
+        except Exception as e:
+            logger.warning(f"Equation rendering error: {e}")
+            return None
+        finally:
+            # Clean up intermediate files
+            for ext in [".tex", ".pdf", ".aux", ".log"]:
+                temp_file = temp_dir / f"eq_{eq_hash}{ext}"
+                if temp_file.exists():
+                    try:
+                        temp_file.unlink()
+                    except Exception:
+                        pass
+
+    def _render_latex_formatted(self, paragraph, latex_content: str):
+        """Render LaTeX equation with formatted subscripts and superscripts.
+
+        Args:
+            paragraph: Paragraph object to add formatted equation to
+            latex_content: LaTeX equation content
+        """
+        import re
+
+        # LaTeX symbol replacements
+        symbol_map = {
+            r"\\sim": "~",
+            r"\\approx": "≈",
+            r"\\le": "≤",
+            r"\\ge": "≥",
+            r"\\ne": "≠",
+            r"\\times": "×",
+            r"\\pm": "±",
+            r"\\in": "∈",
+            r"\\subset": "⊂",
+            r"\\cap": "∩",
+            r"\\cup": "∪",
+            r"\\mid": "|",
+            r"\\alpha": "α",
+            r"\\beta": "β",
+            r"\\gamma": "γ",
+            r"\\delta": "δ",
+            r"\\epsilon": "ε",
+            r"\\theta": "θ",
+            r"\\lambda": "λ",
+            r"\\sigma": "σ",
+            r"\\mu": "μ",
+            r"\\pi": "π",
+            r"\\sum": "Σ",
+            r"\\prod": "Π",
+            r"\\int": "∫",
+            r"\\infty": "∞",
+            r"\\mathbb\{I\}": "𝕀",
+            r"\\mathbb\{R\}": "ℝ",
+            r"\\mathbb\{N\}": "ℕ",
+        }
+
+        # Replace LaTeX commands with symbols
+        content = latex_content
+        for latex_cmd, symbol in symbol_map.items():
+            content = re.sub(latex_cmd, symbol, content)
+
+        # Remove \text{} wrappers but keep content
+        content = re.sub(r"\\text\{([^}]+)\}", r"\1", content)
+
+        # Remove \left and \right sizing commands
+        content = re.sub(r"\\left|\\right", "", content)
+
+        # Remove \mathbf{} but keep content (for now, just remove formatting)
+        content = re.sub(r"\\mathbf\{([^}]+)\}", r"\1", content)
+
+        # Parse and render with subscripts/superscripts
+        # Pattern: text followed by _{subscript} or ^{superscript}
+        i = 0
+        while i < len(content):
+            if content[i] == "_" and i + 1 < len(content):
+                # Subscript
+                if content[i + 1] == "{":
+                    # Find matching brace
+                    brace_end = content.find("}", i + 2)
+                    if brace_end != -1:
+                        sub_text = content[i + 2 : brace_end]
+                        run = paragraph.add_run(sub_text)
+                        run.font.subscript = True
+                        run.font.size = Pt(11)
+                        i = brace_end + 1
+                        continue
+                else:
+                    # Single character subscript
+                    run = paragraph.add_run(content[i + 1])
+                    run.font.subscript = True
+                    run.font.size = Pt(11)
+                    i += 2
+                    continue
+
+            elif content[i] == "^" and i + 1 < len(content):
+                # Superscript
+                if content[i + 1] == "{":
+                    # Find matching brace
+                    brace_end = content.find("}", i + 2)
+                    if brace_end != -1:
+                        sup_text = content[i + 2 : brace_end]
+                        run = paragraph.add_run(sup_text)
+                        run.font.superscript = True
+                        run.font.size = Pt(11)
+                        i = brace_end + 1
+                        continue
+                else:
+                    # Single character superscript
+                    run = paragraph.add_run(content[i + 1])
+                    run.font.superscript = True
+                    run.font.size = Pt(11)
+                    i += 2
+                    continue
+
+            # Regular text
+            # Collect text until next special character
+            text_chunk = ""
+            while i < len(content) and content[i] not in ["_", "^", "\\"]:
+                text_chunk += content[i]
+                i += 1
+
+            if text_chunk:
+                run = paragraph.add_run(text_chunk)
+                run.font.size = Pt(11)
+                run.font.italic = True  # Math content is typically italic
+
+            # Handle backslash commands we didn't replace
+            if i < len(content) and content[i] == "\\":
+                # Skip the backslash and next word
+                i += 1
+                while i < len(content) and content[i].isalpha():
+                    i += 1
 
     def _mathml_to_omml(self, mathml_elem):
         """Convert MathML to OMML (Office Math Markup Language).

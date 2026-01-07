@@ -375,8 +375,8 @@ class DocxContentProcessor:
             r"|(__([^_]+)__)"  # Underline with double underscores (must come before single underscore)
             r"|(\*([^*]+)\*)"  # Italic with asterisks
             r"|(_([^_]+)_)"  # Italic with underscores
-            r"|(~([^~]+)~)"  # Subscript
-            r"|(\^([^^]+)\^)"  # Superscript
+            r"|(~([^~(),;:.!?]+)~)"  # Subscript (exclude punctuation to avoid matching "approximately" usage)
+            r"|(\^([^^(),;:.!?]+)\^)"  # Superscript (same restriction)
             r"|(`([^`]+)`)"  # Code
             r"|(\$([^\$]+)\$)"  # Inline math
             r"|(\[(\d+(?:[-,]\s*\d+)*)\])"  # Citation numbers (supports both ranges [1-3] and lists [1, 2])
