@@ -27,6 +27,20 @@ def sample_changelog():
     # Include current version to match __version__
     return """# Changelog
 
+## [v1.18.3] - 2026-01-07
+
+### Added
+- Image-based equation rendering in DOCX
+- Equation numbering in DOCX
+
+### Changed
+- Equation reference highlighting (violet to pink)
+- Panel letter formatting (Fig. 2 f → Fig. 2f)
+
+### Fixed
+- Font size consistency in DOCX
+- Subscript pattern matching
+
 ## [v1.18.2] - 2026-01-06
 
 ### Fixed
