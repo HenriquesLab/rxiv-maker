@@ -29,15 +29,16 @@ Rxiv-Maker converts enhanced Markdown into professional PDFs with automated figu
 <summary>🍎 <strong>macOS</strong> (Recommended - includes LaTeX automatically)</summary>
 
 ```bash
-brew tap henriqueslab/formulas
-brew install rxiv-maker
-rxiv check-installation
+brew install henriqueslab/formulas/rxiv-maker
 ```
 
-**Upgrade:**
+**Updating:**
 ```bash
+brew update
 brew upgrade rxiv-maker
 ```
+
+**Benefits:** Simple one-command installation, automatic dependency management (Python 3.13, LaTeX, git, gh), easy updates
 
 > **📖 [Homebrew Formula](https://github.com/HenriquesLab/homebrew-formulas)** - Includes Python, LaTeX (MacTeX), and all dependencies
 
