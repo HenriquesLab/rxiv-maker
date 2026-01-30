@@ -59,6 +59,59 @@ docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
 
 ---
 
+## 🍺 Updating the Homebrew Formula
+
+When releasing a new version of Rxiv-Maker, update the Homebrew formula:
+
+### 1. Get Package Information from PyPI
+
+```bash
+VERSION=1.18.4  # Replace with new version
+curl "https://pypi.org/pypi/rxiv-maker/$VERSION/json" | \
+  jq -r '.urls[] | select(.packagetype=="sdist") | "URL: \(.url)\nSHA256: \(.digests.sha256)"'
+```
+
+### 2. Update the Formula
+
+Edit `homebrew-formulas/Formula/rxiv-maker.rb`:
+- Update the `url` line with the new URL
+- Update the `sha256` line with the new hash
+
+### 3. Test Locally
+
+```bash
+cd ~/GitHub/homebrew-formulas
+brew uninstall rxiv-maker 2>/dev/null || true
+brew install --build-from-source ./Formula/rxiv-maker.rb
+brew test rxiv-maker
+rxiv --version  # Verify correct version
+rxiv check-installation  # Verify dependencies
+```
+
+### 4. Audit the Formula
+
+```bash
+brew audit --strict --online rxiv-maker
+```
+
+### 5. Commit and Push
+
+```bash
+git add Formula/rxiv-maker.rb
+git commit -m "rxiv-maker: update to version $VERSION"
+git push
+```
+
+### 6. Verify Installation
+
+```bash
+brew uninstall rxiv-maker
+brew install henriqueslab/formulas/rxiv-maker
+rxiv --version
+```
+
+---
+
 ## 🚀 Getting Started
 
 ### Development Environment Setup
