@@ -36,7 +36,7 @@ graph TB
     end
 
     subgraph "Documentation & Examples"
-        D[website-rxiv-maker<br/>Official Documentation]
+        D[Documentation Website<br/>rxiv-maker.henriqueslab.org]
         E[manuscript-rxiv-maker<br/>Example & Preprint]
     end
 
@@ -72,7 +72,7 @@ graph TB
 | **[docker-rxiv-maker](https://github.com/HenriquesLab/docker-rxiv-maker)** | Pre-built Docker images with dependencies | Docker Container | CI/CD, no-LaTeX users |
 | **[manuscript-rxiv-maker](https://github.com/HenriquesLab/manuscript-rxiv-maker)** | Official preprint (arXiv:2508.00836) & example | Example Repository | New users, learners |
 | **[vscode-rxiv-maker](https://github.com/HenriquesLab/vscode-rxiv-maker)** | VS Code extension for enhanced editing | VS Code Extension | VS Code users |
-| **[website-rxiv-maker](https://github.com/HenriquesLab/website-rxiv-maker)** | Official documentation website | MkDocs Site | All users |
+| **[Documentation Website](https://rxiv-maker.henriqueslab.org)** | Official documentation and user guides | MkDocs Site | All users |
 
 ## 🛤️ Installation Decision Tree
 
@@ -254,7 +254,7 @@ flowchart TB
     DockerDebug --> DockerBuild
 
     BrewPush --> WebsiteCheck{Website<br/>Needs Update?}
-    WebsiteCheck -->|Yes| WebUpdate[Update website-rxiv-maker<br/>Add new features to docs]
+    WebsiteCheck -->|Yes| WebUpdate[Update Documentation<br/>Add new features to docs]
     WebsiteCheck -->|No| Announce
 
     WebUpdate --> WebDeploy[Cloudflare Auto-Deploy]
@@ -438,7 +438,7 @@ journey
 | docker-rxiv-maker | Dockerfile | ~2GB (image) | 5+ |
 | manuscript-rxiv-maker | Markdown | ~10MB | 5+ |
 | vscode-rxiv-maker | TypeScript 90% | ~2MB | 3+ |
-| website-rxiv-maker | Markdown | ~5MB | 5+ |
+| Documentation Website | MkDocs/Markdown | N/A (deployed) | 5+ |
 
 ### Distribution Channels
 

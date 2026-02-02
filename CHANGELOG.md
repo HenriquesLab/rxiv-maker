@@ -1157,10 +1157,10 @@ The new `rxiv upgrade` command provides a seamless upgrade experience by automat
   - 9 comprehensive unit tests with full coverage
 
 ### Changed
-- **📚 Documentation Consolidation**: Migrated installation and first-manuscript guides to [website-rxiv-maker](https://github.com/HenriquesLab/website-rxiv-maker) as single source of truth
+- **📚 Documentation Consolidation**: Migrated installation and first-manuscript guides to [official documentation website](https://rxiv-maker.henriqueslab.org) as single source of truth
 - **🔗 Redirect Stubs**: Converted `docs/installation.md` and `docs/first-manuscript.md` to redirect stubs pointing to website
 - **🎯 Enhanced README**: Improved documentation structure with clearer navigation between user guides and developer resources
-- **🏗️ Ecosystem Clarity**: Added cross-repository links to related projects (docker-rxiv-maker, vscode-rxiv-maker, website-rxiv-maker)
+- **🏗️ Ecosystem Clarity**: Added cross-repository links to related projects (docker-rxiv-maker, vscode-rxiv-maker)
 
 ### Documentation
 - **📝 Comprehensive Review**: Added detailed `DOCUMENTATION_IMPROVEMENTS.md` summarizing 14 improvements across ecosystem
