@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.4] - 2026-02-02
+
+### Documentation
+
+- **Homebrew Formula Workflow Alignment**: Aligned CONTRIBUTING.md with CLAUDE.md automation strategy (#280)
+  - Prioritized automated `just release rxiv-maker` workflow as recommended method
+  - Fixed hardcoded version placeholder (`VERSION=1.18.4` → `VERSION=X.Y.Z`)
+  - Updated path references to use relative paths (`../homebrew-formulas`)
+  - Added automation context with `just` utility commands reference
+  - Restored optional `rxiv check-installation` verification command in README
+
+- **Standardized Homebrew Documentation Templates**: Added reusable templates for ecosystem consistency (#281)
+  - Created `docs/HOMEBREW_FORMULA_TEMPLATE.md` with complete workflow templates
+  - Created `docs/HOMEBREW_DOCS_CHECKLIST.md` for review and verification
+  - Includes customization guide and examples for all HenriquesLab packages
+  - Enables consistent documentation across rxiv-maker, folder2md4llms, and TaskRepo
+
+### Security
+
+- **Private Repository Reference Removal**: Removed references to private `website-rxiv-maker` repository (#282)
+  - Updated CHANGELOG.md to reference deployed website (https://rxiv-maker.henriqueslab.org)
+  - Updated docs/ECOSYSTEM.md architecture diagrams and tables
+  - Complies with CLAUDE.md security guidelines (line 338)
+  - Prevents exposure of private repository structure and internal development processes
+
 ## [1.18.3] - 2026-01-07
 
 ### Added
