@@ -61,26 +61,50 @@ docker run -v $(pwd):/workspace henriqueslab/rxiv-maker-base:latest rxiv pdf
 
 ## 🍺 Updating the Homebrew Formula
 
-When releasing a new version of Rxiv-Maker, update the Homebrew formula:
+When releasing a new version, the Homebrew formula must be updated in the [`homebrew-formulas` repository](https://github.com/HenriquesLab/homebrew-formulas).
 
-### 1. Get Package Information from PyPI
+### Automated Workflow (Recommended)
 
 ```bash
-VERSION=1.18.4  # Replace with new version
+cd ../homebrew-formulas
+just release rxiv-maker  # Full workflow: update → test → commit → push
+```
+
+This automatically:
+- Fetches the latest version from PyPI
+- Downloads and calculates SHA256 checksum
+- Updates the formula file
+- Tests the installation
+- Commits with standardized message
+- Pushes to remote
+
+### Manual Workflow (Alternative)
+
+If `just` is not available, you can update the formula manually:
+
+#### 1. Get Package Information from PyPI
+
+```bash
+VERSION=X.Y.Z  # Replace with new version
 curl "https://pypi.org/pypi/rxiv-maker/$VERSION/json" | \
   jq -r '.urls[] | select(.packagetype=="sdist") | "URL: \(.url)\nSHA256: \(.digests.sha256)"'
 ```
 
-### 2. Update the Formula
+#### 2. Update the Formula
 
-Edit `homebrew-formulas/Formula/rxiv-maker.rb`:
+Navigate to the homebrew-formulas repository and edit the formula:
+
+```bash
+cd ../homebrew-formulas  # Use relative path from rxiv-maker directory
+```
+
+Edit `Formula/rxiv-maker.rb`:
 - Update the `url` line with the new URL
 - Update the `sha256` line with the new hash
 
-### 3. Test Locally
+#### 3. Test Locally
 
 ```bash
-cd ~/GitHub/homebrew-formulas
 brew uninstall rxiv-maker 2>/dev/null || true
 brew install --build-from-source ./Formula/rxiv-maker.rb
 brew test rxiv-maker
@@ -88,13 +112,13 @@ rxiv --version  # Verify correct version
 rxiv check-installation  # Verify dependencies
 ```
 
-### 4. Audit the Formula
+#### 4. Audit the Formula
 
 ```bash
 brew audit --strict --online rxiv-maker
 ```
 
-### 5. Commit and Push
+#### 5. Commit and Push
 
 ```bash
 git add Formula/rxiv-maker.rb
@@ -102,13 +126,15 @@ git commit -m "rxiv-maker: update to version $VERSION"
 git push
 ```
 
-### 6. Verify Installation
+#### 6. Verify Installation
 
 ```bash
 brew uninstall rxiv-maker
 brew install henriqueslab/formulas/rxiv-maker
 rxiv --version
 ```
+
+**Note:** The automated workflow using `just` is preferred for consistency and efficiency. See the [homebrew-formulas repository](https://github.com/HenriquesLab/homebrew-formulas) for additional utility commands like `just list`, `just check-updates`, and `just sha256`
 
 ---
 
