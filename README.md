@@ -38,6 +38,11 @@ brew update
 brew upgrade rxiv-maker
 ```
 
+**Verify installation (optional):**
+```bash
+rxiv check-installation  # Verify LaTeX and dependencies
+```
+
 **Benefits:** Simple one-command installation, automatic dependency management (Python 3.13, LaTeX, git, gh), easy updates
 
 > **📖 [Homebrew Formula](https://github.com/HenriquesLab/homebrew-formulas)** - Includes Python, LaTeX (MacTeX), and all dependencies
