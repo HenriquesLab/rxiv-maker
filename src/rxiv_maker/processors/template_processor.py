@@ -504,20 +504,20 @@ def process_template_replacements(template_content, yaml_metadata, article_md, o
     if content_sections.get("introduction"):
         # If there's an introduction section, use it with "Introduction" header
         main_section_content = content_sections["introduction"]
-        main_section_parts.append(f"\\section*{{Introduction}}\n{main_section_content}")
+        main_section_parts.append(f"\\section*{{Introduction}}\n\n{main_section_content}")
 
         # after_intro mode: insert Methods right after Introduction
         if methods_placement == "after_intro" and methods_content:
-            main_section_parts.append(f"\\section*{{Methods}}\n{methods_content}")
+            main_section_parts.append(f"\\section*{{Methods}}\n\n{methods_content}")
 
     elif content_sections.get("main"):
         # If there's a main section (but no introduction), use it with "Main" header
         main_section_content = content_sections["main"]
-        main_section_parts.append(f"\\section*{{Main}}\n{main_section_content}")
+        main_section_parts.append(f"\\section*{{Main}}\n\n{main_section_content}")
 
         # after_intro mode: insert Methods after Main section if no Introduction exists
         if methods_placement == "after_intro" and methods_content:
-            main_section_parts.append(f"\\section*{{Methods}}\n{methods_content}")
+            main_section_parts.append(f"\\section*{{Methods}}\n\n{methods_content}")
 
     # Include all custom sections (sections that don't map to standard academic paper sections)
     standard_sections = {
@@ -542,7 +542,7 @@ def process_template_replacements(template_content, yaml_metadata, article_md, o
         if section_key not in standard_sections and section_content.strip():
             # Add section header using the original title
             section_title = section_titles.get(section_key, section_key.replace("_", " ").title())
-            custom_section_with_header = f"\\section*{{{section_title}}}\n{section_content}"
+            custom_section_with_header = f"\\section*{{{section_title}}}\n\n{section_content}"
             custom_sections.append(custom_section_with_header)
 
     # Add all custom sections to the main section
@@ -558,7 +558,7 @@ def process_template_replacements(template_content, yaml_metadata, article_md, o
     # Results section
     results_content = content_sections.get("results", "").strip()
     if results_content:
-        results_section = f"\\section*{{Results}}\n{results_content}"
+        results_section = f"\\section*{{Results}}\n\n{results_content}"
     else:
         results_section = ""
     template_content = template_content.replace("<PY-RPL:RESULTS-SECTION>", results_section)
@@ -566,7 +566,7 @@ def process_template_replacements(template_content, yaml_metadata, article_md, o
     # Discussion section
     discussion_content = content_sections.get("discussion", "").strip()
     if discussion_content:
-        discussion_section = f"\\section*{{Discussion}}\n{discussion_content}"
+        discussion_section = f"\\section*{{Discussion}}\n\n{discussion_content}"
     else:
         discussion_section = ""
     template_content = template_content.replace("<PY-RPL:DISCUSSION-SECTION>", discussion_section)
@@ -574,26 +574,26 @@ def process_template_replacements(template_content, yaml_metadata, article_md, o
     # Conclusions section
     conclusions_content = content_sections.get("conclusion", "").strip()
     if conclusions_content:
-        conclusions_section = f"\\section*{{Conclusions}}\n{conclusions_content}"
+        conclusions_section = f"\\section*{{Conclusions}}\n\n{conclusions_content}"
     else:
         conclusions_section = ""
     template_content = template_content.replace("<PY-RPL:CONCLUSIONS-SECTION>", conclusions_section)
 
     # Handle Methods section placement based on configuration
     if methods_placement == "after_results" and methods_content:
-        methods_section = f"\\section*{{Methods}}\n{methods_content}"
+        methods_section = f"\\section*{{Methods}}\n\n{methods_content}"
         template_content = template_content.replace("<PY-RPL:METHODS-AFTER-RESULTS>", methods_section)
     else:
         template_content = template_content.replace("<PY-RPL:METHODS-AFTER-RESULTS>", "")
 
     if methods_placement == "after_discussion" and methods_content:
-        methods_section = f"\\section*{{Methods}}\n{methods_content}"
+        methods_section = f"\\section*{{Methods}}\n\n{methods_content}"
         template_content = template_content.replace("<PY-RPL:METHODS-AFTER-DISCUSSION>", methods_section)
     else:
         template_content = template_content.replace("<PY-RPL:METHODS-AFTER-DISCUSSION>", "")
 
     if methods_placement == "after_bibliography" and methods_content:
-        methods_section = f"\\section*{{Methods}}\n{methods_content}"
+        methods_section = f"\\section*{{Methods}}\n\n{methods_content}"
         template_content = template_content.replace("<PY-RPL:METHODS-AFTER-BIBLIOGRAPHY>", methods_section)
     else:
         template_content = template_content.replace("<PY-RPL:METHODS-AFTER-BIBLIOGRAPHY>", "")
