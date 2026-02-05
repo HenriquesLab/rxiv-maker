@@ -418,7 +418,7 @@
   {\sffamily\small\bfseries\itshape}
   {\thesubsubsection.}
   {0.5em}
-  {#1. }
+  {#1.\enskip}
   []
 \titleformat{\paragraph}[runin]
   {\sffamily\small\bfseries}
