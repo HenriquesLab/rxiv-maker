@@ -2,6 +2,7 @@
 
 from .arxiv import arxiv
 from .bibliography import bibliography
+from .biorxiv import biorxiv
 from .build import build as pdf
 from .cache_management import cache_group as cache
 from .changelog import changelog
@@ -29,6 +30,7 @@ from .version import version
 __all__ = [
     "arxiv",
     "bibliography",
+    "biorxiv",
     "cache",
     "changelog",
     "config",

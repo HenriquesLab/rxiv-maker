@@ -366,46 +366,25 @@ class ArxivCommand(BaseCommand):
             no_zip: Don't create zip file
         """
         import sys
-        from pathlib import Path
 
-        from rxiv_maker.engines.operations.build_manager import BuildManager
         from rxiv_maker.engines.operations.prepare_arxiv import main as prepare_arxiv_main
 
-        if self.path_manager is None:
-            raise CommandExecutionError("Path manager not initialized")
-
+        # Set defaults using shared helper
+        arxiv_dir, zip_filename = self._set_submission_defaults("arxiv", arxiv_dir, zip_filename)
         manuscript_output_dir = str(self.path_manager.output_dir)
 
-        # Set defaults using PathManager
-        if arxiv_dir is None:
-            arxiv_dir = str(Path(manuscript_output_dir) / "arxiv_submission")
-        if zip_filename is None:
-            zip_filename = str(Path(manuscript_output_dir) / "for_arxiv.zip")
-
         with self.create_progress() as progress:
-            # Clear output directory first (similar to PDF command)
+            # Clear output directory using shared helper
             task = progress.add_task("Clearing output directory...", total=None)
-            if self.path_manager.output_dir.exists():
-                shutil.rmtree(self.path_manager.output_dir)
-            self.path_manager.output_dir.mkdir(parents=True, exist_ok=True)
+            self._clear_output_directory()
 
-            # First, ensure PDF is built
+            # Ensure PDF is built using shared helper
             progress.update(task, description="Checking PDF exists...")
-            pdf_filename = f"{self.path_manager.manuscript_name}.pdf"
-            pdf_path = self.path_manager.output_dir / pdf_filename
-
-            if not pdf_path.exists():
-                progress.update(task, description="Building PDF first...")
-                build_manager = BuildManager(
-                    manuscript_path=str(self.path_manager.manuscript_path),
-                    output_dir=str(self.path_manager.output_dir),
-                    verbose=self.verbose,
-                    quiet=False,
-                )
-                success = build_manager.run()
-                if not success:
-                    self.error_message("PDF build failed. Cannot prepare arXiv package.")
-                    raise CommandExecutionError("PDF build failed")
+            try:
+                self._ensure_pdf_built(progress_task=task, quiet=False)
+            except CommandExecutionError:
+                self.error_message("PDF build failed. Cannot prepare arXiv package.")
+                raise
 
             # Prepare arXiv package
             progress.update(task, description="Preparing arXiv package...")
@@ -522,6 +501,95 @@ class ArxivCommand(BaseCommand):
         first_author = "".join(c for c in first_author if c.isalnum() or c in "._-").lower()
 
         return year, first_author
+
+
+class BioRxivCommand(BaseCommand):
+    """BioRxiv command implementation for generating submission package."""
+
+    def execute_operation(
+        self,
+        output_dir: str = "output",
+        biorxiv_dir: Optional[str] = None,
+        zip_filename: Optional[str] = None,
+        no_zip: bool = False,
+    ) -> None:
+        """Execute bioRxiv submission package preparation.
+
+        Args:
+            output_dir: Output directory for generated files
+            biorxiv_dir: Custom bioRxiv submission directory path
+            zip_filename: Custom zip filename
+            no_zip: Don't create zip file
+        """
+        from pathlib import Path
+
+        from ...engines.operations.prepare_biorxiv import (
+            BioRxivAuthorError,
+            create_biorxiv_zip,
+            generate_biorxiv_author_tsv,
+            prepare_biorxiv_package,
+        )
+
+        # Set defaults using shared helper
+        biorxiv_dir, zip_filename = self._set_submission_defaults("biorxiv", biorxiv_dir, zip_filename)
+
+        with self.create_progress() as progress:
+            # Clear output directory using shared helper
+            task = progress.add_task("Clearing output directory...", total=None)
+            self._clear_output_directory()
+
+            # Ensure PDF is built using shared helper
+            progress.update(task, description="Checking PDF exists...")
+            self._ensure_pdf_built(progress_task=task, quiet=True)
+
+            # Generate bioRxiv author template TSV
+            progress.update(task, description="Generating bioRxiv author template...")
+            output_path = self.path_manager.output_dir
+            tsv_file = output_path / "biorxiv_authors.tsv"
+
+            try:
+                generate_biorxiv_author_tsv(
+                    config_path=self.path_manager.get_config_file_path(),
+                    output_path=tsv_file,
+                )
+            except BioRxivAuthorError as e:
+                progress.update(task, completed=True)
+                raise CommandExecutionError(f"Failed to generate bioRxiv template: {e}") from e
+
+            # Prepare bioRxiv submission package
+            progress.update(task, description="Preparing bioRxiv submission package...")
+            try:
+                biorxiv_path = prepare_biorxiv_package(
+                    manuscript_path=self.path_manager.manuscript_path,
+                    output_dir=self.path_manager.output_dir,
+                    biorxiv_dir=Path(biorxiv_dir),
+                )
+            except Exception as e:
+                progress.update(task, completed=True)
+                raise CommandExecutionError(f"Failed to prepare bioRxiv package: {e}") from e
+
+            # Create ZIP file if requested
+            zip_path = None
+            if not no_zip:
+                progress.update(task, description="Creating ZIP package...")
+                try:
+                    zip_path = create_biorxiv_zip(
+                        biorxiv_path=biorxiv_path,
+                        zip_filename=zip_filename,
+                        manuscript_path=self.path_manager.manuscript_path,
+                    )
+                except Exception as e:
+                    progress.update(task, completed=True)
+                    raise CommandExecutionError(f"Failed to create ZIP: {e}") from e
+
+            progress.update(task, completed=True)
+
+            # Show success message
+            self.console.print("\n[green]✅ bioRxiv submission package ready![/green]")
+            self.console.print(f"   📁 Package directory: {biorxiv_path}")
+            if zip_path:
+                self.console.print(f"   📦 ZIP file: {zip_path}")
+            self.console.print("\n📤 Upload to: https://submit.biorxiv.org/")
 
 
 class TrackChangesCommand(BaseCommand):

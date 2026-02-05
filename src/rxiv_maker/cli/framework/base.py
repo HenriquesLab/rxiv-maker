@@ -162,6 +162,97 @@ class BaseCommand(ABC):
         if suggestion:
             self.console.print(f"💡 {suggestion}", style="yellow")
 
+    def _clear_output_directory(self) -> None:
+        """Clear and recreate the output directory.
+
+        Raises:
+            CommandExecutionError: If path_manager is not initialized
+        """
+        import shutil
+
+        if not self.path_manager:
+            raise CommandExecutionError("Path manager not initialized")
+
+        if self.path_manager.output_dir.exists():
+            shutil.rmtree(self.path_manager.output_dir)
+        self.path_manager.output_dir.mkdir(parents=True, exist_ok=True)
+
+    def _ensure_pdf_built(self, progress_task=None, quiet: bool = True) -> None:
+        """Ensure PDF is built, building it if necessary.
+
+        Args:
+            progress_task: Optional progress task to update
+            quiet: Whether to suppress build output
+
+        Raises:
+            CommandExecutionError: If path_manager is not initialized or build fails
+        """
+        from ...engines.operations.build_manager import BuildManager
+
+        if not self.path_manager:
+            raise CommandExecutionError("Path manager not initialized")
+
+        pdf_filename = f"{self.path_manager.manuscript_name}.pdf"
+        pdf_path = self.path_manager.output_dir / pdf_filename
+
+        if not pdf_path.exists():
+            if progress_task:
+                progress_task.update(description="Building PDF first...")
+
+            build_manager = BuildManager(
+                manuscript_path=str(self.path_manager.manuscript_path),
+                output_dir=str(self.path_manager.output_dir),
+                verbose=self.verbose,
+                quiet=quiet,
+            )
+
+            try:
+                success = build_manager.build()
+                if not success:
+                    raise CommandExecutionError("PDF build failed")
+            except Exception as e:
+                raise CommandExecutionError(f"Failed to build PDF: {e}") from e
+
+    def _set_submission_defaults(
+        self,
+        submission_type: str,
+        submission_dir: Optional[str] = None,
+        zip_filename: Optional[str] = None,
+    ) -> tuple[str, str]:
+        """Set default paths for submission directories and ZIP files.
+
+        Args:
+            submission_type: Type of submission ("arxiv" or "biorxiv")
+            submission_dir: Custom submission directory path (optional)
+            zip_filename: Custom ZIP filename (optional)
+
+        Returns:
+            Tuple of (submission_dir, zip_filename) with defaults applied
+
+        Raises:
+            CommandExecutionError: If path_manager is not initialized
+        """
+        from pathlib import Path
+
+        if not self.path_manager:
+            raise CommandExecutionError("Path manager not initialized")
+
+        manuscript_output_dir = str(self.path_manager.output_dir)
+
+        # Set default submission directory
+        if submission_dir is None:
+            submission_dir = str(Path(manuscript_output_dir) / f"{submission_type}_submission")
+
+        # Set default ZIP filename
+        if zip_filename is None:
+            manuscript_name = self.path_manager.manuscript_name
+            if submission_type == "arxiv":
+                zip_filename = str(Path(manuscript_output_dir) / "for_arxiv.zip")
+            else:
+                zip_filename = str(Path(manuscript_output_dir) / f"{manuscript_name}_{submission_type}.zip")
+
+        return submission_dir, zip_filename
+
     @abstractmethod
     def execute_operation(self, **kwargs) -> Any:
         """Execute the main command operation.
