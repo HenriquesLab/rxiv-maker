@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.5] - 2026-02-05
+
+### Fixed
+
+- **Section Header Spacing**: Fixed missing vertical spacing between section titles and content in PDF output
+  - Added proper paragraph separation (`\n\n`) after all section headers (Results, Discussion, Introduction, etc.)
+  - Ensures readable spacing in LaTeX output for better PDF formatting
+  - Resolves issue where section titles appeared too close to following text
+
 ## [1.18.4] - 2026-02-02
 
 ### Documentation
