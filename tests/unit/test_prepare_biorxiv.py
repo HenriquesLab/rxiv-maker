@@ -329,6 +329,14 @@ class TestEncodeHtmlEntities:
         assert encode_html_entities("Åbo") == "&Aring;bo"
         assert encode_html_entities("Øyvind") == "&Oslash;yvind"
 
+    def test_lithuanian_characters(self):
+        """Test encoding of Lithuanian characters using numeric character references."""
+        # Lithuanian characters don't have named HTML entities, so use numeric references
+        assert encode_html_entities("Vaitkevičiūtė") == "Vaitkevi&#269;i&#363;t&#279;"
+        assert encode_html_entities("č") == "&#269;"  # c with caron
+        assert encode_html_entities("ū") == "&#363;"  # u with macron
+        assert encode_html_entities("ė") == "&#279;"  # e with dot above
+
     def test_complex_text(self):
         """Test encoding of text with multiple special characters."""
         text = "Instituto de Tecnologia Química e Biológica António Xavier"

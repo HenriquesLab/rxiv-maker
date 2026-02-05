@@ -23,13 +23,15 @@ def encode_html_entities(text: str) -> str:
 
     bioRxiv's TSV upload requires special characters to be encoded as HTML entities.
     For example, "António" becomes "Ant&oacute;nio", "Åbo" becomes "&Aring;bo".
+    Characters without named entities use numeric references (e.g., "č" -> "&#269;").
 
     Args:
         text: Text that may contain Unicode characters
 
     Returns:
         Text with Unicode characters converted to HTML entities
-        (e.g., "António" -> "Ant&oacute;nio", "Åbo" -> "&Aring;bo")
+        (e.g., "António" -> "Ant&oacute;nio", "Åbo" -> "&Aring;bo",
+        "Vaitkevičiūtė" -> "Vaitkevi&#269;i&#363;t&#279;")
 
     Examples:
         >>> encode_html_entities("António")
@@ -38,6 +40,8 @@ def encode_html_entities(text: str) -> str:
         '&Aring;bo'
         >>> encode_html_entities("José García")
         'Jos&eacute; Garc&iacute;a'
+        >>> encode_html_entities("Vaitkevičiūtė")
+        'Vaitkevi&#269;i&#363;t&#279;'
     """
     if not text:
         return text
@@ -50,13 +54,19 @@ def encode_html_entities(text: str) -> str:
         if ord(char) > 127:
             char_to_entity[char] = f"&{entity_name};"
 
-    # Convert each character to HTML entity if it has one
+    # Convert each character to HTML entity (named or numeric)
     result = []
     for char in text:
-        if char in char_to_entity:
+        char_code = ord(char)
+        if char_code <= 127:
+            # Basic ASCII - keep as-is
+            result.append(char)
+        elif char in char_to_entity:
+            # Has named entity - use it
             result.append(char_to_entity[char])
         else:
-            result.append(char)
+            # No named entity - use numeric character reference
+            result.append(f"&#{char_code};")
 
     return "".join(result)
 
