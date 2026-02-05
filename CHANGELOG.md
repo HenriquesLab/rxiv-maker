@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.2] - 2026-02-05
+
+### Fixed
+
+- **bioRxiv Character Encoding**: Enhanced to use named HTML entities for Lithuanian and Eastern European characters
+  - Now uses proper named entities: č → `&ccaron;`, ū → `&umacr;`, ė → `&edot;`
+  - Added 30+ extended HTML entity mappings for common international characters
+  - Covers Lithuanian, Polish, Turkish, Romanian, and other Eastern European alphabets
+  - Example: "Vaitkevičiūtė" → "Vaitkevi&ccaron;i&umacr;t&edot;"
+  - Preferred over numeric character references for better compatibility
+
+- **LaTeX Section Spacing**: Increased spacing after subsubsection titles in PDF output
+  - Changed from `\enskip` (0.5em) to `\quad` (1em) for more visible spacing
+  - Addresses feedback that spacing was present but too tight
+  - Provides better visual separation in runin format section headers
+
 ## [1.19.1] - 2026-02-05
 
 ### Fixed
