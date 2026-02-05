@@ -27,6 +27,16 @@ def sample_changelog():
     # Include current version to match __version__
     return """# Changelog
 
+## [v1.18.5] - 2026-02-05
+
+### Fixed
+- Section header spacing in PDF output
+
+## [v1.18.4] - 2026-02-02
+
+### Documentation
+- Homebrew formula workflow alignment
+
 ## [v1.18.3] - 2026-01-07
 
 ### Added
