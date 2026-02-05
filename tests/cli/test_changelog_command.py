@@ -66,6 +66,7 @@ def sample_changelog():
 
 ### Changed
 - DOCX typography improvements (Arial font, 8pt sizing)
+- **BREAKING**: Configuration file format updated
 
 ### Fixed
 - Init command environment variable issue
@@ -121,7 +122,6 @@ def sample_changelog():
 """
 
 
-@pytest.mark.skip(reason="Temporarily skipped - needs fixture updates for v1.18.5 in follow-up PR")
 class TestChangelogCommand:
     """Tests for the changelog command."""
 
@@ -230,7 +230,7 @@ class TestChangelogCommand:
         mock_fetch.return_value = sample_changelog
 
         # Use the latest version to ensure no versions after it
-        result = runner.invoke(changelog, ["--since", "v1.18.3"])
+        result = runner.invoke(changelog, ["--since", "v1.18.5"])
 
         assert result.exit_code == 0
         output = strip_ansi(result.output)
