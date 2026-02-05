@@ -394,3 +394,8 @@ rxivdraft/MANUSCRIPT/2025__antónio_d_brito_et_al__rxiv.pdf
 .gemini-clipboard/
 gha-creds-*.json
 fatetracking/MANUSCRIPT/.rxiv_cache
+
+# Claude-mem context (override negations above)
+**/CLAUDE.md
+
+**/*.docx

@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.0] - 2026-02-05
+
+### Added
+
+- **bioRxiv Submission Package Command**: New `rxiv biorxiv` command generates complete submission package
+  - Generates bioRxiv author template (TSV format) with HTML entity encoding for special characters
+  - Includes manuscript PDF, source files (TeX, figures, bibliography)
+  - Creates ZIP archive ready for bioRxiv upload
+  - Supports custom submission directory and ZIP filename options
+  - HTML entity encoding for accented characters (António → Ant&oacute;nio, Åbo → &Aring;bo)
+  - Automatic handling of multiple corresponding authors (keeps last one)
+  - Command options: `--biorxiv-dir`, `--zip-filename`, `--no-zip`
+
+### Changed
+
+- **Code Architecture**: Centralized common submission logic in BaseCommand
+  - Refactored ArxivCommand and BioRxivCommand to share common patterns
+  - Added `_clear_output_directory()`, `_ensure_pdf_built()`, `_set_submission_defaults()` helper methods
+  - Eliminated ~64 lines of duplicated code between commands
+  - Improved maintainability and consistency across submission commands
+
+### Fixed
+
+- **bioRxiv Character Encoding**: Special characters now properly encoded as HTML entities
+  - Previously stripped accents to ASCII (António → Antonio)
+  - Now preserves original characters using HTML entities (António → Ant&oacute;nio)
+  - Complies with bioRxiv's TSV import requirements for international author names
+
 ## [1.18.5] - 2026-02-05
 
 ### Fixed
