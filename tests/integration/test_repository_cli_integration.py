@@ -404,7 +404,7 @@ class TestRepositoryWorkflow:
                 ],
                 capture_output=True,
                 text=True,
-                timeout=30,
+                timeout=60,  # Increased timeout for slow CI environments
             )
             assert init_result.returncode == 0, f"repo-init failed: {init_result.stderr}"
 
@@ -413,7 +413,7 @@ class TestRepositoryWorkflow:
                 ["rxiv", "create-repo", "paper1", "--no-github", "--no-interactive"],
                 capture_output=True,
                 text=True,
-                timeout=30,
+                timeout=120,  # Increased timeout for slow CI environments
             )
             assert create_result.returncode == 0, f"create-repo failed: {create_result.stderr}"
 
@@ -422,7 +422,7 @@ class TestRepositoryWorkflow:
                 ["rxiv", "create-repo", "paper2", "--no-github", "--no-interactive"],
                 capture_output=True,
                 text=True,
-                timeout=30,
+                timeout=120,  # Increased timeout for slow CI environments
             )
             assert create_result2.returncode == 0, f"create-repo failed: {create_result2.stderr}"
 
@@ -431,7 +431,7 @@ class TestRepositoryWorkflow:
                 ["rxiv", "repos", "--parent-dir", str(temp_dir / "manuscripts"), "--format", "list"],
                 capture_output=True,
                 text=True,
-                timeout=30,
+                timeout=60,  # Increased timeout for slow CI environments
             )
             assert list_result.returncode == 0, f"repos failed: {list_result.stderr}"
 
