@@ -23,7 +23,7 @@ def encode_html_entities(text: str) -> str:
 
     bioRxiv's TSV upload requires special characters to be encoded as HTML entities.
     For example, "António" becomes "Ant&oacute;nio", "Åbo" becomes "&Aring;bo".
-    Characters without named entities use numeric references (e.g., "č" -> "&#269;").
+    Extended entities like "č" -> "&ccaron;", "ū" -> "&umacr;", "ė" -> "&edot;".
 
     Args:
         text: Text that may contain Unicode characters
@@ -31,7 +31,7 @@ def encode_html_entities(text: str) -> str:
     Returns:
         Text with Unicode characters converted to HTML entities
         (e.g., "António" -> "Ant&oacute;nio", "Åbo" -> "&Aring;bo",
-        "Vaitkevičiūtė" -> "Vaitkevi&#269;i&#363;t&#279;")
+        "Vaitkevičiūtė" -> "Vaitkevi&ccaron;i&umacr;t&edot;")
 
     Examples:
         >>> encode_html_entities("António")
@@ -41,17 +41,80 @@ def encode_html_entities(text: str) -> str:
         >>> encode_html_entities("José García")
         'Jos&eacute; Garc&iacute;a'
         >>> encode_html_entities("Vaitkevičiūtė")
-        'Vaitkevi&#269;i&#363;t&#279;'
+        'Vaitkevi&ccaron;i&umacr;t&edot;'
     """
     if not text:
         return text
 
+    # Extended HTML entities not in Python's html.entities module
+    # These are commonly used in bioRxiv submissions
+    extended_entities = {
+        # Lithuanian and Eastern European
+        "č": "ccaron",
+        "Č": "Ccaron",  # c with caron
+        "ė": "edot",
+        "Ė": "Edot",  # e with dot above
+        "ū": "umacr",
+        "Ū": "Umacr",  # u with macron
+        "ā": "amacr",
+        "Ā": "Amacr",  # a with macron
+        "ē": "emacr",
+        "Ē": "Emacr",  # e with macron
+        "ī": "imacr",
+        "Ī": "Imacr",  # i with macron
+        "ō": "omacr",
+        "Ō": "Omacr",  # o with macron
+        # Other common extended entities
+        "ă": "abreve",
+        "Ă": "Abreve",  # a with breve
+        "ą": "aogon",
+        "Ą": "Aogon",  # a with ogonek
+        "ć": "cacute",
+        "Ć": "Cacute",  # c with acute
+        "ę": "eogon",
+        "Ę": "Eogon",  # e with ogonek
+        "ğ": "gbreve",
+        "Ğ": "Gbreve",  # g with breve
+        "İ": "Idot",  # I with dot above
+        "ı": "inodot",  # i without dot
+        "ł": "lstrok",
+        "Ł": "Lstrok",  # l with stroke
+        "ń": "nacute",
+        "Ń": "Nacute",  # n with acute
+        "œ": "oelig",
+        "Œ": "OElig",  # oe ligature
+        "ř": "rcaron",
+        "Ř": "Rcaron",  # r with caron
+        "ś": "sacute",
+        "Ś": "Sacute",  # s with acute
+        "š": "scaron",
+        "Š": "Scaron",  # s with caron
+        "ş": "scedil",
+        "Ş": "Scedil",  # s with cedilla
+        "ţ": "tcedil",
+        "Ţ": "Tcedil",  # t with cedilla
+        "ů": "uring",
+        "Ů": "Uring",  # u with ring
+        "ź": "zacute",
+        "Ź": "Zacute",  # z with acute
+        "ż": "zdot",
+        "Ż": "Zdot",  # z with dot above
+        "ž": "zcaron",
+        "Ž": "Zcaron",  # z with caron
+    }
+
     # Build reverse mapping: Unicode character -> HTML entity name
     char_to_entity = {}
+
+    # Add extended entities first (higher priority)
+    for char, entity_name in extended_entities.items():
+        char_to_entity[char] = f"&{entity_name};"
+
+    # Add standard HTML entities
     for entity_name, codepoint in html.entities.name2codepoint.items():
         char = chr(codepoint)
-        # Skip basic ASCII characters and use named entities for special chars
-        if ord(char) > 127:
+        # Skip basic ASCII and don't override extended entities
+        if ord(char) > 127 and char not in char_to_entity:
             char_to_entity[char] = f"&{entity_name};"
 
     # Convert each character to HTML entity (named or numeric)
