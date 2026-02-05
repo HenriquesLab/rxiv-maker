@@ -418,7 +418,7 @@
   {\sffamily\small\bfseries\itshape}
   {\thesubsubsection.}
   {0.5em}
-  {#1. }
+  {#1.\enskip}
   []
 \titleformat{\paragraph}[runin]
   {\sffamily\small\bfseries}
@@ -427,7 +427,7 @@
   {#1}
 \titlespacing*{\section}{0pc}{1.5ex \@plus2pt \@minus1pt}{2pt}
 \titlespacing*{\subsection}{0pc}{1.2ex \@plus2pt \@minus1pt}{1pt}
-\titlespacing*{\subsubsection}{0pc}{1ex \@plus1pt \@minus0.5pt}{1pt}
+\titlespacing*{\subsubsection}{0pc}{1ex \@plus1pt \@minus0.5pt}{8pt}
 \titlespacing*{\paragraph}{0pc}{0.8ex \@plus1pt \@minus0.5pt}{8pt}
 
 %% Figure caption style

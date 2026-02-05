@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.1] - 2026-02-05
+
+### Fixed
+
+- **bioRxiv Character Encoding**: Enhanced HTML entity encoding to handle all Unicode characters
+  - Now uses numeric character references (e.g., `&#269;` for č) for characters without named HTML entities
+  - Properly encodes Lithuanian characters (č, ū, ė) and other special characters
+  - Example: "Vaitkevičiūtė" → "Vaitkevi&#269;i&#363;t&#279;"
+  - Ensures bioRxiv TSV files handle international author names correctly
+
+- **LaTeX Section Spacing**: Fixed spacing issues in PDF output for section headers
+  - Added proper blank lines (`\n\n`) after all LaTeX section commands in markdown conversion
+  - Increased spacing after `\subsubsection` titles from 1pt to 8pt in LaTeX class file
+  - Changed subsubsection title format to use `\enskip` for consistent visual spacing
+  - Fixes runin format issue where text appeared to run directly into section titles
+  - Example fix: "Manuscripts.A central" → "Manuscripts. A central" (with visible space)
+
 ## [1.19.0] - 2026-02-05
 
 ### Added
