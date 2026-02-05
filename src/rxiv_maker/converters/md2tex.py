@@ -185,7 +185,7 @@ def convert_markdown_to_latex(
 
     # Post-processing: catch any remaining unconverted headers
     # This is a safety net in case some headers weren't converted properly
-    content = re.sub(r"^### (.+)$", r"\\subsubsection{\1}", content, flags=re.MULTILINE)
+    content = re.sub(r"^### (.+)$", r"\\subsubsection{\1}\n\n", content, flags=re.MULTILINE)
 
     # Process supplementary note references BEFORE citations
     # (for both main and supplementary content)
@@ -457,26 +457,26 @@ def _process_tables_with_protection(
 
 
 def _convert_headers(content: LatexContent, is_supplementary: bool = False) -> LatexContent:
-    """Convert markdown headers to LaTeX sections."""
+    """Convert markdown headers to LaTeX sections with proper spacing."""
     if is_supplementary:
         # For supplementary content, use \\section* for the first header
         # to avoid "Note 1:" prefix
         # First, find the first # header and replace it with \section*
-        content = re.sub(r"^# (.+)$", r"\\section*{\1}", content, flags=re.MULTILINE, count=1)
+        content = re.sub(r"^# (.+)$", r"\\section*{\1}\n\n", content, flags=re.MULTILINE, count=1)
         # Then replace any remaining # headers with regular \section
-        content = re.sub(r"^# (.+)$", r"\\section{\1}", content, flags=re.MULTILINE)
+        content = re.sub(r"^# (.+)$", r"\\section{\1}\n\n", content, flags=re.MULTILINE)
     else:
-        content = re.sub(r"^# (.+)$", r"\\section{\1}", content, flags=re.MULTILINE)
+        content = re.sub(r"^# (.+)$", r"\\section{\1}\n\n", content, flags=re.MULTILINE)
 
-    content = re.sub(r"^## (.+)$", r"\\subsection{\1}", content, flags=re.MULTILINE)
+    content = re.sub(r"^## (.+)$", r"\\subsection{\1}\n\n", content, flags=re.MULTILINE)
 
     # For supplementary content, ### headers are handled by the
     # supplementary note processor
     # For non-supplementary content, convert all ### headers normally
     if not is_supplementary:
-        content = re.sub(r"^### (.+)$", r"\\subsubsection{\1}", content, flags=re.MULTILINE)
+        content = re.sub(r"^### (.+)$", r"\\subsubsection{\1}\n\n", content, flags=re.MULTILINE)
 
-    content = re.sub(r"^#### (.+)$", r"\\paragraph{\1}", content, flags=re.MULTILINE)
+    content = re.sub(r"^#### (.+)$", r"\\paragraph{\1}\n\n", content, flags=re.MULTILINE)
     return content
 
 
