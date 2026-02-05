@@ -256,9 +256,9 @@ class ContentProcessor(RecoveryEnhancedMixin):
         # Supplementary note headers must be processed early (before general headers)
         self.register_processor(
             "supplementary_notes",
-            lambda content, **kwargs: process_supplementary_notes(content)
-            if kwargs.get("is_supplementary", False)
-            else content,
+            lambda content, **kwargs: (
+                process_supplementary_notes(content) if kwargs.get("is_supplementary", False) else content
+            ),
             ProcessorConfig(
                 name="supplementary_notes",
                 priority=ProcessorPriority.NORMAL,
@@ -408,9 +408,9 @@ class ContentProcessor(RecoveryEnhancedMixin):
 
         self.register_processor(
             "restore_supplementary_placeholders",
-            lambda content, **kwargs: restore_supplementary_note_placeholders(content)
-            if kwargs.get("is_supplementary", False)
-            else content,
+            lambda content, **kwargs: (
+                restore_supplementary_note_placeholders(content) if kwargs.get("is_supplementary", False) else content
+            ),
             ProcessorConfig(
                 name="restore_supplementary_placeholders",
                 priority=ProcessorPriority.NORMAL,
