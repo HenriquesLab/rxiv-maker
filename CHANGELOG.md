@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Example: "Vaitkevičiūtė" → "Vaitkevi&ccaron;i&umacr;t&edot;"
   - Preferred over numeric character references for better compatibility
 
+- **LaTeX Section Spacing**: Increased spacing after subsubsection titles in PDF output
+  - Changed from `\enskip` (0.5em) to `\quad` (1em) for more visible spacing
+  - Addresses feedback that spacing was present but too tight
+  - Provides better visual separation in runin format section headers
+
 ## [1.19.1] - 2026-02-05
 
 ### Fixed
