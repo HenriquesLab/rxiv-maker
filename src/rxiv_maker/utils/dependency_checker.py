@@ -8,6 +8,8 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 
+from .unicode_safe import get_safe_icon, safe_print
+
 # Handle imports when run as script or module
 try:
     from .platform import platform_detector
@@ -47,15 +49,15 @@ class DependencyChecker:
         """Log a message if verbose mode is enabled."""
         if self.verbose:
             if level == "INFO":
-                print(f"ℹ️  {message}")
+                safe_print(f"{get_safe_icon('ℹ️', '[INFO]')}  {message}")
             elif level == "WARNING":
-                print(f"⚠️  {message}")
+                safe_print(f"{get_safe_icon('⚠️', '[WARNING]')}  {message}")
             elif level == "ERROR":
-                print(f"❌ {message}")
+                safe_print(f"{get_safe_icon('❌', '[ERROR]')} {message}")
             elif level == "SUCCESS":
-                print(f"✅ {message}")
+                safe_print(f"{get_safe_icon('✅', '[OK]')} {message}")
             else:
-                print(message)
+                safe_print(message)
 
     def check_command_version(
         self, command: str, version_flag: str = "--version"
@@ -289,37 +291,37 @@ class DependencyChecker:
 
     def print_dependency_report(self):
         """Print a comprehensive dependency report."""
-        print(f"\n🔍 System Dependency Report - {self.platform.platform}")
-        print("=" * 60)
+        safe_print(f"\n{get_safe_icon('🔍', '[SEARCH]')} System Dependency Report - {self.platform.platform}")
+        safe_print("=" * 60)
 
         # Required dependencies
-        print("\n📋 Required Dependencies:")
+        safe_print(f"\n{get_safe_icon('📋', '[LIST]')} Required Dependencies:")
         required_deps = [dep for dep in self.dependencies if dep.required]
         for dep in required_deps:
-            status = "✅" if dep.found else "❌"
+            status = get_safe_icon("✅", "[OK]") if dep.found else get_safe_icon("❌", "[ERROR]")
             version_info = f" ({dep.version})" if dep.version else ""
-            print(f"  {status} {dep.name}{version_info}")
+            safe_print(f"  {status} {dep.name}{version_info}")
             if not dep.found:
                 print(f"     Description: {dep.description}")
 
         # Optional dependencies
-        print("\n🔧 Optional Dependencies:")
+        safe_print(f"\n{get_safe_icon('🔧', '[CONFIG]')} Optional Dependencies:")
         optional_deps = [dep for dep in self.dependencies if not dep.required]
         for dep in optional_deps:
-            status = "✅" if dep.found else "⚪"
+            status = get_safe_icon("✅", "[OK]") if dep.found else get_safe_icon("⚪", "[ ]")
             version_info = f" ({dep.version})" if dep.version else ""
-            print(f"  {status} {dep.name}{version_info}")
+            safe_print(f"  {status} {dep.name}{version_info}")
 
         # Missing dependencies with installation instructions
         missing_required = self.get_missing_required_dependencies()
         missing_optional = self.get_missing_optional_dependencies()
 
         if missing_required:
-            print(f"\n❌ Missing Required Dependencies ({len(missing_required)}):")
+            safe_print(f"\n{get_safe_icon('❌', '[ERROR]')} Missing Required Dependencies ({len(missing_required)}):")
             self._print_installation_instructions(missing_required)
 
         if missing_optional:
-            print(f"\n⚪ Missing Optional Dependencies ({len(missing_optional)}):")
+            safe_print(f"\n{get_safe_icon('⚪', '[ ]')} Missing Optional Dependencies ({len(missing_optional)}):")
             self._print_installation_instructions(missing_optional)
 
         # Summary and recommendations
@@ -330,7 +332,7 @@ class DependencyChecker:
         platform_name = self.platform.platform
 
         for dep in dependencies:
-            print(f"\n  📦 {dep.name}")
+            safe_print(f"\n  {get_safe_icon('📦', '[PACKAGE]')} {dep.name}")
             print(f"     Description: {dep.description}")
 
             if dep.install_commands and platform_name in dep.install_commands:
@@ -344,7 +346,7 @@ class DependencyChecker:
         missing_required = self.get_missing_required_dependencies()
         missing_optional = self.get_missing_optional_dependencies()
 
-        print("\n📊 Summary:")
+        safe_print(f"\n{get_safe_icon('📊', '[STATS]')} Summary:")
         print(f"  • Platform: {self.platform.platform}")
         print(
             f"  • Required dependencies: {len([d for d in self.dependencies if d.required and d.found])}/{len([d for d in self.dependencies if d.required])}"
@@ -354,18 +356,22 @@ class DependencyChecker:
         )
 
         if missing_required:
-            print(f"\n⚠️  You have {len(missing_required)} missing required dependencies.")
-            print("   Please install them before running 'make pdf'.")
+            safe_print(
+                f"\n{get_safe_icon('⚠️', '[WARNING]')}  You have {len(missing_required)} missing required dependencies."
+            )
+            safe_print("   Please install them before running 'make pdf'.")
         else:
-            print("\n✅ All required dependencies are available!")
-            print("   You can run 'make pdf' to generate PDFs.")
+            safe_print(f"\n{get_safe_icon('✅', '[OK]')} All required dependencies are available!")
+            safe_print("   You can run 'make pdf' to generate PDFs.")
 
         if missing_optional:
-            print(f"\n💡 Optional: Install {len(missing_optional)} additional dependencies for full functionality.")
+            safe_print(
+                f"\n{get_safe_icon('💡', '[TIP]')} Optional: Install {len(missing_optional)} additional dependencies for full functionality."
+            )
 
         # Installation recommendation
         if missing_required or len(missing_optional) > 1:
-            print("\n📦 Next steps: Install missing dependencies locally:")
+            safe_print(f"\n{get_safe_icon('📦', '[PACKAGE]')} Next steps: Install missing dependencies locally:")
             print("   Follow the installation commands shown above")
             print("   Or check the project documentation for detailed setup instructions")
 

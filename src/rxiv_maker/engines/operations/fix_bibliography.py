@@ -29,6 +29,7 @@ except ImportError:
     sys.exit(1)
 
 from rxiv_maker.core.cache.doi_cache import DOICache
+from rxiv_maker.utils.unicode_safe import get_safe_icon, safe_print
 from rxiv_maker.validators.doi_validator import DOIValidator
 
 logger = logging.getLogger(__name__)
@@ -513,7 +514,7 @@ class BibliographyFixer:
             print(f"   New DOI: {crossref_data.get('doi', 'N/A')}")
 
             if confidence < 0.9:
-                print("   ⚠️  Low confidence match")
+                safe_print(f"   {get_safe_icon('⚠️', '[WARNING]')}  Low confidence match")
 
         print(f"\nTotal potential fixes: {len(fixes)}")
         print("Run without --dry-run to apply these fixes")
@@ -592,16 +593,18 @@ def main() -> int:
         if results["success"]:
             fixes_applied = results.get("fixes_applied", 0)
             if fixes_applied > 0:
-                print(f"✅ Successfully applied {fixes_applied} bibliography fixes")
+                safe_print(f"{get_safe_icon('✅', '[OK]')} Successfully applied {fixes_applied} bibliography fixes")
             else:
-                print("✅ No fixes were needed")
+                safe_print(f"{get_safe_icon('✅', '[OK]')} No fixes were needed")
             return 0
         else:
-            print(f"❌ Failed to fix bibliography: {results.get('error', 'Unknown error')}")
+            safe_print(
+                f"{get_safe_icon('❌', '[ERROR]')} Failed to fix bibliography: {results.get('error', 'Unknown error')}"
+            )
             return 1
 
     except Exception as e:
-        print(f"❌ Error fixing bibliography: {e}")
+        safe_print(f"{get_safe_icon('❌', '[ERROR]')} Error fixing bibliography: {e}")
         return 1
 
 

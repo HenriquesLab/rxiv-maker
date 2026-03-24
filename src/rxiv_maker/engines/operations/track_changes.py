@@ -17,6 +17,8 @@ from pathlib import Path
 # Local implementations to avoid import issues
 import yaml
 
+from ...utils.unicode_safe import get_safe_icon, safe_print
+
 
 def extract_yaml_metadata_local(yaml_file_path: str) -> dict:
     """Extract YAML metadata from a config file."""
@@ -112,7 +114,7 @@ class TrackChangesManager:
             force: Force logging even if not in verbose mode
         """
         if self.verbose or force:
-            print(f"🔍 {message}")
+            safe_print(f"{get_safe_icon('🔍', '[SEARCH]')} {message}")
 
     def validate_git_tag(self) -> bool:
         """Validate that the specified git tag exists.
@@ -410,10 +412,10 @@ class TrackChangesManager:
             pdf_file = diff_tex.with_suffix(".pdf")
 
             if pdf_file.exists():
-                self.log(f"✅ Change-tracked PDF generated: {pdf_file}")
+                self.log(f"{get_safe_icon('✅', '[OK]')} Change-tracked PDF generated: {pdf_file}")
                 return True
             else:
-                self.log("❌ PDF generation failed", force=True)
+                self.log(f"{get_safe_icon('❌', '[ERROR]')} PDF generation failed", force=True)
                 return False
 
         except Exception as e:
@@ -458,7 +460,7 @@ class TrackChangesManager:
 
         # Validate git tag
         if not self.validate_git_tag():
-            self.log(f"❌ Error: Git tag '{self.git_tag}' does not exist", force=True)
+            self.log(f"{get_safe_icon('❌', '[ERROR]')} Error: Git tag '{self.git_tag}' does not exist", force=True)
             return False
 
         # Create temporary directory for work
@@ -536,8 +538,8 @@ class TrackChangesManager:
             pdf_file = self.output_dir / f"{diff_basename}.pdf"
             self.copy_pdf_to_manuscript(pdf_file)
 
-            self.log("✅ Change tracking completed successfully!", force=True)
-            self.log(f"📄 Output PDF: {custom_filename}", force=True)
+            self.log(f"{get_safe_icon('✅', '[OK]')} Change tracking completed successfully!", force=True)
+            self.log(f"{get_safe_icon('📄', '[PDF]')} Output PDF: {custom_filename}", force=True)
 
             return True
 
@@ -624,7 +626,7 @@ class TrackChangesManager:
 
             # Copy the PDF file
             shutil.copy2(pdf_file, dest_path)
-            self.log(f"📄 PDF copied to manuscript directory: {dest_path}", force=True)
+            self.log(f"{get_safe_icon('📄', '[PDF]')} PDF copied to manuscript directory: {dest_path}", force=True)
 
             return True
 

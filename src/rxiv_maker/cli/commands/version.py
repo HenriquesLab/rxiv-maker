@@ -10,6 +10,7 @@ from rich.table import Table
 from ... import __version__
 from ...utils.install_detector import detect_install_method, get_friendly_install_name, get_upgrade_command
 from ...utils.platform import platform_detector
+from ...utils.unicode_safe import get_safe_icon
 
 console = Console()
 
@@ -22,7 +23,7 @@ def version(ctx: click.Context, detailed: bool, check_updates: bool) -> None:
     """Show version information."""
     # Check for updates if requested
     if check_updates:
-        console.print("🔍 Checking for updates...", style="blue")
+        console.print(f"{get_safe_icon('🔍', '[SEARCH]')} Checking for updates...", style="blue")
         try:
             from ...utils.update_checker import force_update_check
 
@@ -34,13 +35,18 @@ def version(ctx: click.Context, detailed: bool, check_updates: bool) -> None:
                 upgrade_cmd = get_upgrade_command(install_method)
                 install_name = get_friendly_install_name(install_method)
 
-                console.print(f"📦 Update available: {__version__} → {latest_version}", style="green")
+                console.print(
+                    f"{get_safe_icon('📦', '[PACKAGE]')} Update available: {__version__} -> {latest_version}",
+                    style="green",
+                )
                 console.print(f"   Installed via: {install_name}", style="blue")
                 console.print(f"   Run: {upgrade_cmd}", style="blue")
             else:
-                console.print(f"✅ You have the latest version ({__version__})", style="green")
+                console.print(
+                    f"{get_safe_icon('✅', '[OK]')} You have the latest version ({__version__})", style="green"
+                )
         except Exception as e:
-            console.print(f"⚠️  Could not check for updates: {e}", style="yellow")
+            console.print(f"{get_safe_icon('⚠️', '[WARNING]')}  Could not check for updates: {e}", style="yellow")
 
     # Show version information
     if detailed:

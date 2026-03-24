@@ -5,6 +5,7 @@ from typing import Optional
 
 import click
 
+from ...utils.unicode_safe import get_safe_icon
 from .base import BaseCommand, CommandExecutionError
 
 
@@ -48,8 +49,10 @@ class ConfigInitCommand(BaseCommand):
                 config_path = config_manager.init_config(template, force)
 
             self.success_message(f"Configuration initialized: {config_path}")
-            self.console.print(f"📋 Template: {template}", style="blue")
-            self.console.print("💡 Run 'rxiv config validate' to check your configuration", style="dim")
+            self.console.print(f"{get_safe_icon('📋', '[LIST]')} Template: {template}", style="blue")
+            self.console.print(
+                f"{get_safe_icon('💡', '[TIP]')} Run 'rxiv config validate' to check your configuration", style="dim"
+            )
 
         except ValueError as e:
             self.error_message(str(e))
@@ -83,17 +86,17 @@ class ConfigValidateCommand(BaseCommand):
             config_manager = get_config_manager()
             validator = ConfigValidator()
 
-            self.console.print("🔍 Validating configuration...", style="blue")
+            self.console.print(f"{get_safe_icon('🔍', '[SEARCH]')} Validating configuration...", style="blue")
             self.console.print("=" * 50)
 
             config_path_obj = Path(config_path) if config_path else None
 
             # Validate manuscript configuration
             if config_path_obj:
-                self.console.print(f"📄 Validating: {config_path_obj}")
+                self.console.print(f"{get_safe_icon('📄', '[PDF]')} Validating: {config_path_obj}")
                 config_validation = config_manager.validate_config(config_path_obj)
             else:
-                self.console.print("📄 Searching for configuration file...")
+                self.console.print(f"{get_safe_icon('📄', '[PDF]')} Searching for configuration file...")
                 config_validation = config_manager.validate_config()
 
             # Validate CLI arguments
@@ -125,7 +128,9 @@ class ConfigValidateCommand(BaseCommand):
                 if strict:
                     raise CommandExecutionError("Configuration validation failed (strict mode)")
                 else:
-                    self.console.print("⚠️  Configuration has warnings/errors", style="yellow")
+                    self.console.print(
+                        f"{get_safe_icon('⚠️', '[WARNING]')}  Configuration has warnings/errors", style="yellow"
+                    )
             else:
                 self.success_message("Configuration validation passed!")
 
@@ -137,7 +142,7 @@ class ConfigValidateCommand(BaseCommand):
         """Print validation results in table format."""
         for category, result in results.items():
             valid = result.get("valid", True)
-            status = "✅ Valid" if valid else "❌ Invalid"
+            status = f"{get_safe_icon('✅', '[OK]')} Valid" if valid else f"{get_safe_icon('❌', '[ERROR]')} Invalid"
             self.console.print(f"{category.title()}: {status}")
 
 
@@ -170,10 +175,10 @@ class ConfigGetCommand(BaseCommand):
                     self.error_message(f"Configuration key '{key}' not found")
                     return
 
-                self.console.print(f"📝 {key}: {config_value}", style="green")
+                self.console.print(f"{get_safe_icon('📝', '[NOTE]')} {key}: {config_value}", style="green")
 
                 if isinstance(config_value, dict):
-                    self.console.print("\n🔍 Nested configuration:", style="blue")
+                    self.console.print(f"\n{get_safe_icon('🔍', '[SEARCH]')} Nested configuration:", style="blue")
                     for nested_key, nested_value in config_value.items():
                         self.console.print(f"   {key}.{nested_key}: {nested_value}")
             else:
@@ -182,7 +187,7 @@ class ConfigGetCommand(BaseCommand):
                 updated_path = config_manager.set_config_value(key, converted_value, config_path_obj)
 
                 self.success_message(f"Updated {key} = {converted_value}")
-                self.console.print(f"📄 Configuration file: {updated_path}", style="blue")
+                self.console.print(f"{get_safe_icon('📄', '[PDF]')} Configuration file: {updated_path}", style="blue")
 
         except Exception as e:
             self.error_message(f"Configuration operation failed: {e}")
@@ -278,12 +283,12 @@ class ConfigExportCommand(BaseCommand):
             exported_path = config_manager.export_config(output_path, export_format, include_defaults, config_path_obj)
 
             self.success_message(f"Configuration exported to: {exported_path}")
-            self.console.print(f"📊 Format: {export_format.upper()}", style="blue")
+            self.console.print(f"{get_safe_icon('📊', '[STATS]')} Format: {export_format.upper()}", style="blue")
 
             if include_defaults:
-                self.console.print("📝 Includes default values", style="dim")
+                self.console.print(f"{get_safe_icon('📝', '[NOTE]')} Includes default values", style="dim")
             else:
-                self.console.print("📝 Custom values only", style="dim")
+                self.console.print(f"{get_safe_icon('📝', '[NOTE]')} Custom values only", style="dim")
 
         except Exception as e:
             self.error_message(f"Export failed: {e}")
@@ -311,16 +316,23 @@ class ConfigMigrateCommand(BaseCommand):
             config_manager = get_config_manager()
             config_path_obj = Path(config_path) if config_path else None
 
-            self.console.print(f"🔄 Migrating configuration: {from_version} → {to_version}", style="blue")
+            self.console.print(
+                f"{get_safe_icon('🔄', '[RELOAD]')} Migrating configuration: {from_version} -> {to_version}",
+                style="blue",
+            )
 
             if backup:
-                self.console.print("💾 Backup will be created automatically", style="dim")
+                self.console.print(f"{get_safe_icon('💾', '[SAVE]')} Backup will be created automatically", style="dim")
 
             migrated_path = config_manager.migrate_config(from_version, to_version, config_path_obj)
 
             self.success_message(f"Configuration migrated: {migrated_path}")
-            self.console.print("🔍 Please review the migrated configuration", style="yellow")
-            self.console.print("💡 Run 'rxiv config validate' to verify the migration", style="dim")
+            self.console.print(
+                f"{get_safe_icon('🔍', '[SEARCH]')} Please review the migrated configuration", style="yellow"
+            )
+            self.console.print(
+                f"{get_safe_icon('💡', '[TIP]')} Run 'rxiv config validate' to verify the migration", style="dim"
+            )
 
         except Exception as e:
             self.error_message(f"Migration failed: {e}")

@@ -5,6 +5,7 @@ from typing import Optional
 
 import click
 
+from ...utils.unicode_safe import get_safe_icon
 from .base import BaseCommand, CommandExecutionError
 
 
@@ -48,7 +49,7 @@ class CacheStatsCommand(BaseCommand):
 
     def _print_cache_stats_table(self, stats: dict) -> None:
         """Print cache stats in table format."""
-        self.console.print("📊 Cache Statistics", style="bold blue")
+        self.console.print(f"{get_safe_icon('📊', '[STATS]')} Cache Statistics", style="bold blue")
         self.console.print("=" * 30)
         for key, value in stats.items():
             self.console.print(f"{key}: {value}")
@@ -113,9 +114,15 @@ class CacheCleanupCommand(BaseCommand):
         """Execute cache cleanup."""
         try:
             if dry_run:
-                self.console.print(f"🔍 Would cleanup cache entries older than {max_age_hours} hours", style="blue")
+                self.console.print(
+                    f"{get_safe_icon('🔍', '[SEARCH]')} Would cleanup cache entries older than {max_age_hours} hours",
+                    style="blue",
+                )
             else:
-                self.console.print(f"🧹 Cleaning cache entries older than {max_age_hours} hours", style="blue")
+                self.console.print(
+                    f"{get_safe_icon('🧹', '[CLEAN]')} Cleaning cache entries older than {max_age_hours} hours",
+                    style="blue",
+                )
                 # Implementation would call actual cleanup logic
                 self.success_message("Cache cleanup completed")
 
@@ -138,7 +145,7 @@ class CacheOptimizeCommand(BaseCommand):
     def execute_operation(self, dockerfile: Optional[str] = None) -> None:
         """Execute cache optimization."""
         try:
-            self.console.print("⚡ Optimizing cache performance...", style="blue")
+            self.console.print(f"{get_safe_icon('⚡', '[OPTIMIZE]')} Optimizing cache performance...", style="blue")
             # Implementation would call optimization logic
             self.success_message("Cache optimization completed")
 
@@ -177,7 +184,7 @@ class CacheInfoCommand(BaseCommand):
             if output_format == "json":
                 self.console.print(json.dumps(info, indent=2, default=str))
             else:
-                self.console.print("📁 Cache Information", style="bold blue")
+                self.console.print(f"{get_safe_icon('📁', '[FOLDER]')} Cache Information", style="bold blue")
                 self.console.print("=" * 30)
                 for key, value in info.items():
                     self.console.print(f"{key.replace('_', ' ').title()}: {value}")
@@ -202,9 +209,9 @@ class CacheMigrateCommand(BaseCommand):
         """Execute cache migration."""
         try:
             if dry_run:
-                self.console.print(f"🔍 Would migrate cache to: {target}", style="blue")
+                self.console.print(f"{get_safe_icon('🔍', '[SEARCH]')} Would migrate cache to: {target}", style="blue")
             else:
-                self.console.print(f"🔄 Migrating cache to: {target}", style="blue")
+                self.console.print(f"{get_safe_icon('🔄', '[RELOAD]')} Migrating cache to: {target}", style="blue")
                 # Implementation would call migration logic
                 self.success_message(f"Cache migrated to {target}")
 
@@ -227,11 +234,11 @@ class CacheSetStrategyCommand(BaseCommand):
     def execute_operation(self, strategy: str, migrate_now: bool = False) -> None:
         """Execute cache strategy setting."""
         try:
-            self.console.print(f"⚙️  Setting cache strategy to: {strategy}", style="blue")
+            self.console.print(f"{get_safe_icon('⚙️', '[CONFIG]')}  Setting cache strategy to: {strategy}", style="blue")
             # Implementation would call strategy setting logic
 
             if migrate_now:
-                self.console.print("🔄 Migrating existing cache...", style="blue")
+                self.console.print(f"{get_safe_icon('🔄', '[RELOAD]')} Migrating existing cache...", style="blue")
 
             self.success_message(f"Cache strategy set to {strategy}")
 

@@ -19,6 +19,8 @@ from typing import Optional
 
 from rich.console import Console
 
+from ...utils.unicode_safe import get_safe_icon, safe_print
+
 try:
     import requests
 except ImportError:
@@ -141,26 +143,30 @@ class FigureGenerator:
         """Log processing summary with rich formatting."""
         if not processed_count:
             if use_rich:
-                self.console.print("✅ [green]No figures to process - all up to date![/green]")
+                self.console.print(
+                    f"{get_safe_icon('✅', '[OK]')} [green]No figures to process - all up to date![/green]"
+                )
             else:
-                print("✅ No figures to process - all up to date!")
+                safe_print(f"{get_safe_icon('✅', '[OK]')} No figures to process - all up to date!")
             return
 
         if use_rich:
-            self.console.print(f"✅ [green]Successfully processed {processed_count} figure file(s):[/green]")
+            self.console.print(
+                f"{get_safe_icon('✅', '[OK]')} [green]Successfully processed {processed_count} figure file(s):[/green]"
+            )
             for file_path in processed_files:
                 self.console.print(f"   • [cyan]{file_path.name}[/cyan]")
         else:
-            print(f"✅ Successfully processed {processed_count} figure file(s):")
+            safe_print(f"{get_safe_icon('✅', '[OK]')} Successfully processed {processed_count} figure file(s):")
             for file_path in processed_files:
-                print(f"   • {file_path.name}")
+                safe_print(f"   • {file_path.name}")
 
     def _skip_file_with_message(self, file_path: Path, reason: str, use_rich: bool = True) -> None:
         """Print skip message with consistent formatting."""
         if use_rich:
-            self.console.print(f"⏭️ [yellow]Skipping {file_path.name}: {reason}[/yellow]")
+            self.console.print(f"{get_safe_icon('⏭️', '[SKIP]')} [yellow]Skipping {file_path.name}: {reason}[/yellow]")
         else:
-            print(f"⏭️ Skipping {file_path.name}: {reason}")
+            safe_print(f"{get_safe_icon('⏭️', '[SKIP]')} Skipping {file_path.name}: {reason}")
 
     def _generate_mermaid_diagrams(self, progress=None, task_id=None, use_rich: bool = True):
         """Generate diagrams from Mermaid files using online service."""
@@ -182,17 +188,23 @@ class FigureGenerator:
                 relative_path = str(mmd_file.relative_to(self.figures_dir))
                 if not self.checksum_manager.has_file_changed(relative_path) and output_file.exists():
                     if use_rich:
-                        self.console.print(f"⏭️ [dim]Skipping {mmd_file.name}: No changes detected[/dim]")
+                        self.console.print(
+                            f"{get_safe_icon('⏭️', '[SKIP]')} [dim]Skipping {mmd_file.name}: No changes detected[/dim]"
+                        )
                     else:
-                        print(f"⏭️ Skipping {mmd_file.name}: No changes detected")
+                        safe_print(f"{get_safe_icon('⏭️', '[SKIP]')} Skipping {mmd_file.name}: No changes detected")
                     continue
 
             # Use local Mermaid generation via web service (mermaid.ink)
             try:
                 if use_rich:
-                    self.console.print(f"🎨 [cyan]Generating {self.output_format.upper()} from {mmd_file.name}[/cyan]")
+                    self.console.print(
+                        f"{get_safe_icon('🎨', '[ART]')} [cyan]Generating {self.output_format.upper()} from {mmd_file.name}[/cyan]"
+                    )
                 else:
-                    print(f"🎨 Generating {self.output_format.upper()} from {mmd_file.name}")
+                    safe_print(
+                        f"{get_safe_icon('🎨', '[ART]')} Generating {self.output_format.upper()} from {mmd_file.name}"
+                    )
 
                 success = self._generate_mermaid_via_mermaid_ink(mmd_file, output_file)
 
@@ -203,19 +215,25 @@ class FigureGenerator:
                         self.checksum_manager.update_file_checksum(relative_path)
                 else:
                     if use_rich:
-                        self.console.print(f"❌ [red]Failed to generate {output_file.name}[/red]")
                         self.console.print(
-                            "💡 [blue]Tip: Check your Mermaid diagram syntax at https://www.mermaidchart.com/[/blue]"
+                            f"{get_safe_icon('❌', '[ERROR]')} [red]Failed to generate {output_file.name}[/red]"
+                        )
+                        self.console.print(
+                            f"{get_safe_icon('💡', '[TIP]')} [blue]Tip: Check your Mermaid diagram syntax at https://www.mermaidchart.com/[/blue]"
                         )
                     else:
-                        print(f"❌ Failed to generate {output_file.name}")
-                        print("💡 Tip: Check your Mermaid diagram syntax at https://www.mermaidchart.com/")
+                        safe_print(f"{get_safe_icon('❌', '[ERROR]')} Failed to generate {output_file.name}")
+                        safe_print(
+                            f"{get_safe_icon('💡', '[TIP]')} Tip: Check your Mermaid diagram syntax at https://www.mermaidchart.com/"
+                        )
 
             except Exception as e:
                 if use_rich:
-                    self.console.print(f"❌ [red]Error processing {mmd_file.name}: {e}[/red]")
+                    self.console.print(
+                        f"{get_safe_icon('❌', '[ERROR]')} [red]Error processing {mmd_file.name}: {e}[/red]"
+                    )
                 else:
-                    print(f"❌ Error processing {mmd_file.name}: {e}")
+                    safe_print(f"{get_safe_icon('❌', '[ERROR]')} Error processing {mmd_file.name}: {e}")
 
         return processed_files
 
@@ -358,7 +376,9 @@ class FigureGenerator:
 </svg>"""
                 with open(output_file, "w", encoding="utf-8") as f:
                     f.write(svg_content)
-                print(f"⚠️  Created placeholder SVG for {input_file.name} ({warning_msg})")
+                safe_print(
+                    f"{get_safe_icon('⚠️', '[WARNING]')}  Created placeholder SVG for {input_file.name} ({warning_msg})"
+                )
                 return True
             elif self.output_format.lower() == "png":
                 # Create minimal PNG placeholder (1x1 white pixel)
@@ -368,7 +388,9 @@ class FigureGenerator:
                 )
                 with open(output_file, "wb") as f:
                     f.write(png_data)
-                print(f"⚠️  Created placeholder PNG for {input_file.name} ({warning_msg})")
+                safe_print(
+                    f"{get_safe_icon('⚠️', '[WARNING]')}  Created placeholder PNG for {input_file.name} ({warning_msg})"
+                )
                 return True
             elif self.output_format.lower() == "pdf":
                 # Create minimal PDF placeholder
@@ -439,7 +461,9 @@ startxref
 """
                 with open(output_file, "w", encoding="utf-8") as f:
                     f.write(pdf_content)
-                print(f"⚠️  Created placeholder PDF for {input_file.name} ({warning_msg})")
+                safe_print(
+                    f"{get_safe_icon('⚠️', '[WARNING]')}  Created placeholder PDF for {input_file.name} ({warning_msg})"
+                )
                 return True
             else:
                 # Fallback for other formats - create text file with warning
@@ -447,7 +471,9 @@ startxref
                     f.write(f"Mermaid diagram placeholder for {input_file.name}\n")
                     f.write(f"Reason: {warning_msg}\n")
                     f.write("\n💡 Tip: Check your Mermaid diagram syntax at https://www.mermaidchart.com/\n")
-                print(f"⚠️  Created text placeholder for {input_file.name} ({warning_msg})")
+                safe_print(
+                    f"{get_safe_icon('⚠️', '[WARNING]')}  Created text placeholder for {input_file.name} ({warning_msg})"
+                )
                 return True
         except Exception as e:
             print(f"Failed to create fallback diagram: {e}")
@@ -499,22 +525,22 @@ startxref
                 response = requests.get(test_url, timeout=10)
                 if response.status_code == 200:
                     if warnings:
-                        msg = f"✓ Valid (but complex: {', '.join(warnings)})"
+                        msg = f"{get_safe_icon('✓', '[OK]')} Valid (but complex: {', '.join(warnings)})"
                         return True, msg, details
-                    return True, "✓ Valid and will render successfully", details
+                    return True, f"{get_safe_icon('✓', '[OK]')} Valid and will render successfully", details
                 elif response.status_code == 400:
-                    return False, "✗ Syntax error or too complex for mermaid.ink", details
+                    return False, f"{get_safe_icon('✗', '[FAIL]')} Syntax error or too complex for mermaid.ink", details
                 elif response.status_code == 503:
-                    return False, "✗ Diagram too complex (service timeout)", details
+                    return False, f"{get_safe_icon('✗', '[FAIL]')} Diagram too complex (service timeout)", details
                 else:
-                    return False, f"✗ HTTP {response.status_code}", details
+                    return False, f"{get_safe_icon('✗', '[FAIL]')} HTTP {response.status_code}", details
             except requests.Timeout:
-                return False, "✗ Validation timeout (diagram likely too complex)", details
+                return False, f"{get_safe_icon('✗', '[FAIL]')} Validation timeout (diagram likely too complex)", details
             except Exception as e:
-                return False, f"✗ Network error: {str(e)[:50]}", details
+                return False, f"{get_safe_icon('✗', '[FAIL]')} Network error: {str(e)[:50]}", details
 
         except Exception as e:
-            return False, f"✗ Error reading diagram: {str(e)[:50]}", {}
+            return False, f"{get_safe_icon('✗', '[FAIL]')} Error reading diagram: {str(e)[:50]}", {}
 
     def _execute_python_files(self, progress=None, task_id=None, use_rich: bool = True):
         """Execute Python scripts to generate figures using local Python."""
@@ -535,17 +561,21 @@ startxref
                     expected_outputs = self._get_expected_python_outputs(py_file)
                     if all(Path(output).exists() for output in expected_outputs):
                         if use_rich:
-                            self.console.print(f"⏭️ [dim]Skipping {py_file.name}: No changes detected[/dim]")
+                            self.console.print(
+                                f"{get_safe_icon('⏭️', '[SKIP]')} [dim]Skipping {py_file.name}: No changes detected[/dim]"
+                            )
                         else:
-                            print(f"⏭️ Skipping {py_file.name}: No changes detected")
+                            safe_print(f"{get_safe_icon('⏭️', '[SKIP]')} Skipping {py_file.name}: No changes detected")
                         continue
 
             # Execute the Python script using local Python
             try:
                 if use_rich:
-                    self.console.print(f"🐍 [cyan]Executing Python script: {py_file.name}[/cyan]")
+                    self.console.print(
+                        f"{get_safe_icon('🐍', '[PYTHON]')} [cyan]Executing Python script: {py_file.name}[/cyan]"
+                    )
                 else:
-                    print(f"🐍 Executing Python script: {py_file.name}")
+                    safe_print(f"{get_safe_icon('🐍', '[PYTHON]')} Executing Python script: {py_file.name}")
 
                 result = subprocess.run(  # nosec # Safe: executing user's own Python scripts
                     [sys.executable, str(py_file)],
@@ -562,29 +592,37 @@ startxref
                         self.checksum_manager.update_file_checksum(relative_path)
 
                     if use_rich:
-                        self.console.print(f"✅ [green]Python script completed: {py_file.name}[/green]")
+                        self.console.print(
+                            f"{get_safe_icon('✅', '[OK]')} [green]Python script completed: {py_file.name}[/green]"
+                        )
                     else:
-                        print(f"✅ Python script completed: {py_file.name}")
+                        safe_print(f"{get_safe_icon('✅', '[OK]')} Python script completed: {py_file.name}")
                 else:
                     if use_rich:
-                        self.console.print(f"❌ [red]Python script failed: {py_file.name}[/red]")
+                        self.console.print(
+                            f"{get_safe_icon('❌', '[ERROR]')} [red]Python script failed: {py_file.name}[/red]"
+                        )
                         if result.stderr:
                             self.console.print(f"   [red]Error: {result.stderr}[/red]")
                     else:
-                        print(f"❌ Python script failed: {py_file.name}")
+                        safe_print(f"{get_safe_icon('❌', '[ERROR]')} Python script failed: {py_file.name}")
                         if result.stderr:
                             print(f"   Error: {result.stderr}")
 
             except subprocess.TimeoutExpired:
                 if use_rich:
-                    self.console.print(f"⏰ [yellow]Python script timeout: {py_file.name}[/yellow]")
+                    self.console.print(
+                        f"{get_safe_icon('⏰', '[TIMEOUT]')} [yellow]Python script timeout: {py_file.name}[/yellow]"
+                    )
                 else:
-                    print(f"⏰ Python script timeout: {py_file.name}")
+                    safe_print(f"{get_safe_icon('⏰', '[TIMEOUT]')} Python script timeout: {py_file.name}")
             except Exception as e:
                 if use_rich:
-                    self.console.print(f"❌ [red]Error executing {py_file.name}: {e}[/red]")
+                    self.console.print(
+                        f"{get_safe_icon('❌', '[ERROR]')} [red]Error executing {py_file.name}: {e}[/red]"
+                    )
                 else:
-                    print(f"❌ Error executing {py_file.name}: {e}")
+                    safe_print(f"{get_safe_icon('❌', '[ERROR]')} Error executing {py_file.name}: {e}")
 
         return processed_files
 
@@ -636,13 +674,15 @@ startxref
         # Check if Rscript is available
         if not self._check_rscript():
             if use_rich:
-                self.console.print("⚠️ [yellow]R/Rscript not found - skipping R figure generation[/yellow]")
+                self.console.print(
+                    f"{get_safe_icon('⚠️', '[WARNING]')} [yellow]R/Rscript not found - skipping R figure generation[/yellow]"
+                )
                 self.console.print("   [dim]To generate R-based figures, install R:[/dim]")
                 self.console.print("   [dim]  • macOS: brew install r[/dim]")
                 self.console.print("   [dim]  • Linux: sudo apt-get install r-base[/dim]")
                 self.console.print("   [dim]  • Windows: https://cran.r-project.org/[/dim]")
             else:
-                print("⚠️ R/Rscript not found - skipping R figure generation")
+                safe_print(f"{get_safe_icon('⚠️', '[WARNING]')} R/Rscript not found - skipping R figure generation")
                 print("   To generate R-based figures, install R:")
                 print("     • macOS: brew install r")
                 print("     • Linux: sudo apt-get install r-base")
@@ -662,17 +702,21 @@ startxref
                     expected_outputs = self._get_expected_r_outputs(r_file)
                     if all(Path(output).exists() for output in expected_outputs):
                         if use_rich:
-                            self.console.print(f"⏭️ [dim]Skipping {r_file.name}: No changes detected[/dim]")
+                            self.console.print(
+                                f"{get_safe_icon('⏭️', '[SKIP]')} [dim]Skipping {r_file.name}: No changes detected[/dim]"
+                            )
                         else:
-                            print(f"⏭️ Skipping {r_file.name}: No changes detected")
+                            safe_print(f"{get_safe_icon('⏭️', '[SKIP]')} Skipping {r_file.name}: No changes detected")
                         continue
 
             # Execute the R script using local Rscript
             try:
                 if use_rich:
-                    self.console.print(f"📊 [cyan]Executing R script: {r_file.name}[/cyan]")
+                    self.console.print(
+                        f"{get_safe_icon('📊', '[STATS]')} [cyan]Executing R script: {r_file.name}[/cyan]"
+                    )
                 else:
-                    print(f"📊 Executing R script: {r_file.name}")
+                    safe_print(f"{get_safe_icon('📊', '[STATS]')} Executing R script: {r_file.name}")
 
                 result = subprocess.run(  # nosec # Safe: executing user's own R scripts with system Rscript
                     ["Rscript", str(r_file)],
@@ -689,29 +733,37 @@ startxref
                         self.checksum_manager.update_file_checksum(relative_path)
 
                     if use_rich:
-                        self.console.print(f"✅ [green]R script completed: {r_file.name}[/green]")
+                        self.console.print(
+                            f"{get_safe_icon('✅', '[OK]')} [green]R script completed: {r_file.name}[/green]"
+                        )
                     else:
-                        print(f"✅ R script completed: {r_file.name}")
+                        safe_print(f"{get_safe_icon('✅', '[OK]')} R script completed: {r_file.name}")
                 else:
                     if use_rich:
-                        self.console.print(f"❌ [red]R script failed: {r_file.name}[/red]")
+                        self.console.print(
+                            f"{get_safe_icon('❌', '[ERROR]')} [red]R script failed: {r_file.name}[/red]"
+                        )
                         if result.stderr:
                             self.console.print(f"   [red]Error: {result.stderr}[/red]")
                     else:
-                        print(f"❌ R script failed: {r_file.name}")
+                        safe_print(f"{get_safe_icon('❌', '[ERROR]')} R script failed: {r_file.name}")
                         if result.stderr:
                             print(f"   Error: {result.stderr}")
 
             except subprocess.TimeoutExpired:
                 if use_rich:
-                    self.console.print(f"⏰ [yellow]R script timeout: {r_file.name}[/yellow]")
+                    self.console.print(
+                        f"{get_safe_icon('⏰', '[TIMEOUT]')} [yellow]R script timeout: {r_file.name}[/yellow]"
+                    )
                 else:
-                    print(f"⏰ R script timeout: {r_file.name}")
+                    safe_print(f"{get_safe_icon('⏰', '[TIMEOUT]')} R script timeout: {r_file.name}")
             except Exception as e:
                 if use_rich:
-                    self.console.print(f"❌ [red]Error executing {r_file.name}: {e}[/red]")
+                    self.console.print(
+                        f"{get_safe_icon('❌', '[ERROR]')} [red]Error executing {r_file.name}: {e}[/red]"
+                    )
                 else:
-                    print(f"❌ Error executing {r_file.name}: {e}")
+                    safe_print(f"{get_safe_icon('❌', '[ERROR]')} Error executing {r_file.name}: {e}")
 
         return processed_files
 
@@ -789,9 +841,11 @@ startxref
 
         if not all_files:
             if use_rich:
-                self.console.print("ℹ️ [blue]No figure files found in FIGURES directory[/blue]")
+                self.console.print(
+                    f"{get_safe_icon('ℹ️', '[INFO]')} [blue]No figure files found in FIGURES directory[/blue]"
+                )
             else:
-                print("ℹ️ No figure files found in FIGURES directory")
+                safe_print(f"{get_safe_icon('ℹ️', '[INFO]')} No figure files found in FIGURES directory")
             return {"total_files": 0, "processed_files": [], "skipped_files": []}
 
         # Process files with progress tracking
@@ -831,9 +885,11 @@ startxref
                 self.checksum_manager._save_checksums()
             except Exception as e:
                 if use_rich:
-                    self.console.print(f"⚠️ [yellow]Warning: Failed to save figure cache: {e}[/yellow]")
+                    self.console.print(
+                        f"{get_safe_icon('⚠️', '[WARNING]')} [yellow]Warning: Failed to save figure cache: {e}[/yellow]"
+                    )
                 else:
-                    print(f"⚠️ Warning: Failed to save figure cache: {e}")
+                    safe_print(f"{get_safe_icon('⚠️', '[WARNING]')} Warning: Failed to save figure cache: {e}")
 
         return {
             "total_files": len(all_files),
@@ -920,10 +976,10 @@ Examples:
             sys.exit(1)  # Had files but failed to process any
 
     except KeyboardInterrupt:
-        print("\n⚠️ Figure generation interrupted by user")
+        safe_print(f"\n{get_safe_icon('⚠️', '[WARNING]')} Figure generation interrupted by user")
         sys.exit(130)
     except Exception as e:
-        print(f"❌ Figure generation failed: {e}")
+        safe_print(f"{get_safe_icon('❌', '[ERROR]')} Figure generation failed: {e}")
         sys.exit(1)
 
 

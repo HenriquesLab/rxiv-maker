@@ -19,6 +19,7 @@ if __name__ == "__main__":
 
 from rxiv_maker.utils.dependency_checker import DependencyChecker
 from rxiv_maker.utils.platform import platform_detector
+from rxiv_maker.utils.unicode_safe import get_safe_icon, safe_print
 
 
 class EnvironmentSetup:
@@ -46,15 +47,15 @@ class EnvironmentSetup:
     def log(self, message: str, level: str = "INFO"):
         """Log a message with appropriate formatting."""
         if level == "INFO":
-            print(f"✅ {message}")
+            safe_print(f"{get_safe_icon('✅', '[OK]')} {message}")
         elif level == "WARNING":
-            print(f"⚠️  {message}")
+            safe_print(f"{get_safe_icon('⚠️', '[WARNING]')}  {message}")
         elif level == "ERROR":
-            print(f"❌ {message}")
+            safe_print(f"{get_safe_icon('❌', '[ERROR]')} {message}")
         elif level == "STEP":
-            print(f"🔧 {message}")
+            safe_print(f"{get_safe_icon('🔧', '[CONFIG]')} {message}")
         else:
-            print(message)
+            safe_print(message)
 
     def check_uv_installation(self) -> bool:
         """Check if uv is installed and working."""
@@ -223,11 +224,11 @@ class EnvironmentSetup:
     def show_completion_message(self):
         """Show completion message with next steps."""
         self.log("Setup complete! Here's what you can do next:")
-        print("  📄 Run 'rxiv pdf' to create your first document")
-        print("  🔍 Run 'rxiv validate' to check your manuscript")
-        print("  🎨 Add figure scripts to MANUSCRIPT/FIGURES/ directory")
-        print("  📚 Run 'rxiv --help' to see all available commands")
-        print("  🔧 Run 'rxiv check-deps' to verify system dependencies")
+        safe_print(f"  {get_safe_icon('📄', '[PDF]')} Run 'rxiv pdf' to create your first document")
+        safe_print(f"  {get_safe_icon('🔍', '[SEARCH]')} Run 'rxiv validate' to check your manuscript")
+        safe_print(f"  {get_safe_icon('🎨', '[ART]')} Add figure scripts to MANUSCRIPT/FIGURES/ directory")
+        safe_print(f"  {get_safe_icon('📚', '[LIBRARY]')} Run 'rxiv --help' to see all available commands")
+        safe_print(f"  {get_safe_icon('🔧', '[CONFIG]')} Run 'rxiv check-deps' to verify system dependencies")
         print()
 
         # Check if we have missing dependencies to show appropriate guidance
@@ -236,26 +237,30 @@ class EnvironmentSetup:
             missing_optional = self.dependency_checker.get_missing_optional_dependencies()
 
             if missing_required:
-                print("⚠️  Some required dependencies are missing. Check them with:")
-                print("   make check-deps")
+                safe_print(
+                    f"{get_safe_icon('⚠️', '[WARNING]')}  Some required dependencies are missing. Check them with:"
+                )
+                safe_print("   make check-deps")
             elif missing_optional:
-                print("💡 Some optional dependencies are missing. For full functionality:")
-                print("   make check-deps")
+                safe_print(
+                    f"{get_safe_icon('💡', '[TIP]')} Some optional dependencies are missing. For full functionality:"
+                )
+                safe_print("   make check-deps")
             else:
-                print("✅ All system dependencies are available!")
+                safe_print(f"{get_safe_icon('✅', '[OK]')} All system dependencies are available!")
         else:
-            print("💡 Note: System dependencies (LaTeX, R) may be required")
+            safe_print(f"{get_safe_icon('💡', '[TIP]')} Note: System dependencies (LaTeX, R) may be required")
             print("   Run 'make check-deps' to verify your system is ready")
 
         print()
-        print(f"🌐 Platform: {self.platform.platform}")
-        print(f"🐍 Python: {self.platform.python_cmd}")
+        safe_print(f"{get_safe_icon('🌐', '[WEB]')} Platform: {self.platform.platform}")
+        safe_print(f"{get_safe_icon('🐍', '[PYTHON]')} Python: {self.platform.python_cmd}")
 
         venv_path = self.platform.get_venv_python_path()
         if venv_path:
-            print(f"🔧 Virtual environment: {venv_path}")
+            safe_print(f"{get_safe_icon('🔧', '[CONFIG]')} Virtual environment: {venv_path}")
 
-        print("🎉 Rxiv-Maker Python environment setup complete!")
+        safe_print(f"{get_safe_icon('🎉', '[SUCCESS]')} Rxiv-Maker Python environment setup complete!")
 
     def run_setup(self) -> bool:
         """Run the complete setup process."""

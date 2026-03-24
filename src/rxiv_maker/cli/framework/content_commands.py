@@ -2,6 +2,7 @@
 
 from typing import Optional
 
+from ...utils.unicode_safe import get_safe_icon
 from .base import BaseCommand, CommandExecutionError
 
 
@@ -23,7 +24,7 @@ class ValidationCommand(BaseCommand):
         if interactive:
             from ...cli.interactive import prompt_multi_select
 
-            self.console.print("\n🔍 Validation Options", style="bold blue")
+            self.console.print(f"\n{get_safe_icon('🔍', '[SEARCH]')} Validation Options", style="bold blue")
             self.console.print("Select validation options to enable:\n", style="dim")
 
             options = [
@@ -48,7 +49,9 @@ class ValidationCommand(BaseCommand):
                 self.console.print()  # Blank line
             else:
                 # User cancelled - use defaults
-                self.console.print("⚠️  Using default validation options", style="yellow")
+                self.console.print(
+                    f"{get_safe_icon('⚠️', '[WARNING]')}  Using default validation options", style="yellow"
+                )
                 detailed = False
                 no_doi = False
 
@@ -74,10 +77,10 @@ class ValidationCommand(BaseCommand):
             )
 
             if validation_passed:
-                progress.update(task, description="✅ Validation completed")
+                progress.update(task, description=f"{get_safe_icon('✅', '[OK]')} Validation completed")
                 self.success_message("Validation passed!")
             else:
-                progress.update(task, description="❌ Validation failed")
+                progress.update(task, description=f"{get_safe_icon('❌', '[ERROR]')} Validation failed")
                 self.error_message(
                     "Validation failed. See details above.",
                     "Run with --detailed for more information or use 'rxiv pdf --skip-validation' to build anyway",
@@ -119,7 +122,7 @@ class CleanCommand(BaseCommand):
         if interactive:
             from ...cli.interactive import prompt_confirm, prompt_multi_select
 
-            self.console.print("\n🧹 Cleanup Options", style="bold blue")
+            self.console.print(f"\n{get_safe_icon('🧹', '[CLEAN]')} Cleanup Options", style="bold blue")
             self.console.print("Select what you want to clean:\n", style="dim")
 
             options = [
@@ -161,7 +164,7 @@ class CleanCommand(BaseCommand):
                 self.console.print()  # Blank line
             elif selected is None:
                 # User cancelled
-                self.console.print("⚠️  Cleanup cancelled", style="yellow")
+                self.console.print(f"{get_safe_icon('⚠️', '[WARNING]')}  Cleanup cancelled", style="yellow")
                 return
             else:
                 # No options selected - ask if they want to clean everything
@@ -208,25 +211,27 @@ class CleanCommand(BaseCommand):
 
                 try:
                     cleanup_main()
-                    progress.update(task, description="✅ Cleanup completed")
+                    progress.update(task, description=f"{get_safe_icon('✅', '[OK]')} Cleanup completed")
                     self.success_message("Cleanup completed!")
 
                     # Show what was cleaned
                     if figures_only:
-                        self.console.print("🎨 Generated figures cleaned", style="blue")
+                        self.console.print(f"{get_safe_icon('🎨', '[ART]')} Generated figures cleaned", style="blue")
                     elif output_only:
-                        self.console.print("📁 Output directory cleaned", style="blue")
+                        self.console.print(f"{get_safe_icon('📁', '[FOLDER]')} Output directory cleaned", style="blue")
                     elif arxiv_only:
-                        self.console.print("📦 arXiv files cleaned", style="blue")
+                        self.console.print(f"{get_safe_icon('📦', '[PACKAGE]')} arXiv files cleaned", style="blue")
                     elif temp_only:
-                        self.console.print("🧹 Temporary files cleaned", style="blue")
+                        self.console.print(f"{get_safe_icon('🧹', '[CLEAN]')} Temporary files cleaned", style="blue")
                     elif cache_only:
-                        self.console.print("💾 Cache files cleaned", style="blue")
+                        self.console.print(f"{get_safe_icon('💾', '[SAVE]')} Cache files cleaned", style="blue")
                     else:
-                        self.console.print("🧹 All generated files cleaned", style="blue")
+                        self.console.print(
+                            f"{get_safe_icon('🧹', '[CLEAN]')} All generated files cleaned", style="blue"
+                        )
 
                 except SystemExit as e:
-                    progress.update(task, description="❌ Cleanup failed")
+                    progress.update(task, description=f"{get_safe_icon('❌', '[ERROR]')} Cleanup failed")
                     if e.code != 0:
                         self.error_message("Cleanup failed. See details above.")
                         raise CommandExecutionError("Cleanup failed") from e
@@ -235,7 +240,7 @@ class CleanCommand(BaseCommand):
                     sys.argv = original_argv
 
             except Exception as e:
-                progress.update(task, description="❌ Cleanup failed")
+                progress.update(task, description=f"{get_safe_icon('❌', '[ERROR]')} Cleanup failed")
                 self.error_message(f"Cleanup operation failed: {e}")
                 raise CommandExecutionError(f"Cleanup failed: {e}") from e
 
@@ -266,22 +271,27 @@ class BibliographyFixCommand(BaseCommand):
                 success = result.get("total_fixes", 0) >= 0  # Consider any result a success
 
                 if success:
-                    progress.update(task, description="✅ Bibliography fixes completed")
+                    progress.update(task, description=f"{get_safe_icon('✅', '[OK]')} Bibliography fixes completed")
                     if dry_run:
                         self.success_message("Bibliography fixes preview completed!")
                         if result.get("total_fixes", 0) > 0:
-                            self.console.print(f"📝 Found {result['total_fixes']} potential fixes", style="blue")
+                            self.console.print(
+                                f"{get_safe_icon('📝', '[NOTE]')} Found {result['total_fixes']} potential fixes",
+                                style="blue",
+                            )
                     else:
                         self.success_message("Bibliography fixes applied successfully!")
                         if result.get("total_fixes", 0) > 0:
-                            self.console.print(f"🔧 Applied {result['total_fixes']} fixes", style="blue")
+                            self.console.print(
+                                f"{get_safe_icon('🔧', '[CONFIG]')} Applied {result['total_fixes']} fixes", style="blue"
+                            )
                 else:
-                    progress.update(task, description="❌ Bibliography fixing failed")
+                    progress.update(task, description=f"{get_safe_icon('❌', '[ERROR]')} Bibliography fixing failed")
                     self.error_message("Bibliography fixing failed. See details above.")
                     raise CommandExecutionError("Bibliography fixing failed")
 
             except Exception as e:
-                progress.update(task, description="❌ Bibliography fixing failed")
+                progress.update(task, description=f"{get_safe_icon('❌', '[ERROR]')} Bibliography fixing failed")
                 self.error_message(f"Bibliography fixing failed: {e}")
                 raise CommandExecutionError(f"Bibliography fixing failed: {e}") from e
 
@@ -316,21 +326,27 @@ class BibliographyAddCommand(BaseCommand):
                         if adder.add_entry_from_input(doi):
                             total_added += 1
                             if self.verbose:
-                                self.console.print(f"✅ Added entry for: {doi}", style="green")
+                                self.console.print(
+                                    f"{get_safe_icon('✅', '[OK]')} Added entry for: {doi}", style="green"
+                                )
                     except Exception as e:
-                        self.console.print(f"⚠️  Failed to add {doi}: {e}", style="yellow")
+                        self.console.print(
+                            f"{get_safe_icon('⚠️', '[WARNING]')}  Failed to add {doi}: {e}", style="yellow"
+                        )
 
                 if total_added > 0:
-                    progress.update(task, description="✅ Bibliography entries added")
+                    progress.update(task, description=f"{get_safe_icon('✅', '[OK]')} Bibliography entries added")
                     self.success_message(f"Added {total_added} out of {len(dois)} bibliography entries successfully!")
-                    self.console.print(f"📚 Inputs processed: {', '.join(dois)}", style="blue")
+                    self.console.print(
+                        f"{get_safe_icon('📚', '[LIBRARY]')} Inputs processed: {', '.join(dois)}", style="blue"
+                    )
                 else:
-                    progress.update(task, description="❌ No entries were added")
+                    progress.update(task, description=f"{get_safe_icon('❌', '[ERROR]')} No entries were added")
                     self.error_message("No bibliography entries could be added. See details above.")
                     raise CommandExecutionError("No bibliography entries could be added")
 
             except Exception as e:
-                progress.update(task, description="❌ Bibliography adding failed")
+                progress.update(task, description=f"{get_safe_icon('❌', '[ERROR]')} Bibliography adding failed")
                 self.error_message(f"Bibliography adding failed: {e}")
                 raise CommandExecutionError(f"Bibliography adding failed: {e}") from e
 
@@ -400,7 +416,10 @@ class BibliographyListCommand(BaseCommand):
                 if not entries:
                     self.console.print("No bibliography entries found.", style="yellow")
                 else:
-                    self.console.print(f"\n📚 Found {len(entries)} bibliography entries:\n", style="bold blue")
+                    self.console.print(
+                        f"\n{get_safe_icon('📚', '[LIBRARY]')} Found {len(entries)} bibliography entries:\n",
+                        style="bold blue",
+                    )
 
                     for entry in entries:
                         self.console.print(f"  • [{entry.entry_type}] {entry.key}", style="cyan bold")
@@ -472,12 +491,16 @@ class FiguresCommand(BaseCommand):
 
             try:
                 if self.verbose:
-                    self.console.print("📦 Importing FigureGenerator class...", style="blue")
+                    self.console.print(
+                        f"{get_safe_icon('📦', '[PACKAGE]')} Importing FigureGenerator class...", style="blue"
+                    )
 
                 from rxiv_maker.engines.operations.generate_figures import FigureGenerator
 
                 if self.verbose:
-                    self.console.print("📦 Successfully imported FigureGenerator!", style="green")
+                    self.console.print(
+                        f"{get_safe_icon('📦', '[PACKAGE]')} Successfully imported FigureGenerator!", style="green"
+                    )
 
                 # Create FigureGenerator
                 if self.path_manager is None:
@@ -493,15 +516,17 @@ class FiguresCommand(BaseCommand):
 
                 if self.verbose:
                     mode_msg = "force mode - ignoring cache" if force else "normal mode"
-                    self.console.print(f"🎨 Starting figure generation ({mode_msg})...", style="blue")
+                    self.console.print(
+                        f"{get_safe_icon('🎨', '[ART]')} Starting figure generation ({mode_msg})...", style="blue"
+                    )
 
                 generator.process_figures()
 
-                progress.update(task, description="✅ Figure generation completed")
+                progress.update(task, description=f"{get_safe_icon('✅', '[OK]')} Figure generation completed")
                 self.success_message("Figures generated successfully!", f"Figures directory: {figures_dir}")
 
             except Exception as e:
-                progress.update(task, description="❌ Figure generation failed")
+                progress.update(task, description=f"{get_safe_icon('❌', '[ERROR]')} Figure generation failed")
                 self.error_message(f"Figure generation failed: {e}", "Check your figure scripts for errors")
                 raise CommandExecutionError(f"Figure generation failed: {e}") from e
 
