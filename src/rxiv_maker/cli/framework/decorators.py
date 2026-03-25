@@ -11,6 +11,8 @@ from typing import Callable, Optional
 import click
 from rich.console import Console
 
+from ...utils.unicode_safe import get_safe_icon
+
 console = Console()
 
 
@@ -149,7 +151,7 @@ def handle_keyboard_interrupt(message: str = "Operation interrupted by user") ->
             try:
                 return func(*args, **kwargs)
             except KeyboardInterrupt:
-                console.print(f"\n⏹️  {message}", style="yellow")
+                console.print(f"\n{get_safe_icon('⏹️', '[STOP]')}  {message}", style="yellow")
                 sys.exit(1)
 
         return wrapper
@@ -215,7 +217,7 @@ def deprecated_command(
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             console.print(
-                f"⚠️  WARNING: This command is deprecated and will be removed in {version}",
+                f"{get_safe_icon('⚠️', '[WARNING]')}  WARNING: This command is deprecated and will be removed in {version}",
                 style="bold yellow",
             )
             console.print(f"Use '{replacement}' instead.", style="yellow")
@@ -325,12 +327,12 @@ def measure_time(operation_name: Optional[str] = None) -> Callable:
                 # Only show timing if verbose mode is enabled
                 verbose = kwargs.get("verbose", False)
                 if verbose:
-                    console.print(f"⏱️  {name} completed in {elapsed:.2f}s", style="dim")
+                    console.print(f"{get_safe_icon('⏱️', '[TIME]')}  {name} completed in {elapsed:.2f}s", style="dim")
 
                 return result
             except Exception:
                 elapsed = time.time() - start_time
-                console.print(f"⏱️  {name} failed after {elapsed:.2f}s", style="dim red")
+                console.print(f"{get_safe_icon('⏱️', '[TIME]')}  {name} failed after {elapsed:.2f}s", style="dim red")
                 raise
 
         return wrapper

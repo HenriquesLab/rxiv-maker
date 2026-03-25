@@ -6,6 +6,7 @@ import click
 from rich.console import Console
 
 from ...engines.operations.generate_figures import FigureGenerator
+from ...utils.unicode_safe import get_safe_icon
 
 console = Console()
 
@@ -47,16 +48,23 @@ def figures(
             if manuscript_dir is not None:
                 manuscript_path = str(manuscript_dir)
                 if verbose or ctx.obj.get("verbose", False):
-                    console.print(f"🔍 Detected manuscript directory: {manuscript_path}", style="green")
+                    console.print(
+                        f"{get_safe_icon('🔍', '[SEARCH]')} Detected manuscript directory: {manuscript_path}",
+                        style="green",
+                    )
             else:
                 # Fall back to current directory
                 manuscript_path = "."
                 if verbose or ctx.obj.get("verbose", False):
-                    console.print(f"📁 Using current directory: {manuscript_path}", style="blue")
+                    console.print(
+                        f"{get_safe_icon('📁', '[FOLDER]')} Using current directory: {manuscript_path}", style="blue"
+                    )
 
     manuscript_dir = Path(manuscript_path).resolve()
     if not manuscript_dir.exists():
-        console.print(f"❌ Manuscript directory not found: {manuscript_path}", style="red")
+        console.print(
+            f"{get_safe_icon('❌', '[ERROR]')} Manuscript directory not found: {manuscript_path}", style="red"
+        )
         ctx.exit(1)
 
     # Set figures directory
@@ -76,13 +84,15 @@ def figures(
 
             if verbose or ctx.obj.get("verbose", False):
                 mode_msg = "force mode - ignoring cache" if force else "normal mode"
-                console.print(f"🎨 Starting figure generation ({mode_msg})...", style="blue")
+                console.print(
+                    f"{get_safe_icon('🎨', '[ART]')} Starting figure generation ({mode_msg})...", style="blue"
+                )
 
             generator.process_figures()
 
-        console.print("✅ Figures generated successfully!", style="green")
-        console.print(f"📁 Figures directory: {figures_dir}", style="blue")
+        console.print(f"{get_safe_icon('✅', '[OK]')} Figures generated successfully!", style="green")
+        console.print(f"{get_safe_icon('📁', '[FOLDER]')} Figures directory: {figures_dir}", style="blue")
 
     except Exception as e:
-        console.print(f"❌ Figure generation failed: {e}", style="red")
+        console.print(f"{get_safe_icon('❌', '[ERROR]')} Figure generation failed: {e}", style="red")
         ctx.exit(1)

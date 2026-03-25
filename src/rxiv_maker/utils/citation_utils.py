@@ -5,6 +5,8 @@ import re
 from pathlib import Path
 from typing import Any, Optional, Tuple
 
+from .unicode_safe import get_safe_icon, safe_print
+
 # Current canonical rxiv-maker citation
 CANONICAL_RXIV_CITATION = """@misc{saraiva_2025_rxivmaker,
       title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
@@ -111,7 +113,9 @@ def inject_rxiv_citation(yaml_metadata: dict[str, Any]) -> None:
                 with open(bib_file_path, "w", encoding="utf-8") as f:
                     f.write(updated_content)
 
-                print(f"✅ Rxiv-Maker citation updated to latest version in {bib_file_path}")
+                safe_print(
+                    f"{get_safe_icon('✅', '[OK]')} Rxiv-Maker citation updated to latest version in {bib_file_path}"
+                )
                 return
 
             except Exception as e:
@@ -130,6 +134,6 @@ def inject_rxiv_citation(yaml_metadata: dict[str, Any]) -> None:
                 f.write("\n")
             f.write("\n" + CANONICAL_RXIV_CITATION)
 
-        print(f"✅ Rxiv-Maker citation injected into {bib_file_path}")
+        safe_print(f"{get_safe_icon('✅', '[OK]')} Rxiv-Maker citation injected into {bib_file_path}")
     except Exception as e:
         print(f"Error writing to bibliography file: {e}")

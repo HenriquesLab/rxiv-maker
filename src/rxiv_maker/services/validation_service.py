@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from ..utils.unicode_safe import get_safe_icon
 from .base import BaseService, ServiceResult
 from .manuscript_service import ManuscriptService
 
@@ -312,9 +313,11 @@ class ValidationService(BaseService):
     def _print_validator_result(self, result: ValidatorResult, config: ValidationConfig):
         """Print validator result with appropriate formatting."""
         if result.success:
-            self.safe_console_print(f"✅ {result.name}: Passed")
+            self.safe_console_print(f"{get_safe_icon('✅', '[OK]')} {result.name}: Passed")
         else:
-            self.safe_console_print(f"❌ {result.name}: Failed ({len(result.errors)} errors)")
+            self.safe_console_print(
+                f"{get_safe_icon('❌', '[ERROR]')} {result.name}: Failed ({len(result.errors)} errors)"
+            )
 
         if result.errors and (config.validation_level in ["ERROR", "WARNING", "INFO"]):
             for error in result.errors:

@@ -8,6 +8,22 @@ from typing import Optional
 from rich.console import Console
 from rich.logging import RichHandler
 
+from ..utils.unicode_safe import convert_to_ascii, get_safe_icon
+
+
+class _AsciiSafeFormatter(logging.Formatter):
+    """Formatter that strips emoji/Rich markup for plain-text log files."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        msg = super().format(record)
+        # Strip Rich markup tags like [green], [/green], [red bold], etc.
+        import re
+
+        msg = re.sub(r"\[/?[a-z ]+\]", "", msg)
+        # Convert emoji to ASCII equivalents
+        msg = convert_to_ascii(msg)
+        return msg
+
 
 class RxivLogger:
     """Centralized logging configuration for rxiv-maker with Rich support."""
@@ -68,11 +84,11 @@ class RxivLogger:
         # Create log directory if it doesn't exist
         log_dir.mkdir(parents=True, exist_ok=True)
 
-        # Create new file handler
+        # Create new file handler with ASCII-safe formatter for Windows compatibility
         self._log_file_path = log_dir / "rxiv_maker.log"
-        self._file_handler = logging.FileHandler(self._log_file_path)
+        self._file_handler = logging.FileHandler(self._log_file_path, encoding="utf-8")
         self._file_handler.setLevel(logging.DEBUG)
-        file_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        file_formatter = _AsciiSafeFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         self._file_handler.setFormatter(file_formatter)
         self.logger.addHandler(self._file_handler)
 
@@ -106,35 +122,43 @@ class RxivLogger:
 
     def debug(self, message: str) -> None:
         """Log debug message."""
-        self.logger.debug(f"🔧 {message}")
+        icon = get_safe_icon("🔧", "[DEBUG]")
+        self.logger.debug(f"{icon} {message}")
 
     def info(self, message: str) -> None:
         """Log info message."""
-        self.logger.info(f"ℹ️ {message}")
+        icon = get_safe_icon("ℹ️", "[INFO]")
+        self.logger.info(f"{icon} {message}")
 
     def success(self, message: str) -> None:
         """Log success message."""
-        self.logger.info(f"[green]✅ {message}[/green]")
+        icon = get_safe_icon("✅", "[OK]")
+        self.logger.info(f"[green]{icon} {message}[/green]")
 
     def warning(self, message: str) -> None:
         """Log warning message."""
-        self.logger.warning(f"[yellow]⚠️ {message}[/yellow]")
+        icon = get_safe_icon("⚠️", "[WARNING]")
+        self.logger.warning(f"[yellow]{icon} {message}[/yellow]")
 
     def error(self, message: str) -> None:
         """Log error message."""
-        self.logger.error(f"[red]❌ {message}[/red]")
+        icon = get_safe_icon("❌", "[ERROR]")
+        self.logger.error(f"[red]{icon} {message}[/red]")
 
     def critical(self, message: str) -> None:
         """Log critical message."""
-        self.logger.critical(f"[red bold]💥 {message}[/red bold]")
+        icon = get_safe_icon("💥", "[CRITICAL]")
+        self.logger.critical(f"[red bold]{icon} {message}[/red bold]")
 
     def docker_info(self, message: str) -> None:
         """Log Docker-related info."""
-        self.logger.info(f"[blue]🐳 {message}[/blue]")
+        icon = get_safe_icon("🐳", "[DOCKER]")
+        self.logger.info(f"[blue]{icon} {message}[/blue]")
 
     def tip(self, message: str) -> None:
         """Log helpful tip."""
-        self.logger.info(f"[yellow]💡 {message}[/yellow]")
+        icon = get_safe_icon("💡", "[TIP]")
+        self.logger.info(f"[yellow]{icon} {message}[/yellow]")
 
     @property
     def console(self) -> Console:
@@ -142,6 +166,18 @@ class RxivLogger:
         if self._console is None:
             self._console = Console()
         return self._console
+
+    def close_file_handler(self) -> None:
+        """Close only the file handler, keeping console logging operational.
+
+        This is needed on Windows before deleting the output directory,
+        since open file handles prevent directory removal.
+        """
+        if self._file_handler:
+            self.logger.removeHandler(self._file_handler)
+            self._file_handler.close()
+            self._file_handler = None
+            self._log_file_path = None
 
     def cleanup(self) -> None:
         """Clean up resources, especially file handlers for Windows compatibility."""
@@ -231,6 +267,11 @@ def set_log_directory(log_dir: Path) -> None:
 def get_log_file_path() -> Path | None:
     """Get the current log file path."""
     return _logger_instance.get_log_file_path()
+
+
+def close_file_handler() -> None:
+    """Close only the file handler, keeping console logging operational."""
+    _logger_instance.close_file_handler()
 
 
 def cleanup() -> None:

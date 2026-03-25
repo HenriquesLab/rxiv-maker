@@ -16,6 +16,8 @@ suggestions for fixes, and optional detailed statistics.
 import os
 from typing import Any
 
+from ...utils.unicode_safe import get_safe_icon, safe_print
+
 try:
     from ...processors.yaml_processor import extract_yaml_metadata, get_doi_validation_setting
     from ...utils.file_helpers import find_manuscript_md
@@ -81,17 +83,17 @@ class UnifiedValidator:
     def validate_all(self) -> bool:
         """Run all available validators."""
         if not VALIDATORS_AVAILABLE:
-            print("❌ Enhanced validators not available")
+            safe_print(f"{get_safe_icon('❌', '[ERROR]')} Enhanced validators not available")
             print("   Install validation dependencies to use this command")
             return False
 
         # Check if manuscript directory exists
         if not os.path.exists(self.manuscript_path):
-            print(f"❌ Manuscript directory not found: {self.manuscript_path}")
+            safe_print(f"{get_safe_icon('❌', '[ERROR]')} Manuscript directory not found: {self.manuscript_path}")
             return False
 
         if self.verbose:
-            print(f"🔍 Validating manuscript: {self.manuscript_path}")
+            safe_print(f"{get_safe_icon('🔍', '[SEARCH]')} Validating manuscript: {self.manuscript_path}")
             print()
 
         validators = [
@@ -109,7 +111,7 @@ class UnifiedValidator:
 
         for validator_name, validator_class in validators:
             if self.verbose:
-                print(f"🔄 Running {validator_name} validation...")
+                safe_print(f"{get_safe_icon('🔄', '[RELOAD]')} Running {validator_name} validation...")
 
             try:
                 # Pass DOI validation option to CitationValidator
@@ -133,11 +135,11 @@ class UnifiedValidator:
 
                 if has_actual_errors:
                     all_passed = False
-                    status = "❌ FAILED"
+                    status = f"{get_safe_icon('❌', '[ERROR]')} FAILED"
                 elif has_warnings:
-                    status = "⚠️  WARNINGS"
+                    status = f"{get_safe_icon('⚠️', '[WARNING]')}  WARNINGS"
                 else:
-                    status = "✅ PASSED"
+                    status = f"{get_safe_icon('✅', '[OK]')} PASSED"
 
                 if self.verbose:
                     count_msg = ""
@@ -153,7 +155,7 @@ class UnifiedValidator:
 
             except Exception as e:
                 if self.verbose:
-                    print(f"   ❌ ERROR: {validator_name} validation failed: {e}")
+                    safe_print(f"   {get_safe_icon('❌', '[ERROR]')} ERROR: {validator_name} validation failed: {e}")
                 all_passed = False
 
         return all_passed
@@ -172,7 +174,7 @@ class UnifiedValidator:
         print("=" * 70)
 
         if not self.all_errors:
-            print("✅ No issues found!")
+            safe_print(f"{get_safe_icon('✅', '[OK]')} No issues found!")
             self._print_summary_statistics()
             return
 
@@ -191,9 +193,9 @@ class UnifiedValidator:
             ValidationLevel.INFO,
         ]
         level_icons = {
-            ValidationLevel.ERROR: "🚨",
-            ValidationLevel.WARNING: "⚠️",
-            ValidationLevel.INFO: "💡",
+            ValidationLevel.ERROR: get_safe_icon("🚨", "[ERROR]"),
+            ValidationLevel.WARNING: get_safe_icon("⚠️", "[WARNING]"),
+            ValidationLevel.INFO: get_safe_icon("💡", "[TIP]"),
         }
 
         for level in level_order:
@@ -215,7 +217,7 @@ class UnifiedValidator:
 
         # Location information
         if error.file_path:
-            location = f"📄 {error.file_path}"
+            location = f"{get_safe_icon('📄', '[PDF]')} {error.file_path}"
             if error.line_number:
                 location += f":{error.line_number}"
                 if error.column:
@@ -224,18 +226,18 @@ class UnifiedValidator:
 
         # Context
         if error.context and self.verbose:
-            print(f"     📝 Context: {error.context}")
+            safe_print(f"     {get_safe_icon('📝', '[NOTE]')} Context: {error.context}")
 
         # Suggestion
         if error.suggestion:
-            print(f"     💡 Suggestion: {error.suggestion}")
+            safe_print(f"     {get_safe_icon('💡', '[TIP]')} Suggestion: {error.suggestion}")
 
     def _print_summary_statistics(self) -> None:
         """Print summary statistics."""
         if not self.verbose:
             return
 
-        print("\n📊 SUMMARY STATISTICS:")
+        safe_print(f"\n{get_safe_icon('📊', '[STATS]')} SUMMARY STATISTICS:")
 
         for validator_name, result in self.validation_results.items():
             if not result.metadata:
@@ -300,7 +302,7 @@ class UnifiedValidator:
     def print_summary(self) -> None:
         """Print brief validation summary."""
         if not self.all_errors:
-            print("✅ Validation passed!")
+            safe_print(f"{get_safe_icon('✅', '[OK]')} Validation passed!")
             return
 
         error_count = sum(1 for e in self.all_errors if e.level == ValidationLevel.ERROR)
@@ -309,18 +311,18 @@ class UnifiedValidator:
 
         # Print status
         if error_count > 0:
-            print(f"❌ Validation failed with {error_count} error(s)")
+            safe_print(f"{get_safe_icon('❌', '[ERROR]')} Validation failed with {error_count} error(s)")
             if warning_count > 0:
-                print(f"   {warning_count} warning(s) found")
+                safe_print(f"   {warning_count} warning(s) found")
         elif warning_count > 0:
-            print("⚠️  Validation passed with warnings")
-            print(f"   {warning_count} warning(s) found")
+            safe_print(f"{get_safe_icon('⚠️', '[WARNING]')}  Validation passed with warnings")
+            safe_print(f"   {warning_count} warning(s) found")
         else:
-            print("✅ Validation passed!")
+            safe_print(f"{get_safe_icon('✅', '[OK]')} Validation passed!")
 
         # Show errors
         if error_count > 0:
-            print("\n🚨 ERRORS:")
+            safe_print(f"\n{get_safe_icon('🚨', '[ERROR]')} ERRORS:")
             errors = [e for e in self.all_errors if e.level == ValidationLevel.ERROR]
             for i, error in enumerate(errors, 1):
                 location = ""
@@ -333,7 +335,7 @@ class UnifiedValidator:
 
         # Show warnings
         if warning_count > 0:
-            print("\n⚠️  WARNINGS:")
+            safe_print(f"\n{get_safe_icon('⚠️', '[WARNING]')}  WARNINGS:")
             warnings = [e for e in self.all_errors if e.level == ValidationLevel.WARNING]
             for i, warning in enumerate(warnings, 1):
                 location = ""
@@ -346,7 +348,7 @@ class UnifiedValidator:
 
         # Show info messages only in verbose or include-info mode
         if info_count > 0 and self.include_info:
-            print(f"\n💡 INFO ({info_count}):")
+            safe_print(f"\n{get_safe_icon('💡', '[TIP]')} INFO ({info_count}):")
             info_messages = [e for e in self.all_errors if e.level == ValidationLevel.INFO]
             for i, info in enumerate(info_messages, 1):
                 location = ""

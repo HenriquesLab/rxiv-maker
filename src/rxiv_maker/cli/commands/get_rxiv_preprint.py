@@ -8,6 +8,7 @@ from typing import Optional
 import click
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
+from ...utils.unicode_safe import get_safe_icon
 from ..framework import BaseCommand, CommandExecutionError
 
 
@@ -59,7 +60,7 @@ class GetRxivPreprintCommand(BaseCommand):
                 cmd.append("--quiet")
 
             if not quiet:
-                self.console.print(f"🔄 Cloning {repo_url}...", style="blue")
+                self.console.print(f"{get_safe_icon('🔄', '[RELOAD]')} Cloning {repo_url}...", style="blue")
 
             # Execute git clone
             result = subprocess.run(
@@ -71,18 +72,23 @@ class GetRxivPreprintCommand(BaseCommand):
 
             if result.returncode == 0:
                 if not quiet:
-                    self.console.print(f"✅ Successfully cloned to {target_dir}", style="green")
+                    self.console.print(
+                        f"{get_safe_icon('✅', '[OK]')} Successfully cloned to {target_dir}", style="green"
+                    )
                 return True
             else:
                 error_msg = result.stderr.strip() if result.stderr else "Unknown error"
-                self.console.print(f"❌ Git clone failed: {error_msg}", style="red")
+                self.console.print(f"{get_safe_icon('❌', '[ERROR]')} Git clone failed: {error_msg}", style="red")
                 return False
 
         except subprocess.TimeoutExpired:
-            self.console.print("⏰ Git clone timed out. Check your network connection.", style="yellow")
+            self.console.print(
+                f"{get_safe_icon('⏰', '[TIMEOUT]')} Git clone timed out. Check your network connection.",
+                style="yellow",
+            )
             return False
         except Exception as e:
-            self.console.print(f"❌ Unexpected error during clone: {e}", style="red")
+            self.console.print(f"{get_safe_icon('❌', '[ERROR]')} Unexpected error during clone: {e}", style="red")
             return False
 
     def handle_existing_directory(self, target_dir: Path, force: bool) -> bool:
@@ -99,11 +105,13 @@ class GetRxivPreprintCommand(BaseCommand):
             return True
 
         if force:
-            self.console.print(f"🗑️  Removing existing directory: {target_dir}", style="yellow")
+            self.console.print(
+                f"{get_safe_icon('🗑️', '[DELETE]')}  Removing existing directory: {target_dir}", style="yellow"
+            )
             shutil.rmtree(target_dir)
             return True
         else:
-            self.console.print(f"❌ Directory {target_dir} already exists.", style="red")
+            self.console.print(f"{get_safe_icon('❌', '[ERROR]')} Directory {target_dir} already exists.", style="red")
             self.console.print("Use --force to overwrite, or choose a different directory.", style="dim")
             return False
 
@@ -115,19 +123,19 @@ class GetRxivPreprintCommand(BaseCommand):
         """
         manuscript_path = target_dir / "MANUSCRIPT"
 
-        self.console.print("\n🎉 Example manuscript ready!", style="bold green")
-        self.console.print(f"📁 Cloned to: {target_dir}", style="dim")
+        self.console.print(f"\n{get_safe_icon('🎉', '[SUCCESS]')} Example manuscript ready!", style="bold green")
+        self.console.print(f"{get_safe_icon('📁', '[FOLDER]')} Cloned to: {target_dir}", style="dim")
 
         if manuscript_path.exists():
-            self.console.print("\n📋 Next steps:", style="bold blue")
+            self.console.print(f"\n{get_safe_icon('📋', '[LIST]')} Next steps:", style="bold blue")
             self.console.print(f"   1. cd {manuscript_path}", style="cyan")
             self.console.print("   2. rxiv pdf", style="cyan")
         else:
-            self.console.print("\n📋 Next steps:", style="bold blue")
+            self.console.print(f"\n{get_safe_icon('📋', '[LIST]')} Next steps:", style="bold blue")
             self.console.print(f"   1. cd {target_dir}", style="cyan")
             self.console.print("   2. Explore the manuscript structure", style="cyan")
 
-        self.console.print("\n💡 The example manuscript demonstrates:", style="bold")
+        self.console.print(f"\n{get_safe_icon('💡', '[TIP]')} The example manuscript demonstrates:", style="bold")
         self.console.print("   • Figure generation with Python/R", style="dim")
         self.console.print("   • Bibliography management", style="dim")
         self.console.print("   • Professional LaTeX formatting", style="dim")
@@ -151,7 +159,7 @@ class GetRxivPreprintCommand(BaseCommand):
             # Check git availability
             if not self.check_git_availability():
                 raise CommandExecutionError(
-                    "❌ Git is not available on your system.\n"
+                    f"{get_safe_icon('❌', '[ERROR]')} Git is not available on your system.\n"
                     "Please install git and try again.\n"
                     "Visit: https://git-scm.com/downloads"
                 )

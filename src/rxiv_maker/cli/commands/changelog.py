@@ -13,6 +13,7 @@ from ...utils.changelog_parser import (
     format_summary,
     parse_version_entry,
 )
+from ...utils.unicode_safe import get_safe_icon
 
 console = Console()
 
@@ -42,7 +43,7 @@ def changelog(
     """
     try:
         # Fetch full changelog
-        console.print("📋 Fetching changelog...", style="blue")
+        console.print(f"{get_safe_icon('📋', '[LIST]')} Fetching changelog...", style="blue")
         content = fetch_changelog()
 
         # Handle different modes
@@ -60,7 +61,7 @@ def changelog(
             _show_version(content, __version__, full)
 
     except Exception as e:
-        console.print(f"❌ Error fetching changelog: {e}", style="red")
+        console.print(f"{get_safe_icon('❌', '[ERROR]')} Error fetching changelog: {e}", style="red")
         console.print(
             "   View online: https://github.com/henriqueslab/rxiv-maker/blob/main/CHANGELOG.md",
             style="blue",
@@ -79,19 +80,19 @@ def _show_version(content: str, version: str, full: bool) -> None:
     entry = parse_version_entry(content, version)
 
     if not entry:
-        console.print(f"❌ Version {version} not found in changelog", style="red")
+        console.print(f"{get_safe_icon('❌', '[ERROR]')} Version {version} not found in changelog", style="red")
         sys.exit(1)
 
     # Display version header
     if entry.date:
-        console.print(f"\n📦 Version {entry.version} ({entry.date})", style="bold cyan")
+        console.print(f"\n{get_safe_icon('📦', '[PACKAGE]')} Version {entry.version} ({entry.date})", style="bold cyan")
     else:
-        console.print(f"\n📦 Version {entry.version}", style="bold cyan")
+        console.print(f"\n{get_safe_icon('📦', '[PACKAGE]')} Version {entry.version}", style="bold cyan")
 
     # Check for breaking changes
     breaking = detect_breaking_changes(entry)
     if breaking:
-        console.print("\n⚠️  BREAKING CHANGES:", style="bold red")
+        console.print(f"\n{get_safe_icon('⚠️', '[WARNING]')}  BREAKING CHANGES:", style="bold red")
         for change in breaking:
             console.print(f"  • {change}", style="yellow")
         console.print()
@@ -132,7 +133,7 @@ def _show_recent(content: str, count: int, breaking_only: bool, full: bool) -> N
     versions = [m.group(1) for m in matches]
 
     if not versions:
-        console.print("❌ No versions found in changelog", style="red")
+        console.print(f"{get_safe_icon('❌', '[ERROR]')} No versions found in changelog", style="red")
         sys.exit(1)
 
     # Limit to requested count
@@ -158,7 +159,7 @@ def _show_recent(content: str, count: int, breaking_only: bool, full: bool) -> N
         sys.exit(0)
 
     # Display entries
-    console.print(f"\n📋 Last {len(entries)} version(s):\n", style="bold cyan")
+    console.print(f"\n{get_safe_icon('📋', '[LIST]')} Last {len(entries)} version(s):\n", style="bold cyan")
 
     if full:
         for i, entry in enumerate(entries):
@@ -193,7 +194,7 @@ def _show_since(content: str, since_version: str, breaking_only: bool, full: boo
     try:
         since_idx = all_versions.index(since_version)
     except ValueError:
-        console.print(f"❌ Version {since_version} not found in changelog", style="red")
+        console.print(f"{get_safe_icon('❌', '[ERROR]')} Version {since_version} not found in changelog", style="red")
         sys.exit(1)
 
     # Get versions after since_version
@@ -223,7 +224,10 @@ def _show_since(content: str, since_version: str, breaking_only: bool, full: boo
         sys.exit(0)
 
     # Display entries
-    console.print(f"\n📋 Changes since v{since_version} ({len(entries)} version(s)):\n", style="bold cyan")
+    console.print(
+        f"\n{get_safe_icon('📋', '[LIST]')} Changes since v{since_version} ({len(entries)} version(s)):\n",
+        style="bold cyan",
+    )
 
     if full:
         for i, entry in enumerate(entries):

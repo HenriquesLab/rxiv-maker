@@ -5,11 +5,12 @@ import subprocess
 from pathlib import Path
 
 from ...core.environment_manager import EnvironmentManager
-from ...core.logging_config import get_logger, set_log_directory
+from ...core.logging_config import close_file_handler, get_logger, set_log_directory
 from ...core.path_manager import PathManager
 from ...utils.figure_checksum import get_figure_checksum_manager
 from ...utils.operation_ids import create_operation
 from ...utils.performance import get_performance_tracker
+from ...utils.unicode_safe import get_safe_icon, safe_print
 
 logger = get_logger()
 
@@ -116,30 +117,36 @@ class BuildManager:
 
     def log(self, message: str, level: str = "INFO"):
         """Log message with consistent formatting."""
+        step_icon = get_safe_icon("📝", "[STEP]")
+        info_icon = get_safe_icon("ℹ️", "[INFO]")
+        warn_icon = get_safe_icon("⚠️", "[WARNING]")
+        error_icon = get_safe_icon("❌", "[ERROR]")
+        success_icon = get_safe_icon("✅", "[OK]")
+
         if level == "STEP":
             # Step messages always show, just log to file
-            print(f"📝 {message}")
+            safe_print(f"{step_icon} {message}")
             logger.debug(f"STEP: {message}")  # Use debug level to avoid console duplication
         elif level == "INFO":
             # Info messages show in verbose mode or are just logged
             logger.info(message)
             if self.verbose:
-                print(f"ℹ️ {message}")
+                safe_print(f"{info_icon} {message}")
         elif level == "WARNING":
             # Warning messages always show - for actionable issues only
-            print(f"⚠️ {message}")
+            safe_print(f"{warn_icon} {message}")
             logger.warning(message)
         elif level == "VERBOSE_WARNING":
             # Verbose warnings - only show in verbose mode (for non-actionable issues)
             if self.verbose:
-                print(f"⚠️ {message}")
+                safe_print(f"{warn_icon} {message}")
                 logger.warning(message)
             else:
                 logger.debug(f"VERBOSE_WARNING: {message}")
         elif level == "QUIET_WARNING":
             # Quiet warnings - show only if not in quiet mode
             if not self.quiet:
-                print(f"⚠️ {message}")
+                safe_print(f"{warn_icon} {message}")
             # Still log to file but don't show in console if quiet
             if not self.quiet:
                 logger.warning(message)
@@ -147,16 +154,16 @@ class BuildManager:
                 logger.debug(f"QUIET_WARNING: {message}")
         elif level == "ERROR":
             # Error messages always show
-            print(f"❌ {message}")
+            safe_print(f"{error_icon} {message}")
             logger.error(message)
         elif level == "SUCCESS":
             # Success messages always show
-            print(f"✅ {message}")
+            safe_print(f"{success_icon} {message}")
             logger.info(f"SUCCESS: {message}")
         else:
             # Default to info
             if self.verbose:
-                print(f"ℹ️ {message}")
+                safe_print(f"{info_icon} {message}")
             logger.info(message)
 
     def setup_output_directory(self):
@@ -165,9 +172,26 @@ class BuildManager:
             self.log("Clearing output directory...", "STEP")
             import shutil
 
-            shutil.rmtree(self.output_dir)
+            # Close the log file handler before deleting the output directory.
+            # On Windows, open file handles prevent directory removal (WinError 32).
+            close_file_handler()
+
+            def _on_rmtree_error(func, path, exc_info):
+                """Handle rmtree errors on Windows (file locking)."""
+                import stat
+                import time
+
+                os.chmod(path, stat.S_IWRITE)
+                time.sleep(0.1)
+                func(path)
+
+            shutil.rmtree(self.output_dir, onerror=_on_rmtree_error)
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Re-establish log directory after clearing
+        set_log_directory(Path(self.output_dir))
+
         self.log(f"Output directory ready: {self.output_dir}", "INFO")
 
     def validate_manuscript(self) -> bool:

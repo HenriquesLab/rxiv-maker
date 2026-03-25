@@ -12,6 +12,8 @@ import subprocess
 import zipfile
 from pathlib import Path
 
+from ...utils.unicode_safe import get_safe_icon, safe_print
+
 logger = logging.getLogger(__name__)
 
 
@@ -53,8 +55,8 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None, manuscript_path
             style_source = path_manager.get_style_file_path("rxiv_maker_style.cls")
             if style_source.exists():
                 shutil.copy2(style_source, arxiv_path / "rxiv_maker_style.cls")
-                print(
-                    f"✓ Copied unified arXiv-compatible style file using centralized path manager from {style_source}"
+                safe_print(
+                    f"{get_safe_icon('✓', '[OK]')} Copied unified arXiv-compatible style file using centralized path manager from {style_source}"
                 )
             else:
                 style_source = None
@@ -85,7 +87,7 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None, manuscript_path
             )
 
         shutil.copy2(style_source, arxiv_path / "rxiv_maker_style.cls")
-        print(f"✓ Copied unified arXiv-compatible style file from {style_source}")
+        safe_print(f"{get_safe_icon('✓', '[OK]')} Copied unified arXiv-compatible style file from {style_source}")
 
     # Determine the main manuscript file name by looking for .tex files
     tex_files = list(output_path.glob("*.tex"))
@@ -157,15 +159,15 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None, manuscript_path
                 # Write the modified content
                 with open(arxiv_path / filename, "w", encoding="utf-8") as f:
                     f.write(content)
-                print(f"✓ Copied and modified {filename} for arXiv compatibility")
+                safe_print(f"{get_safe_icon('✓', '[OK]')} Copied and modified {filename} for arXiv compatibility")
             else:
                 shutil.copy2(source_file, arxiv_path / filename)
-                print(f"✓ Copied {filename}")
+                safe_print(f"{get_safe_icon('✓', '[OK]')} Copied {filename}")
         else:
             if filename.endswith(".bbl") or filename.endswith(".bst"):
-                print(f"⚠ Optional file not found: {filename}")
+                safe_print(f"{get_safe_icon('⚠️', '[WARNING]')} Optional file not found: {filename}")
             else:
-                print(f"✗ Required file not found: {filename}")
+                safe_print(f"{get_safe_icon('✗', '[FAIL]')} Required file not found: {filename}")
 
     # Copy figures from output directory (they should already be there from the build process)
     output_figures_source = output_path / "FIGURES"
@@ -180,29 +182,31 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None, manuscript_path
 
         # Count and report copied files
         copied_count = len([f for f in figures_dest.rglob("*") if f.is_file()])
-        print(f"✓ Copied {copied_count} figure files from output directory")
+        safe_print(f"{get_safe_icon('✓', '[OK]')} Copied {copied_count} figure files from output directory")
     else:
-        print(f"⚠️  Warning: No FIGURES directory found in output directory at {output_figures_source}")
+        safe_print(
+            f"{get_safe_icon('⚠️', '[WARNING]')}  Warning: No FIGURES directory found in output directory at {output_figures_source}"
+        )
         print("   Make sure to run 'rxiv pdf' first to build the manuscript and copy figures.")
 
-    print(f"\n📦 arXiv package prepared in {arxiv_path}")
+    safe_print(f"\n{get_safe_icon('📦', '[PACKAGE]')} arXiv package prepared in {arxiv_path}")
 
     # Verify all required files are present
     package_valid = verify_package(arxiv_path, manuscript_path)
 
     if not package_valid:
-        print("⚠️  Package verification failed - some files are missing")
+        safe_print(f"{get_safe_icon('⚠️', '[WARNING]')}  Package verification failed - some files are missing")
         return arxiv_path
 
     # Test compilation to ensure the package builds correctly
     compilation_success = test_arxiv_compilation(arxiv_path)
 
     if not compilation_success:
-        print("❌ arXiv package compilation test failed!")
+        safe_print(f"{get_safe_icon('❌', '[ERROR]')} arXiv package compilation test failed!")
         print("   The package may not build correctly on arXiv.")
         print("   Please check the LaTeX errors above and fix them before submission.")
     else:
-        print("✅ arXiv package compilation test passed!")
+        safe_print(f"{get_safe_icon('✅', '[OK]')} arXiv package compilation test passed!")
         print("   The package should build correctly on arXiv.")
 
     # Store compilation result for later use
@@ -215,7 +219,7 @@ def prepare_arxiv_package(output_dir="./output", arxiv_dir=None, manuscript_path
 def verify_package(arxiv_path, manuscript_path=None):
     """Verify that the arXiv package contains all necessary files."""
     manuscript_name = Path(manuscript_path).name if manuscript_path else "manuscript"
-    print(f"\n🔍 Verifying package contents for '{manuscript_name}'...")
+    safe_print(f"\n{get_safe_icon('🔍', '[SEARCH]')} Verifying package contents for '{manuscript_name}'...")
 
     # Find the main manuscript file dynamically
     tex_files = list(arxiv_path.glob("*.tex"))
@@ -227,7 +231,7 @@ def verify_package(arxiv_path, manuscript_path=None):
             break
 
     if not main_tex_file:
-        print("✗ No main LaTeX file found")
+        safe_print(f"{get_safe_icon('✗', '[FAIL]')} No main LaTeX file found")
         return False
 
     required_files = [
@@ -277,35 +281,37 @@ def verify_package(arxiv_path, manuscript_path=None):
     for filename in required_files:
         file_path = arxiv_path / filename
         if file_path.exists():
-            print(f"✓ {filename}")
+            safe_print(f"{get_safe_icon('✓', '[OK]')} {filename}")
         else:
-            print(f"✗ Missing: {filename}")
+            safe_print(f"{get_safe_icon('✗', '[FAIL]')} Missing: {filename}")
             missing_files.append(filename)
 
     # Check required figures
     for figure_path in required_figures:
         file_path = arxiv_path / figure_path
         if file_path.exists():
-            print(f"✓ {figure_path}")
+            safe_print(f"{get_safe_icon('✓', '[OK]')} {figure_path}")
         else:
-            print(f"✗ Missing: {figure_path}")
+            safe_print(f"{get_safe_icon('✗', '[FAIL]')} Missing: {figure_path}")
             missing_files.append(figure_path)
 
     if missing_files:
-        print(f"\n⚠ Warning: {len(missing_files)} files are missing from '{manuscript_name}' package!")
+        safe_print(
+            f"\n{get_safe_icon('⚠️', '[WARNING]')} Warning: {len(missing_files)} files are missing from '{manuscript_name}' package!"
+        )
         print("The package may not compile correctly on arXiv.")
         print("Missing files:")
         for missing in missing_files:
             print(f"  - {missing}")
     else:
-        print(f"\n✅ All required files present for '{manuscript_name}' package!")
+        safe_print(f"\n{get_safe_icon('✅', '[OK]')} All required files present for '{manuscript_name}' package!")
 
     return len(missing_files) == 0
 
 
 def test_arxiv_compilation(arxiv_path):
     """Test compilation of the arXiv package to ensure it builds correctly."""
-    print("\n🔨 Testing arXiv package compilation...")
+    safe_print(f"\n{get_safe_icon('🔧', '[CONFIG]')} Testing arXiv package compilation...")
 
     # Change to the arXiv directory for compilation
     original_cwd = os.getcwd()
@@ -322,7 +328,7 @@ def test_arxiv_compilation(arxiv_path):
                 break
 
         if not tex_file or not Path(tex_file).exists():
-            print(f"❌ LaTeX file not found: {tex_file}")
+            safe_print(f"{get_safe_icon('❌', '[ERROR]')} LaTeX file not found: {tex_file}")
             return False
 
         # First LaTeX compilation pass
@@ -370,7 +376,7 @@ def test_arxiv_compilation(arxiv_path):
 
         if Path(pdf_file).exists():
             pdf_size = Path(pdf_file).stat().st_size
-            print(f"✅ PDF compilation successful! Size: {pdf_size:,} bytes")
+            safe_print(f"{get_safe_icon('✅', '[OK]')} PDF compilation successful! Size: {pdf_size:,} bytes")
 
             # Check for common LaTeX warnings/errors in log
             if Path(log_file).exists():
@@ -381,7 +387,7 @@ def test_arxiv_compilation(arxiv_path):
                 warning_count = log_content.count("Warning:")
 
                 if error_count > 0:
-                    print(f"⚠️  Found {error_count} LaTeX errors in log")
+                    safe_print(f"{get_safe_icon('⚠️', '[WARNING]')}  Found {error_count} LaTeX errors in log")
                     # Extract first few errors for display
                     errors = []
                     for line in log_content.split("\n"):
@@ -393,20 +399,20 @@ def test_arxiv_compilation(arxiv_path):
                         print(f"    {error}")
 
                 if warning_count > 0:
-                    print(f"📝 Found {warning_count} LaTeX warnings in log")
+                    safe_print(f"{get_safe_icon('📝', '[NOTE]')} Found {warning_count} LaTeX warnings in log")
 
                 if error_count == 0:
-                    print("✅ No LaTeX errors detected")
+                    safe_print(f"{get_safe_icon('✅', '[OK]')} No LaTeX errors detected")
 
             return True
         else:
-            print("❌ PDF compilation failed - no output PDF generated")
+            safe_print(f"{get_safe_icon('❌', '[ERROR]')} PDF compilation failed - no output PDF generated")
 
             # Show compilation errors from log if available
             if Path(log_file).exists():
                 with open(log_file, encoding="utf-8") as f:
                     log_content = f.read()
-                    print("\n📋 Last few lines from compilation log:")
+                    safe_print(f"\n{get_safe_icon('📋', '[LIST]')} Last few lines from compilation log:")
                     lines = log_content.split("\n")
                     for line in lines[-10:]:  # Show last 10 lines
                         if line.strip():
@@ -415,7 +421,7 @@ def test_arxiv_compilation(arxiv_path):
             return False
 
     except Exception as e:
-        print(f"❌ Compilation test failed with exception: {e}")
+        safe_print(f"{get_safe_icon('❌', '[ERROR]')} Compilation test failed with exception: {e}")
         return False
     finally:
         # Always return to original directory
@@ -435,7 +441,7 @@ def create_zip_package(arxiv_path, zip_filename="for_arxiv.zip", manuscript_path
     # These are temporary build artifacts that arXiv regenerates automatically
     auxiliary_extensions = {".aux", ".blg", ".log", ".out", ".fls", ".fdb_latexmk", ".synctex.gz"}
 
-    print(f"\n📁 Creating ZIP package: {zip_path}")
+    safe_print(f"\n{get_safe_icon('📁', '[FOLDER]')} Creating ZIP package: {zip_path}")
 
     excluded_files = []
     included_files = []
@@ -465,17 +471,17 @@ def create_zip_package(arxiv_path, zip_filename="for_arxiv.zip", manuscript_path
                 included_files.append(str(arcname))
 
     # Report what was included and excluded
-    print(f"  📦 Added {len(included_files)} files:")
+    safe_print(f"  {get_safe_icon('📦', '[PACKAGE]')} Added {len(included_files)} files:")
     for file_name in sorted(included_files):
-        print(f"    ✓ {file_name}")
+        safe_print(f"    {get_safe_icon('✓', '[OK]')} {file_name}")
 
     if excluded_files:
-        print(f"  🗑️ Excluded {len(excluded_files)} auxiliary files:")
+        safe_print(f"  {get_safe_icon('🗑️', '[CLEAN]')} Excluded {len(excluded_files)} auxiliary files:")
         for file_name in sorted(excluded_files):
-            print(f"    ✗ {file_name} (build artifact)")
+            safe_print(f"    {get_safe_icon('✗', '[FAIL]')} {file_name} (build artifact)")
 
-    print(f"✅ ZIP package created: {zip_path}")
-    print("📤 Ready for arXiv submission!")
+    safe_print(f"{get_safe_icon('✅', '[OK]')} ZIP package created: {zip_path}")
+    safe_print(f"{get_safe_icon('📤', '[UPLOAD]')} Ready for arXiv submission!")
 
     return zip_path
 
@@ -525,27 +531,27 @@ def main() -> int:
         # Verify the package
         verify_result = verify_package(arxiv_path, args.manuscript_path)
         if not verify_result:
-            print("❌ Package verification failed")
+            safe_print(f"{get_safe_icon('❌', '[ERROR]')} Package verification failed")
             return 1
 
         # Test compilation if requested
         if args.test_compilation:
             test_result = test_arxiv_compilation(arxiv_path)
             if not test_result:
-                print("❌ Test compilation failed")
+                safe_print(f"{get_safe_icon('❌', '[ERROR]')} Test compilation failed")
                 return 1
 
         # Create ZIP package if requested
         if args.create_zip:
             zip_path = create_zip_package(arxiv_path, args.zip_filename, args.manuscript_path)
-            print(f"✅ arXiv package ready: {zip_path}")
+            safe_print(f"{get_safe_icon('✅', '[OK]')} arXiv package ready: {zip_path}")
         else:
-            print(f"✅ arXiv package ready: {arxiv_path}")
+            safe_print(f"{get_safe_icon('✅', '[OK]')} arXiv package ready: {arxiv_path}")
 
         return 0
 
     except Exception as e:
-        print(f"❌ Error preparing arXiv package: {e}")
+        safe_print(f"{get_safe_icon('❌', '[ERROR]')} Error preparing arXiv package: {e}")
         return 1
 
 

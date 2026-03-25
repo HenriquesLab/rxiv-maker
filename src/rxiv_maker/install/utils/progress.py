@@ -4,7 +4,7 @@ import sys
 import threading
 import time
 
-from rxiv_maker.utils.unicode_safe import get_safe_icon
+from rxiv_maker.utils.unicode_safe import get_safe_icon, safe_print
 
 
 class ProgressIndicator:
@@ -31,9 +31,9 @@ class ProgressIndicator:
         self.current_task = task_name
 
         if self.verbose:
-            print(f"🔄 {task_name}...")
+            safe_print(f"{get_safe_icon('🔄', '[RELOAD]')} {task_name}...")
         else:
-            print(f"🔄 {task_name}...", end=" ", flush=True)
+            safe_print(f"{get_safe_icon('🔄', '[RELOAD]')} {task_name}...", end=" ", flush=True)
             self._start_spinner()
 
     def complete_task(self, success: bool = True):
@@ -90,7 +90,7 @@ class ProgressIndicator:
         """Run the spinner animation."""
         i = 0
         while not self.stop_spinner:
-            sys.stdout.write(f"\r🔄 {self.current_task}... {self.spinner_chars[i]}")
+            sys.stdout.write(f"\r{get_safe_icon('🔄', '[RELOAD]')} {self.current_task}... {self.spinner_chars[i]}")
             sys.stdout.flush()
             i = (i + 1) % len(self.spinner_chars)
             time.sleep(0.1)

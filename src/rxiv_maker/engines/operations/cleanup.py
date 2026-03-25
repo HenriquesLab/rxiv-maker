@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 
 from ...utils.platform import platform_detector
+from ...utils.unicode_safe import get_safe_icon, safe_print
 
 
 class CleanupManager:
@@ -40,28 +41,16 @@ class CleanupManager:
 
     def log(self, message: str, level: str = "INFO"):
         """Log a message with appropriate formatting."""
-        # Use safe printing to handle Windows console encoding issues
-        try:
-            if level == "INFO":
-                print(f"✅ {message}")
-            elif level == "WARNING":
-                print(f"⚠️  {message}")
-            elif level == "ERROR":
-                print(f"❌ {message}")
-            elif level == "STEP":
-                print(f"🧹 {message}")
-            else:
-                print(message)
-        except UnicodeEncodeError:
-            # Fallback to ASCII characters for Windows console compatibility
-            level_chars = {
-                "INFO": "[OK]",
-                "WARNING": "[WARN]",
-                "ERROR": "[ERROR]",
-                "STEP": "[CLEAN]",
-            }
-            char = level_chars.get(level, "")
-            print(f"{char} {message}")
+        if level == "INFO":
+            safe_print(f"{get_safe_icon('✅', '[OK]')} {message}")
+        elif level == "WARNING":
+            safe_print(f"{get_safe_icon('⚠️', '[WARNING]')}  {message}")
+        elif level == "ERROR":
+            safe_print(f"{get_safe_icon('❌', '[ERROR]')} {message}")
+        elif level == "STEP":
+            safe_print(f"{get_safe_icon('🧹', '[CLEAN]')} {message}")
+        else:
+            safe_print(message)
 
     def clean_output_directory(self) -> bool:
         """Clean the output directory."""

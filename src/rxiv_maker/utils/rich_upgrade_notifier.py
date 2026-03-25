@@ -3,6 +3,8 @@
 import click
 from rich.console import Console
 
+from .unicode_safe import get_safe_icon
+
 
 class RxivUpgradeNotifier:
     """Adapt Rich console to UpgradeNotifier protocol for rxiv-maker.
@@ -20,7 +22,7 @@ class RxivUpgradeNotifier:
 
     def show_checking(self) -> None:
         """Show 'checking for updates' message."""
-        self.console.print("🔍 Checking for updates...", style="blue")
+        self.console.print(f"{get_safe_icon('🔍', '[SEARCH]')} Checking for updates...", style="blue")
 
     def show_version_check(self, current: str, latest: str, available: bool) -> None:
         """Show version check results.
@@ -32,12 +34,12 @@ class RxivUpgradeNotifier:
         """
         if available:
             self.console.print(
-                f"📦 Update available: [cyan]v{current}[/cyan] → [green bold]v{latest}[/green bold]",
+                f"{get_safe_icon('📦', '[PACKAGE]')} Update available: [cyan]v{current}[/cyan] -> [green bold]v{latest}[/green bold]",
                 style="yellow",
             )
         else:
             self.console.print(
-                f"✅ You already have the latest version ([cyan]v{current}[/cyan])",
+                f"{get_safe_icon('✅', '[OK]')} You already have the latest version ([cyan]v{current}[/cyan])",
                 style="green",
             )
 
@@ -60,7 +62,7 @@ class RxivUpgradeNotifier:
         )
 
         if summary and not error:
-            self.console.print("\n📋 What's changing:", style="bold blue")
+            self.console.print(f"\n{get_safe_icon('📋', '[LIST]')} What's changing:", style="bold blue")
             # Display changelog - format_summary returns rich-formatted text
             # Parse and display with proper styling
             for line in summary.split("\n"):
@@ -96,10 +98,10 @@ class RxivUpgradeNotifier:
         """
         self.console.print()
         self.console.print(
-            f"🔍 Detected installation method: [bold]{friendly_name}[/bold]",
+            f"{get_safe_icon('🔍', '[SEARCH]')} Detected installation method: [bold]{friendly_name}[/bold]",
             style="blue",
         )
-        self.console.print(f"📦 Running: [yellow]{command}[/yellow]")
+        self.console.print(f"{get_safe_icon('📦', '[PACKAGE]')} Running: [yellow]{command}[/yellow]")
 
     def show_success(self, version: str) -> None:
         """Show successful upgrade message.
@@ -108,7 +110,7 @@ class RxivUpgradeNotifier:
             version: Version that was successfully installed
         """
         self.console.print()
-        self.console.print("✅ Upgrade completed successfully!", style="green bold")
+        self.console.print(f"{get_safe_icon('✅', '[OK]')} Upgrade completed successfully!", style="green bold")
         self.console.print(f"   Now running: [green]v{version}[/green]")
         self.console.print()
         self.console.print("   Run [blue]'rxiv --version'[/blue] to verify the installation", style="dim")
@@ -120,7 +122,7 @@ class RxivUpgradeNotifier:
             error: Error message or None
         """
         self.console.print()
-        self.console.print("❌ Upgrade failed", style="red bold")
+        self.console.print(f"{get_safe_icon('❌', '[ERROR]')} Upgrade failed", style="red bold")
         if error:
             self.console.print(f"   {error}", style="red")
 
@@ -130,7 +132,7 @@ class RxivUpgradeNotifier:
         Args:
             install_method: The detected installation method
         """
-        self.console.print("\n💡 Try running manually:", style="yellow bold")
+        self.console.print(f"\n{get_safe_icon('💡', '[TIP]')} Try running manually:", style="yellow bold")
 
         if install_method == "homebrew":
             self.console.print("   [cyan]brew update && brew upgrade rxiv-maker[/cyan]")
@@ -158,5 +160,5 @@ class RxivUpgradeNotifier:
             self.console.print()
             return click.confirm(f"Upgrade rxiv-maker to v{version}?", default=True)
         except (KeyboardInterrupt, EOFError):
-            self.console.print("\n⚠️  Upgrade cancelled.", style="yellow")
+            self.console.print(f"\n{get_safe_icon('⚠️', '[WARNING]')}  Upgrade cancelled.", style="yellow")
             return False

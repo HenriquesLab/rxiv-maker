@@ -10,6 +10,7 @@ import click
 from rich.panel import Panel
 from rich.table import Table
 
+from ...utils.unicode_safe import get_safe_icon
 from .base import BaseCommand, CommandExecutionError
 
 
@@ -70,7 +71,9 @@ class CheckInstallationCommand(BaseCommand):
             self.console.print(json.dumps(output, indent=2))
             return
 
-        self.console.print(Panel.fit("🔍 Checking rxiv-maker Dependencies", style="blue"))
+        self.console.print(
+            Panel.fit(f"{get_safe_icon('🔍', '[SEARCH]')} Checking rxiv-maker Dependencies", style="blue")
+        )
 
         with self.create_progress() as progress:
             task = progress.add_task("Checking dependencies...", total=None)
@@ -80,7 +83,7 @@ class CheckInstallationCommand(BaseCommand):
                 pdf_missing = dm.get_missing_dependencies("pdf", required_only=True)
                 all_missing = dm.get_missing_dependencies() if detailed else pdf_missing
 
-                progress.update(task, description="✅ Dependency check completed")
+                progress.update(task, description=f"{get_safe_icon('✅', '[OK]')} Dependency check completed")
 
                 if detailed:
                     self._show_detailed_dependency_results(dm, all_missing)
@@ -91,12 +94,16 @@ class CheckInstallationCommand(BaseCommand):
                 if pdf_missing and current_platform == "Linux":
                     ubuntu_packages = [r.spec.name for r in pdf_missing if r.spec.type.value == "ubuntu_package"]
                     if ubuntu_packages:
-                        self.console.print("\n📦 Ubuntu installation command:", style="blue")
+                        self.console.print(
+                            f"\n{get_safe_icon('📦', '[PACKAGE]')} Ubuntu installation command:", style="blue"
+                        )
                         self.console.print(f"sudo apt install -y {' '.join(ubuntu_packages)}", style="green")
 
                 if pdf_missing:
                     if fix and current_platform == "Linux":
-                        self.console.print("\n🔧 Attempting to install missing dependencies...")
+                        self.console.print(
+                            f"\n{get_safe_icon('🔧', '[CONFIG]')} Attempting to install missing dependencies..."
+                        )
                         success = dm.install_missing_dependencies("pdf", interactive=False)
                         if success:
                             self.success_message("Dependencies installed successfully!")
@@ -104,10 +111,14 @@ class CheckInstallationCommand(BaseCommand):
                             self.error_message("Some dependencies could not be installed automatically")
                     else:
                         self.console.print(
-                            f"\n⚠️  {len(pdf_missing)} required dependencies missing for PDF generation", style="yellow"
+                            f"\n{get_safe_icon('⚠️', '[WARNING]')}  {len(pdf_missing)} required dependencies missing for PDF generation",
+                            style="yellow",
                         )
                         if current_platform == "Linux":
-                            self.console.print("💡 Run with --fix to attempt automatic installation", style="blue")
+                            self.console.print(
+                                f"{get_safe_icon('💡', '[TIP]')} Run with --fix to attempt automatic installation",
+                                style="blue",
+                            )
                 else:
                     self.success_message("All required dependencies for PDF generation are available!")
 
@@ -115,14 +126,14 @@ class CheckInstallationCommand(BaseCommand):
                 self._show_dependency_next_steps(pdf_missing)
 
             except Exception as e:
-                progress.update(task, description="❌ Dependency check failed")
+                progress.update(task, description=f"{get_safe_icon('❌', '[ERROR]')} Dependency check failed")
                 self.error_message(f"Dependency check failed: {e}")
                 raise CommandExecutionError(f"Dependency check failed: {e}") from e
 
     def _show_basic_dependency_results(self, missing_results: list) -> None:
         """Show basic dependency results using the new dependency manager."""
         if not missing_results:
-            self.console.print("✅ All required dependencies are available!", style="green")
+            self.console.print(f"{get_safe_icon('✅', '[OK]')} All required dependencies are available!", style="green")
             return
 
         table = Table(title="Missing Required Dependencies", show_header=True, header_style="bold red")
@@ -146,11 +157,12 @@ class CheckInstallationCommand(BaseCommand):
         missing_count = len(all_missing)
 
         self.console.print(
-            f"\n📊 Summary: {missing_count} missing out of {total_deps} total dependencies", style="blue"
+            f"\n{get_safe_icon('📊', '[STATS]')} Summary: {missing_count} missing out of {total_deps} total dependencies",
+            style="blue",
         )
 
         if not all_missing:
-            self.console.print("✅ All dependencies are available!", style="green")
+            self.console.print(f"{get_safe_icon('✅', '[OK]')} All dependencies are available!", style="green")
             return
 
         # Group by type
@@ -175,7 +187,9 @@ class CheckInstallationCommand(BaseCommand):
             for result in results:
                 table.add_row(
                     result.spec.name,
-                    "✅ Yes" if result.spec.required else "⚠️ Optional",
+                    f"{get_safe_icon('✅', '[OK]')} Yes"
+                    if result.spec.required
+                    else f"{get_safe_icon('⚠️', '[WARNING]')} Optional",
                     ", ".join(result.spec.contexts) if result.spec.contexts else "all",
                     result.resolution_hint or "Manual installation required",
                 )
@@ -186,13 +200,13 @@ class CheckInstallationCommand(BaseCommand):
     def _show_dependency_next_steps(self, missing_results: list) -> None:
         """Show next steps after dependency check."""
         if not missing_results:
-            self.console.print("\n🚀 Next steps:", style="blue")
+            self.console.print(f"\n{get_safe_icon('🚀', '[LAUNCH]')} Next steps:", style="blue")
             self.console.print("  • Get example manuscript: rxiv get-rxiv-preprint")
             self.console.print("  • Navigate to manuscript: cd manuscript-rxiv-maker/MANUSCRIPT")
             self.console.print("  • Generate PDF: rxiv pdf")
             return
 
-        self.console.print("\n🔧 Next steps:", style="blue")
+        self.console.print(f"\n{get_safe_icon('🔧', '[CONFIG]')} Next steps:", style="blue")
         self.console.print("  • Install missing dependencies shown above")
         self.console.print("  • Re-run: rxiv check-installation")
         self.console.print("  • Get example manuscript: rxiv get-rxiv-preprint")
@@ -216,7 +230,9 @@ class CheckInstallationCommand(BaseCommand):
 
         for component, installed in results.items():
             name = component_names.get(component, component.title())
-            status = "✅ Installed" if installed else "❌ Missing"
+            status = (
+                f"{get_safe_icon('✅', '[OK]')} Installed" if installed else f"{get_safe_icon('❌', '[ERROR]')} Missing"
+            )
             style = "green" if installed else "red"
             notes = ""
 
@@ -234,7 +250,7 @@ class CheckInstallationCommand(BaseCommand):
         self._show_basic_results(results)
 
         # Add detailed diagnostics
-        self.console.print("\n🔍 Detailed Diagnostics:")
+        self.console.print(f"\n{get_safe_icon('🔍', '[SEARCH]')} Detailed Diagnostics:")
         try:
             from rxiv_maker.install.utils.verification import diagnose_installation
 
@@ -254,7 +270,9 @@ class CheckInstallationCommand(BaseCommand):
         # Check if we're on a supported platform for automatic fixing
         system = platform.system().lower()
         if system != "linux":
-            self.console.print("🚧 Automatic fixing only supported on Linux", style="yellow")
+            self.console.print(
+                f"{get_safe_icon('🚧', '[WARN]')} Automatic fixing only supported on Linux", style="yellow"
+            )
             self._show_manual_install_instructions(missing_components)
             return
 
@@ -267,7 +285,9 @@ class CheckInstallationCommand(BaseCommand):
             is_ubuntu = False
 
         if not is_ubuntu:
-            self.console.print("🚧 Automatic fixing only supported on Ubuntu/Debian", style="yellow")
+            self.console.print(
+                f"{get_safe_icon('🚧', '[WARN]')} Automatic fixing only supported on Ubuntu/Debian", style="yellow"
+            )
             self._show_manual_install_instructions(missing_components)
             return
 
@@ -285,17 +305,25 @@ class CheckInstallationCommand(BaseCommand):
 
             current_status = verify_installation(verbose=False)
             if not current_status.get("r", False):
-                install_r = click.confirm("\n🤔 Would you like to install R? (optional for R figure scripts)")
+                install_r = click.confirm(
+                    f"\n{get_safe_icon('🤔', '[?]')} Would you like to install R? (optional for R figure scripts)"
+                )
                 if install_r and self._install_r_ubuntu():
                     success_count += 1
         except Exception:
             pass  # Skip R installation prompt if verification fails
 
         if success_count > 0:
-            self.console.print(f"\n✅ Successfully installed {success_count} components!", style="green")
-            self.console.print("💡 Run 'rxiv check-installation' again to verify", style="blue")
+            self.console.print(
+                f"\n{get_safe_icon('✅', '[OK]')} Successfully installed {success_count} components!", style="green"
+            )
+            self.console.print(
+                f"{get_safe_icon('💡', '[TIP]')} Run 'rxiv check-installation' again to verify", style="blue"
+            )
         else:
-            self.console.print("\n⚠️ Could not install components automatically", style="yellow")
+            self.console.print(
+                f"\n{get_safe_icon('⚠️', '[WARNING]')} Could not install components automatically", style="yellow"
+            )
             self._show_manual_install_instructions(missing_components)
 
     def _install_latex_ubuntu(self) -> bool:
@@ -303,7 +331,9 @@ class CheckInstallationCommand(BaseCommand):
         import subprocess
 
         try:
-            self.console.print("🔧 Installing LaTeX (this may take several minutes)...", style="blue")
+            self.console.print(
+                f"{get_safe_icon('🔧', '[CONFIG]')} Installing LaTeX (this may take several minutes)...", style="blue"
+            )
 
             cmd = (
                 "apt update && "
@@ -315,17 +345,21 @@ class CheckInstallationCommand(BaseCommand):
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=1200)
 
             if result.returncode == 0:
-                self.console.print("✅ Successfully installed LaTeX", style="green")
+                self.console.print(f"{get_safe_icon('✅', '[OK]')} Successfully installed LaTeX", style="green")
                 return True
             else:
-                self.console.print(f"❌ Failed to install LaTeX: {result.stderr[:500]}", style="red")
+                self.console.print(
+                    f"{get_safe_icon('❌', '[ERROR]')} Failed to install LaTeX: {result.stderr[:500]}", style="red"
+                )
                 return False
 
         except subprocess.TimeoutExpired:
-            self.console.print("⏰ LaTeX installation timed out (try manually)", style="yellow")
+            self.console.print(
+                f"{get_safe_icon('⏰', '[TIMEOUT]')} LaTeX installation timed out (try manually)", style="yellow"
+            )
             return False
         except Exception as e:
-            self.console.print(f"❌ Error installing LaTeX: {e}", style="red")
+            self.console.print(f"{get_safe_icon('❌', '[ERROR]')} Error installing LaTeX: {e}", style="red")
             return False
 
     def _install_r_ubuntu(self) -> bool:
@@ -333,29 +367,31 @@ class CheckInstallationCommand(BaseCommand):
         import subprocess
 
         try:
-            self.console.print("🔧 Installing R...", style="blue")
+            self.console.print(f"{get_safe_icon('🔧', '[CONFIG]')} Installing R...", style="blue")
 
             cmd = "apt update && apt install -y r-base"
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=300)
 
             if result.returncode == 0:
-                self.console.print("✅ Successfully installed R", style="green")
+                self.console.print(f"{get_safe_icon('✅', '[OK]')} Successfully installed R", style="green")
                 return True
             else:
-                self.console.print(f"❌ Failed to install R: {result.stderr[:500]}", style="red")
+                self.console.print(
+                    f"{get_safe_icon('❌', '[ERROR]')} Failed to install R: {result.stderr[:500]}", style="red"
+                )
                 return False
 
         except subprocess.TimeoutExpired:
-            self.console.print("⏰ R installation timed out", style="yellow")
+            self.console.print(f"{get_safe_icon('⏰', '[TIMEOUT]')} R installation timed out", style="yellow")
             return False
         except Exception as e:
-            self.console.print(f"❌ Error installing R: {e}", style="red")
+            self.console.print(f"{get_safe_icon('❌', '[ERROR]')} Error installing R: {e}", style="red")
             return False
 
     def _show_manual_install_instructions(self, missing_components: list) -> None:
         """Show manual installation instructions for missing components."""
         system = platform.system().lower()
-        self.console.print("\n📦 Manual Installation Instructions:", style="bold blue")
+        self.console.print(f"\n{get_safe_icon('📦', '[PACKAGE]')} Manual Installation Instructions:", style="bold blue")
 
         for component in missing_components:
             if component == "latex":
@@ -388,7 +424,7 @@ class CheckInstallationCommand(BaseCommand):
             else:
                 self.console.print(f"  • {component.title()}: Check documentation for installation instructions")
 
-        self.console.print("\n🔧 Development Tools (Recommended):")
+        self.console.print(f"\n{get_safe_icon('🔧', '[CONFIG]')} Development Tools (Recommended):")
         self.console.print("  • VSCode Extension: Install 'rxiv-maker' extension from VS Code marketplace")
         self.console.print("    - Provides syntax highlighting, LaTeX preview, and manuscript management")
         self.console.print("  • For automatic fixing on Ubuntu/Debian: rxiv check-installation --fix")
@@ -398,12 +434,12 @@ class CheckInstallationCommand(BaseCommand):
         all_critical_installed = all(results.get(comp, False) for comp in ["python", "pip", "latex", "pandoc"])
 
         if all_critical_installed:
-            self.console.print("\n📋 Next steps:", style="bold blue")
+            self.console.print(f"\n{get_safe_icon('📋', '[LIST]')} Next steps:", style="bold blue")
             self.console.print("  1. Create a new manuscript: rxiv init MY_PAPER/")
             self.console.print("  2. Edit your manuscript files")
             self.console.print("  3. Generate your manuscript: rxiv pdf")
         else:
-            self.console.print("\n📋 To get started:", style="bold blue")
+            self.console.print(f"\n{get_safe_icon('📋', '[LIST]')} To get started:", style="bold blue")
             self.console.print("  1. Install missing components above")
             self.console.print("  2. Run this check again: rxiv check-installation")
             self.console.print("  3. Initialize a manuscript: rxiv init")
@@ -423,20 +459,27 @@ class VersionCommand(BaseCommand):
 
         # Check for updates if requested
         if check_updates:
-            self.console.print("🔍 Checking for updates...", style="blue")
+            self.console.print(f"{get_safe_icon('🔍', '[SEARCH]')} Checking for updates...", style="blue")
             try:
                 from rxiv_maker.utils.update_checker import force_update_check
 
                 update_available, latest_version = force_update_check()
 
                 if update_available:
-                    self.console.print(f"📦 Update available: {__version__} → {latest_version}", style="green")
+                    self.console.print(
+                        f"{get_safe_icon('📦', '[PACKAGE]')} Update available: {__version__} -> {latest_version}",
+                        style="green",
+                    )
                     self.console.print("   Run: pip install --upgrade rxiv-maker  (or pip3)", style="blue")
                     self.console.print("        uv tool upgrade rxiv-maker", style="blue")
                 else:
-                    self.console.print(f"✅ You have the latest version ({__version__})", style="green")
+                    self.console.print(
+                        f"{get_safe_icon('✅', '[OK]')} You have the latest version ({__version__})", style="green"
+                    )
             except Exception as e:
-                self.console.print(f"⚠️  Could not check for updates: {e}", style="yellow")
+                self.console.print(
+                    f"{get_safe_icon('⚠️', '[WARNING]')}  Could not check for updates: {e}", style="yellow"
+                )
 
         # Show version information
         if detailed:
@@ -529,15 +572,21 @@ class CompletionCommand(BaseCommand):
             if install_path.exists():
                 content = install_path.read_text()
                 if completion_line in content:
-                    self.console.print(f"✅ {shell} completion already installed", style="green")
+                    self.console.print(
+                        f"{get_safe_icon('✅', '[OK]')} {shell} completion already installed", style="green"
+                    )
                     return
 
             # Add completion
             with open(install_path, "a", encoding="utf-8") as f:
                 f.write(f"\n# Rxiv-Maker completion\n{completion_line}\n")
 
-            self.console.print(f"✅ {shell} completion installed to {install_path}", style="green")
-            self.console.print(f"💡 Restart your shell or run: source {install_path}", style="yellow")
+            self.console.print(
+                f"{get_safe_icon('✅', '[OK]')} {shell} completion installed to {install_path}", style="green"
+            )
+            self.console.print(
+                f"{get_safe_icon('💡', '[TIP]')} Restart your shell or run: source {install_path}", style="yellow"
+            )
 
         except Exception as e:
             self.error_message(f"Error installing completion: {e}")
@@ -575,7 +624,9 @@ class DeprecatedInstallDepsCommand(BaseCommand):
             ctx: Click context
         """
         # Show deprecation warning
-        self.console.print("⚠️  WARNING: 'rxiv install-deps' is deprecated!", style="bold yellow")
+        self.console.print(
+            f"{get_safe_icon('⚠️', '[WARNING]')}  WARNING: 'rxiv install-deps' is deprecated!", style="bold yellow"
+        )
         self.console.print("Use 'rxiv setup --mode system-only' instead.", style="yellow")
         self.console.print("Redirecting to the new command...", style="dim")
         self.console.print()
@@ -601,7 +652,7 @@ class DeprecatedInstallDepsCommand(BaseCommand):
             setup(ctx, **setup_kwargs)
 
         except KeyboardInterrupt:
-            self.console.print("\n⏹️  Installation interrupted by user", style="yellow")
+            self.console.print(f"\n{get_safe_icon('⏹️', '[STOP]')}  Installation interrupted by user", style="yellow")
             raise CommandExecutionError("Installation interrupted") from KeyboardInterrupt()
         except Exception as e:
             self.error_message(f"Unexpected error during installation: {e}")

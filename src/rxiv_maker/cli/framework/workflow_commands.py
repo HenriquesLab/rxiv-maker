@@ -10,6 +10,7 @@ import click
 import yaml
 
 from ...templates import get_template_manager
+from ...utils.unicode_safe import get_safe_icon
 from .base import BaseCommand, CommandExecutionError
 
 
@@ -39,7 +40,9 @@ class InitCommand(BaseCommand):
         self.raw_manuscript_path = manuscript_path
 
         if self.verbose:
-            self.console.print(f"📁 Will create manuscript at: {manuscript_path}", style="blue")
+            self.console.print(
+                f"{get_safe_icon('📁', '[FOLDER]')} Will create manuscript at: {manuscript_path}", style="blue"
+            )
 
     def execute_operation(
         self,
@@ -90,19 +93,19 @@ class InitCommand(BaseCommand):
                 )
                 progress.advance(task)
 
-                progress.update(task, description="✅ Manuscript initialized")
+                progress.update(task, description=f"{get_safe_icon('✅', '[OK]')} Manuscript initialized")
                 progress.advance(task)
 
                 self.success_message("Manuscript initialized successfully!", f"Directory: {manuscript_dir.absolute()}")
 
                 if self.verbose:
-                    self.console.print("\n📄 Created files:", style="blue")
+                    self.console.print(f"\n{get_safe_icon('📄', '[PDF]')} Created files:", style="blue")
                     for file_type, file_path in created_files.items():
                         self.console.print(f"  • {file_type}: {file_path.name}", style="dim")
 
                 # Run validation if requested
                 if validate:
-                    self.console.print("\n🔍 Running validation...")
+                    self.console.print(f"\n{get_safe_icon('🔍', '[SEARCH]')} Running validation...")
                     try:
                         from rxiv_maker.engines.operations.validate import validate_manuscript
 
@@ -111,15 +114,19 @@ class InitCommand(BaseCommand):
                         )
 
                         if validation_passed:
-                            self.console.print("✅ Template validation passed!", style="green")
+                            self.console.print(
+                                f"{get_safe_icon('✅', '[OK]')} Template validation passed!", style="green"
+                            )
                         else:
-                            self.console.print("⚠️  Template validation had issues", style="yellow")
+                            self.console.print(
+                                f"{get_safe_icon('⚠️', '[WARNING]')}  Template validation had issues", style="yellow"
+                            )
 
                     except Exception as e:
-                        self.console.print(f"⚠️  Validation failed: {e}", style="yellow")
+                        self.console.print(f"{get_safe_icon('⚠️', '[WARNING]')}  Validation failed: {e}", style="yellow")
 
                 # Show next steps
-                self.console.print("\n📋 Next steps:", style="bold blue")
+                self.console.print(f"\n{get_safe_icon('📋', '[LIST]')} Next steps:", style="bold blue")
                 self.console.print(f"  1. cd {manuscript_path}")
                 self.console.print("  2. Edit 00_CONFIG.yml with your manuscript details")
                 self.console.print("  3. Write your content in 01_MAIN.md")
@@ -127,7 +134,7 @@ class InitCommand(BaseCommand):
                 self.console.print("  5. Run 'rxiv pdf' to generate your manuscript")
 
             except Exception as e:
-                progress.update(task, description="❌ Initialization failed")
+                progress.update(task, description=f"{get_safe_icon('❌', '[ERROR]')} Initialization failed")
                 self.error_message(f"Initialization failed: {e}")
                 raise CommandExecutionError(f"Initialization failed: {e}") from e
 
@@ -208,9 +215,13 @@ class BuildCommand(BaseCommand):
                 # Don't duplicate error logging - progress_manager already logged it
                 # Just provide helpful tips for specific error types
                 if "validation" in str(e).lower():
-                    self.info_message("💡 Tip: Use --skip-validation to bypass validation checks")
+                    self.info_message(
+                        f"{get_safe_icon('💡', '[TIP]')} Tip: Use --skip-validation to bypass validation checks"
+                    )
                 elif "figures" in str(e).lower():
-                    self.info_message("💡 Tip: Check your figure scripts or use --force-figures")
+                    self.info_message(
+                        f"{get_safe_icon('💡', '[TIP]')} Tip: Check your figure scripts or use --force-figures"
+                    )
 
                 raise CommandExecutionError("Build failed") from e
 
@@ -221,7 +232,9 @@ class BuildCommand(BaseCommand):
             # Show build statistics using our centralized progress framework
             if build_manager and hasattr(build_manager, "get_build_stats"):
                 stats = build_manager.get_build_stats()
-                self.console.print(f"📊 Build time: {stats.get('duration', 'N/A')}", style="dim")
+                self.console.print(
+                    f"{get_safe_icon('📊', '[STATS]')} Build time: {stats.get('duration', 'N/A')}", style="dim"
+                )
 
             # Export to DOCX if requested
             if docx:
@@ -246,7 +259,7 @@ class BuildCommand(BaseCommand):
             from ...exporters.docx_exporter import DocxExporter
 
             if not quiet:
-                self.console.print("\n[cyan]📝 Exporting to DOCX...[/cyan]")
+                self.console.print(f"\n[cyan]{get_safe_icon('📝', '[NOTE]')} Exporting to DOCX...[/cyan]")
 
             exporter = DocxExporter(
                 manuscript_path=str(self.path_manager.manuscript_path),
@@ -257,10 +270,10 @@ class BuildCommand(BaseCommand):
             docx_path = exporter.export()
 
             if not quiet:
-                self.console.print(f"[green]✅ DOCX exported:[/green] {docx_path}")
+                self.console.print(f"[green]{get_safe_icon('✅', '[OK]')} DOCX exported:[/green] {docx_path}")
 
         except Exception as e:
-            self.console.print(f"[yellow]⚠️  DOCX export failed:[/yellow] {e}")
+            self.console.print(f"[yellow]{get_safe_icon('⚠️', '[WARNING]')}  DOCX export failed:[/yellow] {e}")
             if debug:
                 import traceback
 
@@ -281,7 +294,9 @@ class BuildCommand(BaseCommand):
             from ...utils.pdf_utils import get_custom_pdf_filename
 
             if not quiet:
-                self.console.print("\n[cyan]✂️  Splitting PDF into main and SI sections...[/cyan]")
+                self.console.print(
+                    f"\n[cyan]{get_safe_icon('✂️', '[CUT]')}  Splitting PDF into main and SI sections...[/cyan]"
+                )
 
             # Split the PDF
             main_path, si_path = split_pdf(pdf_path)
@@ -307,18 +322,22 @@ class BuildCommand(BaseCommand):
                 shutil.copy2(si_path, final_si_path)
 
                 if not quiet:
-                    self.console.print("[green]✅ PDF split successfully:[/green]")
-                    self.console.print(f"   📄 Main: {final_main_path}")
-                    self.console.print(f"   📄 SI: {final_si_path}")
+                    self.console.print(f"[green]{get_safe_icon('✅', '[OK]')} PDF split successfully:[/green]")
+                    self.console.print(f"   {get_safe_icon('📄', '[PDF]')} Main: {final_main_path}")
+                    self.console.print(f"   {get_safe_icon('📄', '[PDF]')} SI: {final_si_path}")
             elif main_path is None and si_path is None:
                 if not quiet:
-                    self.console.print("[yellow]⚠️  Could not split PDF: SI section marker not found[/yellow]")
+                    self.console.print(
+                        f"[yellow]{get_safe_icon('⚠️', '[WARNING]')}  Could not split PDF: SI section marker not found[/yellow]"
+                    )
             else:
                 if not quiet:
-                    self.console.print("[yellow]⚠️  PDF splitting partially failed[/yellow]")
+                    self.console.print(
+                        f"[yellow]{get_safe_icon('⚠️', '[WARNING]')}  PDF splitting partially failed[/yellow]"
+                    )
 
         except Exception as e:
-            self.console.print(f"[yellow]⚠️  PDF splitting failed:[/yellow] {e}")
+            self.console.print(f"[yellow]{get_safe_icon('⚠️', '[WARNING]')}  PDF splitting failed:[/yellow] {e}")
             if debug:
                 import traceback
 
@@ -408,11 +427,13 @@ class ArxivCommand(BaseCommand):
 
             try:
                 prepare_arxiv_main()
-                progress.update(task, description="✅ arXiv package prepared")
+                progress.update(task, description=f"{get_safe_icon('✅', '[OK]')} arXiv package prepared")
                 self.success_message("arXiv package prepared successfully!")
 
                 if not no_zip:
-                    self.console.print(f"📦 arXiv package: {zip_filename}", style="blue")
+                    self.console.print(
+                        f"{get_safe_icon('📦', '[PACKAGE]')} arXiv package: {zip_filename}", style="blue"
+                    )
 
                     # Copy to manuscript directory with proper naming
                     config_path = self.path_manager.manuscript_path / "00_CONFIG.yml"
@@ -424,18 +445,20 @@ class ArxivCommand(BaseCommand):
 
                     # Copy file
                     shutil.copy2(zip_filename, final_path)
-                    self.console.print(f"📋 Copied to: {final_path}", style="green")
+                    self.console.print(f"{get_safe_icon('📋', '[LIST]')} Copied to: {final_path}", style="green")
 
-                self.console.print("📤 Upload the package to arXiv for submission", style="yellow")
+                self.console.print(
+                    f"{get_safe_icon('📤', '[UPLOAD]')} Upload the package to arXiv for submission", style="yellow"
+                )
 
             except SystemExit as e:
-                progress.update(task, description="❌ arXiv preparation failed")
+                progress.update(task, description=f"{get_safe_icon('❌', '[ERROR]')} arXiv preparation failed")
                 if e.code != 0:
                     self.error_message("arXiv preparation failed. See details above.")
                     raise CommandExecutionError("arXiv preparation failed") from e
 
             except Exception as e:
-                progress.update(task, description="❌ arXiv preparation failed")
+                progress.update(task, description=f"{get_safe_icon('❌', '[ERROR]')} arXiv preparation failed")
                 self.error_message(f"arXiv preparation failed: {e}")
                 raise CommandExecutionError(f"arXiv preparation failed: {e}") from e
 
@@ -458,7 +481,10 @@ class ArxivCommand(BaseCommand):
             with open(config_path, encoding="utf-8") as f:
                 config = yaml.safe_load(f)
         except (yaml.YAMLError, OSError) as e:
-            self.console.print(f"⚠️  Warning: Could not parse config file {config_path}: {e}", style="yellow")
+            self.console.print(
+                f"{get_safe_icon('⚠️', '[WARNING]')}  Warning: Could not parse config file {config_path}: {e}",
+                style="yellow",
+            )
             return str(datetime.now().year), "Unknown"
 
         # Extract year from date
@@ -585,11 +611,11 @@ class BioRxivCommand(BaseCommand):
             progress.update(task, completed=True)
 
             # Show success message
-            self.console.print("\n[green]✅ bioRxiv submission package ready![/green]")
-            self.console.print(f"   📁 Package directory: {biorxiv_path}")
+            self.console.print(f"\n[green]{get_safe_icon('✅', '[OK]')} bioRxiv submission package ready![/green]")
+            self.console.print(f"   {get_safe_icon('📁', '[FOLDER]')} Package directory: {biorxiv_path}")
             if zip_path:
-                self.console.print(f"   📦 ZIP file: {zip_path}")
-            self.console.print("\n📤 Upload to: https://submit.biorxiv.org/")
+                self.console.print(f"   {get_safe_icon('📦', '[PACKAGE]')} ZIP file: {zip_path}")
+            self.console.print(f"\n{get_safe_icon('📤', '[UPLOAD]')} Upload to: https://submit.biorxiv.org/")
 
 
 class TrackChangesCommand(BaseCommand):
@@ -638,22 +664,27 @@ class TrackChangesCommand(BaseCommand):
                 success = build_manager.build()
 
                 if success:
-                    progress.update(task, description="✅ Change-tracked PDF generated successfully!")
+                    progress.update(
+                        task, description=f"{get_safe_icon('✅', '[OK]')} Change-tracked PDF generated successfully!"
+                    )
                     self.console.print(
-                        f"📄 PDF with change tracking generated: {self.path_manager.output_dir}/{self.path_manager.manuscript_name}.pdf",
+                        f"{get_safe_icon('📄', '[PDF]')} PDF with change tracking generated: {self.path_manager.output_dir}/{self.path_manager.manuscript_name}.pdf",
                         style="green",
                     )
                     self.console.print(
-                        f"🔍 Changes tracked against git tag: {tag}",
+                        f"{get_safe_icon('🔍', '[SEARCH]')} Changes tracked against git tag: {tag}",
                         style="blue",
                     )
                 else:
-                    progress.update(task, description="❌ Failed to generate PDF with change tracking")
+                    progress.update(
+                        task,
+                        description=f"{get_safe_icon('❌', '[ERROR]')} Failed to generate PDF with change tracking",
+                    )
                     self.error_message("PDF generation with change tracking failed")
                     raise CommandExecutionError("Change tracking build failed")
 
             except Exception as e:
-                progress.update(task, description="❌ Change tracking build failed")
+                progress.update(task, description=f"{get_safe_icon('❌', '[ERROR]')} Change tracking build failed")
                 self.error_message(f"Error during change tracking build: {e}")
                 raise CommandExecutionError(f"Change tracking build failed: {e}") from e
 
@@ -692,9 +723,13 @@ class SetupCommand(BaseCommand):
 
         # Show what we're about to do
         if check_only:
-            self.console.print(f"🔍 Checking dependencies in {mode} mode...", style="blue")
+            self.console.print(
+                f"{get_safe_icon('🔍', '[SEARCH]')} Checking dependencies in {mode} mode...", style="blue"
+            )
         else:
-            self.console.print(f"🔧 Setting up rxiv-maker in {mode} mode...", style="blue")
+            self.console.print(
+                f"{get_safe_icon('🔧', '[CONFIG]')} Setting up rxiv-maker in {mode} mode...", style="blue"
+            )
 
         try:
             python_success = True
@@ -713,7 +748,8 @@ class SetupCommand(BaseCommand):
                 if skip_python_setup:
                     if self.verbose:
                         self.console.print(
-                            "ℹ️  Skipping Python environment check (not in a Python project directory)", style="dim"
+                            f"{get_safe_icon('ℹ️', '[INFO]')}  Skipping Python environment check (not in a Python project directory)",
+                            style="dim",
                         )
                 else:
                     try:
@@ -735,19 +771,23 @@ class SetupCommand(BaseCommand):
                         try:
                             setup_environment_main()
                             if not check_only:
-                                self.console.print("✅ Python environment setup completed!", style="green")
+                                self.console.print(
+                                    f"{get_safe_icon('✅', '[OK]')} Python environment setup completed!", style="green"
+                                )
 
                         except SystemExit as e:
                             if e.code != 0:
                                 python_success = False
-                                self.console.print("❌ Python setup failed!", style="red")
+                                self.console.print(
+                                    f"{get_safe_icon('❌', '[ERROR]')} Python setup failed!", style="red"
+                                )
 
                         finally:
                             sys.argv = original_argv
 
                     except Exception as e:
                         python_success = False
-                        self.console.print(f"❌ Python setup error: {e}", style="red")
+                        self.console.print(f"{get_safe_icon('❌', '[ERROR]')} Python setup error: {e}", style="red")
 
             # Handle system dependencies (unless python-only mode)
             if mode != "python-only":
@@ -784,21 +824,28 @@ class SetupCommand(BaseCommand):
                         if failed_components:
                             system_success = False
                             self.console.print(
-                                f"❌ Missing system dependencies: {', '.join(failed_components)}", style="red"
+                                f"{get_safe_icon('❌', '[ERROR]')} Missing system dependencies: {', '.join(failed_components)}",
+                                style="red",
                             )
                         else:
-                            self.console.print("✅ System dependencies check passed!", style="green")
+                            self.console.print(
+                                f"{get_safe_icon('✅', '[OK]')} System dependencies check passed!", style="green"
+                            )
                     else:
                         # Install system dependencies
                         system_success = manager.install()
                         if system_success:
-                            self.console.print("✅ System dependencies installed!", style="green")
+                            self.console.print(
+                                f"{get_safe_icon('✅', '[OK]')} System dependencies installed!", style="green"
+                            )
                         else:
-                            self.console.print("❌ System dependency installation failed!", style="red")
+                            self.console.print(
+                                f"{get_safe_icon('❌', '[ERROR]')} System dependency installation failed!", style="red"
+                            )
 
                 except Exception as e:
                     system_success = False
-                    self.console.print(f"❌ System dependency error: {e}", style="red")
+                    self.console.print(f"{get_safe_icon('❌', '[ERROR]')} System dependency error: {e}", style="red")
 
             # Final status
             overall_success = python_success and system_success
@@ -812,13 +859,16 @@ class SetupCommand(BaseCommand):
             else:
                 if overall_success:
                     self.success_message("Setup completed successfully!")
-                    self.console.print("💡 Run 'rxiv check-installation' to verify your setup", style="dim")
+                    self.console.print(
+                        f"{get_safe_icon('💡', '[TIP]')} Run 'rxiv check-installation' to verify your setup",
+                        style="dim",
+                    )
                 else:
                     self.error_message("Setup completed with errors. See details above.")
                     raise CommandExecutionError("Setup failed")
 
         except KeyboardInterrupt:
-            self.console.print("\n⏹️  Setup interrupted by user", style="yellow")
+            self.console.print(f"\n{get_safe_icon('⏹️', '[STOP]')}  Setup interrupted by user", style="yellow")
             raise CommandExecutionError("Setup interrupted") from KeyboardInterrupt()
         except Exception as e:
             self.error_message(f"Unexpected error during setup: {e}")

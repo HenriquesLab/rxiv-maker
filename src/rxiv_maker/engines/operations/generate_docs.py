@@ -11,6 +11,16 @@ import shutil
 import subprocess  # nosec B404
 from pathlib import Path
 
+try:
+    from ...utils.unicode_safe import get_safe_icon, safe_print
+except ImportError:
+    # Fallback when run as standalone script (e.g., lazydocs hook)
+    def safe_print(msg, **kwargs):
+        print(msg, **kwargs)
+
+    def get_safe_icon(emoji, fallback):
+        return emoji
+
 
 def generate_module_docs(docs_dir, module_path, project_root):
     """Generate documentation for a specific module using lazydocs."""
@@ -18,7 +28,9 @@ def generate_module_docs(docs_dir, module_path, project_root):
         # Find lazydocs executable
         lazydocs_cmd = shutil.which("lazydocs")
         if not lazydocs_cmd:
-            print("⚠️ lazydocs not found in PATH (this is expected in CI/development environments)")
+            safe_print(
+                f"{get_safe_icon('⚠️', '[WARNING]')} lazydocs not found in PATH (this is expected in CI/development environments)"
+            )
             return None  # Indicate that tool is not available, but it's not an error
 
         # Set up environment with proper Python path for import resolution
@@ -55,12 +67,12 @@ def generate_module_docs(docs_dir, module_path, project_root):
         return True
 
     except subprocess.CalledProcessError as e:
-        print(f"❌ Error generating documentation for {module_path}: {e}")
+        safe_print(f"{get_safe_icon('❌', '[ERROR]')} Error generating documentation for {module_path}: {e}")
         if e.stderr:
             print(f"STDERR: {e.stderr}")
         return False
     except FileNotFoundError as e:
-        print(f"❌ lazydocs command not found: {e}")
+        safe_print(f"{get_safe_icon('❌', '[ERROR]')} lazydocs command not found: {e}")
         return False
 
 
@@ -144,7 +156,7 @@ def generate_api_docs(project_root: Path | None = None) -> bool:
             else:
                 item.unlink()
 
-    print("🚀 Generating API documentation with lazydocs...")
+    safe_print(f"{get_safe_icon('🚀', '[LAUNCH]')} Generating API documentation with lazydocs...")
 
     # Change to project root for proper module discovery
     os.chdir(project_root)
@@ -167,12 +179,14 @@ def generate_api_docs(project_root: Path | None = None) -> bool:
         print(f"  - {rel_path}")
 
     # Generate documentation for key modules with better handling
-    print("\n📦 Generating docs for key Python modules...")
+    safe_print(f"\n{get_safe_icon('📦', '[PACKAGE]')} Generating docs for key Python modules...")
 
     # Find lazydocs executable
     lazydocs_cmd = shutil.which("lazydocs")
     if not lazydocs_cmd:
-        print("⚠️ lazydocs not found in PATH (this is expected in CI/development environments)")
+        safe_print(
+            f"{get_safe_icon('⚠️', '[WARNING]')} lazydocs not found in PATH (this is expected in CI/development environments)"
+        )
         lazydocs_available = False
     else:
         lazydocs_available = True
@@ -207,7 +221,7 @@ def generate_api_docs(project_root: Path | None = None) -> bool:
         # Generate documentation for each simple file
         for py_file in simple_files:
             rel_path = py_file.relative_to(src_dir)
-            print(f"\n📦 Generating docs for {rel_path}...")
+            safe_print(f"\n{get_safe_icon('📦', '[PACKAGE]')} Generating docs for {rel_path}...")
 
             try:
                 # Generate documentation using relative path from src_dir
@@ -234,17 +248,17 @@ def generate_api_docs(project_root: Path | None = None) -> bool:
                 )  # nosec B603
 
                 successful_files.append(rel_path)
-                print(f"✅ {rel_path} documented successfully")
+                safe_print(f"{get_safe_icon('✅', '[OK]')} {rel_path} documented successfully")
 
             except subprocess.CalledProcessError:
                 failed_files.append(rel_path)
-                print(f"❌ Failed to document {rel_path}")
+                safe_print(f"{get_safe_icon('❌', '[ERROR]')} Failed to document {rel_path}")
                 # Don't print detailed errors to keep output clean
 
-    print(f"\n📁 Documentation saved to: {docs_dir}")
+    safe_print(f"\n{get_safe_icon('📁', '[FOLDER]')} Documentation saved to: {docs_dir}")
 
     # List generated files
-    print("\n📄 Generated files:")
+    safe_print(f"\n{get_safe_icon('📄', '[PDF]')} Generated files:")
     md_files = list(docs_dir.rglob("*.md"))
     if md_files:
         for file in sorted(md_files):
@@ -255,27 +269,27 @@ def generate_api_docs(project_root: Path | None = None) -> bool:
         print("  No markdown files generated")
 
     # Generate enhanced index.md
-    print("\n🔍 Generating enhanced documentation index...")
+    safe_print(f"\n{get_safe_icon('🔍', '[SEARCH]')} Generating enhanced documentation index...")
     index_path = generate_enhanced_index(docs_dir, successful_files)
-    print(f"✅ Enhanced index created at {index_path}")
+    safe_print(f"{get_safe_icon('✅', '[OK]')} Enhanced index created at {index_path}")
 
     # Summary
-    print("\n📊 Summary:")
-    print(f"  ✅ Successful: {len(successful_files)} files")
-    print(f"  ❌ Failed: {len(failed_files)} files")
+    safe_print(f"\n{get_safe_icon('📊', '[STATS]')} Summary:")
+    safe_print(f"  {get_safe_icon('✅', '[OK]')} Successful: {len(successful_files)} files")
+    safe_print(f"  {get_safe_icon('❌', '[ERROR]')} Failed: {len(failed_files)} files")
 
     # Handle case where lazydocs is not available
     if lazydocs_available is False:
-        print("⚠️ Documentation generation skipped (lazydocs not available)")
+        safe_print(f"{get_safe_icon('⚠️', '[WARNING]')} Documentation generation skipped (lazydocs not available)")
         print("   This is normal for development/CI environments")
         return True  # Don't fail the pre-commit hook for missing optional tool
     elif successful_files:
-        print("✅ Documentation generated successfully!")
-        print(f"\n📚 To view the documentation, browse to: {docs_dir}")
+        safe_print(f"{get_safe_icon('✅', '[OK]')} Documentation generated successfully!")
+        safe_print(f"\n{get_safe_icon('📚', '[LIBRARY]')} To view the documentation, browse to: {docs_dir}")
         print("   You can also open the index.md file in a Markdown viewer.")
         return True
     else:
-        print("❌ No documentation could be generated")
+        safe_print(f"{get_safe_icon('❌', '[ERROR]')} No documentation could be generated")
         return False
 
 
@@ -306,7 +320,7 @@ def main() -> int:
             project_root = current_file.parent.parent.parent.parent.parent
 
         if not project_root.exists():
-            print(f"❌ Project root not found: {project_root}")
+            safe_print(f"{get_safe_icon('❌', '[ERROR]')} Project root not found: {project_root}")
             return 1
 
         # Generate documentation
@@ -314,7 +328,7 @@ def main() -> int:
         return 0 if success else 1
 
     except Exception as e:
-        print(f"❌ Error generating documentation: {e}")
+        safe_print(f"{get_safe_icon('❌', '[ERROR]')} Error generating documentation: {e}")
         return 1
 
 

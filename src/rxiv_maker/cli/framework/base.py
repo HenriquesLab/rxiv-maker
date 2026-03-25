@@ -14,6 +14,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from ...core.environment_manager import EnvironmentManager
 from ...core.logging_config import get_logger
 from ...core.path_manager import PathManager, PathResolutionError
+from ...utils.unicode_safe import get_safe_icon
 
 logger = get_logger()
 
@@ -76,22 +77,34 @@ class BaseCommand(ABC):
                     if manuscript_dir is not None:
                         manuscript_path = str(manuscript_dir)
                         if self.verbose:
-                            self.console.print(f"🔍 Detected manuscript directory: {manuscript_path}", style="green")
+                            self.console.print(
+                                f"{get_safe_icon('🔍', '[SEARCH]')} Detected manuscript directory: {manuscript_path}",
+                                style="green",
+                            )
                     else:
                         # Fall back to default MANUSCRIPT subdirectory
                         manuscript_path = "MANUSCRIPT"
                         if self.verbose:
-                            self.console.print("📁 Using default MANUSCRIPT subdirectory", style="yellow")
+                            self.console.print(
+                                f"{get_safe_icon('📁', '[FOLDER]')} Using default MANUSCRIPT subdirectory",
+                                style="yellow",
+                            )
 
             # Use PathManager for path validation and resolution
             self.path_manager = PathManager(manuscript_path=manuscript_path, output_dir="output")
 
             if self.verbose:
-                self.console.print(f"📁 Using manuscript path: {self.path_manager.manuscript_path}", style="blue")
+                self.console.print(
+                    f"{get_safe_icon('📁', '[FOLDER]')} Using manuscript path: {self.path_manager.manuscript_path}",
+                    style="blue",
+                )
 
         except PathResolutionError as e:
-            self.console.print(f"❌ Path resolution error: {e}", style="red")
-            self.console.print(f"💡 Run 'rxiv init {manuscript_path}' to create a new manuscript", style="yellow")
+            self.console.print(f"{get_safe_icon('❌', '[ERROR]')} Path resolution error: {e}", style="red")
+            self.console.print(
+                f"{get_safe_icon('💡', '[TIP]')} Run 'rxiv init {manuscript_path}' to create a new manuscript",
+                style="yellow",
+            )
             raise CommandExecutionError(f"Path resolution failed: {e}") from e
 
     def check_engine_support(self) -> None:
@@ -125,7 +138,7 @@ class BaseCommand(ABC):
         Args:
             operation_name: Name of the operation being interrupted
         """
-        self.console.print(f"\n⏹️  {operation_name} interrupted by user", style="yellow")
+        self.console.print(f"\n{get_safe_icon('⏹️', '[STOP]')}  {operation_name} interrupted by user", style="yellow")
         sys.exit(1)
 
     def handle_unexpected_error(self, error: Exception, operation_name: str) -> None:
@@ -135,7 +148,9 @@ class BaseCommand(ABC):
             error: The exception that occurred
             operation_name: Name of the operation that failed
         """
-        self.console.print(f"❌ Unexpected error during {operation_name}: {error}", style="red")
+        self.console.print(
+            f"{get_safe_icon('❌', '[ERROR]')} Unexpected error during {operation_name}: {error}", style="red"
+        )
         if self.verbose:
             self.console.print_exception()
         sys.exit(1)
@@ -147,9 +162,9 @@ class BaseCommand(ABC):
             message: Success message
             details: Optional additional details
         """
-        self.console.print(f"✅ {message}", style="green")
+        self.console.print(f"{get_safe_icon('✅', '[OK]')} {message}", style="green")
         if details:
-            self.console.print(f"📁 {details}", style="blue")
+            self.console.print(f"{get_safe_icon('📁', '[FOLDER]')} {details}", style="blue")
 
     def error_message(self, message: str, suggestion: Optional[str] = None) -> None:
         """Display error message with optional suggestion.
@@ -158,9 +173,9 @@ class BaseCommand(ABC):
             message: Error message
             suggestion: Optional suggestion for resolution
         """
-        self.console.print(f"❌ {message}", style="red")
+        self.console.print(f"{get_safe_icon('❌', '[ERROR]')} {message}", style="red")
         if suggestion:
-            self.console.print(f"💡 {suggestion}", style="yellow")
+            self.console.print(f"{get_safe_icon('💡', '[TIP]')} {suggestion}", style="yellow")
 
     def _clear_output_directory(self) -> None:
         """Clear and recreate the output directory.
@@ -303,7 +318,7 @@ class BaseCommand(ABC):
         except CommandExecutionError as e:
             # Print error message to stderr before exiting
             error_console = Console(stderr=True)
-            error_console.print(f"❌ Error: {e}", style="red")
+            error_console.print(f"{get_safe_icon('❌', '[ERROR]')} Error: {e}", style="red")
             sys.exit(e.exit_code)
         except KeyboardInterrupt:
             self.handle_keyboard_interrupt(operation_name)
