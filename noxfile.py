@@ -232,13 +232,21 @@ def test_system(session):
 @nox.session(python="3.11", reuse_venv=True)
 def build(session):
     """Package building and validation."""
-    session.run("uv", "pip", "install", "build>=1.0.0", "twine>=4.0.0", external=True)
+    session.run(
+        "uv",
+        "pip",
+        "install",
+        "build>=1.0.0",
+        "twine>=4.0.0",
+        "hatchling",
+        external=True,
+    )
 
     # Clean previous builds
     session.run("rm", "-rf", "dist/", "build/", external=True)
 
-    # Build package
-    session.run("python", "-m", "build")
+    # Build package (--no-isolation avoids pip issues in CI isolated venvs)
+    session.run("python", "-m", "build", "--no-isolation")
 
     # Validate package
     session.run("twine", "check", "dist/*")

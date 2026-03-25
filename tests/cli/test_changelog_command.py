@@ -27,6 +27,22 @@ def sample_changelog():
     # Include current version to match __version__
     return """# Changelog
 
+## [v1.19.2] - 2026-03-24
+
+### Fixed
+- Windows Unicode encoding crash on cp1252 systems
+- Windows file locking error on output directory cleanup
+
+## [v1.19.1] - 2026-02-10
+
+### Fixed
+- Character encoding and section spacing
+
+## [v1.19.0] - 2026-02-08
+
+### Added
+- bioRxiv submission package command
+
 ## [v1.18.5] - 2026-02-05
 
 ### Fixed
@@ -230,7 +246,7 @@ class TestChangelogCommand:
         mock_fetch.return_value = sample_changelog
 
         # Use the latest version to ensure no versions after it
-        result = runner.invoke(changelog, ["--since", "v1.18.5"])
+        result = runner.invoke(changelog, ["--since", "v1.19.2"])
 
         assert result.exit_code == 0
         output = strip_ansi(result.output)
