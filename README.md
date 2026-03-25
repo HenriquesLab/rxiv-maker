@@ -70,9 +70,16 @@ For contributors: **[CONTRIBUTING.md](CONTRIBUTING.md)**
 
 ## Publications
 
-See the [publications showcase](https://rxiv-maker.henriqueslab.org/examples/showcase/) for preprints made with Rxiv-Maker.
+| Publication | Venue |
+|-------------|-------|
+| [Rxiv-Maker: an automated template engine for streamlined scientific publications](https://arxiv.org/abs/2508.00836) | arXiv (2025) |
+| [Customizable FDM-based zebrafish embryo mold for live imaging](https://www.biorxiv.org/content/10.1101/2025.11.24.689779.abstract) | bioRxiv (2025) |
+| [mAIcrobe: an open-source framework for high-throughput bacterial image analysis](https://www.biorxiv.org/content/10.1101/2025.10.21.683709.abstract) | bioRxiv (2025) |
+| [Filopodome proteomics identifies CCT8 as a MYO10 interactor critical for filopodia functions](https://www.biorxiv.org/content/10.64898/2025.12.03.691809.abstract) | bioRxiv (2025) |
+| [EZInput: A Cross-Environment Python Library for Easy UI Generation in Scientific Computing](https://arxiv.org/abs/2601.08859) | arXiv (2026) |
+| [Packaging Jupyter notebooks as installable desktop apps using LabConstrictor](https://arxiv.org/abs/2603.10704) | arXiv (2026) |
 
-Using it for your research? [Let us know](https://github.com/HenriquesLab/rxiv-maker/issues/new?template=publication_submission.yml).
+Using Rxiv-Maker for your research? [Let us know](https://github.com/HenriquesLab/rxiv-maker/issues/new?template=publication_submission.yml).
 
 ## Community
 
