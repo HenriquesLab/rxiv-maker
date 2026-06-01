@@ -23,9 +23,7 @@ class TestSupplementaryVideoDefinition:
         out = _process_and_restore(content)
         assert "\\includegraphics[width=0.9\\linewidth]{FIGURES/SVideo1.png}" in out
         # The still image itself is a clickable link to the video.
-        assert (
-            "\\href{https://youtu.be/ABC}{\\includegraphics[width=0.9\\linewidth]{FIGURES/SVideo1.png}}" in out
-        )
+        assert "\\href{https://youtu.be/ABC}{\\includegraphics[width=0.9\\linewidth]{FIGURES/SVideo1.png}}" in out
         assert "\\begin{center}" in out and "\\end{center}" in out
         assert "\\suppvideo{Complete workflow.}" in out
         assert "\\label{svideo:workflow}" in out
@@ -57,8 +55,8 @@ class TestSupplementaryVideoDefinition:
 
     def test_two_videos_get_distinct_labels(self):
         content = (
-            "![a](FIGURES/v1.png)\n{#svideo:one url=\"u1\"} **First.** d1.\n\n"
-            "![b](FIGURES/v2.png)\n{#svideo:two url=\"u2\"} **Second.** d2.\n"
+            '![a](FIGURES/v1.png)\n{#svideo:one url="u1"} **First.** d1.\n\n'
+            '![b](FIGURES/v2.png)\n{#svideo:two url="u2"} **Second.** d2.\n'
         )
         out = _process_and_restore(content)
         assert "\\label{svideo:one}" in out
