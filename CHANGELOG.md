@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.1] - 2026-06-01
+
+### Fixed
+- Supplementary video layout. The still and its caption are now emitted as a
+  single non-captioned float, so a video is never split across a page and never
+  overflows the page when little space remains (previously, in a dense
+  supplementary section, a large still could be separated from its caption or
+  run past the bottom margin). The block is still numbered by `\suppvideo`
+  (no figure number) and the still remains a clickable link to the video.
+
 ## [1.20.0] - 2026-06-01
 
 ### Added
