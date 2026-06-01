@@ -127,7 +127,7 @@ class CitationMapper:
             return match.group(0)
 
         text = re.sub(
-            r"@(?!fig:|eq:|tbl:|table:|sfig:|stable:|snote:)([a-zA-Z0-9_-]+)",
+            r"@(?!fig:|eq:|tbl:|table:|sfig:|stable:|snote:|svideo:)([a-zA-Z0-9_-]+)",
             replace_single,
             text,
         )

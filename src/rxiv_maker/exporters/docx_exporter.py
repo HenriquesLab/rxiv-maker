@@ -193,6 +193,39 @@ class DocxExporter:
 
         logger.debug(f"Mapped {len(snote_map)} supplementary note labels to numbers")
 
+        # Find all supplementary videos and create mapping (looking for {#svideo:label} tags)
+        content_to_scan_for_svideos = si_content_for_mapping if si_content_for_mapping else markdown_with_numbers
+        svideo_map = label_extractor.extract_supplementary_video_labels(content_to_scan_for_svideos)
+
+        # Number each video definition inline and render its link, e.g.
+        # {#svideo:x url="..."} **Title.** -> **Supplementary Video N. Title.** (Watch the video: ...)
+        def _make_svideo_def_replacer(num):
+            def _replace(match):
+                attrs = match.group(1) or ""
+                title = match.group(2).strip()
+                url_match = re.search(r"""url\s*=\s*["']?([^"'\s}]+)""", attrs)
+                link = f" (Watch the video: {url_match.group(1)})" if url_match else ""
+                return f"**Supplementary Video {num}. {title}**{link}"
+
+            return _replace
+
+        for label, num in svideo_map.items():
+            markdown_with_numbers = re.sub(
+                rf"\{{#svideo:{label}([^}}]*)\}}\s*\*\*([^*]+)\*\*",
+                _make_svideo_def_replacer(num),
+                markdown_with_numbers,
+            )
+
+        # Replace @svideo:label with "Supplementary Video X" in text
+        for label, num in svideo_map.items():
+            markdown_with_numbers = re.sub(
+                rf"@svideo:{label}\b",
+                f"<<XREF:svideo>>Supplementary Video {num}<</XREF>>",
+                markdown_with_numbers,
+            )
+
+        logger.debug(f"Mapped {len(svideo_map)} supplementary video labels to numbers")
+
         # Find all equations and create mapping (looking for {#eq:label} tags)
         equation_map = label_extractor.extract_equation_labels(markdown_with_numbers)
 
@@ -211,7 +244,9 @@ class DocxExporter:
         # Step 5.6: Remove label markers now that mapping is complete
         # These metadata markers should not appear in the final output
         # NOTE: Keep fig/sfig/stable/table labels - they're needed by content processor and removed during caption parsing
-        markdown_with_numbers = re.sub(r"^\{#(?:snote|eq):[^}]+\}\s*", "", markdown_with_numbers, flags=re.MULTILINE)
+        markdown_with_numbers = re.sub(
+            r"^\{#(?:snote|eq|svideo):[^}]+\}\s*", "", markdown_with_numbers, flags=re.MULTILINE
+        )
 
         # Step 6: Convert content to DOCX structure
         doc_structure = self.content_processor.parse(markdown_with_numbers, citation_map)

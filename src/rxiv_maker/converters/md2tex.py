@@ -32,6 +32,11 @@ from .supplementary_note_processor import (
     process_supplementary_notes,
     restore_supplementary_note_placeholders,
 )
+from .supplementary_video_processor import (
+    process_supplementary_video_references,
+    process_supplementary_videos,
+    restore_supplementary_video_placeholders,
+)
 from .table_processor import convert_table_references_to_latex, convert_tables_to_latex
 from .text_formatters import (
     convert_subscript_superscript_to_latex,
@@ -163,6 +168,11 @@ def convert_markdown_to_latex(
         citation_style,
     )
 
+    # Process supplementary videos BEFORE figures so the still image is not
+    # turned into a numbered figure float (only for supplementary content)
+    if is_supplementary:
+        content = process_supplementary_videos(content)
+
     # Convert figures BEFORE headers to avoid conflicts
     content = convert_figures_to_latex(content, is_supplementary)
 
@@ -191,6 +201,10 @@ def convert_markdown_to_latex(
     # (for both main and supplementary content)
     content = process_supplementary_note_references(content)
 
+    # Process supplementary video references BEFORE citations
+    # (for both main and supplementary content)
+    content = process_supplementary_video_references(content)
+
     # Convert citations with table protection
     content = process_citations_outside_tables(content, protected_markdown_tables, citation_style)
 
@@ -200,6 +214,10 @@ def convert_markdown_to_latex(
     # Restore supplementary note placeholders after text formatting
     if is_supplementary:
         content = restore_supplementary_note_placeholders(content)
+
+    # Restore supplementary video placeholders after text formatting
+    if is_supplementary:
+        content = restore_supplementary_video_placeholders(content)
 
     # Convert markdown links to LaTeX URLs
     content = convert_links_to_latex(content)

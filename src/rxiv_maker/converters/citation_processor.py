@@ -57,7 +57,7 @@ def convert_citations_to_latex(text: MarkdownContent, citation_style: str = "num
     # Handle single citations like @citation_key (but not figure/equation references)
     # Allow alphanumeric, underscore, and hyphen in citation keys
     # Exclude figure and equation references by not matching @fig: or @eq: patterns
-    text = re.sub(r"@(?!fig:|eq:)([a-zA-Z0-9_-]+)", rf"\\{inline_cmd}{{\1}}", text)
+    text = re.sub(r"@(?!fig:|eq:|svideo:)([a-zA-Z0-9_-]+)", rf"\\{inline_cmd}{{\1}}", text)
 
     # Restore protected email patterns
     for i, pattern in enumerate(email_patterns):
