@@ -75,11 +75,11 @@ class TestSupplementaryVideoDefinition:
 class TestSupplementaryVideoReferences:
     def test_callout_renders_with_prefix(self):
         out = process_supplementary_video_references("See (@svideo:workflow) for details.")
-        assert out == "See (Supplementary Video~\\ref{svideo:workflow}) for details."
+        assert out == "See (Sup. Video~\\ref{svideo:workflow}) for details."
 
     def test_multiple_references(self):
         out = process_supplementary_video_references("@svideo:one and @svideo:two")
-        assert out == "Supplementary Video~\\ref{svideo:one} and Supplementary Video~\\ref{svideo:two}"
+        assert out == "Sup. Video~\\ref{svideo:one} and Sup. Video~\\ref{svideo:two}"
 
     def test_non_svideo_at_is_untouched(self):
         text = "Email a@b and cite @key and @snote:n."

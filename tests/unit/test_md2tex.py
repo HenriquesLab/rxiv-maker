@@ -527,6 +527,34 @@ More content after page break"""
         # Should contain the explicit newpage
         assert "\\newpage" in result
 
+    def test_marker_preserves_blank_line_before_figure_caption(self) -> None:
+        r"""A <float-barrier>/<clearpage> marker between a figure and a heading must
+        not collapse the blank line after the figure caption.
+
+        Regression: the marker regex previously matched ``^\s*<marker>\s*$`` whose
+        ``\s*`` consumed the surrounding blank lines, so the figure caption parser
+        (which ends a caption at a blank line) swallowed the marker and the heading
+        into the caption -- producing ``\caption{... \section*{...}}`` and a fatal
+        LaTeX error.
+        """
+        markdown = (
+            "![alt](FIGURES/last.pdf)\n"
+            '{#sfig:last width="0.9\\linewidth"} **Last figure.** Caption body text.\n'
+            "\n"
+            "<float-barrier>\n"
+            "\n"
+            "## Supplementary Videos\n"
+        )
+        result = convert_markdown_to_latex(markdown, is_supplementary=True)
+        # The barrier and the heading must live OUTSIDE the caption braces.
+        assert "\\FloatBarrier" in result
+        assert "\\section*{Supplementary Videos}" in result
+        # The caption must close before the barrier/heading (no swallow).
+        assert "Supplementary Videos}}\\label" not in result
+        assert "\\caption" in result
+        # Caption text ends, then label/endgroup, BEFORE FloatBarrier appears.
+        assert result.index("\\endgroup") < result.index("\\FloatBarrier")
+
 
 class TestCodeBlockProtection:
     """Test that content inside code blocks is not converted to LaTeX."""

@@ -134,6 +134,6 @@ def process_supplementary_video_references(content: LatexContent) -> LatexConten
 
     def _replace(match: re.Match) -> str:
         label = match.group(1)
-        return f"Supplementary Video~\\ref{{svideo:{label}}}"
+        return f"Sup. Video~\\ref{{svideo:{label}}}"
 
     return re.sub(r"@svideo:([a-zA-Z0-9_-]+)", _replace, content)

@@ -137,7 +137,7 @@
 \newcounter{svideo}
 \newcommand{\suppvideo}[1]{%
   \refstepcounter{svideo}%
-  \par\noindent\textbf{Supplementary Video \thesvideo. #1}%
+  \par\noindent\textbf{Sup. Video \thesvideo. #1}%
 }
 
 %% Unified supplementary float environments
