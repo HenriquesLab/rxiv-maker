@@ -205,7 +205,7 @@ class DocxExporter:
                 title = match.group(2).strip()
                 url_match = re.search(r"""url\s*=\s*["']?([^"'\s}]+)""", attrs)
                 link = f" (Watch the video: {url_match.group(1)})" if url_match else ""
-                return f"**Supplementary Video {num}. {title}**{link}"
+                return f"**Sup. Video {num}. {title}**{link}"
 
             return _replace
 
@@ -220,7 +220,7 @@ class DocxExporter:
         for label, num in svideo_map.items():
             markdown_with_numbers = re.sub(
                 rf"@svideo:{label}\b",
-                f"<<XREF:svideo>>Supplementary Video {num}<</XREF>>",
+                f"<<XREF:svideo>>Sup. Video {num}<</XREF>>",
                 markdown_with_numbers,
             )
 

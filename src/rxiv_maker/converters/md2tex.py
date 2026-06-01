@@ -258,14 +258,14 @@ def _process_newpage_markers(content: MarkdownContent) -> LatexContent:
     Returns:
         Content with page break markers converted to LaTeX commands
     """
-    # Replace <clearpage> with \\clearpage, handling both with and without
-    # surrounding whitespace
-    content = re.sub(r"^\s*<clearpage>\s*$", r"\\clearpage", content, flags=re.MULTILINE)
+    # Replace <clearpage> with \\clearpage. Match only spaces/tabs on the
+    # marker's own line (not \s*, which would eat the surrounding blank lines and
+    # collapse the paragraph break a following figure caption relies on).
+    content = re.sub(r"^[ \t]*<clearpage>[ \t]*$", r"\\clearpage", content, flags=re.MULTILINE)
     content = re.sub(r"<clearpage>", r"\\clearpage", content)
 
-    # Replace <newpage> with \\newpage, handling both with and without
-    # surrounding whitespace
-    content = re.sub(r"^\s*<newpage>\s*$", r"\\newpage", content, flags=re.MULTILINE)
+    # Replace <newpage> with \\newpage (same blank-line-preserving handling).
+    content = re.sub(r"^[ \t]*<newpage>[ \t]*$", r"\\newpage", content, flags=re.MULTILINE)
     content = re.sub(r"<newpage>", r"\\newpage", content)
 
     return content
@@ -280,9 +280,10 @@ def _process_float_barrier_markers(content: MarkdownContent) -> LatexContent:
     Returns:
         Content with float barrier markers converted to LaTeX commands
     """
-    # Replace <float-barrier> with \\FloatBarrier, handling both with and without
-    # surrounding whitespace
-    content = re.sub(r"^\s*<float-barrier>\s*$", r"\\FloatBarrier", content, flags=re.MULTILINE)
+    # Replace <float-barrier> with \\FloatBarrier. Match only spaces/tabs on the
+    # marker's own line (not \s*, which would eat the surrounding blank lines and
+    # collapse the paragraph break a following figure caption relies on).
+    content = re.sub(r"^[ \t]*<float-barrier>[ \t]*$", r"\\FloatBarrier", content, flags=re.MULTILINE)
     content = re.sub(r"<float-barrier>", r"\\FloatBarrier", content)
 
     return content

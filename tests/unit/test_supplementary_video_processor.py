@@ -28,7 +28,11 @@ class TestSupplementaryVideoDefinition:
         assert "\\suppvideo{Complete workflow.}" in out
         assert "\\label{svideo:workflow}" in out
         assert "\\href{https://youtu.be/ABC}{$\\blacktriangleright$~Watch video}" in out
-        # The description after **Title** is left in place for normal formatting.
+        # Still + caption are kept together (needspace + unbreakable minipage)
+        # so they never split across a page or overflow it.
+        assert "\\needspace" in out
+        assert "\\begin{minipage}" in out and "\\end{minipage}" in out
+        # The description is captured into the block.
         assert "Example use of VLab4Mic." in out
         # The raw directive must be gone.
         assert "{#svideo:" not in out
@@ -71,11 +75,11 @@ class TestSupplementaryVideoDefinition:
 class TestSupplementaryVideoReferences:
     def test_callout_renders_with_prefix(self):
         out = process_supplementary_video_references("See (@svideo:workflow) for details.")
-        assert out == "See (Supplementary Video~\\ref{svideo:workflow}) for details."
+        assert out == "See (Sup. Video~\\ref{svideo:workflow}) for details."
 
     def test_multiple_references(self):
         out = process_supplementary_video_references("@svideo:one and @svideo:two")
-        assert out == "Supplementary Video~\\ref{svideo:one} and Supplementary Video~\\ref{svideo:two}"
+        assert out == "Sup. Video~\\ref{svideo:one} and Sup. Video~\\ref{svideo:two}"
 
     def test_non_svideo_at_is_untouched(self):
         text = "Email a@b and cite @key and @snote:n."

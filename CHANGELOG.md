@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.1] - 2026-06-01
+
+### Changed
+- Supplementary videos now render and cross-reference as "Sup. Video N" (instead
+  of "Supplementary Video N"), matching the abbreviated "Sup. Fig." style used
+  for supplementary figures. Applies to PDF and DOCX output.
+
+### Fixed
+- Supplementary video legends now use the same small sans-serif caption font as
+  figure legends (previously rendered in the larger body font).
+- Supplementary video layout: each still and its caption are kept together as an
+  unbreakable block (`\needspace` + `minipage`) that moves to the next page when
+  it does not fit, so a video is never split across a page and never overflows
+  the page, while staying in place beneath the heading (it is not floated away).
+- `<newpage>`, `<clearpage>` and `<float-barrier>` markers no longer consume the
+  blank lines around them. Previously the `^\s*<marker>\s*$` patterns matched the
+  surrounding newlines, collapsing the paragraph break after a preceding figure
+  caption; the figure-caption parser then swallowed the marker and any following
+  heading into the caption, causing a fatal LaTeX error. This makes it possible
+  to place a `<float-barrier>` between the supplementary figures and a following
+  section (e.g. to flush all figure floats so a "Supplementary Videos" section
+  renders together at the end).
+
 ## [1.20.0] - 2026-06-01
 
 ### Added

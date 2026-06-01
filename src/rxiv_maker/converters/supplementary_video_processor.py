@@ -19,13 +19,16 @@ import re
 
 from .types import LatexContent
 
-# Block: optional image line, then `{#svideo:id ...attrs} **Title**`.
-# Only the directive (and the optional image) is captured; the description that
-# follows **Title** is left in place so it is formatted normally downstream.
+# Block: optional image line, then `{#svideo:id ...attrs} **Title.** Description`.
+# The whole block (image + title + the rest of the caption line) is captured and
+# wrapped in an unbreakable minipage, so a still is never split from its caption
+# across a page. The caption text is therefore emitted verbatim (not re-run
+# through the Markdown formatters); video legends are plain prose.
 _SVIDEO_PATTERN = re.compile(
     r"(?:!\[[^\]]*\]\(([^)]+)\)[ \t]*\r?\n[ \t]*)?"  # group 1: optional image path
     r"\{#svideo:([\w-]+)([^}]*)\}[ \t]*"  # group 2: id, group 3: raw attrs
-    r"\*\*([^*]+)\*\*",  # group 4: bold title
+    r"\*\*([^*]+)\*\*"  # group 4: bold title
+    r"[ \t]*([^\r\n]*)",  # group 5: rest-of-line description
     re.MULTILINE,
 )
 
@@ -36,7 +39,7 @@ _WIDTH_ATTR = re.compile(r"""width\s*=\s*["']?([^"'\s}]+)""")
 _svideo_replacements: dict[str, str] = {}
 
 
-def _build_latex(image_path: str, svideo_id: str, attrs: str, title: str) -> str:
+def _build_latex(image_path: str, svideo_id: str, attrs: str, title: str, description: str = "") -> str:
     """Build the LaTeX for one supplementary video block."""
     url_match = _URL_ATTR.search(attrs)
     width_match = _WIDTH_ATTR.search(attrs)
@@ -55,9 +58,24 @@ def _build_latex(image_path: str, svideo_id: str, attrs: str, title: str) -> str
     caption = f"\\suppvideo{{{title.strip()}}}\\label{{svideo:{svideo_id}}}"
     if url:
         caption += f" (\\href{{{url}}}{{$\\blacktriangleright$~Watch video}})"
-    parts.append(caption)
+    if description.strip():
+        caption += " " + description.strip()
+    # Render the whole legend in the figure-caption font so it matches Fig./SFig.
+    # legends (small sans-serif), rather than the larger body font.
+    parts.append("{\\svideocaptionfont\\raggedright " + caption + "\\par}")
 
-    return "\n".join(parts)
+    body = "\n".join(parts)
+
+    # Keep the block in place (right after the "Supplementary Videos" heading,
+    # not floated away) while never splitting the still from its caption and
+    # never overflowing the page: an unbreakable minipage preceded by \needspace,
+    # which moves the whole block to the next page when it does not fit.
+    if image_path:
+        return (
+            "\\par\\medskip\\needspace{0.5\\textheight}\n"
+            "\\noindent\\begin{minipage}{\\linewidth}\n" + body + "\n\\end{minipage}\\par\\medskip"
+        )
+    return body
 
 
 def process_supplementary_videos(content: LatexContent) -> LatexContent:
@@ -85,9 +103,10 @@ def process_supplementary_videos(content: LatexContent) -> LatexContent:
         svideo_id = match.group(2).strip()
         attrs = match.group(3) or ""
         title = match.group(4)
+        description = match.group(5) or ""
 
         placeholder = f"XXSVIDEOPROTECTEDXX{counter}XXENDXX"
-        _svideo_replacements[placeholder] = _build_latex(image_path, svideo_id, attrs, title)
+        _svideo_replacements[placeholder] = _build_latex(image_path, svideo_id, attrs, title, description)
         counter += 1
         return placeholder
 
@@ -115,6 +134,6 @@ def process_supplementary_video_references(content: LatexContent) -> LatexConten
 
     def _replace(match: re.Match) -> str:
         label = match.group(1)
-        return f"Supplementary Video~\\ref{{svideo:{label}}}"
+        return f"Sup. Video~\\ref{{svideo:{label}}}"
 
     return re.sub(r"@svideo:([a-zA-Z0-9_-]+)", _replace, content)
