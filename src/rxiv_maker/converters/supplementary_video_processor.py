@@ -42,17 +42,18 @@ def _build_latex(image_path: str, svideo_id: str, attrs: str, title: str) -> str
     width_match = _WIDTH_ATTR.search(attrs)
     width = width_match.group(1) if width_match else "0.9\\linewidth"
 
+    url = url_match.group(1) if url_match else None
+
     parts: list[str] = []
     if image_path:
-        parts.append(
-            "\\begin{center}\n"
-            f"\\includegraphics[width={width}]{{{image_path.strip()}}}\n"
-            "\\end{center}"
-        )
+        image = f"\\includegraphics[width={width}]{{{image_path.strip()}}}"
+        # Make the still itself a clickable link to the video when a URL is given.
+        if url:
+            image = f"\\href{{{url}}}{{{image}}}"
+        parts.append("\\begin{center}\n" + image + "\n\\end{center}")
 
     caption = f"\\suppvideo{{{title.strip()}}}\\label{{svideo:{svideo_id}}}"
-    if url_match:
-        url = url_match.group(1)
+    if url:
         caption += f" (\\href{{{url}}}{{$\\blacktriangleright$~Watch video}})"
     parts.append(caption)
 

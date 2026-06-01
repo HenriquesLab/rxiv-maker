@@ -22,6 +22,10 @@ class TestSupplementaryVideoDefinition:
         )
         out = _process_and_restore(content)
         assert "\\includegraphics[width=0.9\\linewidth]{FIGURES/SVideo1.png}" in out
+        # The still image itself is a clickable link to the video.
+        assert (
+            "\\href{https://youtu.be/ABC}{\\includegraphics[width=0.9\\linewidth]{FIGURES/SVideo1.png}}" in out
+        )
         assert "\\begin{center}" in out and "\\end{center}" in out
         assert "\\suppvideo{Complete workflow.}" in out
         assert "\\label{svideo:workflow}" in out

@@ -7,13 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.0] - 2026-06-01
+
 ### Added
 - Supplementary videos. A still image followed by a
   `{#svideo:id url="..."} **Title.** Description` directive renders as a
   non-floating, independently numbered "Supplementary Video N" caption with a
-  "Watch video" hyperlink, and can be cross-referenced from anywhere with
-  `@svideo:id` (rendered as "Supplementary Video N"). Supported in both PDF and
-  DOCX output.
+  "Watch video" hyperlink. The still image itself is also clickable and links
+  to the video. Cross-reference from anywhere with `@svideo:id` (rendered as
+  "Supplementary Video N"). Supported in both PDF and DOCX output.
 
 ## [1.19.2] - 2026-02-05
 
