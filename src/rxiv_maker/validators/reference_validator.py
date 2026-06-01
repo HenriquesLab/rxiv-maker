@@ -18,6 +18,7 @@ class ReferenceValidator(BaseValidator):
         "supplementary_table_ref": re.compile(r"@stable:([a-zA-Z0-9_-]+)"),
         "equation_ref": re.compile(r"@eq:([a-zA-Z0-9_-]+)"),
         "supplementary_note_ref": re.compile(r"@snote:([a-zA-Z0-9_-]+)"),
+        "supplementary_video_ref": re.compile(r"@svideo:([a-zA-Z0-9_-]+)"),
     }
 
     # Label definition patterns
@@ -28,6 +29,7 @@ class ReferenceValidator(BaseValidator):
         "supplementary_table_label": re.compile(r"\{#stable:([a-zA-Z0-9_:-]+)([^}]*)\}"),
         "equation_label": re.compile(r"\$\$.*?\$\$\s*\{[^}]*#eq:([a-zA-Z0-9_:-]+)[^}]*\}"),
         "supplementary_note_label": re.compile(r"\{#snote:([a-zA-Z0-9_:-]+)\}"),
+        "supplementary_video_label": re.compile(r"\{#svideo:([a-zA-Z0-9_:-]+)([^}]*)\}"),
     }
 
     def __init__(self, manuscript_path: str):
@@ -44,6 +46,7 @@ class ReferenceValidator(BaseValidator):
             "stable": {},
             "eq": {},
             "snote": {},
+            "svideo": {},
         }
         self.referenced_labels: dict[str, list[dict[str, Any]]] = {
             "fig": [],
@@ -52,6 +55,7 @@ class ReferenceValidator(BaseValidator):
             "stable": [],
             "eq": [],
             "snote": [],
+            "svideo": [],
         }
 
     def validate(self) -> ValidationResult:
@@ -278,6 +282,7 @@ class ReferenceValidator(BaseValidator):
             "supplementary_table_label": "stable",
             "equation_label": "eq",
             "supplementary_note_label": "snote",
+            "supplementary_video_label": "svideo",
         }
         return mapping.get(label_type, "unknown")
 
@@ -290,6 +295,7 @@ class ReferenceValidator(BaseValidator):
             "supplementary_table_ref": "stable",
             "equation_ref": "eq",
             "supplementary_note_ref": "snote",
+            "supplementary_video_ref": "svideo",
         }
         return mapping.get(pattern_name, "unknown")
 

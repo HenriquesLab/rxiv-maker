@@ -28,7 +28,9 @@ class CitationValidator(BaseValidator):
     # Citation patterns from the codebase analysis
     CITATION_PATTERNS = {
         "bracketed_multiple": re.compile(r"\[(@[^]]+)\]"),  # [@citation1;@citation2]
-        "single_citation": re.compile(r"@(?!fig:|eq:|table:|tbl:|sfig:|stable:|snote:)([a-zA-Z0-9_-]+)"),  # @key
+        "single_citation": re.compile(
+            r"@(?!fig:|eq:|table:|tbl:|sfig:|stable:|snote:|svideo:)([a-zA-Z0-9_-]+)"
+        ),  # @key
         "protected_citation": re.compile(r"XXPROTECTEDTABLEXX\d+XXPROTECTEDTABLEXX"),  # Skip protected content
     }
 

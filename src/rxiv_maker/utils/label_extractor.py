@@ -123,6 +123,21 @@ class LabelExtractor:
         return {label: i + 1 for i, label in enumerate(labels)}
 
     @staticmethod
+    def extract_supplementary_video_labels(content: str) -> Dict[str, int]:
+        r"""Extract supplementary video labels and create number mapping.
+
+        Finds patterns like: {#svideo:label ...attrs}
+
+        Args:
+            content: Markdown content to scan
+
+        Returns:
+            Dict mapping label names to sequential numbers
+        """
+        labels = re.findall(r"\{#svideo:([\w-]+)", content)
+        return {label: i + 1 for i, label in enumerate(labels)}
+
+    @staticmethod
     def extract_equation_labels(content: str) -> Dict[str, int]:
         r"""Extract equation labels and create number mapping.
 

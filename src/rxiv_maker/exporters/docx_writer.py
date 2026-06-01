@@ -34,6 +34,7 @@ class DocxWriter:
         "table": WD_COLOR_INDEX.BLUE,  # Main tables
         "eq": WD_COLOR_INDEX.PINK,  # Equations (pink - lighter than violet, easier to read)
         "snote": WD_COLOR_INDEX.TURQUOISE,  # Supplementary notes (turquoise - lighter cyan)
+        "svideo": WD_COLOR_INDEX.TURQUOISE,  # Supplementary videos (turquoise - lighter cyan)
         "cite": WD_COLOR_INDEX.YELLOW,  # Citations (yellow)
     }
 

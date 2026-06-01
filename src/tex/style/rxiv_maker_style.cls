@@ -130,6 +130,15 @@
   \subsection*{\thesubsection: #1}%
 }
 
+%% Custom command for supplementary videos (numbered independently from figures and notes)
+%% Renders a bold "Supplementary Video N. <title>" caption; \refstepcounter lets a
+%% following \label{svideo:id} resolve to the video number for @svideo cross-references.
+\newcounter{svideo}
+\newcommand{\suppvideo}[1]{%
+  \refstepcounter{svideo}%
+  \par\noindent\textbf{Supplementary Video \thesvideo. #1}%
+}
+
 %% Unified supplementary float environments
 % Supplementary figures counter and environments
 \newcounter{sfigure}
