@@ -27,6 +27,19 @@ def sample_changelog():
     # Include current version to match __version__
     return """# Changelog
 
+## [v1.20.1] - 2026-06-01
+
+### Changed
+- Supplementary videos render as "Sup. Video N"
+
+### Fixed
+- Page/float marker blank-line handling
+
+## [v1.20.0] - 2026-06-01
+
+### Added
+- Supplementary videos with cross-references
+
 ## [v1.19.2] - 2026-03-24
 
 ### Fixed
@@ -191,7 +204,7 @@ class TestChangelogCommand:
         """Test --breaking-only flag."""
         mock_fetch.return_value = sample_changelog
 
-        result = runner.invoke(changelog, ["--recent", "9", "--breaking-only"])
+        result = runner.invoke(changelog, ["--recent", "11", "--breaking-only"])
 
         assert result.exit_code == 0
         # Should show v1.12.0 which has breaking changes
@@ -246,7 +259,7 @@ class TestChangelogCommand:
         mock_fetch.return_value = sample_changelog
 
         # Use the latest version to ensure no versions after it
-        result = runner.invoke(changelog, ["--since", "v1.19.2"])
+        result = runner.invoke(changelog, ["--since", "v1.20.1"])
 
         assert result.exit_code == 0
         output = strip_ansi(result.output)
