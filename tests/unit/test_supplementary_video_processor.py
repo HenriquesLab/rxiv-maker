@@ -28,8 +28,10 @@ class TestSupplementaryVideoDefinition:
         assert "\\suppvideo{Complete workflow.}" in out
         assert "\\label{svideo:workflow}" in out
         assert "\\href{https://youtu.be/ABC}{$\\blacktriangleright$~Watch video}" in out
-        # Still + caption are wrapped in a float so they never split across a page.
-        assert "\\begin{figure}" in out and "\\end{figure}" in out
+        # Still + caption are kept together (needspace + unbreakable minipage)
+        # so they never split across a page or overflow it.
+        assert "\\needspace" in out
+        assert "\\begin{minipage}" in out and "\\end{minipage}" in out
         # The description is captured into the block.
         assert "Example use of VLab4Mic." in out
         # The raw directive must be gone.

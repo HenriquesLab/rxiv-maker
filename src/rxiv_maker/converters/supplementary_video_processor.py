@@ -60,16 +60,21 @@ def _build_latex(image_path: str, svideo_id: str, attrs: str, title: str, descri
         caption += f" (\\href{{{url}}}{{$\\blacktriangleright$~Watch video}})"
     if description.strip():
         caption += " " + description.strip()
-    parts.append(caption)
+    # Render the whole legend in the figure-caption font so it matches Fig./SFig.
+    # legends (small sans-serif), rather than the larger body font.
+    parts.append("{\\svideocaptionfont\\raggedright " + caption + "\\par}")
 
     body = "\n".join(parts)
 
-    # When there is a still, emit a non-captioned float. The float keeps the
-    # image and caption together (never split across a page) and repositions to a
-    # page with room instead of overflowing, while still being numbered by
-    # \suppvideo rather than the figure counter (no \caption => no figure number).
+    # Keep the block in place (right after the "Supplementary Videos" heading,
+    # not floated away) while never splitting the still from its caption and
+    # never overflowing the page: an unbreakable minipage preceded by \needspace,
+    # which moves the whole block to the next page when it does not fit.
     if image_path:
-        return "\\begin{figure}[!htbp]\n" + body + "\n\\end{figure}"
+        return (
+            "\\par\\medskip\\needspace{0.5\\textheight}\n"
+            "\\noindent\\begin{minipage}{\\linewidth}\n" + body + "\n\\end{minipage}\\par\\medskip"
+        )
     return body
 
 

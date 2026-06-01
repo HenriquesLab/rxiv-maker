@@ -56,6 +56,7 @@
 %\RequirePackage{lmodern}
 \RequirePackage{siunitx}
 \RequirePackage{textgreek}
+\RequirePackage{needspace}
 \RequirePackage[colorlinks=true, allcolors=blue]{hyperref}
 \RequirePackage{cleveref}
 \RequirePackage{gensymb}
@@ -443,6 +444,10 @@
 \DeclareCaptionFormat{smallformat}{\normalfont\sffamily\fontsize{7}{9}\selectfont#1#2#3}
 \DeclareCaptionFormat{largeformat}{\normalfont\sffamily\fontsize{9}{12}\selectfont#1#2#3}
 \captionsetup*{format=smallformat}
+
+%% Font for supplementary video captions, matched to the figure caption format
+%% above so video legends look identical to figure (\smallformat) legends.
+\newcommand{\svideocaptionfont}{\normalfont\sffamily\fontsize{7}{9}\selectfont}
 
 % %% Watermark - Disabled for arXiv compatibility
 % arXiv doesn't support xwatermark package due to grouping issues
