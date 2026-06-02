@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.2] - 2026-06-02
+
+### Fixed
+- bioRxiv author template (`rxiv biorxiv`): the Institution column now includes
+  *all* of an author's affiliations (joined with `"; "`) instead of only the
+  first, and resolves inline full-name affiliations when no top-level
+  `affiliations:` shortname map is present. Previously, configs that list full
+  affiliation strings inline produced an empty Institution column, which bioRxiv
+  rejects on import. (#303)
+
 ## [1.20.1] - 2026-06-01
 
 ### Changed
