@@ -157,8 +157,8 @@ class TestFormatAuthorRow:
         row = format_author_row(author_data, affiliation_map)
         assert row[1] == ""  # Institution should be empty string
 
-    def test_multiple_affiliations_uses_first(self):
-        """Test that only first affiliation is used."""
+    def test_multiple_affiliations_joined(self):
+        """All affiliations are joined with '; ' into bioRxiv's single Institution column."""
         author_data = {
             "name": "John Smith",
             "email": "",
@@ -171,7 +171,27 @@ class TestFormatAuthorRow:
         }
 
         row = format_author_row(author_data, affiliation_map)
-        assert row[1] == "Primary University"  # Only first affiliation
+        assert row[1] == "Primary University; Secondary Institute"
+
+    def test_inline_affiliation_strings(self):
+        """Affiliations absent from the shortname map are used as literal full names.
+
+        Inline-affiliation configs list full affiliation strings directly under each
+        author and omit the top-level affiliations map.
+        """
+        author_data = {
+            "name": "John Smith",
+            "email": "",
+            "affiliations": [
+                "Example University, City, Country",
+                "Second Institute, City, Country",
+            ],
+            "corresponding_author": False,
+        }
+        affiliation_map = {}
+
+        row = format_author_row(author_data, affiliation_map)
+        assert row[1] == "Example University, City, Country; Second Institute, City, Country"
 
 
 class TestGenerateBiorxivAuthorTsv:

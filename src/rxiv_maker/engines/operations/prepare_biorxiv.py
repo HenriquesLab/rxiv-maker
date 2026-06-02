@@ -191,11 +191,21 @@ def format_author_row(author_data: dict, affiliation_map: dict) -> list[str]:
     # Email (decoded from email64)
     email = author_data.get("email", "")
 
-    # Institution (first affiliation's full_name) - encode HTML entities for bioRxiv
-    institution = ""
-    affiliations = author_data.get("affiliations", [])
-    if affiliations and affiliations[0] in affiliation_map:
-        institution = encode_html_entities(affiliation_map[affiliations[0]].get("full_name", ""))
+    # Institution(s) - encode HTML entities for bioRxiv.
+    # Resolve every affiliation: when the entry is a registered shortname use its
+    # full_name, otherwise treat the entry as a literal full affiliation string
+    # (inline-affiliation configs that omit the top-level affiliations map).
+    # bioRxiv exposes a single Institution column, so multiple affiliations are
+    # joined with "; " to preserve all of them.
+    resolved_affiliations = []
+    for affiliation in author_data.get("affiliations", []):
+        if affiliation in affiliation_map:
+            full_name = affiliation_map[affiliation].get("full_name", "") or affiliation
+        else:
+            full_name = affiliation
+        if full_name:
+            resolved_affiliations.append(full_name)
+    institution = encode_html_entities("; ".join(resolved_affiliations))
 
     # Parse name into components and encode HTML entities for bioRxiv
     name_str = author_data.get("name", "")
