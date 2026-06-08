@@ -3,6 +3,7 @@
 import platform
 import shutil
 import subprocess
+from pathlib import Path
 
 import rich_click as click
 from rich.console import Console
@@ -10,6 +11,7 @@ from rich.console import Console
 from ...core.logging_config import get_logger
 from ...core.managers.dependency_manager import DependencyStatus, get_dependency_manager
 from ...exporters.docx_exporter import DocxExporter
+from ...utils.unicode_safe import get_safe_icon
 
 logger = get_logger()
 console = Console()
@@ -81,6 +83,57 @@ def _check_and_offer_poppler_installation(console: Console, quiet: bool, verbose
             console.print()
 
 
+def _export_docx_file(
+    manuscript_path: str,
+    resolve_dois: bool,
+    no_footnotes: bool,
+    content_mode: str,
+    output_suffix: str | None,
+) -> Path:
+    """Export one DOCX artifact and return its path."""
+    exporter = DocxExporter(
+        manuscript_path=manuscript_path,
+        resolve_dois=resolve_dois,
+        include_footnotes=not no_footnotes,
+        content_mode=content_mode,
+        output_suffix=output_suffix,
+    )
+    return exporter.export()
+
+
+def _build_and_export_si_pdf(manuscript_path: str, quiet: bool, verbose: bool) -> Path:
+    """Build the manuscript PDF, split SI, and copy the SI PDF beside the manuscript."""
+    from ...engines.operations.build_manager import BuildManager
+    from ...processors.yaml_processor import extract_yaml_metadata
+    from ...utils.file_helpers import find_manuscript_md
+    from ...utils.pdf_splitter import split_pdf
+    from ...utils.pdf_utils import get_custom_pdf_filename
+
+    if not quiet:
+        console.print(f"[cyan]{get_safe_icon('📄', '[PDF]')} Building PDF for SI split...[/cyan]")
+
+    build_manager = BuildManager(
+        manuscript_path=manuscript_path,
+        output_dir="output",
+        verbose=verbose,
+        quiet=quiet,
+    )
+    if not build_manager.build():
+        raise RuntimeError("PDF build failed")
+
+    _, si_path = split_pdf(build_manager.output_pdf)
+    if si_path is None:
+        raise RuntimeError("Could not split PDF: SI section marker not found")
+
+    manuscript_dir = Path(manuscript_path)
+    manuscript_md = find_manuscript_md(str(manuscript_dir))
+    yaml_metadata = extract_yaml_metadata(str(manuscript_md))
+    base_name = get_custom_pdf_filename(yaml_metadata).replace(".pdf", "")
+    final_si_path = manuscript_dir / f"{base_name}__si.pdf"
+    shutil.copy2(si_path, final_si_path)
+    return final_si_path
+
+
 @click.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.argument(
     "manuscript_path",
@@ -99,12 +152,16 @@ def _check_and_offer_poppler_installation(console: Console, quiet: bool, verbose
     is_flag=True,
     help="Disable references section (citations only)",
 )
+@click.option("--split-si", is_flag=True, help="Split DOCX into main and SI documents (__main.docx and __si.docx)")
+@click.option("--split-si-pdf", is_flag=True, help="Export main DOCX and SI PDF (__main.docx and __si.pdf)")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.option("--quiet", "-q", is_flag=True, help="Suppress non-essential output")
 def docx(
     manuscript_path: str | None,
     resolve_dois: bool,
     no_footnotes: bool,
+    split_si: bool,
+    split_si_pdf: bool,
     verbose: bool,
     quiet: bool,
 ) -> None:
@@ -136,7 +193,18 @@ def docx(
     **Without references section (citations only):**
 
         $ rxiv docx --no-footnotes
+
+    **Split main and SI into separate DOCX files:**
+
+        $ rxiv docx --split-si
+
+    **Export main as DOCX and SI as PDF:**
+
+        $ rxiv docx --split-si-pdf
     """
+    if split_si and split_si_pdf:
+        raise click.UsageError("--split-si and --split-si-pdf cannot be used together")
+
     try:
         # Configure logging
         if verbose:
@@ -151,17 +219,53 @@ def docx(
         if not quiet:
             console.print("[cyan]📄 Exporting manuscript to DOCX...[/cyan]")
 
-        exporter = DocxExporter(
-            manuscript_path=manuscript_path,
-            resolve_dois=resolve_dois,
-            include_footnotes=not no_footnotes,
-        )
-
         # Pre-flight check for poppler (if manuscript contains PDF figures)
         _check_and_offer_poppler_installation(console, quiet, verbose)
 
         # Perform export
-        docx_path = exporter.export()
+        if split_si:
+            main_docx_path = _export_docx_file(
+                manuscript_path,
+                resolve_dois,
+                no_footnotes,
+                content_mode="main",
+                output_suffix="__main",
+            )
+            si_docx_path = _export_docx_file(
+                manuscript_path,
+                resolve_dois,
+                no_footnotes,
+                content_mode="si",
+                output_suffix="__si",
+            )
+            if not quiet:
+                console.print("[green]✅ DOCX split successfully:[/green]")
+                console.print(f"   Main: {main_docx_path}")
+                console.print(f"   SI: {si_docx_path}")
+            return
+
+        if split_si_pdf:
+            main_docx_path = _export_docx_file(
+                manuscript_path,
+                resolve_dois,
+                no_footnotes,
+                content_mode="main",
+                output_suffix="__main",
+            )
+            si_pdf_path = _build_and_export_si_pdf(manuscript_path, quiet, verbose)
+            if not quiet:
+                console.print("[green]✅ DOCX/PDF split successfully:[/green]")
+                console.print(f"   Main DOCX: {main_docx_path}")
+                console.print(f"   SI PDF: {si_pdf_path}")
+            return
+
+        docx_path = _export_docx_file(
+            manuscript_path,
+            resolve_dois,
+            no_footnotes,
+            content_mode="full",
+            output_suffix=None,
+        )
 
         # Success message
         if not quiet:

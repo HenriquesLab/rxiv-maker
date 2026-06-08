@@ -753,6 +753,12 @@ rxiv docx
 
 # Export with DOI resolution (citation update)
 rxiv docx --resolve-dois
+
+# Export main text and supplementary information as separate DOCX files
+rxiv docx --split-si
+
+# Export main text as DOCX and supplementary information as PDF
+rxiv docx --split-si-pdf
 ```
 
 **Features:**
