@@ -1,10 +1,18 @@
 """Test DOCX command options."""
 
+import importlib
 from unittest.mock import patch
 
 from click.testing import CliRunner
 
 from rxiv_maker.cli.commands.docx import docx
+
+# NOTE: ``rxiv_maker.cli.commands`` re-exports the ``docx`` command (see its
+# ``__init__``), which shadows the ``docx`` submodule on the package, so neither
+# a dotted patch target ("rxiv_maker.cli.commands.docx.<fn>") nor ``import ... as``
+# resolves to the module reliably across Python versions. Fetch the real module
+# object explicitly so ``patch.object`` binds the helper functions.
+docx_module = importlib.import_module("rxiv_maker.cli.commands.docx")
 
 
 class TestDocxCommand:
@@ -40,9 +48,10 @@ class TestDocxCommand:
         si_path = manuscript_dir / "paper__si.docx"
 
         with (
-            patch("rxiv_maker.cli.commands.docx._check_and_offer_poppler_installation"),
-            patch(
-                "rxiv_maker.cli.commands.docx._export_docx_file",
+            patch.object(docx_module, "_check_and_offer_poppler_installation"),
+            patch.object(
+                docx_module,
+                "_export_docx_file",
                 side_effect=[main_path, si_path],
             ) as mock_export,
         ):
@@ -63,9 +72,9 @@ class TestDocxCommand:
         si_path = manuscript_dir / "paper__si.pdf"
 
         with (
-            patch("rxiv_maker.cli.commands.docx._check_and_offer_poppler_installation"),
-            patch("rxiv_maker.cli.commands.docx._export_docx_file", return_value=main_path) as mock_export,
-            patch("rxiv_maker.cli.commands.docx._build_and_export_si_pdf", return_value=si_path) as mock_pdf,
+            patch.object(docx_module, "_check_and_offer_poppler_installation"),
+            patch.object(docx_module, "_export_docx_file", return_value=main_path) as mock_export,
+            patch.object(docx_module, "_build_and_export_si_pdf", return_value=si_path) as mock_pdf,
         ):
             result = self.runner.invoke(docx, [str(manuscript_dir), "--split-si-pdf"])
 
