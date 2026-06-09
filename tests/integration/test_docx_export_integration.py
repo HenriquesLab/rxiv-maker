@@ -1,5 +1,6 @@
 """Integration tests for DOCX export."""
 
+import shutil
 from pathlib import Path
 
 import pytest
@@ -74,6 +75,44 @@ class TestDocxExportIntegration:
 
         # Check for supplementary content
         assert "Supplementary" in all_text
+
+    def test_export_main_only_with_split_suffix(self, sample_manuscript_path, tmp_path):
+        """Test exporting only main content with split DOCX naming."""
+        manuscript_copy = tmp_path / "sample_manuscript"
+        shutil.copytree(sample_manuscript_path, manuscript_copy)
+
+        exporter = DocxExporter(
+            manuscript_path=str(manuscript_copy),
+            content_mode="main",
+            output_suffix="__main",
+        )
+
+        result_path = exporter.export()
+        doc = Document(str(result_path))
+        all_text = "\n".join([p.text for p in doc.paragraphs])
+
+        assert result_path.name.endswith("__main.docx")
+        assert "Introduction" in all_text
+        assert "Supplementary Information" not in all_text
+
+    def test_export_si_only_with_split_suffix(self, sample_manuscript_path, tmp_path):
+        """Test exporting only SI content with split DOCX naming."""
+        manuscript_copy = tmp_path / "sample_manuscript"
+        shutil.copytree(sample_manuscript_path, manuscript_copy)
+
+        exporter = DocxExporter(
+            manuscript_path=str(manuscript_copy),
+            content_mode="si",
+            output_suffix="__si",
+        )
+
+        result_path = exporter.export()
+        doc = Document(str(result_path))
+        all_text = "\n".join([p.text for p in doc.paragraphs])
+
+        assert result_path.name.endswith("__si.docx")
+        assert "Supplementary" in all_text
+        assert "Introduction" not in all_text
 
     def test_export_preserves_formatting(self, sample_manuscript_path, tmp_path):
         """Test that inline formatting is preserved."""

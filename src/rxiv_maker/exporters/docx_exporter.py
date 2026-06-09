@@ -33,6 +33,8 @@ class DocxExporter:
         manuscript_path: str,
         resolve_dois: bool = False,
         include_footnotes: bool = True,
+        content_mode: str = "full",
+        output_suffix: str | None = None,
     ):
         """Initialize DOCX exporter.
 
@@ -40,10 +42,17 @@ class DocxExporter:
             manuscript_path: Path to manuscript directory
             resolve_dois: Whether to attempt DOI resolution for missing entries
             include_footnotes: Whether to include DOI footnotes
+            content_mode: Content to export: "full", "main", or "si"
+            output_suffix: Optional suffix to append before .docx
         """
+        if content_mode not in {"full", "main", "si"}:
+            raise ValueError("content_mode must be one of: full, main, si")
+
         self.path_manager = PathManager(manuscript_path=manuscript_path)
         self.resolve_dois = resolve_dois
         self.include_footnotes = include_footnotes
+        self.content_mode = content_mode
+        self.output_suffix = output_suffix
 
         # Load config to get author name format preference and DOCX options
         config_manager = ConfigManager(base_dir=Path(manuscript_path))
@@ -53,6 +62,8 @@ class DocxExporter:
         # DOCX export options
         docx_config = config.get("docx", {})
         self.hide_si = docx_config.get("hide_si", False)  # Default to False (don't hide SI) for backwards compatibility
+        if self.content_mode == "main":
+            self.hide_si = True
         self.figures_at_end = docx_config.get("figures_at_end", False)  # Default to False (inline figures)
         self.hide_highlighting = docx_config.get("hide_highlighting", False)  # Default to False (show highlights)
         self.hide_comments = docx_config.get("hide_comments", False)  # Default to False (include comments)
@@ -78,13 +89,16 @@ class DocxExporter:
             # Generate DOCX name using same pattern as PDF: YEAR__lastname_et_al__rxiv.docx
             pdf_filename = get_custom_pdf_filename(yaml_metadata)
             docx_filename = pdf_filename.replace(".pdf", ".docx")
+            if self.output_suffix:
+                docx_filename = docx_filename.replace(".docx", f"{self.output_suffix}.docx")
 
             return self.path_manager.manuscript_path / docx_filename
         except Exception as e:
             # Fallback to simple name if metadata extraction fails
             logger.warning(f"Could not extract metadata for custom filename: {e}")
             manuscript_name = self.path_manager.manuscript_name
-            return self.path_manager.manuscript_path / f"{manuscript_name}.docx"
+            suffix = self.output_suffix or ""
+            return self.path_manager.manuscript_path / f"{manuscript_name}{suffix}.docx"
 
     def export(self) -> Path:
         """Execute complete DOCX export process.
@@ -287,6 +301,10 @@ class DocxExporter:
         if not main_md.exists():
             raise FileNotFoundError(f"01_MAIN.md not found in {self.path_manager.manuscript_path}")
 
+        supp_md = self.path_manager.manuscript_path / "02_SUPPLEMENTARY_INFO.md"
+        if self.content_mode == "si" and not supp_md.exists():
+            raise FileNotFoundError(f"02_SUPPLEMENTARY_INFO.md not found in {self.path_manager.manuscript_path}")
+
         bib_file = self.path_manager.manuscript_path / "03_REFERENCES.bib"
         if not bib_file.exists():
             raise FileNotFoundError("03_REFERENCES.bib not found (required for citations)")
@@ -307,21 +325,22 @@ class DocxExporter:
         # Get markdown preprocessor for this manuscript
         preprocessor = get_markdown_preprocessor(manuscript_path=str(self.path_manager.manuscript_path))
 
-        # Load 01_MAIN.md
-        main_md = self.path_manager.manuscript_path / "01_MAIN.md"
-        main_content = main_md.read_text(encoding="utf-8")
+        if self.content_mode != "si":
+            # Load 01_MAIN.md
+            main_md = self.path_manager.manuscript_path / "01_MAIN.md"
+            main_content = main_md.read_text(encoding="utf-8")
 
-        # Remove YAML header
-        main_content = remove_yaml_header(main_content)
+            # Remove YAML header
+            main_content = remove_yaml_header(main_content)
 
-        # Process rxiv-maker syntax ({{py:exec}}, {{py:get}}, {{tex:...}})
-        main_content = preprocessor.process(main_content, target_format="docx", file_path="01_MAIN.md")
+            # Process rxiv-maker syntax ({{py:exec}}, {{py:get}}, {{tex:...}})
+            main_content = preprocessor.process(main_content, target_format="docx", file_path="01_MAIN.md")
 
-        content.append(main_content)
+            content.append(main_content)
 
         # Load 02_SUPPLEMENTARY_INFO.md if exists and not configured to hide SI
         supp_md = self.path_manager.manuscript_path / "02_SUPPLEMENTARY_INFO.md"
-        if supp_md.exists() and not self.hide_si:
+        if supp_md.exists() and (self.content_mode == "si" or not self.hide_si):
             logger.info("Including supplementary information")
             supp_content = supp_md.read_text(encoding="utf-8")
             supp_content = remove_yaml_header(supp_content)
@@ -332,7 +351,8 @@ class DocxExporter:
             )
 
             # Add page break and SI title before supplementary content
-            content.append("<!-- PAGE_BREAK -->")
+            if self.content_mode != "si":
+                content.append("<!-- PAGE_BREAK -->")
             content.append("# Supplementary Information")
             content.append(supp_content)
         elif supp_md.exists() and self.hide_si:

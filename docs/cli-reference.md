@@ -89,6 +89,7 @@ rxiv pdf
 - `--force-figures` - Regenerate all figures regardless of cache
 - `--skip-validation` - Skip manuscript validation (faster)
 - `--track-changes <tag>` - Track changes against specified git tag
+- `--split-si` - Split the final PDF into `__main.pdf` and `__si.pdf`
 - `--verbose` - Detailed output for debugging
 - `--quiet` - Minimal output
 - `--debug` - Enable debug output
@@ -262,6 +263,32 @@ rxiv clean --figures-only
 # Clean only arXiv files
 rxiv clean --arxiv-only
 ```
+
+---
+
+### `rxiv docx` - Export Word Documents
+
+**Purpose**: Export manuscript content to DOCX for collaborative review.
+
+```bash
+# Export one DOCX containing main text and SI
+rxiv docx
+
+# Split main text and SI into separate DOCX files
+rxiv docx --split-si
+
+# Export main text as DOCX and SI as PDF
+rxiv docx --split-si-pdf
+```
+
+**Options**:
+- `[manuscript_path]` - Path to manuscript directory (default: current)
+- `--resolve-dois` - Attempt to resolve missing DOI metadata
+- `--no-footnotes` - Disable DOI footnotes/references section
+- `--split-si` - Output `__main.docx` and `__si.docx`
+- `--split-si-pdf` - Output `__main.docx` and `__si.pdf`
+- `--verbose` - Detailed output for debugging
+- `--quiet` - Minimal output
 
 ---
 

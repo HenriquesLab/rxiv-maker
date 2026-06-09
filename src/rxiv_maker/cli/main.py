@@ -126,7 +126,7 @@ click.rich_click.OPTION_GROUPS = {
     "rxiv docx": [
         {
             "name": "Export Options",
-            "options": ["-r", "--resolve-dois", "--no-footnotes"],
+            "options": ["-r", "--resolve-dois", "--no-footnotes", "--split-si", "--split-si-pdf"],
         },
         {
             "name": "Processing Options",
