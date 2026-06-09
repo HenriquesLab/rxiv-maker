@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.20.3] - 2026-06-09
 
+### Added
+- `rxiv docx` gains `--split-si` and `--split-si-pdf` options for splitting the
+  supplementary information out of the main document. `--split-si` writes
+  separate `__main.docx` and `__si.docx` files; `--split-si-pdf` writes
+  `__main.docx` alongside an `__si.pdf`. The two flags are mutually exclusive.
+  (#306)
+
 ### Fixed
 - CI: the `changelog` command test no longer breaks on version bumps. The
   default-version test now injects the current `__version__` into the mocked
