@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
+from rxiv_maker import __version__
 from rxiv_maker.cli.commands.changelog import changelog
 
 
@@ -156,14 +157,24 @@ class TestChangelogCommand:
 
     @patch("rxiv_maker.cli.commands.changelog.fetch_changelog")
     def test_changelog_default_shows_current_version(self, mock_fetch, runner, sample_changelog):
-        """Test that default command shows current version."""
-        mock_fetch.return_value = sample_changelog
+        """Test that default command shows current version.
+
+        The default command looks up ``__version__`` in the changelog, so the
+        mocked content must contain an entry for whatever the current version
+        is. Inject one for ``__version__`` (rather than hard-coding a version
+        into the shared fixture) so this test keeps passing across version
+        bumps and does not perturb the version-counting tests that rely on the
+        fixture's exact ordering.
+        """
+        current_entry = f"## [v{__version__}] - 2026-06-09\n\n### Fixed\n- Current release entry for testing\n\n"
+        mock_fetch.return_value = sample_changelog.replace("# Changelog\n\n", f"# Changelog\n\n{current_entry}", 1)
 
         result = runner.invoke(changelog)
 
         assert result.exit_code == 0
         output = strip_ansi(result.output)
         assert "Version" in output
+        assert f"{__version__}" in output
         assert "Fetching changelog" in output
 
     @patch("rxiv_maker.cli.commands.changelog.fetch_changelog")

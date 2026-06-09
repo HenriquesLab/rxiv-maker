@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.3] - 2026-06-09
+
+### Fixed
+- CI: the `changelog` command test no longer breaks on version bumps. The
+  default-version test now injects the current `__version__` into the mocked
+  changelog content instead of relying on a hard-coded fixture entry, so the
+  `Coverage Validation` check stays green across releases. (#307)
+
 ## [1.20.2] - 2026-06-02
 
 ### Fixed
