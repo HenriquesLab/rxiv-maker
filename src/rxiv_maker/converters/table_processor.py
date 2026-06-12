@@ -774,13 +774,23 @@ def _split_on_latex_commands(text: str, commands: list[str]) -> list[str]:
 
 
 def _escape_underscores_outside_cite(text: str) -> str:
-    r"""Escape underscores but not inside \cite{} commands."""
-    # Split text on cite commands to preserve them
-    parts = re.split(r"(\\cite\{[^}]*\})", text)
+    r"""Escape underscores but not inside citation commands.
+
+    Citation keys frequently contain underscores (e.g. ``Xie2016_bookdown``). Those
+    underscores must be preserved verbatim inside the citation command argument,
+    otherwise LaTeX writes ``\citation{Xie2016\protect \T1\textunderscore bookdown}``
+    to the .aux file and bibtex aborts the whole bibliography with a
+    "White space in argument" error.
+
+    Covers all citation commands the translator can emit: ``\cite`` (numbered) plus
+    ``\citep``/``\citet`` (author-date style).
+    """
+    # Split text on citation commands to preserve them
+    parts = re.split(r"(\\cite[a-zA-Z]*\{[^}]*\})", text)
     result: list[str] = []
     for part in parts:
-        if part.startswith("\\cite{"):
-            # Don't escape underscores inside cite commands
+        if re.match(r"^\\cite[a-zA-Z]*\{", part):
+            # Don't escape underscores inside citation commands
             result.append(part)
         else:
             # Escape underscores in regular text
@@ -791,11 +801,13 @@ def _escape_underscores_outside_cite(text: str) -> str:
 
 def _escape_outside_latex_commands(text: str) -> str:
     """Escape special characters outside LaTeX formatting commands."""
-    # Split on all LaTeX formatting and reference commands to protect them
-    parts = _split_on_latex_commands(text, ["texttt", "textbf", "textit", "ref", "cite"])
+    # Split on all LaTeX formatting and reference commands to protect them.
+    # Include the full citation family (\cite, \citep, \citet) so underscore-bearing
+    # citation keys are never escaped inside their argument.
+    parts = _split_on_latex_commands(text, ["texttt", "textbf", "textit", "ref", "cite", "citep", "citet"])
     result: list[str] = []
     for _i, part in enumerate(parts):
-        if part.startswith(("\\texttt{", "\\textbf{", "\\textit{", "\\ref{", "\\cite{")):
+        if part.startswith(("\\texttt{", "\\textbf{", "\\textit{", "\\ref{", "\\cite{", "\\citep{", "\\citet{")):
             # For code blocks, ensure % is escaped so it doesn't start a LaTeX comment
             if part.startswith("\\texttt{"):
                 # Replace unescaped % with \%

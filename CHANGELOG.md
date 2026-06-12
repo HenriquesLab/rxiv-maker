@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.4] - 2026-06-12
+
+### Fixed
+- Tables: citation keys containing underscores (e.g. `Xie2016_bookdown`) no
+  longer break bibtex when cited inside a Markdown table cell under the
+  author-date citation style. The underscore-protection now covers the full
+  citation family (`\cite`, `\citep`, `\citet`); previously only `\cite` was
+  protected, so author-date citations were escaped to `\citep{Xie2016\_bookdown}`,
+  producing a malformed `.aux` entry that aborted the entire bibliography with a
+  "White space in argument" error.
+- Output filenames: accented lead-author names are now transliterated to plain
+  ASCII (e.g. `Martínez` → `2026__martinez_et_al__rxiv.pdf`). Non-ASCII filenames
+  could break on systems that cannot handle latin1 filenames. Applies to both
+  PDF and DOCX output.
+
 ## [1.20.3] - 2026-06-09
 
 ### Added
