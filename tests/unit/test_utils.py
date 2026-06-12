@@ -143,14 +143,15 @@ class TestUtils:
         result = get_custom_pdf_filename(yaml_metadata)
         assert result == "2025__smith_et_al__rxiv.pdf"
 
-        # Test with different author format (list)
+        # Test with different author format (list). Accented characters are
+        # transliterated to plain ASCII for filesystem portability.
         yaml_metadata_list = {
             "date": "2024-12-01",
             "title": [{"lead_author": "García-López"}, {"other": "data"}],
         }
 
         result = get_custom_pdf_filename(yaml_metadata_list)
-        assert result == "2024__garcía-lópez_et_al__rxiv.pdf"
+        assert result == "2024__garcia-lopez_et_al__rxiv.pdf"
 
         # Test with missing metadata (fallback to current year and unknown)
         import datetime
@@ -160,6 +161,24 @@ class TestUtils:
         yaml_metadata_minimal = {}
         result = get_custom_pdf_filename(yaml_metadata_minimal)
         assert result == f"{current_year}__unknown_et_al__rxiv.pdf"
+
+    def test_get_custom_pdf_filename_strips_accents(self):
+        """Accented author names are transliterated to ASCII for portable filenames."""
+        cases = {
+            "Martínez": "2026__martinez_et_al__rxiv.pdf",
+            "Müller": "2026__muller_et_al__rxiv.pdf",
+            "Núñez": "2026__nunez_et_al__rxiv.pdf",
+            "Gonçalves": "2026__goncalves_et_al__rxiv.pdf",
+            "Łukasiewicz": "2026__lukasiewicz_et_al__rxiv.pdf",
+            "Møller": "2026__moller_et_al__rxiv.pdf",
+            "Straße": "2026__strasse_et_al__rxiv.pdf",
+        }
+        for author, expected in cases.items():
+            yaml_metadata = {"date": "2026-01-01", "title": {"lead_author": author}}
+            result = get_custom_pdf_filename(yaml_metadata)
+            assert result == expected, f"{author!r} -> {result!r}, expected {expected!r}"
+            # Resulting filename (minus the .pdf extension marker) must be pure ASCII.
+            result.encode("ascii")
 
     def test_copy_pdf_to_manuscript_folder_success(self, temp_dir, monkeypatch):
         """Test successfully copying PDF to manuscript folder with custom naming."""
@@ -615,8 +634,8 @@ This research presents breakthrough findings.
 
         copied_pdf = copy_pdf_to_manuscript_folder(str(output_dir), yaml_metadata)
 
-        # Should clean special characters appropriately
-        expected_pdf_name = "2025__garcía-lópez_o'connor_et_al__rxiv.pdf"
+        # Should clean special characters appropriately (accents transliterated to ASCII)
+        expected_pdf_name = "2025__garcia-lopez_o'connor_et_al__rxiv.pdf"
         expected_pdf_path = manuscript_dir / expected_pdf_name
 
         assert copied_pdf.resolve() == expected_pdf_path.resolve()

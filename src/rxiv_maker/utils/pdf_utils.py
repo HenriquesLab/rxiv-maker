@@ -2,11 +2,56 @@
 
 import os
 import shutil
+import unicodedata
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from .platform import safe_print
+
+# Common Latin letters that do not decompose under NFKD normalization and so
+# need an explicit ASCII transliteration (e.g. ø, ß, ł).
+_NON_DECOMPOSABLE_TRANSLITERATIONS = {
+    "ø": "o",
+    "Ø": "O",
+    "ß": "ss",
+    "ł": "l",
+    "Ł": "L",
+    "đ": "d",
+    "Đ": "D",
+    "ð": "d",
+    "Ð": "D",
+    "þ": "th",
+    "Þ": "Th",
+    "æ": "ae",
+    "Æ": "Ae",
+    "œ": "oe",
+    "Œ": "Oe",
+    "ı": "i",
+}
+
+
+def _strip_accents(text: str) -> str:
+    """Transliterate accented characters to plain ASCII.
+
+    Converts characters like ``í`` -> ``i`` and ``ñ`` -> ``n`` so that generated
+    filenames are portable to systems that cannot handle non-ASCII (e.g. latin1)
+    filenames. Letters that do not decompose under NFKD (ø, ß, ł, ...) are mapped
+    explicitly; any remaining non-ASCII characters are dropped.
+
+    Args:
+        text: The text to transliterate.
+
+    Returns:
+        An ASCII-only version of the input text.
+    """
+    # Handle explicit transliterations first (these do not decompose via NFKD).
+    text = "".join(_NON_DECOMPOSABLE_TRANSLITERATIONS.get(ch, ch) for ch in text)
+    # Decompose remaining accented characters and drop the combining marks.
+    decomposed = unicodedata.normalize("NFKD", text)
+    without_marks = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+    # Drop any non-ASCII characters that still remain.
+    return without_marks.encode("ascii", "ignore").decode("ascii")
 
 
 def get_custom_pdf_filename(yaml_metadata: dict[str, Any]) -> str:
@@ -40,8 +85,9 @@ def get_custom_pdf_filename(yaml_metadata: dict[str, Any]) -> str:
     else:
         lead_author = "unknown"
 
-    # Clean the lead author name (remove spaces, make lowercase)
-    lead_author_clean = lead_author.lower().replace(" ", "_").replace(".", "")
+    # Clean the lead author name: strip accents (for filesystem portability),
+    # remove spaces, make lowercase.
+    lead_author_clean = _strip_accents(lead_author).lower().replace(" ", "_").replace(".", "")
 
     # Generate filename: year__lead_author_et_al__rxiv.pdf
     filename = f"{year}__{lead_author_clean}_et_al__rxiv.pdf"
