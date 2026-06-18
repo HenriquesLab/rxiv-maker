@@ -37,12 +37,14 @@ def resolve_latex_citations(latex: str, citation_map: Dict[str, int]) -> str:
 class DocxContentProcessor:
     """Parses markdown content into structured format for DOCX writing."""
 
-    def parse(self, markdown: str, citation_map: Dict[str, int]) -> Dict[str, Any]:
+    def parse(self, markdown: str, citation_map: Dict[str, int], tables_as_images: bool = False) -> Dict[str, Any]:
         """Parse markdown into structured sections for DOCX.
 
         Args:
             markdown: Markdown content to parse
             citation_map: Mapping from citation keys to numbers
+            tables_as_images: Render Markdown tables as images too (as ``tex_table``
+                sections), so every table shares one style with ``{{tex}}`` tables
 
         Returns:
             Document structure with sections and formatting metadata
@@ -224,7 +226,7 @@ class DocxContentProcessor:
 
             # Check for table (starts with |)
             if line.strip().startswith("|"):
-                table_data, next_i = self._parse_table(lines, i)
+                table_data, next_i = self._parse_table(lines, i, citation_map, tables_as_images)
                 if table_data:
                     sections.append(table_data)
                     i = next_i
@@ -715,7 +717,13 @@ class DocxContentProcessor:
             "is_supplementary": is_supplementary,
         }, next_i
 
-    def _parse_table(self, lines: List[str], start_idx: int) -> tuple[Optional[Dict[str, Any]], int]:
+    def _parse_table(
+        self,
+        lines: List[str],
+        start_idx: int,
+        citation_map: Optional[Dict[str, int]] = None,
+        tables_as_images: bool = False,
+    ) -> tuple[Optional[Dict[str, Any]], int]:
         """Parse a markdown table.
 
         Expected format:
@@ -726,9 +734,12 @@ class DocxContentProcessor:
         Args:
             lines: All lines of content
             start_idx: Starting line index (at first |)
+            citation_map: Mapping from citation keys to numbers (for image conversion)
+            tables_as_images: When True, emit a ``tex_table`` (image) section instead of
+                a native Word table
 
         Returns:
-            Tuple of (table dict or None, next line index)
+            Tuple of (table/tex_table dict or None, next line index)
         """
         table_lines = []
         i = start_idx
@@ -774,6 +785,14 @@ class DocxContentProcessor:
                 caption = caption_match.group(3).strip()
                 i += 1  # Move past caption line
 
+        # When every table is rendered as an image (for one consistent style), convert
+        # the Markdown table to LaTeX and emit a tex_table section instead.
+        if tables_as_images:
+            section = self._markdown_table_to_tex_section(table_lines, label, caption, citation_map or {})
+            if section is not None:
+                return section, i
+            # conversion failed -> fall back to a native Word table
+
         return {
             "type": "table",
             "headers": headers,
@@ -781,3 +800,36 @@ class DocxContentProcessor:
             "caption": caption,
             "label": label,
         }, i
+
+    @staticmethod
+    def _strip_docx_markers(text: str) -> str:
+        """Remove DOCX-internal <<XREF>>/<<HIGHLIGHT>> markers, keeping the inner text."""
+        text = re.sub(r"<<XREF:[a-z]+>>(.*?)<</XREF>>", r"\1", text, flags=re.S)
+        text = re.sub(r"<<HIGHLIGHT_[A-Z]+>>(.*?)<</HIGHLIGHT_[A-Z]+>>", r"\1", text, flags=re.S)
+        return text
+
+    def _markdown_table_to_tex_section(
+        self, table_lines: List[str], label: Optional[str], caption: Optional[str], citation_map: Dict[str, int]
+    ) -> Optional[Dict[str, Any]]:
+        """Convert a Markdown table to a ``tex_table`` section (rendered as an image).
+
+        Reuses the PDF-path Markdown->LaTeX converter so the image matches the PDF.
+        Cross-references and citations in cells are already resolved to plain text in the
+        DOCX stream, so only the DOCX-internal markers are stripped before converting.
+        Returns ``None`` if conversion does not yield a tabular (caller falls back).
+        """
+        from ..converters.table_processor import convert_tables_to_latex
+
+        cleaned = self._strip_docx_markers("\n".join(table_lines))
+        try:
+            latex = convert_tables_to_latex(cleaned)
+        except Exception:  # pragma: no cover - defensive, fall back to native table
+            return None
+        if "\\begin{tabular" not in latex:
+            return None
+        latex = resolve_latex_citations(latex, citation_map)  # defensive; cells are usually pre-resolved
+        section: Dict[str, Any] = {"type": "tex_table", "latex": latex}
+        if caption:
+            section["caption_label"] = label
+            section["caption_text"] = caption  # keep markers; the writer formats the caption
+        return section

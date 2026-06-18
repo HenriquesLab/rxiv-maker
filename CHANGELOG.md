@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `tabular` for the still image. Behaviour is on by default with automatic
   fallback to the previous textual placeholder if a table cannot be rendered (no
   LaTeX toolchain, or a block that fails to compile).
+- DOCX: new `--tables-as-images` option (CLI flag, or `docx.tables_as_images: true`
+  in config) renders *Markdown* tables as images too, so every table shares one
+  style with `{{tex}}` tables and matches the PDF. Off by default (Markdown tables
+  stay native, editable Word tables). Reuses the PDF Markdown-to-LaTeX table
+  converter; cross-references and citations in cells are already resolved to text.
 
 ### Fixed
 - DOCX: standalone supplementary-table caption markers no longer leak into the Word

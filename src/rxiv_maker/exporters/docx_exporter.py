@@ -35,6 +35,7 @@ class DocxExporter:
         include_footnotes: bool = True,
         content_mode: str = "full",
         output_suffix: str | None = None,
+        tables_as_images: bool = False,
     ):
         """Initialize DOCX exporter.
 
@@ -44,6 +45,8 @@ class DocxExporter:
             include_footnotes: Whether to include DOI footnotes
             content_mode: Content to export: "full", "main", or "si"
             output_suffix: Optional suffix to append before .docx
+            tables_as_images: Render Markdown tables as images too (like {{tex}} tables),
+                so every table shares one style. Overrides the docx.tables_as_images config.
         """
         if content_mode not in {"full", "main", "si"}:
             raise ValueError("content_mode must be one of: full, main, si")
@@ -67,6 +70,9 @@ class DocxExporter:
         self.figures_at_end = docx_config.get("figures_at_end", False)  # Default to False (inline figures)
         self.hide_highlighting = docx_config.get("hide_highlighting", False)  # Default to False (show highlights)
         self.hide_comments = docx_config.get("hide_comments", False)  # Default to False (include comments)
+        # Render every table as an image (Markdown tables too) so they don't diverge in
+        # style from {{tex}} tables. CLI flag overrides the config; default off.
+        self.tables_as_images = tables_as_images or docx_config.get("tables_as_images", False)
 
         # Components
         self.citation_mapper = CitationMapper()
@@ -263,7 +269,9 @@ class DocxExporter:
         )
 
         # Step 6: Convert content to DOCX structure
-        doc_structure = self.content_processor.parse(markdown_with_numbers, citation_map)
+        doc_structure = self.content_processor.parse(
+            markdown_with_numbers, citation_map, tables_as_images=self.tables_as_images
+        )
         logger.debug(f"Parsed {len(doc_structure['sections'])} sections")
 
         # Step 6.5: Get metadata for title page

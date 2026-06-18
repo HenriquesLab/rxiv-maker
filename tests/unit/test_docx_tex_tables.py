@@ -188,6 +188,30 @@ class TestTableLabelMerge:
         assert LabelExtractor().extract_supplementary_table_labels(content) == {"comp": 1}
 
 
+class TestTablesAsImages:
+    MD = "| **A** | B |\n|---|---|\n| 1 | x |\n\n{#stable:demo} **Demo caption.**\n"
+
+    def test_markdown_table_becomes_image_when_enabled(self):
+        parsed = DocxContentProcessor().parse(self.MD, {}, tables_as_images=True)
+        types = [s["type"] for s in parsed["sections"]]
+        assert "tex_table" in types and "table" not in types
+        tex = next(s for s in parsed["sections"] if s["type"] == "tex_table")
+        assert "\\begin{tabular" in tex["latex"]
+        assert tex["caption_label"] == "stable:demo"
+        assert tex["caption_text"] == "**Demo caption.**"
+
+    def test_markdown_table_stays_native_when_disabled(self):
+        parsed = DocxContentProcessor().parse(self.MD, {})
+        assert [s["type"] for s in parsed["sections"]] == ["table"]
+
+    def test_docx_markers_stripped_before_conversion(self):
+        md = "| A | B |\n|---|---|\n| <<XREF:sfig>>Supp. Fig. 3<</XREF>> | 2 |\n"
+        parsed = DocxContentProcessor().parse(md, {}, tables_as_images=True)
+        tex = next(s for s in parsed["sections"] if s["type"] == "tex_table")
+        assert "<<XREF" not in tex["latex"]  # marker stripped, not leaked into the image
+        assert "Supp. Fig. 3" in tex["latex"]
+
+
 class TestContentProcessorTexTableSection:
     def test_sentinel_becomes_table_section_with_numbers(self):
         preprocessed = MarkdownPreprocessor().process(STABLE_BLOCK, target_format="docx")

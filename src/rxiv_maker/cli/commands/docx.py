@@ -89,6 +89,7 @@ def _export_docx_file(
     no_footnotes: bool,
     content_mode: str,
     output_suffix: str | None,
+    tables_as_images: bool = False,
 ) -> Path:
     """Export one DOCX artifact and return its path."""
     exporter = DocxExporter(
@@ -97,6 +98,7 @@ def _export_docx_file(
         include_footnotes=not no_footnotes,
         content_mode=content_mode,
         output_suffix=output_suffix,
+        tables_as_images=tables_as_images,
     )
     return exporter.export()
 
@@ -154,6 +156,11 @@ def _build_and_export_si_pdf(manuscript_path: str, quiet: bool, verbose: bool) -
 )
 @click.option("--split-si", is_flag=True, help="Split DOCX into main and SI documents (__main.docx and __si.docx)")
 @click.option("--split-si-pdf", is_flag=True, help="Export main DOCX and SI PDF (__main.docx and __si.pdf)")
+@click.option(
+    "--tables-as-images",
+    is_flag=True,
+    help="Render Markdown tables as images too (like {{tex}} tables), so all tables share one style",
+)
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.option("--quiet", "-q", is_flag=True, help="Suppress non-essential output")
 def docx(
@@ -162,6 +169,7 @@ def docx(
     no_footnotes: bool,
     split_si: bool,
     split_si_pdf: bool,
+    tables_as_images: bool,
     verbose: bool,
     quiet: bool,
 ) -> None:
@@ -230,6 +238,7 @@ def docx(
                 no_footnotes,
                 content_mode="main",
                 output_suffix="__main",
+                tables_as_images=tables_as_images,
             )
             si_docx_path = _export_docx_file(
                 manuscript_path,
@@ -237,6 +246,7 @@ def docx(
                 no_footnotes,
                 content_mode="si",
                 output_suffix="__si",
+                tables_as_images=tables_as_images,
             )
             if not quiet:
                 console.print("[green]✅ DOCX split successfully:[/green]")
@@ -251,6 +261,7 @@ def docx(
                 no_footnotes,
                 content_mode="main",
                 output_suffix="__main",
+                tables_as_images=tables_as_images,
             )
             si_pdf_path = _build_and_export_si_pdf(manuscript_path, quiet, verbose)
             if not quiet:
@@ -265,6 +276,7 @@ def docx(
             no_footnotes,
             content_mode="full",
             output_suffix=None,
+            tables_as_images=tables_as_images,
         )
 
         # Success message
