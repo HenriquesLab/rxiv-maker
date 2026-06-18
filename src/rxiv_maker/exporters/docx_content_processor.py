@@ -9,6 +9,26 @@ from typing import Any, Dict, List, Optional
 
 from ..utils.comment_filter import is_metadata_comment
 
+# Real LaTeX citations only: a backslash immediately followed by "cite{...}".
+# Escaped display forms such as "\textbackslash cite\{x\}" (used in syntax-reference
+# tables) deliberately do not match, so they are left verbatim in the rendered image.
+_CITE_RE = re.compile(r"\\cite\{([^{}]+)\}")
+
+
+def resolve_latex_citations(latex: str, citation_map: Dict[str, int]) -> str:
+    r"""Replace ``\cite{key,...}`` with the DOCX citation numbers, e.g. ``[7, 12]``.
+
+    Keys present in ``citation_map`` become their number; unknown keys are kept
+    verbatim so attribution is never silently dropped.
+    """
+
+    def _sub(match: "re.Match[str]") -> str:
+        keys = [k.strip() for k in match.group(1).split(",") if k.strip()]
+        parts = [str(citation_map[k]) if k in citation_map else k for k in keys]
+        return "[" + ", ".join(parts) + "]"
+
+    return _CITE_RE.sub(_sub, latex)
+
 
 class DocxContentProcessor:
     """Parses markdown content into structured format for DOCX writing."""
@@ -55,6 +75,18 @@ class DocxContentProcessor:
             if line.strip() == "<!-- PAGE_BREAK -->":
                 sections.append({"type": "page_break"})
                 i += 1
+                continue
+
+            # Check for a preserved {{tex}} table block (emitted by the preprocessor).
+            if line.strip() == "<<TEX_TABLE_START>>":
+                tex_lines = []
+                i += 1
+                while i < len(lines) and lines[i].strip() != "<<TEX_TABLE_END>>":
+                    tex_lines.append(lines[i])
+                    i += 1
+                i += 1  # skip the <<TEX_TABLE_END>> line
+                latex = resolve_latex_citations("\n".join(tex_lines).strip(), citation_map)
+                sections.append({"type": "tex_table", "latex": latex})
                 continue
 
             # Parse HTML/markdown comments (single-line and multi-line)
@@ -104,6 +136,23 @@ class DocxContentProcessor:
                 title_text = re.sub(r"^\*\*(.+?)\*\*$", r"\1", title_text)
                 # Treat as a heading with special formatting
                 sections.append({"type": "snote_title", "label": label, "text": title_text})
+                i += 1
+                continue
+
+            # Check for a standalone table-caption line: {#stable:label} Caption or
+            # %{#stable:label} Caption (the % variant hides the marker from LaTeX when
+            # the real caption lives inside a following {{tex}} block). Captions that
+            # directly follow a Markdown table are consumed by _parse_table instead, so
+            # anything reaching here is an orphaned caption that would otherwise leak.
+            table_caption_match = re.match(r"^%?\{#(stable|table):([\w-]+)\}\s*(.+)$", line.strip())
+            if table_caption_match:
+                sections.append(
+                    {
+                        "type": "table_caption",
+                        "label": f"{table_caption_match.group(1)}:{table_caption_match.group(2)}",
+                        "caption": table_caption_match.group(3).strip(),
+                    }
+                )
                 i += 1
                 continue
 

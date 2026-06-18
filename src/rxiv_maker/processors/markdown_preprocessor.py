@@ -181,15 +181,11 @@ class MarkdownPreprocessor:
             # Check if this is a large table/complex structure
             is_table = "\\begin{" in tex_content and ("table" in tex_content or "longtable" in tex_content)
 
-            # For tables, provide a more informative message with yellow highlighting
+            # For tables, preserve the raw LaTeX between sentinels so the DOCX
+            # writer can render it to an image (see docx_writer._add_tex_table).
+            # The writer falls back to a textual placeholder if rendering fails.
             if is_table:
-                note = (
-                    "\n\n---\n\n"
-                    "<<HIGHLIGHT_YELLOW>>**[LaTeX Table - Please refer to the PDF version for proper table formatting]**<</HIGHLIGHT_YELLOW>>\n\n"
-                    "<<HIGHLIGHT_YELLOW>>_This section contains a complex LaTeX table that cannot be displayed in Word format. "
-                    "The table shows the Markdown-to-LaTeX syntax reference with formatting examples._<</HIGHLIGHT_YELLOW>>\n\n"
-                    "---\n\n"
-                )
+                return f"\n\n<<TEX_TABLE_START>>\n{tex_content}\n<<TEX_TABLE_END>>\n\n"
             else:
                 # For other LaTeX blocks, show a compact version
                 # Truncate very long content

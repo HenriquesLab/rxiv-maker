@@ -5,6 +5,8 @@ writing structured content with formatting, citations, and references.
 """
 
 import base64
+import contextlib
+import re
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -21,6 +23,50 @@ from ..utils.author_affiliation_processor import AuthorAffiliationProcessor
 from ..utils.docx_helpers import convert_pdf_to_image
 
 logger = get_logger()
+
+_SIZE_CMD = r"\\(?:tiny|scriptsize|footnotesize|small|normalsize|large|Large|huge)"
+
+
+def prepare_table_latex(content: str) -> Optional[str]:
+    r"""Normalise a ``{{tex}}`` table block into a standalone-renderable tabular.
+
+    Strips float wrappers (``stable``/``table``), captions/labels/captionsetup, and
+    rewrites a ``longtable`` to a plain ``tabular`` keeping a single header (the
+    repeated-head/foot machinery is removed). A font-size command sitting just
+    before the tabular (e.g. ``\small``) is preserved.
+
+    Returns the prepared LaTeX, or ``None`` if no ``tabular``/``tabularx`` survives.
+    """
+    s = content
+
+    # Drop caption/label/captionsetup (single level of nested braces tolerated).
+    s = re.sub(r"\\caption\*?\{(?:[^{}]|\{[^{}]*\})*\}", "", s)
+    s = re.sub(r"\\captionsetup(?:\[[^\]]*\])?\{[^{}]*\}", "", s)
+    s = re.sub(r"\\label\{[^{}]*\}", "", s)
+
+    # longtable -> tabular: remove repeated header/footer machinery, keep first head.
+    if "\\begin{longtable}" in s:
+        s = re.sub(r"\\endfirsthead.*?\\endhead", "", s, flags=re.S)
+        s = re.sub(r"\\endfoot.*?\\endlastfoot", "", s, flags=re.S)
+        s = re.sub(r"\\(?:endhead|endfirsthead|endfoot|endlastfoot)\b", "", s)
+        s = s.replace("\\begin{longtable}", "\\begin{tabular}").replace("\\end{longtable}", "\\end{tabular}")
+
+    # Extract the outermost tabular(*)/tabularx environment.
+    m = re.search(r"\\begin\{(tabular\*?|tabularx)\}", s)
+    if not m:
+        return None
+    env = m.group(1)
+    start = m.start()
+    end_token = "\\end{" + env + "}"
+    end = s.rfind(end_token)
+    if end == -1:
+        return None
+    table = s[start : end + len(end_token)]
+
+    # Preserve a font-size command that preceded the tabular.
+    sizes = re.findall(_SIZE_CMD, s[:start])
+    prefix = sizes[-1] + "\n" if sizes else ""
+    return prefix + table
 
 
 class DocxWriter:
@@ -393,6 +439,10 @@ class DocxWriter:
             self._add_figure(doc, section)
         elif section_type == "table":
             self._add_table(doc, section)
+        elif section_type == "tex_table":
+            self._add_tex_table(doc, section)
+        elif section_type == "table_caption":
+            self._add_table_caption(doc, section)
         elif section_type == "equation":
             self._add_equation(doc, section)
         elif section_type == "page_break":
@@ -892,65 +942,87 @@ class DocxWriter:
         caption = section.get("caption")
         label = section.get("label")
         if caption:
-            caption_para = doc.add_paragraph()
-            caption_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
-            # Add small space before caption to separate from table
-            caption_para.paragraph_format.space_before = Pt(3)
-
-            # Determine table number from label using table_map
-            if label and label.startswith("stable:"):
-                # Extract label name (e.g., "stable:parameters" -> "parameters")
-                label_name = label.split(":", 1)[1] if ":" in label else label
-                # Look up number in table_map
-                table_num = self.table_map.get(label_name)
-                if table_num:
-                    run = caption_para.add_run(f"Supp. Table S{table_num}. ")
-                else:
-                    # Fallback if label not in map
-                    run = caption_para.add_run("Supp. Table: ")
-                run.bold = True
-                run.font.size = Pt(8)
-            elif label and label.startswith("table:"):
-                # Extract label name for main tables
-                label_name = label.split(":", 1)[1] if ":" in label else label
-                # Look up number in table_map (though main tables may not be in map)
-                table_num = self.table_map.get(label_name)
-                if table_num:
-                    run = caption_para.add_run(f"Table {table_num}. ")
-                else:
-                    run = caption_para.add_run("Table: ")
-                run.bold = True
-                run.font.size = Pt(8)
-
-            # Parse and add caption with inline formatting
-            caption_runs = processor._parse_inline_formatting(caption, {})
-            for run_data in caption_runs:
-                if run_data["type"] == "text":
-                    text = run_data["text"]
-                    run = caption_para.add_run(text)
-                    run.font.size = Pt(8)
-                    if run_data.get("bold"):
-                        run.bold = True
-                    if run_data.get("italic"):
-                        run.italic = True
-                    if run_data.get("underline"):
-                        run.underline = True
-                    if run_data.get("subscript"):
-                        run.font.subscript = True
-                    if run_data.get("superscript"):
-                        run.font.superscript = True
-                    if run_data.get("code"):
-                        run.font.name = "Courier New"
-                    if run_data.get("xref"):
-                        # Use color based on xref type
-                        xref_type = run_data.get("xref_type", "cite")
-                        self._apply_highlight(run, self.get_xref_color(xref_type))
-
-            # Add spacing after table (reduced from 12 to 6 for compactness)
-            caption_para.paragraph_format.space_after = Pt(6)
+            self._render_table_caption(doc, label, caption)
 
         # Add spacing after table
         doc.add_paragraph()
+
+    def _add_table_caption(self, doc: Document, section: Dict[str, Any]):
+        """Render a standalone table-caption line (``{#stable:label} ...``).
+
+        These appear when a caption precedes a ``{{tex}}`` table (or is otherwise
+        not attached to a Markdown table), so it is not consumed by ``_parse_table``.
+        Without this the raw ``{#stable:label}`` / ``%{#stable:label}`` marker leaks
+        into the Word output.
+        """
+        self._render_table_caption(doc, section.get("label"), section.get("caption", ""))
+
+    def _render_table_caption(self, doc: Document, label: Optional[str], caption: str):
+        """Render a ``Supp. Table SN. <caption>`` paragraph.
+
+        Shared by Markdown tables and standalone caption lines. The number is looked
+        up in ``self.table_map``.
+        """
+        from rxiv_maker.exporters.docx_content_processor import DocxContentProcessor
+
+        processor = DocxContentProcessor()
+
+        caption_para = doc.add_paragraph()
+        caption_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        # Add small space before caption to separate from table
+        caption_para.paragraph_format.space_before = Pt(3)
+
+        # Determine table number from label using table_map
+        if label and label.startswith("stable:"):
+            # Extract label name (e.g., "stable:parameters" -> "parameters")
+            label_name = label.split(":", 1)[1] if ":" in label else label
+            # Look up number in table_map
+            table_num = self.table_map.get(label_name)
+            if table_num:
+                run = caption_para.add_run(f"Supp. Table S{table_num}. ")
+            else:
+                # Fallback if label not in map
+                run = caption_para.add_run("Supp. Table: ")
+            run.bold = True
+            run.font.size = Pt(8)
+        elif label and label.startswith("table:"):
+            # Extract label name for main tables
+            label_name = label.split(":", 1)[1] if ":" in label else label
+            # Look up number in table_map (though main tables may not be in map)
+            table_num = self.table_map.get(label_name)
+            if table_num:
+                run = caption_para.add_run(f"Table {table_num}. ")
+            else:
+                run = caption_para.add_run("Table: ")
+            run.bold = True
+            run.font.size = Pt(8)
+
+        # Parse and add caption with inline formatting
+        caption_runs = processor._parse_inline_formatting(caption, {})
+        for run_data in caption_runs:
+            if run_data["type"] == "text":
+                text = run_data["text"]
+                run = caption_para.add_run(text)
+                run.font.size = Pt(8)
+                if run_data.get("bold"):
+                    run.bold = True
+                if run_data.get("italic"):
+                    run.italic = True
+                if run_data.get("underline"):
+                    run.underline = True
+                if run_data.get("subscript"):
+                    run.font.subscript = True
+                if run_data.get("superscript"):
+                    run.font.superscript = True
+                if run_data.get("code"):
+                    run.font.name = "Courier New"
+                if run_data.get("xref"):
+                    # Use color based on xref type
+                    xref_type = run_data.get("xref_type", "cite")
+                    self._apply_highlight(run, self.get_xref_color(xref_type))
+
+        # Add spacing after table (reduced from 12 to 6 for compactness)
+        caption_para.paragraph_format.space_after = Pt(6)
 
     def _add_inline_equation(self, paragraph, latex_content: str):
         """Add inline equation to paragraph as Office Math.
@@ -1058,6 +1130,134 @@ class DocxWriter:
         # Add spacing after equation
         para.paragraph_format.space_after = Pt(12)
 
+    def _add_tex_table(self, doc: Document, section: Dict[str, Any]):
+        """Render a preserved {{tex}} table to an image and embed it.
+
+        Falls back to a textual placeholder if the LaTeX cannot be rendered, so the
+        document never silently loses the table.
+        """
+        latex = section.get("latex", "")
+        image_path = self._render_tex_table_to_image(latex)
+        if image_path is not None:
+            try:
+                self._embed_table_image(doc, image_path)
+                return
+            except Exception as e:  # pragma: no cover - defensive
+                logger.warning(f"Failed to embed tex-table image: {e}")
+        self._add_tex_table_placeholder(doc)
+
+    def _embed_table_image(self, doc: Document, image_path: Path):
+        """Embed a rendered table image, centered and fit to the page box."""
+        from PIL import Image as PILImage
+
+        sec = doc.sections[-1]
+        avail_w = sec.page_width - sec.left_margin - sec.right_margin
+        avail_h = sec.page_height - sec.top_margin - sec.bottom_margin
+        with PILImage.open(str(image_path)) as img:
+            w, h = img.size
+
+        para = doc.add_paragraph()
+        para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = para.add_run()
+        # Wide tables constrain by width; unusually tall ones constrain by height.
+        if (w / h) >= (avail_w / avail_h):
+            run.add_picture(str(image_path), width=avail_w)
+        else:
+            run.add_picture(str(image_path), height=avail_h)
+        logger.debug(f"Embedded tex-table image: {image_path} ({w}x{h})")
+
+    def _add_tex_table_placeholder(self, doc: Document):
+        """Fallback note when a {{tex}} table could not be rendered to an image."""
+        para = doc.add_paragraph()
+        para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = para.add_run("[LaTeX table - please refer to the PDF version for proper formatting]")
+        run.italic = True
+        with contextlib.suppress(Exception):  # highlight is best-effort
+            run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+
+    def _render_tex_table_to_image(self, latex: str) -> Optional[Path]:
+        """Render a {{tex}} table to a high-resolution PNG via pdflatex + pdftoppm.
+
+        Returns the PNG path, or None if no tabular is present or rendering fails.
+        Results are cached by content hash; intermediates are cleaned up.
+        """
+        import hashlib
+        import subprocess
+        import tempfile
+
+        table_body = prepare_table_latex(latex)
+        if not table_body:
+            logger.warning("No tabular found in {{tex}} table block; using placeholder.")
+            return None
+
+        tbl_hash = hashlib.md5(table_body.encode(), usedforsecurity=False).hexdigest()[:10]
+        temp_dir = Path(tempfile.gettempdir()) / "rxiv_tex_tables"
+        temp_dir.mkdir(exist_ok=True)
+        output_png = temp_dir / f"tbl_{tbl_hash}.png"
+        if output_png.exists():
+            logger.debug(f"Using cached tex-table image: {output_png}")
+            return output_png
+
+        # \textwidth is set wide so p{0.30\textwidth}-style fractional columns,
+        # which assume a full text block, resolve to sensible widths in standalone.
+        latex_template = (
+            r"""\documentclass[border=8pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage[table]{xcolor}
+\usepackage{amsmath,amssymb}
+\usepackage{textcomp}
+\usepackage{ragged2e}
+\usepackage[hidelinks]{hyperref}
+\setlength{\textwidth}{20cm}
+\begin{document}
+"""
+            + table_body
+            + "\n\\end{document}\n"
+        )
+
+        tex_file = temp_dir / f"tbl_{tbl_hash}.tex"
+        tex_file.write_text(latex_template)
+        try:
+            result = subprocess.run(
+                ["pdflatex", "-interaction=nonstopmode", "-output-directory", str(temp_dir), str(tex_file)],
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            pdf_file = temp_dir / f"tbl_{tbl_hash}.pdf"
+            if not pdf_file.exists():
+                logger.warning(f"pdflatex failed for {{tex}} table (rc={result.returncode}); using placeholder.")
+                logger.debug(f"pdflatex tail: {result.stdout[-1500:]}")
+                return None
+
+            result = subprocess.run(
+                ["pdftoppm", "-png", "-singlefile", "-r", "300", str(pdf_file), str(temp_dir / f"tbl_{tbl_hash}")],
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            if result.returncode != 0 or not output_png.exists():
+                logger.warning(f"pdftoppm failed for {{tex}} table: {result.stderr}")
+                return None
+            logger.debug(f"Rendered tex-table image: {output_png}")
+            return output_png
+        except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+            logger.warning(f"tex-table rendering unavailable ({e}); using placeholder.")
+            return None
+        finally:
+            for ext in (".tex", ".pdf", ".aux", ".log"):
+                stale = temp_dir / f"tbl_{tbl_hash}{ext}"
+                if stale.exists():
+                    with contextlib.suppress(Exception):
+                        stale.unlink()
+
     def _render_equation_to_image(self, latex_content: str) -> Optional[Path]:
         """Render LaTeX equation to PNG image.
 
@@ -1073,7 +1273,7 @@ class DocxWriter:
         from pathlib import Path
 
         # Create a hash of the equation content for caching
-        eq_hash = hashlib.md5(latex_content.encode()).hexdigest()[:8]
+        eq_hash = hashlib.md5(latex_content.encode(), usedforsecurity=False).hexdigest()[:8]
 
         # Use temp directory for equation images
         temp_dir = Path(tempfile.gettempdir()) / "rxiv_equations"
@@ -1157,10 +1357,8 @@ class DocxWriter:
             for ext in [".tex", ".pdf", ".aux", ".log"]:
                 temp_file = temp_dir / f"eq_{eq_hash}{ext}"
                 if temp_file.exists():
-                    try:
+                    with contextlib.suppress(Exception):
                         temp_file.unlink()
-                    except Exception:
-                        pass
 
     def _render_latex_formatted(self, paragraph, latex_content: str):
         """Render LaTeX equation with formatted subscripts and superscripts.

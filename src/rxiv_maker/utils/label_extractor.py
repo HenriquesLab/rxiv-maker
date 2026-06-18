@@ -71,8 +71,9 @@ class LabelExtractor:
     def extract_supplementary_table_labels(content: str) -> Dict[str, int]:
         r"""Extract supplementary table labels and create number mapping.
 
-        Finds both markdown format {#stable:label} and LaTeX format \\label{stable:label}.
-        Prefers LaTeX labels if both are present (matches PDF behavior).
+        Finds both markdown format {#stable:label} and LaTeX format \\label{stable:label},
+        numbering every label in document order (deduplicated). Mixed documents - markdown
+        tables alongside a {{tex}} table carrying its own \\label - are numbered correctly.
 
         Args:
             content: Markdown/LaTeX content to scan
@@ -87,16 +88,18 @@ class LabelExtractor:
             {'params': 1, 'results': 2}
         r
         """
-        # Extract both markdown and LaTeX formats
-        markdown_labels = re.findall(r"\{#stable:([\w-]+)\}", content)
-        latex_labels = re.findall(r"\\label\{stable:([\w-]+)\}", content)
-
-        # Prefer LaTeX labels (matches PDF behavior), fall back to markdown
-        table_labels = latex_labels if latex_labels else markdown_labels
-
-        # Remove duplicates while preserving order
+        # Number every supplementary-table label in document order, accepting both the
+        # markdown form ({#stable:label}) and the LaTeX form (\label{stable:label}).
+        # A manuscript may mix the two - e.g. markdown tables alongside a {{tex}} table
+        # that carries its own \label - so we must not pick one form to the exclusion of
+        # the other (an earlier "prefer LaTeX, else markdown" rule misnumbered such
+        # mixed documents). Deduplication keeps the first occurrence, so a table labelled
+        # in both forms is counted once, at the position it first appears.
+        labels = [
+            m.group(1) or m.group(2) for m in re.finditer(r"\\label\{stable:([\w-]+)\}|\{#stable:([\w-]+)\}", content)
+        ]
         seen = set()
-        unique_labels = [label for label in table_labels if not (label in seen or seen.add(label))]
+        unique_labels = [label for label in labels if not (label in seen or seen.add(label))]
 
         return {label: i + 1 for i, label in enumerate(unique_labels)}
 
