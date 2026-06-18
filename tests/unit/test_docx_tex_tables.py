@@ -97,6 +97,19 @@ class TestResolveLatexCitations:
         text = "\\textbackslash cite\\{mycitation\\}"
         assert resolve_latex_citations(text, {"mycitation": 1}) == text
 
+    def test_cite_family_commands_resolved(self):
+        cmap = {"a": 4, "b": 9}
+        assert resolve_latex_citations("\\citep{a}", cmap) == "[4]"
+        assert resolve_latex_citations("\\citet{a,b}", cmap) == "[4, 9]"
+        assert resolve_latex_citations("\\autocite{b}", cmap) == "[9]"
+        assert resolve_latex_citations("\\citep*{a}", cmap) == "[4]"
+
+    def test_nonnumeric_cite_kept(self):
+        # \citeauthor / \citeyear do not resolve to a number; leave them verbatim.
+        cmap = {"a": 4}
+        assert resolve_latex_citations("\\citeauthor{a}", cmap) == "\\citeauthor{a}"
+        assert resolve_latex_citations("\\citeyear{a}", cmap) == "\\citeyear{a}"
+
 
 class TestPrepareTableLatex:
     def test_strips_float_and_caption(self):

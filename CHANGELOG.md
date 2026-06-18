@@ -13,8 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - DOCX: raw `{{tex:...}}` tables are now rendered to an image and embedded in the
   Word output instead of being replaced by a "refer to the PDF version"
   placeholder. The table LaTeX is compiled standalone (pdflatex → pdftoppm) and
-  any `\cite{...}` inside it is resolved to the document's citation numbers so the
-  image matches the surrounding text. `longtable` blocks are converted to a single
+  any numeric citation command inside it (`\cite`, `\citep`, `\citet`, `\autocite`,
+  `\parencite`, `\textcite`, `\citenum`) is resolved to the document's citation
+  numbers so the image matches the surrounding text. `longtable` blocks are converted to a single
   `tabular` for the still image. Behaviour is on by default with automatic
   fallback to the previous textual placeholder if a table cannot be rendered (no
   LaTeX toolchain, or a block that fails to compile).

@@ -9,17 +9,21 @@ from typing import Any, Dict, List, Optional
 
 from ..utils.comment_filter import is_metadata_comment
 
-# Real LaTeX citations only: a backslash immediately followed by "cite{...}".
-# Escaped display forms such as "\textbackslash cite\{x\}" (used in syntax-reference
-# tables) deliberately do not match, so they are left verbatim in the rendered image.
-_CITE_RE = re.compile(r"\\cite\{([^{}]+)\}")
+# Numeric-style LaTeX citation commands (natbib/biblatex), each a backslash
+# immediately followed by the command and "{...}". Author/year-only forms
+# (\citeauthor, \citeyear, \citetitle) are deliberately excluded - they do not
+# resolve to a number. Escaped display forms such as "\textbackslash cite\{x\}"
+# (used in syntax-reference tables) do not match, so they stay verbatim.
+_CITE_RE = re.compile(r"\\(?:citep|citet|citenum|autocite|parencite|textcite|cite)\*?\{([^{}]+)\}")
 
 
 def resolve_latex_citations(latex: str, citation_map: Dict[str, int]) -> str:
-    r"""Replace ``\cite{key,...}`` with the DOCX citation numbers, e.g. ``[7, 12]``.
+    r"""Replace numeric citation commands (``\cite``/``\citep``/``\citet``/...) with numbers.
 
+    Resolves each command to the DOCX citation numbers, e.g. ``[7, 12]``.
     Keys present in ``citation_map`` become their number; unknown keys are kept
-    verbatim so attribution is never silently dropped.
+    verbatim so attribution is never silently dropped. The standalone table render
+    has no bibliography, so an unconverted command would otherwise print ``[?]``.
     """
 
     def _sub(match: "re.Match[str]") -> str:
