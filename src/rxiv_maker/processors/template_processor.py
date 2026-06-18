@@ -340,7 +340,7 @@ def generate_bibliography(yaml_metadata, output_dir=None):
     return f"\\bibliography{{{bibliography}}}"
 
 
-def process_template_replacements(template_content, yaml_metadata, article_md, output_dir=None):
+def process_template_replacements(template_content, yaml_metadata, article_md, output_dir=None, split_si=False):
     """Process all template replacements with metadata and content.
 
     Args:
@@ -348,6 +348,8 @@ def process_template_replacements(template_content, yaml_metadata, article_md, o
         yaml_metadata: Manuscript metadata dictionary
         article_md: Article markdown content
         output_dir: Output directory for generated files (optional)
+        split_si: Use separate main/SI bibliographies (bibunits), each numbered from 1,
+            so the PDF can be split into self-contained main and SI documents
 
     Returns:
         Processed template content with all replacements
@@ -458,9 +460,44 @@ def process_template_replacements(template_content, yaml_metadata, article_md, o
     keywords_section = generate_keywords(yaml_metadata)
     template_content = template_content.replace("<PY-RPL:KEYWORDS>", keywords_section)
 
-    # Generate bibliography section
+    # Generate bibliography section (also generates the custom .bst file as a side effect)
     bibliography_section = generate_bibliography(yaml_metadata, output_dir)
-    template_content = template_content.replace("<PY-RPL:BIBLIOGRAPHY>", bibliography_section)
+    if split_si:
+        # In split mode, two independent bibliographies (bibunits): the main body and
+        # the SI each get their own reference list, numbered from 1, so the split PDFs
+        # are self-contained. The \bibliography command is replaced by \putbib.
+        bib_cfg = yaml_metadata.get("bibliography", "03_REFERENCES")
+        bib_name = bib_cfg.get("file", "03_REFERENCES") if isinstance(bib_cfg, dict) else bib_cfg
+        if bib_name.endswith(".bib"):
+            bib_name = bib_name[:-4]
+        # The bibliography style is given as the bibunit's optional argument so each unit
+        # records it directly. Relying on \defaultbibliographystyle alone is not robust
+        # here: bibunits writes \bibstyle lazily on a unit's first \cite, and the SI's
+        # first citation sits inside a deferred float, so the second unit (bu2.aux) could
+        # be left without a \bibstyle and yield an empty SI bibliography.
+        style = "rxiv_maker_style"
+        template_content = template_content.replace("<PY-RPL:BIBLIOGRAPHY>", "\\putbib")
+        template_content = template_content.replace(
+            "<PY-RPL:BIBUNITS-SETUP>",
+            f"\\usepackage{{bibunits}}\n\\defaultbibliographystyle{{{style}}}\n\\defaultbibliography{{{bib_name}}}",
+        )
+        template_content = template_content.replace("<PY-RPL:BIBUNIT-MAIN-BEGIN>", f"\\begin{{bibunit}}[{style}]")
+        template_content = template_content.replace("<PY-RPL:BIBUNIT-MAIN-END>", "\\end{bibunit}")
+        template_content = template_content.replace("<PY-RPL:BIBUNIT-SI-BEGIN>", f"\\begin{{bibunit}}[{style}]")
+        template_content = template_content.replace(
+            "<PY-RPL:BIBUNIT-SI-END>",
+            "\\newpage\n\\section*{Supplementary References}\n\\putbib\n\\end{bibunit}",
+        )
+    else:
+        template_content = template_content.replace("<PY-RPL:BIBLIOGRAPHY>", bibliography_section)
+        for _ph in (
+            "BIBUNITS-SETUP",
+            "BIBUNIT-MAIN-BEGIN",
+            "BIBUNIT-MAIN-END",
+            "BIBUNIT-SI-BEGIN",
+            "BIBUNIT-SI-END",
+        ):
+            template_content = template_content.replace(f"<PY-RPL:{_ph}>", "")
 
     # Extract content sections from markdown
     # Get citation style from metadata

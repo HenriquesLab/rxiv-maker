@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.0] - 2026-06-18
+
+### Added
+- `rxiv pdf --split-si` now gives the main text and the supplementary information
+  **separate, self-contained reference lists, each numbered from 1**, so the split
+  `__main.pdf` and `__si.pdf` are each independently submittable. Previously the
+  single shared bibliography lived in the main section, leaving the SI PDF with
+  citation numbers but no reference list. Implemented with the `bibunits` package
+  (two bibliography units, BibTeX run per unit); the SI list is titled
+  "Supplementary References". A normal (non-split) build is unchanged and keeps a
+  single combined bibliography. A reference cited in both the main text and the SI
+  appears in both lists, as expected for independently-submittable files.
+
 ## [1.21.0] - 2026-06-18
 
 ### Added

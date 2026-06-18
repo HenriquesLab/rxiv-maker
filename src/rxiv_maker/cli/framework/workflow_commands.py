@@ -197,6 +197,7 @@ class BuildCommand(BaseCommand):
                     clear_output=not keep_output,
                     verbose=self.verbose or debug,
                     quiet=quiet,
+                    split_si=split_si,
                 )
 
                 # Progress already shown by progress_operation context manager

@@ -89,7 +89,7 @@ rxiv pdf
 - `--force-figures` - Regenerate all figures regardless of cache
 - `--skip-validation` - Skip manuscript validation (faster)
 - `--track-changes <tag>` - Track changes against specified git tag
-- `--split-si` - Split the final PDF into `__main.pdf` and `__si.pdf`
+- `--split-si` - Split the final PDF into `__main.pdf` and `__si.pdf`. The main text and the SI each get their own reference list numbered from 1, so both files are independently submittable (a normal build keeps one combined bibliography)
 - `--verbose` - Detailed output for debugging
 - `--quiet` - Minimal output
 - `--debug` - Enable debug output
