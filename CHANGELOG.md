@@ -10,9 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.22.0] - 2026-06-18
 
 ### Added
-- `rxiv pdf --split-si` now gives the main text and the supplementary information
-  **separate, self-contained reference lists, each numbered from 1**, so the split
-  `__main.pdf` and `__si.pdf` are each independently submittable. Previously the
+- `rxiv pdf --split-si` (and `rxiv docx --split-si-pdf`, which emits a split SI PDF)
+  now give the main text and the supplementary information **separate, self-contained
+  reference lists, each numbered from 1**, so the split `__main.pdf` and `__si.pdf` are
+  each independently submittable. Previously the
   single shared bibliography lived in the main section, leaving the SI PDF with
   citation numbers but no reference list. Implemented with the `bibunits` package
   (two bibliography units, BibTeX run per unit); the SI list is titled
