@@ -58,7 +58,7 @@ class TestGeneratePreprintCore(unittest.TestCase):
         mock_find_md.assert_called_once_with(None)
         # process_template_replacements now takes output_path as 4th parameter (added in v1.16.1 for .bst generation)
         mock_process_template.assert_called_once_with(
-            "template content", self.yaml_metadata, "/fake/manuscript.md", ANY
+            "template content", self.yaml_metadata, "/fake/manuscript.md", ANY, split_si=False
         )
         mock_write_output.assert_called_once_with(self.output_dir, "processed template content", manuscript_name=None)
         mock_generate_supp.assert_called_once_with(self.output_dir, self.yaml_metadata, None)
@@ -339,7 +339,9 @@ class TestGeneratePreprintIntegration(unittest.TestCase):
         mock_create_dir.assert_called_once_with(self.output_dir)
         mock_find_md.assert_called_once_with("/custom/manuscript.md")
         # process_template_replacements now takes output_path as 4th parameter (added in v1.16.1 for .bst generation)
-        mock_process_template.assert_called_once_with(template_content, yaml_metadata, "/manuscripts/paper.md", ANY)
+        mock_process_template.assert_called_once_with(
+            template_content, yaml_metadata, "/manuscripts/paper.md", ANY, split_si=False
+        )
         mock_write_output.assert_called_once_with(
             self.output_dir, "\\documentclass{article}\\begin{document}...", manuscript_name=None
         )

@@ -21,8 +21,12 @@ from rxiv_maker.utils import (
 )
 
 
-def generate_preprint(output_dir, yaml_metadata, manuscript_path=None):
-    """Generate the preprint using the template."""
+def generate_preprint(output_dir, yaml_metadata, manuscript_path=None, split_si=False):
+    """Generate the preprint using the template.
+
+    When ``split_si`` is set, the main body and the SI each get their own
+    bibliography (numbered from 1) so the eventual split PDFs are self-contained.
+    """
     # Ensure output directory exists
     create_output_dir(output_dir)
 
@@ -34,7 +38,9 @@ def generate_preprint(output_dir, yaml_metadata, manuscript_path=None):
     manuscript_md = find_manuscript_md(manuscript_path)
 
     # Process all template replacements
-    template_content = process_template_replacements(template_content, yaml_metadata, str(manuscript_md), output_dir)
+    template_content = process_template_replacements(
+        template_content, yaml_metadata, str(manuscript_md), output_dir, split_si=split_si
+    )
 
     # Extract manuscript name using centralized logic (PathManager handles this via write_manuscript_output)
     # The write_manuscript_output function now uses PathManager internally for consistent name extraction

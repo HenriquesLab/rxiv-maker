@@ -42,6 +42,7 @@ class BuildManager:
         verbose: bool = False,
         quiet: bool = False,
         track_changes_tag: str | None = None,
+        split_si: bool = False,
     ):
         """Initialize build manager.
 
@@ -55,6 +56,8 @@ class BuildManager:
             verbose: Enable verbose output
             quiet: Suppress non-critical warnings
             track_changes_tag: Git tag to track changes against
+            split_si: Build with separate main/SI bibliographies (bibunits) so the
+                PDF can later be split into self-contained main and SI documents
         """
         # Initialize centralized path management
         self.path_manager = PathManager(manuscript_path=manuscript_path, output_dir=output_dir)
@@ -67,6 +70,7 @@ class BuildManager:
         self.verbose = verbose or EnvironmentManager.is_verbose()
         self.quiet = quiet
         self.track_changes_tag = track_changes_tag
+        self.split_si = split_si
 
         # Provide legacy interface for backward compatibility
         self.manuscript_path = str(self.path_manager.manuscript_path)
@@ -352,6 +356,7 @@ class BuildManager:
                 output_dir=str(self.output_dir),
                 yaml_metadata=yaml_metadata,
                 manuscript_path=str(self.path_manager.manuscript_path),
+                split_si=self.split_si,
             )
 
             success = manuscript_output is not None
@@ -505,15 +510,37 @@ class BuildManager:
 
                 if self.references_bib.exists() and aux_file.exists():
                     self.log("Running bibtex...")
-                    bibtex_result = subprocess.run(
-                        ["bibtex", tex_file.stem],
-                        capture_output=True,
-                        text=False,
-                        cwd=str(self.output_dir),
-                        timeout=60,
-                    )
+                    # With --split-si the document uses bibunits: citations live in
+                    # per-unit aux files (bu1.aux, bu2.aux, ...), not the main .aux.
+                    bibtex_targets = [tex_file.stem]
+                    if self.split_si:
+                        # bibunits writes \bibstyle lazily on a unit's first \cite; when
+                        # that citation sits inside a deferred float the line can be missing
+                        # from a unit's aux, which makes bibtex abort ("no \bibstyle command")
+                        # and leave that bibliography empty. Ensure every unit aux carries it.
+                        for bu_aux in sorted(self.output_dir.glob("bu*.aux")):
+                            try:
+                                _aux_text = bu_aux.read_text(encoding="utf-8")
+                                if "\\bibstyle{" not in _aux_text:
+                                    bu_aux.write_text("\\bibstyle{rxiv_maker_style}\n" + _aux_text, encoding="utf-8")
+                            except Exception as _e:
+                                self.log(f"Could not patch {bu_aux.name} bibstyle: {_e}", "WARNING")
+                        bibtex_targets += sorted(p.stem for p in self.output_dir.glob("bu*.aux"))
+                    bibtex_any_ok = False
+                    for _target in bibtex_targets:
+                        _r = subprocess.run(
+                            ["bibtex", _target],
+                            capture_output=True,
+                            text=False,
+                            cwd=str(self.output_dir),
+                            timeout=60,
+                        )
+                        if _r.returncode == 0:
+                            bibtex_any_ok = True
 
-                    if bibtex_result.returncode == 0:
+                    # Under bibunits the main .aux has no \citation, so its bibtex run
+                    # "fails"; the unit runs are what matter, so still do the second pass.
+                    if bibtex_any_ok or self.split_si:
                         self.log("Bibtex completed successfully", "INFO")
 
                         # Second pass - after bibtex

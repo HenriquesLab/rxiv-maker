@@ -114,11 +114,14 @@ def _build_and_export_si_pdf(manuscript_path: str, quiet: bool, verbose: bool) -
     if not quiet:
         console.print(f"[cyan]{get_safe_icon('📄', '[PDF]')} Building PDF for SI split...[/cyan]")
 
+    # This build exists only to be split, so it always uses separate main/SI
+    # bibliographies (each numbered from 1) - same path as `rxiv pdf --split-si`.
     build_manager = BuildManager(
         manuscript_path=manuscript_path,
         output_dir="output",
         verbose=verbose,
         quiet=quiet,
+        split_si=True,
     )
     if not build_manager.build():
         raise RuntimeError("PDF build failed")
