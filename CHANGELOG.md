@@ -19,7 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (two bibliography units, BibTeX run per unit); the SI list is titled
   "Supplementary References". A normal (non-split) build is unchanged and keeps a
   single combined bibliography. A reference cited in both the main text and the SI
-  appears in both lists, as expected for independently-submittable files.
+  appears in both lists, as expected for independently-submittable files. The
+  "Supplementary References" list is omitted when the SI has no citations.
 
 ## [1.21.0] - 2026-06-18
 

@@ -340,6 +340,25 @@ def generate_bibliography(yaml_metadata, output_dir=None):
     return f"\\bibliography{{{bibliography}}}"
 
 
+def _supplementary_has_citations(article_md):
+    r"""Best-effort check for whether the SI markdown contains any citations.
+
+    Used to decide whether a split build should print a "Supplementary References"
+    list: an SI with no citations would otherwise get an empty heading. Matches both
+    markdown ``[@key]`` citations and real ``\cite{...}`` commands (the escaped display
+    form ``\textbackslash cite\{...\}`` in syntax tables does not match). Defaults to
+    True on any uncertainty so a real reference list is never dropped.
+    """
+    try:
+        si_path = Path(article_md).parent / "02_SUPPLEMENTARY_INFO.md"
+        if not si_path.is_file():
+            return False
+        text = si_path.read_text(encoding="utf-8")
+        return bool(re.search(r"\[@[A-Za-z0-9_]", text) or re.search(r"\\cite[a-z]*\{", text))
+    except Exception:
+        return True
+
+
 def process_template_replacements(template_content, yaml_metadata, article_md, output_dir=None, split_si=False):
     """Process all template replacements with metadata and content.
 
@@ -471,11 +490,16 @@ def process_template_replacements(template_content, yaml_metadata, article_md, o
         if bib_name.endswith(".bib"):
             bib_name = bib_name[:-4]
         # The bibliography style is given as the bibunit's optional argument so each unit
-        # records it directly. Relying on \defaultbibliographystyle alone is not robust
-        # here: bibunits writes \bibstyle lazily on a unit's first \cite, and the SI's
-        # first citation sits inside a deferred float, so the second unit (bu2.aux) could
-        # be left without a \bibstyle and yield an empty SI bibliography.
+        # records it directly. \defaultbibliographystyle alone proved unreliable for the
+        # second unit (its bu2.aux came out without a \bibstyle, yielding an empty SI
+        # bibliography); the build also guards against that at the aux level before BibTeX.
         style = "rxiv_maker_style"
+        # Only print a "Supplementary References" list when the SI actually cites something,
+        # otherwise the heading would appear with nothing under it.
+        si_has_citations = _supplementary_has_citations(article_md)
+        si_end = "\\end{bibunit}"
+        if si_has_citations:
+            si_end = "\\newpage\n\\section*{Supplementary References}\n\\putbib\n\\end{bibunit}"
         template_content = template_content.replace("<PY-RPL:BIBLIOGRAPHY>", "\\putbib")
         template_content = template_content.replace(
             "<PY-RPL:BIBUNITS-SETUP>",
@@ -486,7 +510,7 @@ def process_template_replacements(template_content, yaml_metadata, article_md, o
         template_content = template_content.replace("<PY-RPL:BIBUNIT-SI-BEGIN>", f"\\begin{{bibunit}}[{style}]")
         template_content = template_content.replace(
             "<PY-RPL:BIBUNIT-SI-END>",
-            "\\newpage\n\\section*{Supplementary References}\n\\putbib\n\\end{bibunit}",
+            si_end,
         )
     else:
         template_content = template_content.replace("<PY-RPL:BIBLIOGRAPHY>", bibliography_section)
