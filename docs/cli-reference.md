@@ -279,6 +279,9 @@ rxiv docx --split-si
 
 # Export main text as DOCX and SI as PDF
 rxiv docx --split-si-pdf
+
+# Render every table as an image (one consistent style, matching the PDF)
+rxiv docx --tables-as-images
 ```
 
 **Options**:
@@ -287,8 +290,11 @@ rxiv docx --split-si-pdf
 - `--no-footnotes` - Disable DOI footnotes/references section
 - `--split-si` - Output `__main.docx` and `__si.docx`
 - `--split-si-pdf` - Output `__main.docx` and `__si.pdf`
+- `--tables-as-images` - Render Markdown tables as images too, so they share one style with `{{tex}}` tables and match the PDF (off by default; Markdown tables otherwise stay native, editable Word tables)
 - `--verbose` - Detailed output for debugging
 - `--quiet` - Minimal output
+
+**Tables**: complex `{{tex:...}}` (raw LaTeX) tables are rendered as images and embedded automatically, since Word cannot run LaTeX. Markdown tables become native, editable Word tables by default; use `--tables-as-images` (or set `docx.tables_as_images: true` in `00_CONFIG.yml`) to render those as images as well.
 
 ---
 

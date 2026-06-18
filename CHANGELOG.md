@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.21.0] - 2026-06-18
+
+### Added
+- DOCX: raw `{{tex:...}}` tables are now rendered to an image and embedded in the
+  Word output instead of being replaced by a "refer to the PDF version"
+  placeholder. The table LaTeX is compiled standalone (pdflatex → pdftoppm) and
+  any numeric citation command inside it (`\cite`, `\citep`, `\citet`, `\autocite`,
+  `\parencite`, `\textcite`, `\citenum`) is resolved to the document's citation
+  numbers so the image matches the surrounding text. `longtable` blocks are converted to a single
+  `tabular` for the still image. Behaviour is on by default with automatic
+  fallback to the previous textual placeholder if a table cannot be rendered (no
+  LaTeX toolchain, or a block that fails to compile).
+- DOCX: new `--tables-as-images` option (CLI flag, or `docx.tables_as_images: true`
+  in config) renders *Markdown* tables as images too, so every table shares one
+  style with `{{tex}}` tables and matches the PDF. Off by default (Markdown tables
+  stay native, editable Word tables). Reuses the PDF Markdown-to-LaTeX table
+  converter; cross-references and citations in cells are already resolved to text.
+
+### Fixed
+- DOCX: standalone supplementary-table caption markers no longer leak into the Word
+  output. A `{#stable:label}` caption that precedes a `{{tex}}` table (or the
+  `%{#stable:label}` variant whose `%` hides the marker from LaTeX) was emitted
+  verbatim instead of rendered; it is now formatted as `Supp. Table SN. <caption>`
+  and placed directly below the table image (matching Markdown-table/PDF caption
+  placement), kept on the same page as the table.
+- DOCX: supplementary tables are numbered correctly when a manuscript mixes label
+  styles. Table numbering now counts both `{#stable:label}` and `\label{stable:label}`
+  forms in document order; previously a single LaTeX `\label` (e.g. inside a `{{tex}}`
+  table) caused all Markdown-labelled tables to be dropped from the numbering.
+
 ## [1.20.4] - 2026-06-12
 
 ### Fixed

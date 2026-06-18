@@ -745,7 +745,7 @@ rxiv track-changes submitted-version revision-version \
 
 ### 📄 Exporting to Word (DOCX)
 
-Collaborate with colleagues who don't use LaTeX/Markdown by exporting to DOCX. The export preserves formatting, figures, and citations.
+Collaborate with colleagues who don't use LaTeX/Markdown by exporting to DOCX. The export preserves formatting, figures, tables, and citations.
 
 ```bash
 # Export to DOCX
@@ -759,10 +759,14 @@ rxiv docx --split-si
 
 # Export main text as DOCX and supplementary information as PDF
 rxiv docx --split-si-pdf
+
+# Render every table as an image (one consistent style, matching the PDF)
+rxiv docx --tables-as-images
 ```
 
 **Features:**
 - **Figures**: Embedded as high-quality images
+- **Tables**: Markdown tables become native, editable Word tables. Complex `{{tex:...}}` (raw LaTeX) tables are rendered as images and embedded automatically (Word cannot run LaTeX), with their `\cite` references resolved to the document's citation numbers. Use `--tables-as-images` (or `docx.tables_as_images: true` in `00_CONFIG.yml`) to render *all* tables as images so they share one style and match the PDF.
 - **Citations**: Converted to numbered [1] or Author-Date (Smith, 2024) style
 - **Formatting**: Bold, italic, underline, and superscripts preserved
 - **References**: Full bibliography generated at the end of manuscript, but prior to Supplementary Information
