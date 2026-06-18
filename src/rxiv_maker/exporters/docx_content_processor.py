@@ -86,7 +86,16 @@ class DocxContentProcessor:
                     i += 1
                 i += 1  # skip the <<TEX_TABLE_END>> line
                 latex = resolve_latex_citations("\n".join(tex_lines).strip(), citation_map)
-                sections.append({"type": "tex_table", "latex": latex})
+                section = {"type": "tex_table", "latex": latex}
+                # A caption authored just above the {{tex}} block (the common
+                # %{#stable:label} convention) is attached here so the writer renders
+                # it BELOW the image - matching Markdown-table/PDF caption placement and
+                # keeping caption and image on the same page.
+                if sections and sections[-1].get("type") == "table_caption":
+                    cap = sections.pop()
+                    section["caption_label"] = cap["label"]
+                    section["caption_text"] = cap["caption"]
+                sections.append(section)
                 continue
 
             # Parse HTML/markdown comments (single-line and multi-line)

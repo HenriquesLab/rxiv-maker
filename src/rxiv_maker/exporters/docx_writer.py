@@ -1137,17 +1137,29 @@ class DocxWriter:
         document never silently loses the table.
         """
         latex = section.get("latex", "")
+        caption_text = section.get("caption_text")
+        # Keep the image with its caption below when a caption is attached.
+        keep_with_caption = bool(caption_text)
         image_path = self._render_tex_table_to_image(latex)
+        embedded = False
         if image_path is not None:
             try:
-                self._embed_table_image(doc, image_path)
-                return
+                self._embed_table_image(doc, image_path, keep_with_next=keep_with_caption)
+                embedded = True
             except Exception as e:  # pragma: no cover - defensive
                 logger.warning(f"Failed to embed tex-table image: {e}")
-        self._add_tex_table_placeholder(doc)
+        if not embedded:
+            self._add_tex_table_placeholder(doc)
+        # Caption goes below the table (matches Markdown-table and PDF placement).
+        if caption_text:
+            self._render_table_caption(doc, section.get("caption_label"), caption_text)
 
-    def _embed_table_image(self, doc: Document, image_path: Path):
-        """Embed a rendered table image, centered and fit to the page box."""
+    def _embed_table_image(self, doc: Document, image_path: Path, keep_with_next: bool = False):
+        """Embed a rendered table image, centered and fit to the page box.
+
+        When ``keep_with_next`` is set, the image paragraph is bound to the following
+        paragraph (its caption) so Word does not split them across a page break.
+        """
         from PIL import Image as PILImage
 
         sec = doc.sections[-1]
@@ -1158,6 +1170,8 @@ class DocxWriter:
 
         para = doc.add_paragraph()
         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        if keep_with_next:
+            para.paragraph_format.keep_with_next = True
         run = para.add_run()
         # Wide tables constrain by width; unusually tall ones constrain by height.
         if (w / h) >= (avail_w / avail_h):

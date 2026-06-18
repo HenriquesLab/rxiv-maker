@@ -23,8 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - DOCX: standalone supplementary-table caption markers no longer leak into the Word
   output. A `{#stable:label}` caption that precedes a `{{tex}}` table (or the
   `%{#stable:label}` variant whose `%` hides the marker from LaTeX) was emitted
-  verbatim instead of rendered; it is now formatted as `Supp. Table SN. <caption>`,
-  matching captions attached to Markdown tables.
+  verbatim instead of rendered; it is now formatted as `Supp. Table SN. <caption>`
+  and placed directly below the table image (matching Markdown-table/PDF caption
+  placement), kept on the same page as the table.
 - DOCX: supplementary tables are numbered correctly when a manuscript mixes label
   styles. Table numbering now counts both `{#stable:label}` and `\label{stable:label}`
   forms in document order; previously a single LaTeX `\label` (e.g. inside a `{{tex}}`

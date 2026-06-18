@@ -138,6 +138,23 @@ class TestStandaloneTableCaption:
         caps = [s for s in parsed["sections"] if s["type"] == "table_caption"]
         assert len(caps) == 1 and caps[0]["label"] == "stable:vm_params"
 
+    def test_caption_above_table_attaches_below(self):
+        # A %{#stable:x} caption authored above a {{tex}} block is attached to the
+        # tex_table (rendered below the image), not left as a standalone section.
+        md = (
+            "%{#stable:comparison} **Comparison of tools.**\n\n"
+            "{{tex:\n\\begin{stable}[h!]\n\\begin{tabular}{|l|l|}\n\\hline\n"
+            "A & B \\\\\n\\hline\n\\end{tabular}\n\\end{stable}\n}}\n"
+        )
+        pre = MarkdownPreprocessor().process(md, target_format="docx")
+        parsed = DocxContentProcessor().parse(pre, {})
+        tex = [s for s in parsed["sections"] if s["type"] == "tex_table"]
+        caps = [s for s in parsed["sections"] if s["type"] == "table_caption"]
+        assert len(tex) == 1
+        assert tex[0]["caption_label"] == "stable:comparison"
+        assert "Comparison of tools" in tex[0]["caption_text"]
+        assert len(caps) == 0  # attached, not left standalone
+
     def test_caption_below_md_table_not_double_emitted(self):
         md = "| A | B |\n|---|---|\n| 1 | 2 |\n\n{#stable:t} Caption text.\n"
         parsed = DocxContentProcessor().parse(md, {})
