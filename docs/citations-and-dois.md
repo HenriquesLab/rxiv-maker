@@ -479,6 +479,6 @@ All other files remain unchanged.
 
 ## See Also
 
-- [BibTeX Management](bibliography.md) - Managing bibliography files
-- [Citation Syntax](citation-syntax.md) - Full citation markdown syntax
-- [Configuration Reference](configuration.md) - All config options
+- [User Guide](https://rxiv-maker.henriqueslab.org/guides/) - Citation syntax and bibliography basics
+- [Configuration Reference](https://rxiv-maker.henriqueslab.org/guides/configuration/) - All config options
+- [How to Cite Rxiv-Maker](https://rxiv-maker.henriqueslab.org/community/citations/)

@@ -1,43 +1,35 @@
 # Rxiv-Maker Documentation
 
-Write scientific preprints in Markdown. Generate publication-ready PDFs.
+The complete user documentation lives on the website:
 
-## Getting Started
+### **[rxiv-maker.henriqueslab.org](https://rxiv-maker.henriqueslab.org)**
 
-1. **[Installation](installation.md)** - Install Rxiv-Maker and dependencies
-2. **[First Manuscript](first-manuscript.md)** - Create your first PDF in 5 minutes
-3. **[User Guide](user_guide.md)** - Complete features and workflows
+Installation, the first-manuscript tutorial, the user guide, CLI reference, and troubleshooting are all maintained there.
 
-## Core Features
+| Topic | Where |
+|-------|-------|
+| Install Rxiv-Maker | [Installation](https://rxiv-maker.henriqueslab.org/getting-started/installation/) |
+| Build your first PDF | [First Manuscript](https://rxiv-maker.henriqueslab.org/getting-started/first-manuscript/) |
+| Day-to-day writing | [User Guide](https://rxiv-maker.henriqueslab.org/guides/) |
+| Live code in manuscripts | [Python Execution](https://rxiv-maker.henriqueslab.org/advanced/python-execution/) |
+| All commands | [CLI Reference](https://rxiv-maker.henriqueslab.org/api/) |
+| Fix a problem | [Troubleshooting](https://rxiv-maker.henriqueslab.org/community/troubleshooting/) |
 
-- **[Python Execution](python-execution-guide.md)** - Jupyter-like code blocks in your manuscript
-- **[Figures Guide](figures-guide.md)** - Automated figure generation from scripts
-- **[Writing Guide](writing-guide.md)** - Enhanced Markdown syntax
-- **[Change Tracking](change-tracking.md)** - Visual diff between versions
+## In this folder
 
-## Reference
+Specialised references that complement the website:
 
-- **[CLI Reference](cli-reference.md)** - All commands and options
-- **[Rxiv Markdown](rxiv-markdown.md)** - Markdown syntax reference
-- **[Troubleshooting](troubleshooting.md)** - Common issues and solutions
-- **[Google Colab](google_colab.md)** - Browser-based usage
+- **[Figures Guide](figures-guide.md)** — automated figure generation from Python/R scripts
+- **[Citations and DOIs](citations-and-dois.md)** — bibliography management and DOI resolution
+- **[Change Tracking](change-tracking.md)** — visual diff between manuscript versions
+- **[Containers](containers.md)** — Docker/Podman usage via docker-rxiv-maker
+- **[Google Colab](google_colab.md)** — browser-based usage
+- **[Ecosystem](ECOSYSTEM.md)** — how the rxiv-maker repositories fit together
 
-## Advanced
+Contributing? See [CONTRIBUTING.md](../CONTRIBUTING.md).
 
-- **[Containers](containers.md)** - Docker/Podman usage via docker-rxiv-maker
+## Get help
 
-## Quick Commands
-
-```bash
-rxiv init my-paper          # Create new manuscript
-rxiv pdf                    # Generate PDF
-rxiv validate              # Check manuscript
-rxiv arxiv                 # Prepare arXiv submission
-rxiv track-changes v1 v2   # Compare versions
-```
-
-## Get Help
-
-- [GitHub Discussions](https://github.com/henriqueslab/rxiv-maker/discussions) - Questions and tips
-- [GitHub Issues](https://github.com/henriqueslab/rxiv-maker/issues) - Bug reports
-- `rxiv --help` - Command help
+- [GitHub Discussions](https://github.com/henriqueslab/rxiv-maker/discussions) — questions and tips
+- [GitHub Issues](https://github.com/henriqueslab/rxiv-maker/issues) — bug reports
+- `rxiv --help` — command help
