@@ -14,7 +14,7 @@ rxiv pdf --verbose        # see the full build log
 
 ## Installation Issues
 
-`rxiv: command not found` after `pipx install` usually means pipx's bin directory is not on `PATH` — run `pipx ensurepath` and open a new shell. On macOS, prefer `brew install henriqueslab/formulas/rxiv-maker`, which also installs LaTeX. Verify with `rxiv check-installation`.
+`rxiv: command not found` after `pipx install` usually means pipx's bin directory is not on `PATH`; run `pipx ensurepath` and open a new shell. On macOS, prefer `brew install henriqueslab/formulas/rxiv-maker`, which also installs LaTeX. Verify with `rxiv check-installation`.
 
 ## PDF Generation Failures
 
@@ -34,9 +34,9 @@ Slow builds are dominated by figure regeneration. During iteration use `rxiv pdf
 
 ## Platform-Specific Problems
 
-- **Windows** — run inside WSL2; native Windows is not supported for the full LaTeX pipeline.
-- **macOS (Apple Silicon)** — install via Homebrew so the bundled LaTeX matches the architecture.
-- **Linux** — install a full TeX Live (`texlive-full`) rather than the minimal package to avoid missing `.sty` files.
+- **Windows**: run inside WSL2; native Windows is not supported for the full LaTeX pipeline.
+- **macOS (Apple Silicon)**: install via Homebrew so the bundled LaTeX matches the architecture.
+- **Linux**: install a full TeX Live (`texlive-full`) instead of the minimal package to avoid missing `.sty` files.
 
 ## More help
 

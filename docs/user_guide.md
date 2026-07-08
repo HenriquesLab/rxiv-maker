@@ -1,6 +1,6 @@
 # User Guide
 
-The user guide — writing cycle, manuscript structure, enhanced Markdown, figures, citations, and DOCX export — lives on the website:
+The user guide lives on the website. It covers the writing cycle, manuscript structure, enhanced Markdown, figures, citations, and DOCX export.
 
 **[User Guide →](https://rxiv-maker.henriqueslab.org/guides/)**
 

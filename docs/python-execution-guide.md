@@ -1,6 +1,6 @@
 # Python Execution
 
-The guide to embedding executable Python in a manuscript — `{{py:exec}}` blocks and `{{py:get}}` inline values — lives on the website:
+The guide to embedding executable Python in a manuscript (`{{py:exec}}` blocks and `{{py:get}}` inline values) lives on the website:
 
 **[Python Execution guide →](https://rxiv-maker.henriqueslab.org/advanced/python-execution/)**
 

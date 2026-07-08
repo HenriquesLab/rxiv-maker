@@ -1,6 +1,6 @@
 # Rxiv Markdown
 
-Rxiv-Maker's enhanced Markdown — cross-references (`@fig:`, `@eq:`, `@tbl:`), citations (`[@key]`), math, and figure attributes — is documented on the website:
+Rxiv-Maker's enhanced Markdown is documented on the website: cross-references (`@fig:`, `@eq:`, `@tbl:`), citations (`[@key]`), math, and figure attributes.
 
 **[Enhanced Markdown (User Guide) →](https://rxiv-maker.henriqueslab.org/guides/)**
 
