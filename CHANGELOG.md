@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.1] - 2026-07-09
+
+### Fixed
+- Corrected the spelling of co-author **Guillaume Jacquemet** (previously "Jaquemet",
+  missing the 'c') in the canonical rxiv-maker citation that the tool injects into
+  manuscripts (`citation_utils.py`), as well as in the README citation snippet and the
+  bundled manuscript bibliography. Manuscripts built with earlier versions may carry the
+  misspelled name in their `saraiva_2025_rxivmaker` reference; re-running the build with
+  this version refreshes the injected citation.
+
 ## [1.22.0] - 2026-06-18
 
 ### Added
