@@ -10,7 +10,7 @@ from .unicode_safe import get_safe_icon, safe_print
 # Current canonical rxiv-maker citation
 CANONICAL_RXIV_CITATION = """@misc{saraiva_2025_rxivmaker,
       title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
-      author={Bruno M. Saraiva and António D. Brito and Guillaume Jacquemet and Ricardo Henriques},
+      author={Bruno M. Saraiva and Rita Carlota and António D. Brito and Iván Hidalgo-Cenalmor and Guillaume Jacquemet and Ricardo Henriques},
       year={2025},
       eprint={2508.00836},
       archivePrefix={arXiv},
@@ -48,7 +48,10 @@ def is_citation_outdated(existing_citation: str) -> bool:
         True if citation needs updating, False if it's current
     """
     # Extract key fields for comparison
-    current_authors = "Bruno M. Saraiva and António D. Brito and Guillaume Jacquemet and Ricardo Henriques"
+    current_authors = (
+        "Bruno M. Saraiva and Rita Carlota and António D. Brito and Iván Hidalgo-Cenalmor "
+        "and Guillaume Jacquemet and Ricardo Henriques"
+    )
     current_title = "Rxiv-Maker: an automated template engine for streamlined scientific publications"
     current_eprint = "2508.00836"
     current_doi = "10.48550/arXiv.2508.00836"

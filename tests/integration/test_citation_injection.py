@@ -100,7 +100,8 @@ Thanks to everyone.
         assert "saraiva_2025_rxivmaker" in updated_bib_content
         assert "Rxiv-Maker: an automated template engine" in updated_bib_content
         assert (
-            "Bruno M. Saraiva and António D. Brito and Guillaume Jacquemet and Ricardo Henriques" in updated_bib_content
+            "Bruno M. Saraiva and Rita Carlota and António D. Brito and Iván Hidalgo-Cenalmor and Guillaume Jacquemet and Ricardo Henriques"
+            in updated_bib_content
         )
 
         # Verify original content is preserved
@@ -277,6 +278,34 @@ Original acknowledgements.
                 content = bib_file.read_text(encoding="utf-8")
                 assert "saraiva_2025_rxivmaker" in content
 
+    def test_citation_injection_refreshes_stale_entry(self):
+        """Test that a previously injected citation is refreshed to the current authors."""
+        bib_file = self.manuscript_dir / "03_REFERENCES.bib"
+        bib_file.write_text(
+            """@misc{saraiva_2025_rxivmaker,
+      title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
+      author={Bruno M. Saraiva and António D. Brito and Guillaume Jacquemet and Ricardo Henriques},
+      year={2025},
+      eprint={2508.00836},
+      archivePrefix={arXiv},
+      primaryClass={cs.DL},
+      doi={10.48550/arXiv.2508.00836},
+      url={https://arxiv.org/abs/2508.00836},
+}""",
+            encoding="utf-8",
+        )
+
+        with patch.dict(os.environ, {"MANUSCRIPT_PATH": str(self.manuscript_dir)}):
+            with patch("pathlib.Path.cwd", return_value=Path(self.temp_dir)):
+                inject_rxiv_citation({"acknowledge_rxiv_maker": True})
+
+        content = bib_file.read_text(encoding="utf-8")
+        assert (
+            "Bruno M. Saraiva and Rita Carlota and António D. Brito and Iván Hidalgo-Cenalmor and Guillaume Jacquemet and Ricardo Henriques"
+            in content
+        )
+        assert "Bruno M. Saraiva and António D. Brito and Guillaume Jacquemet and Ricardo Henriques" not in content
+
     def test_citation_injection_error_handling(self):
         """Test that citation injection handles various error conditions gracefully."""
         test_metadata = {"acknowledge_rxiv_maker": True}
@@ -313,7 +342,10 @@ Original acknowledgements.
 
         # Verify content is correct
         assert "Rxiv-Maker: an automated template engine" in content
-        assert "Bruno M. Saraiva and António D. Brito and Guillaume Jacquemet and Ricardo Henriques" in content
+        assert (
+            "Bruno M. Saraiva and Rita Carlota and António D. Brito and Iván Hidalgo-Cenalmor and Guillaume Jacquemet and Ricardo Henriques"
+            in content
+        )
 
     def test_acknowledgment_includes_version_in_generated_manuscript(self):
         """Test that acknowledgment text includes version in generated manuscript."""
