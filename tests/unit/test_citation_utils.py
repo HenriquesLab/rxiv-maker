@@ -61,7 +61,10 @@ class TestInjectRxivCitation:
         content = self.bib_file.read_text(encoding="utf-8")
         assert "saraiva_2025_rxivmaker" in content
         assert "Rxiv-Maker: an automated template engine" in content
-        assert "Bruno M. Saraiva and António D. Brito and Guillaume Jacquemet and Ricardo Henriques" in content
+        assert (
+            "Bruno M. Saraiva and Rita Carlota and António D. Brito and Iván Hidalgo-Cenalmor and Guillaume Jacquemet and Ricardo Henriques"
+            in content
+        )
         assert "2025" in content
         assert "arxiv.org/abs/2508.00836" in content
 
@@ -95,7 +98,7 @@ class TestInjectRxivCitation:
         # Create bibliography with current, complete rxiv-maker citation
         existing_content = """@misc{saraiva_2025_rxivmaker,
       title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
-      author={Bruno M. Saraiva and António D. Brito and Guillaume Jacquemet and Ricardo Henriques},
+      author={Bruno M. Saraiva and Rita Carlota and António D. Brito and Iván Hidalgo-Cenalmor and Guillaume Jacquemet and Ricardo Henriques},
       year={2025},
       eprint={2508.00836},
       archivePrefix={arXiv},
@@ -265,7 +268,10 @@ class TestInjectRxivCitation:
         # Validate required BibTeX fields
         assert "@misc{saraiva_2025_rxivmaker," in content
         assert "title={Rxiv-Maker: an automated template engine for streamlined scientific publications}" in content
-        assert "author={Bruno M. Saraiva and António D. Brito and Guillaume Jacquemet and Ricardo Henriques}" in content
+        assert (
+            "author={Bruno M. Saraiva and Rita Carlota and António D. Brito and Iván Hidalgo-Cenalmor and Guillaume Jacquemet and Ricardo Henriques}"
+            in content
+        )
         assert "year={2025}" in content
         assert "eprint={2508.00836}" in content
         assert "archivePrefix={arXiv}" in content
@@ -315,7 +321,10 @@ class TestInjectRxivCitation:
         # Check content was updated with new author list
         content = self.bib_file.read_text(encoding="utf-8")
         assert "António D. Brito" in content
-        assert "Bruno M. Saraiva and António D. Brito and Guillaume Jacquemet and Ricardo Henriques" in content
+        assert (
+            "Bruno M. Saraiva and Rita Carlota and António D. Brito and Iván Hidalgo-Cenalmor and Guillaume Jacquemet and Ricardo Henriques"
+            in content
+        )
 
     def test_inject_citation_updates_malformed_citation(self, capsys):
         """Test that malformed citations are updated correctly."""
@@ -385,7 +394,10 @@ class TestInjectRxivCitation:
         assert "another2023" in content
         assert "John Smith" in content
         assert "António D. Brito" in content
-        assert "Bruno M. Saraiva and António D. Brito and Guillaume Jacquemet and Ricardo Henriques" in content
+        assert (
+            "Bruno M. Saraiva and Rita Carlota and António D. Brito and Iván Hidalgo-Cenalmor and Guillaume Jacquemet and Ricardo Henriques"
+            in content
+        )
 
     def test_extract_existing_citation_function(self):
         """Test the extract_existing_citation helper function."""
@@ -441,7 +453,7 @@ class TestInjectRxivCitation:
         # Test current citation
         current_citation = """@misc{saraiva_2025_rxivmaker,
       title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
-      author={Bruno M. Saraiva and António D. Brito and Guillaume Jacquemet and Ricardo Henriques},
+      author={Bruno M. Saraiva and Rita Carlota and António D. Brito and Iván Hidalgo-Cenalmor and Guillaume Jacquemet and Ricardo Henriques},
       year={2025},
       eprint={2508.00836},
       doi={10.48550/arXiv.2508.00836}
