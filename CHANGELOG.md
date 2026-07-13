@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.2] - 2026-07-13
+
+### Fixed
+- Updated the canonical Rxiv-Maker citation to credit Rita Carlota and Iván Hidalgo-Cenalmor, and refreshed the bundled manuscript bibliography and README snippet. Existing manuscripts now replace the previous four-author citation when rebuilt.
+
 ## [1.22.1] - 2026-07-09
 
 ### Fixed

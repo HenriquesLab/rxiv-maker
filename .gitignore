@@ -1,4 +1,5 @@
 # Build directories (contains all generated files)
+.worktrees/
 build/
 output/
 dist/
