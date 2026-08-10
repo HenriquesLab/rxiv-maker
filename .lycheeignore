@@ -17,6 +17,8 @@ https://github.com/user/repo
 
 # URLs that require authentication
 https://github.com/settings
+# GitHub serves 404 to anonymous requests for this page; the badge link is fine in a browser
+https://github.com/HenriquesLab/rxiv-maker/stargazers
 
 # Known temporary unavailability (remove when fixed)
 # Add specific URLs here if they're temporarily down

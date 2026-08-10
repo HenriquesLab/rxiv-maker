@@ -44,4 +44,4 @@ Add new manuscripts to this directory when you need to:
 
 - [User Guide](../../docs/user_guide.md) - For user-facing examples
 - [Figures Guide](../../docs/figures-guide.md) - Figure usage documentation
-- [Developer Guide]() - Development workflows
+- [Contributing Guide](../../CONTRIBUTING.md) - Development workflows
