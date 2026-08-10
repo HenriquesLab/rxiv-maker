@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.4] - 2026-08-10
+
+### Fixed
+- Author-date DOCX citations no longer leak LaTeX escapes from the bibliography.
+  A BibTeX author field such as `Popovi\'{c}` rendered as `Popovi\'{c` in the
+  in-text citation, because the author-date label read the raw field while the
+  reference list cleaned it. The label now runs the same cleaning pass.
+- LaTeX accent conversion now handles the general braced form `\X{letter}`, which
+  is what BibTeX files normally carry. The previous literal lookup table covered
+  `\'e` and `{\'e}` but not `\'{e}`, so `Popovi\'{c}` degraded to `Popovi'c` and
+  `Pylv\"{a}n\"{a}inen` to `Pylv"an"ainen` in DOCX reference lists. Acute, grave,
+  circumflex, diaeresis, tilde, macron, dot, breve, caron, double acute, cedilla,
+  ogonek and ring are composed to Unicode via combining marks.
+
 ## [1.22.3] - 2026-08-10
 
 ### Fixed

@@ -29,7 +29,14 @@ def _surname(name: str) -> str:
 
 
 def _author_label(author_field: str) -> str:
-    """Build the author portion of an author-date citation."""
+    r"""Build the author portion of an author-date citation.
+
+    BibTeX author fields carry LaTeX escapes (``Popovi\'{c}``), so clean them to
+    Unicode first; otherwise the escape leaks into the rendered citation.
+    """
+    from ..utils.docx_helpers import clean_latex_commands
+
+    author_field = clean_latex_commands(author_field)
     names = [n for n in (p.strip() for p in author_field.split(" and ")) if n]
     surnames = [s for s in (_surname(n) for n in names) if s]
     if not surnames:

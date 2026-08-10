@@ -338,3 +338,41 @@ class TestAuthorDateStyle:
         mapper, mapping = self._mapping()
         result = mapper.replace_citations_in_text("See @fig:one and [@solo2021].", mapping)
         assert "@fig:one" in result
+
+
+class TestAccentedNames:
+    """BibTeX LaTeX escapes must not leak into rendered citations."""
+
+    @staticmethod
+    def _entry(key, author, year):
+        from rxiv_maker.utils.bibliography_parser import BibEntry
+
+        return BibEntry(
+            key=key,
+            entry_type="article",
+            fields={"author": author, "year": year, "title": "T", "journal": "J"},
+            raw="",
+        )
+
+    def test_braced_acute_becomes_unicode(self):
+        """The standard BibTeX \\'{c} form composes to a single character."""
+        mapper = CitationMapper(citation_style="author-date")
+        entries = {"pop2025": self._entry("pop2025", "Popovi\\'{c}, Ana and Ball, Neil", "2025")}
+        mapping = mapper.create_author_date_mapping(["pop2025"], entries)
+        assert mapping["pop2025"]["paren"] == "Popović and Ball, 2025"
+
+    def test_braced_diaeresis_becomes_unicode(self):
+        mapper = CitationMapper(citation_style="author-date")
+        entries = {"pyl2025": self._entry("pyl2025", 'Pylv\\"{a}n\\"{a}inen, Joanna', "2025")}
+        mapping = mapper.create_author_date_mapping(["pyl2025"], entries)
+        assert mapping["pyl2025"]["paren"] == "Pylvänäinen, 2025"
+
+    def test_no_latex_escape_survives_into_text(self):
+        """Guards the exact defect seen in the JCS build: Popovi\\'{c literal."""
+        mapper = CitationMapper(citation_style="author-date")
+        entries = {"pop2025": self._entry("pop2025", "Popovi\\'{c}, Ana", "2025")}
+        mapping = mapper.create_author_date_mapping(["pop2025"], entries)
+        out = mapper.replace_citations_in_text("Shown in [@pop2025].", mapping)
+        assert "\\" not in out
+        assert "{" not in out
+        assert out == "Shown in (Popović, 2025)."
