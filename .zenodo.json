@@ -1,0 +1,77 @@
+{
+  "title": "Rxiv-Maker: an automated template engine for streamlined scientific publications",
+  "description": "<p>Rxiv-Maker converts a plain-text Markdown manuscript into a submission-ready article, as a PDF or an editable Word document, with consistent styling, automatic figure and citation numbering, and reliable cross-referencing.</p><p>For quantitative work it can optionally regenerate figures and recompute reported values directly from the data during compilation, so the text stays consistent with the analysis behind it. It builds on familiar tools such as Git and Visual Studio Code, and produces submission packages for arXiv and bioRxiv.</p><p>This record archives a tagged release of the framework together with its example manuscript and data, so the exact version used to produce a given paper can be retrieved and cited.</p>",
+  "upload_type": "software",
+  "license": "MIT",
+  "access_right": "open",
+  "creators": [
+    {
+      "name": "Saraiva, Bruno M.",
+      "affiliation": "Instituto de Tecnologia Química e Biológica António Xavier, Universidade Nova de Lisboa, Oeiras, Portugal",
+      "orcid": "0000-0002-9151-5477"
+    },
+    {
+      "name": "Carlota, Rita",
+      "affiliation": "Instituto de Tecnologia Química e Biológica António Xavier, Universidade Nova de Lisboa, Oeiras, Portugal",
+      "orcid": "0000-0003-3647-1114"
+    },
+    {
+      "name": "Brito, António D.",
+      "affiliation": "Instituto de Tecnologia Química e Biológica António Xavier, Universidade Nova de Lisboa, Oeiras, Portugal",
+      "orcid": "0009-0001-1769-2627"
+    },
+    {
+      "name": "Hidalgo-Cenalmor, Iván",
+      "affiliation": "Turku Bioscience Centre, University of Turku and Åbo Akademi University, Turku, Finland",
+      "orcid": "0009-0000-8923-568X"
+    },
+    {
+      "name": "Jacquemet, Guillaume",
+      "affiliation": "Faculty of Science and Engineering, Cell Biology, Åbo Akademi University, Turku, Finland",
+      "orcid": "0000-0002-9286-920X"
+    },
+    {
+      "name": "Henriques, Ricardo",
+      "affiliation": "Instituto de Tecnologia Química e Biológica António Xavier, Universidade Nova de Lisboa, Oeiras, Portugal",
+      "orcid": "0000-0002-2043-5234"
+    }
+  ],
+  "keywords": [
+    "scientific publishing",
+    "preprints",
+    "reproducible research",
+    "Markdown",
+    "LaTeX",
+    "open-source software",
+    "bioimage analysis",
+    "manuscript preparation"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "10.48550/arXiv.2508.00836",
+      "relation": "isSupplementTo",
+      "scheme": "doi"
+    },
+    {
+      "identifier": "https://github.com/HenriquesLab/rxiv-maker",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://rxiv-maker.henriqueslab.org",
+      "relation": "isDocumentedBy",
+      "scheme": "url"
+    }
+  ],
+  "grants": [
+    {
+      "id": "10.13039/501100000781::101001332"
+    },
+    {
+      "id": "10.13039/501100000781::101057970"
+    },
+    {
+      "id": "10.13039/501100000781::101099654"
+    }
+  ]
+}
