@@ -36,7 +36,12 @@ jobs:
 
       - name: Run Claude Code Review
         id: claude-review
-        uses: anthropics/claude-code-action@v1
+        # Pinned to the commit SHA that last ran green here (Jul 13 2026, Claude
+        # 2.1.207). The floating @v1 ref rolled forward to an Aug 7/8 batch whose
+        # Bun setup trips a tsconfig 'directory mismatch' runtime bug that aborts
+        # the job with is_error:true. Re-pin forward deliberately, after testing a
+        # new version on a throwaway PR.
+        uses: anthropics/claude-code-action@e90deca47693f9457b72f2b53c17d7c445a87342  # v1 @ 2026-07-11
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
