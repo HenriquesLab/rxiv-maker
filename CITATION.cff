@@ -1,0 +1,73 @@
+cff-version: 1.2.0
+message: "If you use Rxiv-Maker, please cite the paper below."
+title: "Rxiv-Maker: an automated template engine for streamlined scientific publications"
+abstract: >-
+  Rxiv-Maker converts a plain-text Markdown manuscript into a submission-ready
+  article, as a PDF or an editable Word document, with consistent styling,
+  automatic figure and citation numbering, and reliable cross-referencing. For
+  quantitative work it can optionally regenerate figures and recompute reported
+  values directly from the data during compilation, so the text stays consistent
+  with the analysis behind it.
+type: software
+license: MIT
+repository-code: "https://github.com/HenriquesLab/rxiv-maker"
+url: "https://rxiv-maker.henriqueslab.org"
+keywords:
+  - scientific publishing
+  - preprints
+  - reproducible research
+  - Markdown
+  - LaTeX
+  - open-source software
+  - bioimage analysis
+  - manuscript preparation
+authors:
+  - family-names: Saraiva
+    given-names: "Bruno M."
+    orcid: "https://orcid.org/0000-0002-9151-5477"
+    affiliation: "Instituto de Tecnologia Química e Biológica António Xavier, Universidade Nova de Lisboa, Oeiras, Portugal"
+  - family-names: Carlota
+    given-names: Rita
+    orcid: "https://orcid.org/0000-0003-3647-1114"
+    affiliation: "Instituto de Tecnologia Química e Biológica António Xavier, Universidade Nova de Lisboa, Oeiras, Portugal"
+  - family-names: Brito
+    given-names: "António D."
+    orcid: "https://orcid.org/0009-0001-1769-2627"
+    affiliation: "Instituto de Tecnologia Química e Biológica António Xavier, Universidade Nova de Lisboa, Oeiras, Portugal"
+  - family-names: Hidalgo-Cenalmor
+    given-names: Iván
+    orcid: "https://orcid.org/0009-0000-8923-568X"
+    affiliation: "Turku Bioscience Centre, University of Turku and Åbo Akademi University, Turku, Finland"
+  - family-names: Jacquemet
+    given-names: Guillaume
+    orcid: "https://orcid.org/0000-0002-9286-920X"
+    affiliation: "Faculty of Science and Engineering, Cell Biology, Åbo Akademi University, Turku, Finland"
+  - family-names: Henriques
+    given-names: Ricardo
+    orcid: "https://orcid.org/0000-0002-2043-5234"
+    affiliation: "Instituto de Tecnologia Química e Biológica António Xavier, Universidade Nova de Lisboa, Oeiras, Portugal"
+preferred-citation:
+  type: article
+  title: "Rxiv-Maker: an automated template engine for streamlined scientific publications"
+  year: 2025
+  doi: "10.48550/arXiv.2508.00836"
+  url: "https://arxiv.org/abs/2508.00836"
+  authors:
+    - family-names: Saraiva
+      given-names: "Bruno M."
+      orcid: "https://orcid.org/0000-0002-9151-5477"
+    - family-names: Carlota
+      given-names: Rita
+      orcid: "https://orcid.org/0000-0003-3647-1114"
+    - family-names: Brito
+      given-names: "António D."
+      orcid: "https://orcid.org/0009-0001-1769-2627"
+    - family-names: Hidalgo-Cenalmor
+      given-names: Iván
+      orcid: "https://orcid.org/0009-0000-8923-568X"
+    - family-names: Jacquemet
+      given-names: Guillaume
+      orcid: "https://orcid.org/0000-0002-9286-920X"
+    - family-names: Henriques
+      given-names: Ricardo
+      orcid: "https://orcid.org/0000-0002-2043-5234"
