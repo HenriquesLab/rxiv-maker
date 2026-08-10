@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.1] - 2026-08-10
+
+### Changed
+- Releases are archived in Zenodo again. The GitHub integration had been off
+  since August 2025, so the archive stopped at v1.4.12a and every release since
+  was missing. `.zenodo.json` and `CITATION.cff` now set the deposit metadata
+  explicitly: resource type software, licence MIT, and the full six-author
+  byline with ORCIDs, replacing the values the integration had inferred.
+  Concept DOI: 10.5281/zenodo.15752358.
+
 ## [1.23.0] - 2026-08-10
 
 ### Added
