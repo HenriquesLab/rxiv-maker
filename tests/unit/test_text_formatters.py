@@ -4,6 +4,7 @@ import pytest
 
 from rxiv_maker.converters.md2tex import convert_markdown_to_latex
 from rxiv_maker.converters.text_formatters import (
+    convert_subscript_superscript_to_latex,
     convert_text_formatting_to_latex,
     process_code_spans,
     protect_underline_outside_texttt,
@@ -199,6 +200,27 @@ class TestCodeSpanEdgeCases:
 
         assert "\\texttt{\\detokenize{$\\alpha + \\beta$}}" in result
         assert "seqsplit" not in result
+
+
+class TestPercentInCodeSpans:
+    """Percent signs inside code spans must not comment out LaTeX lines."""
+
+    def test_percent_inside_code_span_uses_split_detokenize(self):
+        """Code spans with % use \\% between detokenized fragments."""
+        input_text = "Concentration: `5% CO~2~` and `95% ethanol`"
+        result = process_code_spans(input_text)
+        # Should split around % and use escaped \%
+        assert "\\%" in result
+        assert "\\detokenize{5}" in result
+        assert "\\detokenize{ CO~2~}" in result
+
+    def test_percent_in_code_span_survives_subscript_pass(self):
+        """Subscript pass must not convert ~2~ inside code spans containing %."""
+        input_text = "Concentration: `5% CO~2~`"
+        processed = process_code_spans(input_text)
+        subscripted = convert_subscript_superscript_to_latex(processed)
+        assert "textsubscript" not in subscripted
+        assert "CO~2~" in subscripted
 
 
 class TestRegressionTests:
