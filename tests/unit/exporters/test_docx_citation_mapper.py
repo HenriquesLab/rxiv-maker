@@ -218,3 +218,123 @@ class TestCitationMapper:
         assert "@smith2021" not in result  # Replaced
         assert "@jones2022" not in result  # Replaced
         assert "@brown2023" not in result  # Replaced
+
+
+class TestCodeSpanProtection:
+    """Citation syntax shown as a code example must survive verbatim."""
+
+    def test_inline_code_citation_not_replaced(self):
+        """Backticked citation syntax stays literal in numbered style."""
+        mapper = CitationMapper()
+        text = "For example, you would write `[@Knuth1984]`."
+        result = mapper.replace_citations_in_text(text, {"Knuth1984": 29})
+
+        assert "`[@Knuth1984]`" in result
+        assert "[29]" not in result
+
+    def test_inline_code_protected_while_real_citation_converts(self):
+        """A literal example and a real citation coexist in one paragraph."""
+        mapper = CitationMapper()
+        text = "Write `[@smith2021]` to cite it [@smith2021]."
+        result = mapper.replace_citations_in_text(text, {"smith2021": 1})
+
+        assert "`[@smith2021]`" in result
+        assert result.count("[1]") == 1
+
+    def test_fenced_code_block_protected(self):
+        """Fenced blocks are protected as a whole."""
+        mapper = CitationMapper()
+        text = "Example:\n```\n[@smith2021]\n```\nReal: [@smith2021]"
+        result = mapper.replace_citations_in_text(text, {"smith2021": 1})
+
+        assert "```\n[@smith2021]\n```" in result
+        assert result.count("[1]") == 1
+
+    def test_bare_key_in_code_protected(self):
+        """A bare @key inside backticks is not a citation."""
+        mapper = CitationMapper()
+        text = "Use `@smith2021` syntax, as in @smith2021."
+        result = mapper.replace_citations_in_text(text, {"smith2021": 1})
+
+        assert "`@smith2021`" in result
+        assert "[1]" in result
+
+
+class TestAuthorDateStyle:
+    """Author-date rendering for journals that reject numbered citations."""
+
+    @staticmethod
+    def _entries():
+        from rxiv_maker.utils.bibliography_parser import BibEntry
+
+        def entry(key, author, year):
+            return BibEntry(
+                key=key,
+                entry_type="article",
+                fields={"author": author, "year": year, "title": "T", "journal": "J"},
+                raw="",
+            )
+
+        return {
+            "solo2021": entry("solo2021", "Smith, John", "2021"),
+            "pair2022": entry("pair2022", "Jones, A. and Brown, B.", "2022"),
+            "many2023": entry("many2023", "Alpha, A. and Beta, B. and Gamma, G.", "2023"),
+            "dup2021": entry("dup2021", "Smith, John", "2021"),
+        }
+
+    def _mapping(self):
+        mapper = CitationMapper(citation_style="author-date")
+        keys = ["solo2021", "pair2022", "many2023", "dup2021"]
+        return mapper, mapper.create_author_date_mapping(keys, self._entries())
+
+    def test_single_surname_label(self):
+        _, mapping = self._mapping()
+        assert mapping["solo2021"]["paren"] == "Smith, 2021a"
+
+    def test_two_authors_joined_with_and(self):
+        _, mapping = self._mapping()
+        assert mapping["pair2022"]["paren"] == "Jones and Brown, 2022"
+
+    def test_three_plus_surnames_use_et_al(self):
+        _, mapping = self._mapping()
+        assert mapping["many2023"]["paren"] == "Alpha et al., 2023"
+
+    def test_colliding_surname_date_suffixes(self):
+        """Colliding author-year pairs get letter suffixes in citation order."""
+        _, mapping = self._mapping()
+        assert mapping["solo2021"]["paren"] == "Smith, 2021a"
+        assert mapping["dup2021"]["paren"] == "Smith, 2021b"
+
+    def test_bracketed_citation_is_parenthetical(self):
+        mapper, mapping = self._mapping()
+        result = mapper.replace_citations_in_text("Shown before [@many2023].", mapping)
+        assert result == "Shown before (Alpha et al., 2023)."
+
+    def test_narrative_citation_is_textual(self):
+        mapper, mapping = self._mapping()
+        result = mapper.replace_citations_in_text("As @many2023 showed.", mapping)
+        assert result == "As Alpha et al. (2023) showed."
+
+    def test_multiple_citations_separated_by_semicolon(self):
+        mapper, mapping = self._mapping()
+        result = mapper.replace_citations_in_text("[@pair2022;@many2023]", mapping)
+        assert result == "(Jones and Brown, 2022; Alpha et al., 2023)"
+
+    def test_no_numeric_brackets_emitted(self):
+        """The whole point: nothing renders as [N]."""
+        import re
+
+        mapper, mapping = self._mapping()
+        text = "See [@solo2021;@pair2022] and @many2023 too."
+        result = mapper.replace_citations_in_text(text, mapping)
+        assert not re.search(r"\[\d+", result)
+
+    def test_code_spans_protected_in_authordate(self):
+        mapper, mapping = self._mapping()
+        result = mapper.replace_citations_in_text("Write `[@solo2021]` here.", mapping)
+        assert "`[@solo2021]`" in result
+
+    def test_cross_references_preserved(self):
+        mapper, mapping = self._mapping()
+        result = mapper.replace_citations_in_text("See @fig:one and [@solo2021].", mapping)
+        assert "@fig:one" in result

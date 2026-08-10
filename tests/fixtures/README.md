@@ -17,17 +17,18 @@ This fixture contains a comprehensive test manuscript that validates Guillaume's
 import pytest
 from pathlib import Path
 
+
 def test_guillaume_fixes():
     """Test Guillaume's fixes using the fixture manuscript."""
     fixture_dir = Path(__file__).parent.parent / "fixtures"
     manuscript_dir = fixture_dir
-    
+
     # Test manuscript contains:
     # - Ready figures in FIGURES/Fig1.png, Fig2.png, etc.
     # - Panel references with Guillaume's specific formatting
     # - Introduction section (not Main)
     # - Full-page positioning examples
-    
+
     # Run your tests here...
 ```
 

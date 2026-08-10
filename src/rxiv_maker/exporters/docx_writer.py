@@ -109,6 +109,7 @@ class DocxWriter:
         figures_at_end: bool = False,
         hide_highlighting: bool = False,
         hide_comments: bool = False,
+        citation_style: str = "numbered",
     ) -> Path:
         """Write DOCX file from structured content.
 
@@ -124,6 +125,8 @@ class DocxWriter:
             figures_at_end: Place main figures at end before SI/bibliography
             hide_highlighting: Disable colored highlighting on references and citations
             hide_comments: Exclude all comments (block and inline) from output
+            citation_style: "numbered" or "author-date"; author-date omits the
+                bracketed number prefix on each reference list entry
 
         Returns:
             Path to created DOCX file
@@ -197,14 +200,15 @@ class DocxWriter:
             for run in heading.runs:
                 run.font.color.rgb = RGBColor(0, 0, 0)  # Ensure black text
 
-            # Add numbered bibliography entries
+            # Add bibliography entries; author-date lists are unnumbered
             for num in sorted(bibliography.keys()):
                 bib_entry = bibliography[num]
                 para = doc.add_paragraph()
 
-                # Add citation number in bold
-                num_run = para.add_run(f"[{num}] ")
-                num_run.bold = True
+                if citation_style != "author-date":
+                    # Add citation number in bold
+                    num_run = para.add_run(f"[{num}] ")
+                    num_run.bold = True
 
                 # Add formatted bibliography text (without DOI - added separately below)
                 para.add_run(bib_entry["formatted"])

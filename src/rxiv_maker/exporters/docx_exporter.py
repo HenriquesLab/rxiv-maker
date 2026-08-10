@@ -61,6 +61,7 @@ class DocxExporter:
         config_manager = ConfigManager(base_dir=Path(manuscript_path))
         config = config_manager.load_config()
         self.author_format = config.get("bibliography_author_format", "lastname_firstname")
+        self.citation_style = config.get("citation_style", "numbered")
 
         # DOCX export options
         docx_config = config.get("docx", {})
@@ -75,7 +76,7 @@ class DocxExporter:
         self.tables_as_images = tables_as_images or docx_config.get("tables_as_images", False)
 
         # Components
-        self.citation_mapper = CitationMapper()
+        self.citation_mapper = CitationMapper(citation_style=self.citation_style)
         self.content_processor = DocxContentProcessor()
         self.writer = DocxWriter()
 
@@ -140,6 +141,19 @@ class DocxExporter:
         # Step 4: Build bibliography
         bibliography = self._build_bibliography(citation_map)
         logger.info(f"Built bibliography with {len(bibliography)} entries")
+
+        # Author-date needs labels rather than numbers in the text, and an
+        # alphabetised reference list keyed to those labels.
+        if self.citation_style == "author-date":
+            entries_by_key = {info["key"]: info["entry"] for info in bibliography.values()}
+            authorless = [k for k, e in entries_by_key.items() if not e.fields.get("author", "").strip()]
+            if authorless:
+                logger.warning(
+                    f"{len(authorless)} bibliography entry(ies) have no author field and will cite as "
+                    f"'Anon.' in author-date style: {', '.join(sorted(authorless))}"
+                )
+            citation_map = self.citation_mapper.create_author_date_mapping(citations, entries_by_key)
+            bibliography = self._reorder_bibliography_alphabetically(bibliography, citation_map)
 
         # Step 5: Replace citations in text
         markdown_with_numbers = self.citation_mapper.replace_citations_in_text(markdown_content, citation_map)
@@ -291,6 +305,7 @@ class DocxExporter:
             figures_at_end=self.figures_at_end,
             hide_highlighting=self.hide_highlighting,
             hide_comments=self.hide_comments,
+            citation_style=self.citation_style,
         )
         logger.info(f"DOCX exported successfully: {docx_path}")
 
@@ -443,6 +458,24 @@ class DocxExporter:
             logger.warning(f"{len(missing_keys)} citation(s) not found in bibliography: {', '.join(missing_keys)}")
 
         return bibliography
+
+    def _reorder_bibliography_alphabetically(
+        self, bibliography: Dict[int, Dict], citation_map: Dict
+    ) -> Dict[int, Dict]:
+        """Re-key a bibliography into alphabetical author-date order.
+
+        Args:
+            bibliography: Bibliography keyed by citation-order number
+            citation_map: Author-date labels keyed by citation key
+
+        Returns:
+            Bibliography re-keyed so ascending keys give alphabetical order
+        """
+        ordered = sorted(
+            bibliography.values(),
+            key=lambda info: citation_map.get(info["key"], {}).get("sort", info["key"].lower()),
+        )
+        return {idx + 1: info for idx, info in enumerate(ordered)}
 
     def _resolve_doi_from_metadata(self, entry) -> str | None:
         """Resolve DOI from entry metadata using CrossRef API.
