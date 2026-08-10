@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.3] - 2026-08-10
+
+### Fixed
+- DOCX export now honours the `citation_style` config key. Previously the DOCX
+  writer always emitted numbered citations (`[1]`) and a numbered reference list,
+  even when `citation_style: "author-date"` was set, so the PDF and DOCX built from
+  the same sources disagreed. Author-date exports now render `(Smith et al., 2021)`
+  for bracketed citations, `Smith et al. (2021)` for narrative ones, and an
+  unnumbered reference list sorted alphabetically. Entries sharing an author and
+  year are disambiguated as `2021a`, `2021b`. This matters for journals that reject
+  numbered citations.
+- DOCX export no longer converts citation syntax inside code spans. Markdown such
+  as ``` `[@smith2021]` ``` in a tutorial rendered as `[29]` in the DOCX while the
+  PDF kept it verbatim, because the DOCX path protected code spans when extracting
+  citations but not when replacing them. Fenced blocks and inline spans are now
+  protected on both passes.
+- DOCX export warns when a cited bibliography entry has no `author` field, which
+  would otherwise cite as `Anon.` in author-date style while the reference list
+  showed a different fallback.
+
 ## [1.22.2] - 2026-07-13
 
 ### Fixed
