@@ -8,6 +8,26 @@ import re
 
 from .types import LatexContent, MarkdownContent
 
+
+# Characters that must be escaped inside \texttt when \detokenize cannot be
+# used. The replacements deliberately introduce no braces: the protection regex
+# that shields \texttt{...} from later Markdown passes matches only up to the
+# first closing brace, so any \cmd{} form here would leave the tail of the span
+# exposed and, for example, turn a literal ~2~ into a real subscript.
+def _texttt_body(content: str) -> str:
+    r"""Build a ``\detokenize`` body that survives a literal percent sign.
+
+    TeX strips comments while tokenizing, before ``\detokenize`` ever runs, so a
+    ``%`` inside the braces comments out the rest of the line and swallows the
+    closing brace. Splitting on ``%`` and emitting an escaped ``\%`` between
+    detokenized fragments keeps the text verbatim and the braces balanced.
+    """
+    if "%" not in content:
+        return f"\\detokenize{{{content}}}"
+    parts = content.split("%")
+    return "\\%".join(f"\\detokenize{{{part}}}" if part else "" for part in parts)
+
+
 # Pre-compiled regex patterns for performance optimization
 # Text formatting patterns
 BOLD_PATTERN = re.compile(r"\*\*(.+?)\*\*")
@@ -151,6 +171,8 @@ def convert_subscript_superscript_to_latex(text: LatexContent) -> LatexContent:
         # Combine all protection patterns into a single regex to avoid
         # sequential processing issues where one pattern affects another
         combined_pattern = (
+            r"(PROTECTED_DETOKENIZE_START\{.*?\}PROTECTED_DETOKENIZE_END)|"
+            r"(\\texttt\{\\detokenize\{.*?\}\})|"  # \texttt{\detokenize{...}} with nested detokenize
             r"(\\texttt\{[^}]*\})|"  # \texttt{...}
             r"(\\text\{[^}]*\})|"  # \text{...}
             r"(\$[^$]*\$)|"  # Inline math $...$
@@ -168,7 +190,8 @@ def convert_subscript_superscript_to_latex(text: LatexContent) -> LatexContent:
 
             # Check if this part matches any of our protection patterns
             is_protected = (
-                part.startswith("\\texttt{")
+                part.startswith("PROTECTED_DETOKENIZE_START")
+                or part.startswith("\\texttt{")
                 or part.startswith("\\text{")
                 or (part.startswith("$") and not part.startswith("$$"))
                 or part.startswith("$$")
@@ -322,7 +345,7 @@ def process_code_spans(text: MarkdownContent) -> LatexContent:
         if is_block_reference:
             # For {{tex:...}} and {{py:...}} references, use detokenize for robust handling
             # This avoids all the brace escaping issues by treating content literally
-            return f"\\texttt{{\\detokenize{{{code_content}}}}}"
+            return f"\\texttt{{{_texttt_body(code_content)}}}"
         elif has_latex_commands or has_markdown_syntax:
             # For code spans with LaTeX commands or Markdown syntax, use \detokenize for true verbatim display
             # This ensures that \textbf{bold text} or **bold text** appears literally in the PDF
@@ -424,7 +447,7 @@ def process_code_spans(text: MarkdownContent) -> LatexContent:
                                     # For everything else (markdown syntax, simple text), use \detokenize
                                     # This will handle special characters like #, ~, ^ correctly
                                     # Note: \detokenize may double hash characters in PDF but this is better than backslashes
-                                    replacement = f"\\texttt{{\\detokenize{{{content}}}}}"
+                                    replacement = f"\\texttt{{{_texttt_body(content)}}}"
                                 result.append(replacement)
                                 i = j + len(end_marker)
                                 break
@@ -606,6 +629,11 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
         r"\\texttt\{\\detokenize\{[^{}]*(?:\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}[^{}]*)*\}\}", protect_latex_command, text
     )
 
+    # Protect code-span placeholders before general character escaping runs
+    text = re.sub(
+        r"PROTECTED_DETOKENIZE_START\{.*?\}PROTECTED_DETOKENIZE_END", protect_latex_command, text, flags=re.DOTALL
+    )
+
     # Protect standalone \detokenize{...} commands
     text = re.sub(r"\\detokenize\{[^}]*\}", protect_latex_command, text)
 
@@ -770,6 +798,7 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
         """Escape carets but not inside LaTeX commands or math mode."""
         # Combine all protection patterns into a single regex
         combined_pattern = (
+            r"(PROTECTED_DETOKENIZE_START\{.*?\}PROTECTED_DETOKENIZE_END)|"
             r"(\\texttt\{[^}]*\})|"  # \texttt{...}
             r"(\\text\{[^}]*\})|"  # \text{...}
             r"(\$[^$]*\$)|"  # Inline math $...$
@@ -787,7 +816,8 @@ def escape_special_characters(text: MarkdownContent) -> LatexContent:
 
             # Check if this part matches any of our protection patterns
             is_protected = (
-                part.startswith("\\texttt{")
+                part.startswith("PROTECTED_DETOKENIZE_START")
+                or part.startswith("\\texttt{")
                 or part.startswith("\\text{")
                 or (part.startswith("$") and not part.startswith("$$"))
                 or part.startswith("$$")

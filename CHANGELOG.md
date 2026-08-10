@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.3] - 2026-08-10
+
+### Fixed
+- Fixed silent PDF truncation when a `%` character occurs inside an inline code
+  span (e.g. `` `5% CO~2~` `` or `` `95% ethanol` ``). TeX strips comments while
+  tokenizing, before `\detokenize` runs, so the `%` commented out the rest of the
+  line and swallowed the closing brace ("File ended while scanning use of \texttt").
+  Code spans with `%` now split into detokenized fragments joined by `\%`, and the
+  code-span protection pattern in `replace_outside_commands` now protects
+  `PROTECTED_DETOKENIZE_START` and `\texttt{\detokenize{...}}` blocks so later
+  formatting passes do not mutate them.
+
 ## [1.23.2] - 2026-08-10
 
 ### Fixed
