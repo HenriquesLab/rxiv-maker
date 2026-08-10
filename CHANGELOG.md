@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.0] - 2026-08-10
+
+### Added
+- `rxiv docx --track-changes <TAG>` writes a second DOCX marking what changed
+  since a git tag: insertions highlighted, deletions struck through in red.
+  Journals that ask for a "highlighted" revision alongside the clean file
+  generally reject Word's Track Changes, because the markup is lost when they
+  convert to PDF; highlighting survives. The comparison runs on the two rendered
+  DOCX files, so what is marked is what a reader actually sees, and it reports a
+  count of changed, added and removed paragraphs.
+
+  Paragraphs that are too dissimilar are shown as a removal followed by an
+  addition instead of being interleaved word by word, which would otherwise
+  produce an unreadable hybrid. Inline formatting inside a changed paragraph is
+  not preserved in the marked copy; the clean export carries the real formatting.
+
 ## [1.22.4] - 2026-08-10
 
 ### Fixed

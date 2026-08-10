@@ -164,6 +164,11 @@ def _build_and_export_si_pdf(manuscript_path: str, quiet: bool, verbose: bool) -
     is_flag=True,
     help="Render Markdown tables as images too (like {{tex}} tables), so all tables share one style",
 )
+@click.option(
+    "--track-changes",
+    metavar="TAG",
+    help="Also write a DOCX marking changes against a git tag (insertions highlighted, deletions struck through)",
+)
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.option("--quiet", "-q", is_flag=True, help="Suppress non-essential output")
 def docx(
@@ -173,6 +178,7 @@ def docx(
     split_si: bool,
     split_si_pdf: bool,
     tables_as_images: bool,
+    track_changes: str | None,
     verbose: bool,
     quiet: bool,
 ) -> None:
@@ -212,9 +218,20 @@ def docx(
     **Export main as DOCX and SI as PDF:**
 
         $ rxiv docx --split-si-pdf
+
+    **Mark changes against the version you submitted:**
+
+        $ rxiv docx --track-changes v1-submitted
+
+    Journals that ask for a highlighted revision usually reject Word's Track
+    Changes, because the markup is lost when they convert to PDF. This writes a
+    second file with insertions highlighted and deletions struck through, which
+    survives conversion.
     """
     if split_si and split_si_pdf:
         raise click.UsageError("--split-si and --split-si-pdf cannot be used together")
+    if track_changes and (split_si or split_si_pdf):
+        raise click.UsageError("--track-changes cannot be combined with --split-si or --split-si-pdf")
 
     try:
         # Configure logging
@@ -271,6 +288,33 @@ def docx(
                 console.print("[green]✅ DOCX/PDF split successfully:[/green]")
                 console.print(f"   Main DOCX: {main_docx_path}")
                 console.print(f"   SI PDF: {si_pdf_path}")
+            return
+
+        if track_changes:
+            from ...exporters.docx_diff import build_tracked_docx
+
+            def _factory(path: Path):
+                return DocxExporter(
+                    manuscript_path=str(path),
+                    resolve_dois=resolve_dois,
+                    include_footnotes=not no_footnotes,
+                    content_mode="full",
+                    output_suffix=None,
+                    tables_as_images=tables_as_images,
+                )
+
+            marked_path, stats = build_tracked_docx(
+                manuscript_path=Path(manuscript_path),
+                git_tag=track_changes,
+                exporter_factory=_factory,
+            )
+            docx_path = marked_path.with_name(marked_path.name.split("__changes_vs_")[0] + ".docx")
+            if not quiet:
+                console.print(f"[green]✅ DOCX exported:[/green] {docx_path}")
+                console.print(f"[green]✅ Marked-up copy:[/green] {marked_path}")
+                console.print(
+                    f"   {stats['changed']} paragraph(s) changed, {stats['inserted']} added, {stats['deleted']} removed"
+                )
             return
 
         docx_path = _export_docx_file(
