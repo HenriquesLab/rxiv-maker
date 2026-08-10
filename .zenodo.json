@@ -2,7 +2,7 @@
   "title": "Rxiv-Maker: an automated template engine for streamlined scientific publications",
   "description": "<p>Rxiv-Maker converts a plain-text Markdown manuscript into a submission-ready article, as a PDF or an editable Word document, with consistent styling, automatic figure and citation numbering, and reliable cross-referencing.</p><p>For quantitative work it can optionally regenerate figures and recompute reported values directly from the data during compilation, so the text stays consistent with the analysis behind it. It builds on familiar tools such as Git and Visual Studio Code, and produces submission packages for arXiv and bioRxiv.</p><p>This record archives a tagged release of the framework together with its example manuscript and data, so the exact version used to produce a given paper can be retrieved and cited.</p>",
   "upload_type": "software",
-  "license": "MIT",
+  "license": "mit",
   "access_right": "open",
   "creators": [
     {
@@ -65,13 +65,13 @@
   ],
   "grants": [
     {
-      "id": "10.13039/501100000781::101001332"
+      "id": "00k4n6c32::101001332"
     },
     {
-      "id": "10.13039/501100000781::101057970"
+      "id": "00k4n6c32::101057970"
     },
     {
-      "id": "10.13039/501100000781::101099654"
+      "id": "00k4n6c32::101099654"
     }
   ]
 }
