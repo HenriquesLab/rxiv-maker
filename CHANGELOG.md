@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.2] - 2026-08-10
+
+### Fixed
+- Corrected `.zenodo.json` so the Zenodo deposit validates. The licence was
+  given as `MIT` where Zenodo's identifier is lowercase `mit`, and the grant
+  identifiers used the funder-DOI form where Zenodo expects the ROR form
+  (`00k4n6c32::101001332`). The v1.23.1 archive attempt failed on this.
+
 ## [1.23.1] - 2026-08-10
 
 ### Changed
