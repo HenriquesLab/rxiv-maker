@@ -169,11 +169,36 @@ def parse_figure_attributes(attr_string: str) -> FigureAttributes:
     return attributes
 
 
+def extract_continued_caption(caption_text: str) -> Tuple[str, Optional[str], str]:
+    """Extract main caption, continued caption, and continued header from caption text.
+
+    Looks for `---continued---` or `---continued: Header---` separators in caption_text.
+
+    Returns:
+        Tuple of (main_caption, continued_caption or None, continued_header)
+    """
+    pattern = re.compile(
+        r"^(.*?)\r?\n[ \t]*---+[ \t]*continued(?:[ \t]*:[ \t]*(.*?))?[ \t]*---+[ \t]*\r?\n(.*)$",
+        re.DOTALL,
+    )
+    match = pattern.search(caption_text)
+    if match:
+        main_cap = match.group(1).strip()
+        hdr_raw = match.group(2)
+        continued_hdr = hdr_raw.strip() if hdr_raw and hdr_raw.strip() else "(Continued from previous page.)"
+        cont_cap = match.group(3).strip()
+        return main_cap, cont_cap, continued_hdr
+
+    return caption_text.strip(), None, "(Continued from previous page.)"
+
+
 def create_latex_figure_environment(
     path: str,
     caption: str,
     attributes: Optional[Dict[str, Any]] = None,
     is_supplementary: bool = False,
+    continued_caption: Optional[str] = None,
+    continued_header: Optional[str] = "(Continued from previous page.)",
 ) -> str:
     if attributes is None:
         attributes = {}
@@ -395,6 +420,37 @@ def create_latex_figure_environment(
 
     # Wrapper width: \textwidth for two-column spanning, \linewidth for single-column
     wrapper_width = r"\textwidth" if is_twocol_fig else r"\linewidth"
+    cont_cap = continued_caption or (attributes.get("continued_caption") if attributes else None)
+    cont_hdr = (
+        continued_header
+        or (attributes.get("continued_header") if attributes else None)
+        or "(Continued from previous page.)"
+    )
+
+    continued_latex = ""
+    if cont_cap:
+        proc_cont_cap = re.sub(r"\*\*([^*]+)\*\*", r"\\textbf{\1}", cont_cap)
+        proc_cont_cap = re.sub(r"\*([^*]+)\*", r"\\textit{\1}", proc_cont_cap)
+
+        hdr_str = cont_hdr.strip() if cont_hdr else "(Continued from previous page.)"
+        if not (hdr_str.startswith("\\textbf{") or hdr_str.startswith("**")):
+            hdr_str = f"\\textbf{{{hdr_str}}}"
+        else:
+            hdr_str = re.sub(r"\*\*([^*]+)\*\*", r"\\textbf{\1}", hdr_str)
+
+        cont_lines = [
+            f"\n\\begin{{{env_name}}}[t!]",
+            r"\ContinuedFloat",
+            r"\begingroup",
+            rf"\captionsetup{{width={cap_width_for_env},singlelinecheck=false,justification=justified}}",
+            r"\setlength{\abovecaptionskip}{6pt}\setlength{\belowcaptionskip}{6pt}",
+            r"\ifdefined\justifying\justifying\fi",
+            f"\\caption[]{{{hdr_str} {proc_cont_cap}}}",
+            r"\endgroup",
+            f"\\end{{{env_name}}}",
+        ]
+        continued_latex = "\n" + "\n".join(cont_lines)
+
     lines = [
         f"\n\\begin{{{env_name}}}{position}",
         r"\centering",
@@ -408,10 +464,7 @@ def create_latex_figure_environment(
     if barrier:
         lines.append(r"\FloatBarrier")
     lines.append("")
-    latex_figure = "\n".join(lines)
-
-    # No wrapper needed - LaTeX's float algorithm with [p!] handles dedicated pages correctly
-    # Any clearpage/FloatBarrier wrapper creates white space by preventing subsequent text flow
+    latex_figure = "\n".join(lines) + continued_latex
 
     return latex_figure
 
@@ -456,7 +509,7 @@ def _process_new_figure_format(text: MarkdownContent, is_supplementary: bool = F
         (?P<caption>                     # caption until the next blank line or EOF
             (?s:.*?)                     # DOTALL, non-greedy
         )
-        (?=(?:\r?\n){2,}|\Z)             # stop at a blank line (>=2 newlines) or end
+        (?=(?:\r?\n){2,}(?:[ \t]*(?:[#|]|!\[|---(?!-*\s*continued)))|\Z)  # stop at a blank line if followed by structural block (#, |, ![, ---) or EOF
         """,
         re.MULTILINE | re.VERBOSE,
     )
@@ -481,10 +534,18 @@ def _process_new_figure_format(text: MarkdownContent, is_supplementary: bool = F
             logger.warning(f"Failed to parse figure attributes '{attr_string}': {e}")
             return m.group(0)
 
+        main_cap, cont_cap, cont_hdr = extract_continued_caption(caption_text)
         try:
             # Resolve generated figure paths (.mmd, .py, .R) to output format (.pdf)
             resolved_path = resolve_generated_figure_path(path)
-            return create_latex_figure_environment(resolved_path, caption_text, attributes, is_supplementary)
+            return create_latex_figure_environment(
+                resolved_path,
+                main_cap,
+                attributes,
+                is_supplementary,
+                continued_caption=cont_cap,
+                continued_header=cont_hdr,
+            )
         except (ValueError, KeyError, TypeError) as e:
             # If LaTeX emission fails due to invalid parameters, log and keep original block
             from ..core.logging_config import get_logger
@@ -676,11 +737,19 @@ def _process_figure_with_attributes(text: MarkdownContent, is_supplementary: boo
         else:
             combined_caption = caption_text
 
+        main_cap, cont_cap, cont_hdr = extract_continued_caption(combined_caption)
         # Parse attributes
         attributes = parse_figure_attributes(attr_string)
         # Resolve generated figure paths (.mmd, .py, .R) to output format (.pdf)
         resolved_path = resolve_generated_figure_path(path)
-        return create_latex_figure_environment(resolved_path, combined_caption, attributes, is_supplementary)
+        return create_latex_figure_environment(
+            resolved_path,
+            main_cap,
+            attributes,
+            is_supplementary,
+            continued_caption=cont_cap,
+            continued_header=cont_hdr,
+        )
 
     text = re.sub(
         r"!\[([^\]]*)\]\(([^)]+)\)\s*\n\s*\{([^}]+)\}\s*(.*?)(?=\n\n|\Z)",

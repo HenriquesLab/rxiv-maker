@@ -686,9 +686,22 @@ class DocxContentProcessor:
                 while next_i < len(lines):
                     line = lines[next_i].strip()
 
-                    # Stop at empty line
+                    # Stop at empty line if next non-empty line is a structural element (# heading, ![ figure, etc.)
                     if not line:
-                        break
+                        check_i = next_i + 1
+                        while check_i < len(lines) and not lines[check_i].strip():
+                            check_i += 1
+                        if check_i >= len(lines):
+                            break
+                        next_block = lines[check_i].strip()
+                        if (
+                            next_block.startswith("![")
+                            or re.match(r"^#{1,6}\s+", next_block)
+                            or re.match(r"\{#(fig|sfig|stable|snote):", next_block)
+                        ):
+                            break
+                        next_i += 1
+                        continue
 
                     # Stop at next figure
                     if line.startswith("!["):
@@ -706,13 +719,19 @@ class DocxContentProcessor:
                     next_i += 1
 
                 # Combine caption lines - keep markdown for inline formatting
-                caption = " ".join(caption_lines)
+                caption = "\n\n".join(caption_lines)
+
+        from rxiv_maker.converters.figure_processor import extract_continued_caption
+
+        main_cap, cont_cap, cont_hdr = extract_continued_caption(caption)
 
         return {
             "type": "figure",
             "path": image_path,
             "alt": alt_text,
-            "caption": caption,
+            "caption": main_cap,
+            "continued_caption": cont_cap,
+            "continued_header": cont_hdr,
             "label": label,
             "is_supplementary": is_supplementary,
         }, next_i
