@@ -46,6 +46,7 @@
  %
 ENTRY
   { address
+    archiveprefix
     author
     booktitle
     chapter
@@ -53,6 +54,7 @@ ENTRY
     eid
     edition
     editor
+    eprint
     howpublished
     institution
     isbn
@@ -293,6 +295,17 @@ FUNCTION {format.doi}
 { doi empty$
     { "" }
     { new.block "\doi{" doi * "}" * }
+  if$
+}
+
+FUNCTION {format.eprint}
+{ eprint empty$
+    { "" }
+    { archiveprefix empty$
+        { new.block "arXiv:" eprint * }
+        { new.block archiveprefix ":" * eprint * }
+      if$
+    }
   if$
 }
 
@@ -925,6 +938,7 @@ FUNCTION {misc}
   howpublished new.block.checka
   howpublished output
   format.date output
+  format.eprint output
   format.issn output
   format.doi output
   new.block
