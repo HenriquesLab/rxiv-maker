@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.4] - 2026-09-02
+
+### Fixed
+- Bibliography entries no longer drop the arXiv venue. `rxiv_maker_style.bst` declared
+  neither `eprint` nor `archiveprefix`, so any `@misc` preprint reference printed as a
+  bare title, author and year followed by a DOI. Google Scholar matches a reference to
+  a target record on the venue token and identifier, so the missing venue weakened
+  citation clustering for every arXiv reference in a manuscript, including the injected
+  rxiv-maker self-citation. References now render `arXiv:2508.00836`, and honour
+  `archivePrefix` for other servers (for example `bioRxiv:2026.01.01.123456`).
+
 ## [1.23.3] - 2026-08-10
 
 ### Fixed
