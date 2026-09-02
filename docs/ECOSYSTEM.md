@@ -463,7 +463,7 @@ journey
 - [RELEASING.md](../RELEASING.md) - Complete release process
 - [TROUBLESHOOTING_MATRIX.md](TROUBLESHOOTING_MATRIX.md) - Common issues and solutions
 - [CONTRIBUTING.md](../CONTRIBUTING.md) - Contribution guidelines
-- [CLAUDE.md](../CLAUDE.md) - AI assistant instructions
+- [AGENTS.md](../AGENTS.md) - AI assistant instructions
 
 ---
 

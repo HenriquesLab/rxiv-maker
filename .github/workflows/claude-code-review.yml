@@ -53,13 +53,13 @@ jobs:
             - Security concerns
             - Test coverage
 
-            Use the repository's CLAUDE.md for guidance on style and conventions. Be constructive and helpful in your feedback.
+            Use the repository's AGENTS.md for guidance on style and conventions. Be constructive and helpful in your feedback.
 
             Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
 
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://docs.anthropic.com/en/docs/claude-code/sdk#command-line for available options
-          # The prompt asks Claude to read CLAUDE.md and review the code, so it
+          # The prompt asks Claude to read AGENTS.md and review the code, so it
           # needs Read/Glob/Grep in addition to the gh Bash commands it uses to
           # post its review. Without these the run hits permission denials and,
           # on current claude-code-action, fails the job.
