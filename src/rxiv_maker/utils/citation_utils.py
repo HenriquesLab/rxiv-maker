@@ -8,15 +8,13 @@ from typing import Any, Optional, Tuple
 from .unicode_safe import get_safe_icon, safe_print
 
 # Current canonical rxiv-maker citation
-CANONICAL_RXIV_CITATION = """@misc{saraiva_2025_rxivmaker,
+CANONICAL_RXIV_CITATION = """@article{saraiva_2025_rxivmaker,
       title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
       author={Bruno M. Saraiva and Rita Carlota and António D. Brito and Iván Hidalgo-Cenalmor and Guillaume Jacquemet and Ricardo Henriques},
-      year={2025},
-      eprint={2508.00836},
-      archivePrefix={arXiv},
-      primaryClass={cs.DL},
-      doi={10.48550/arXiv.2508.00836},
-      url={https://arxiv.org/abs/2508.00836},
+      journal={Journal of Cell Science},
+      year={2026},
+      doi={10.1242/jcs.265183},
+      url={https://doi.org/10.1242/jcs.265183},
 }"""
 
 
@@ -29,8 +27,8 @@ def extract_existing_citation(bib_content: str) -> Optional[Tuple[str, int, int]
     Returns:
         Tuple of (citation_content, start_index, end_index) if found, None otherwise
     """
-    # Pattern to match the complete citation block for saraiva_2025_rxivmaker
-    pattern = r"@\w+\s*\{\s*saraiva_2025_rxivmaker\s*,.*?\n\s*\}"
+    # Pattern to match the complete citation block for saraiva_2025_rxivmaker or saraiva_2026_rxivmaker
+    pattern = r"@\w+\s*\{\s*(saraiva_2025_rxivmaker|saraiva_2026_rxivmaker)\s*,.*?\n\s*\}"
 
     match = re.search(pattern, bib_content, re.DOTALL | re.IGNORECASE)
     if match:
@@ -53,17 +51,17 @@ def is_citation_outdated(existing_citation: str) -> bool:
         "and Guillaume Jacquemet and Ricardo Henriques"
     )
     current_title = "Rxiv-Maker: an automated template engine for streamlined scientific publications"
-    current_eprint = "2508.00836"
-    current_doi = "10.48550/arXiv.2508.00836"
+    current_journal = "Journal of Cell Science"
+    current_doi = "10.1242/jcs.265183"
 
     # Check if citation contains all current required elements
     has_current_authors = current_authors in existing_citation
     has_current_title = current_title in existing_citation
-    has_current_eprint = current_eprint in existing_citation
+    has_current_journal = current_journal in existing_citation
     has_current_doi = current_doi in existing_citation
 
     # Citation is outdated if any key element is missing
-    return not (has_current_authors and has_current_title and has_current_eprint and has_current_doi)
+    return not (has_current_authors and has_current_title and has_current_journal and has_current_doi)
 
 
 def inject_rxiv_citation(yaml_metadata: dict[str, Any]) -> None:
