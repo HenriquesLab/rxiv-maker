@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.24.1] - 2026-09-12
+
+### Fixed
+- Fixed citation injection crash when `bibliography` in `00_CONFIG.yml` is
+  specified as a mapping (`file: ...`) rather than a plain string.
+
 ## [1.24.0] - 2026-09-12
 
 ### Changed

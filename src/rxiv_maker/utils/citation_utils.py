@@ -78,7 +78,13 @@ def inject_rxiv_citation(yaml_metadata: dict[str, Any]) -> None:
     # Get manuscript path and bibliography file
     manuscript_path = os.getenv("MANUSCRIPT_PATH", "MANUSCRIPT")
     current_dir = Path.cwd()
-    bib_filename = yaml_metadata.get("bibliography", "03_REFERENCES.bib")
+    bib_config = yaml_metadata.get("bibliography", "03_REFERENCES.bib")
+    if isinstance(bib_config, dict):
+        bib_filename = bib_config.get("file", "03_REFERENCES.bib")
+    elif isinstance(bib_config, str):
+        bib_filename = bib_config
+    else:
+        bib_filename = "03_REFERENCES.bib"
 
     # Handle .bib extension
     if not bib_filename.endswith(".bib"):
