@@ -49,9 +49,10 @@ authors:
 preferred-citation:
   type: article
   title: "Rxiv-Maker: an automated template engine for streamlined scientific publications"
-  year: 2025
-  doi: "10.48550/arXiv.2508.00836"
-  url: "https://arxiv.org/abs/2508.00836"
+  journal: "Journal of Cell Science"
+  year: 2026
+  doi: "10.1242/jcs.265183"
+  url: "https://doi.org/10.1242/jcs.265183"
   authors:
     - family-names: Saraiva
       given-names: "Bruno M."

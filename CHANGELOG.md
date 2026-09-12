@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.24.0] - 2026-09-12
+
+### Changed
+- Updated canonical self-citation from the arXiv preprint (`10.48550/arXiv.2508.00836`)
+  to the peer-reviewed article in *Journal of Cell Science* (`10.1242/jcs.265183`).
+  Existing manuscripts citing `saraiva_2025_rxivmaker` will automatically refresh
+  their bibliography entries to the journal publication on the next build.
+- Whitelisted `saraiva_2026_rxivmaker` alongside legacy key `saraiva_2025_rxivmaker`
+  in citation validation.
+
+
 ## [1.23.4] - 2026-09-02
 
 ### Fixed

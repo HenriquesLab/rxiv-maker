@@ -65,8 +65,9 @@ class TestInjectRxivCitation:
             "Bruno M. Saraiva and Rita Carlota and António D. Brito and Iván Hidalgo-Cenalmor and Guillaume Jacquemet and Ricardo Henriques"
             in content
         )
-        assert "2025" in content
-        assert "arxiv.org/abs/2508.00836" in content
+        assert "Journal of Cell Science" in content
+        assert "2026" in content
+        assert "10.1242/jcs.265183" in content
 
     def test_inject_citation_appends_to_existing_bib_file(self):
         """Test that citation is appended to existing bibliography file."""
@@ -96,15 +97,13 @@ class TestInjectRxivCitation:
     def test_inject_citation_skips_if_already_exists(self, capsys):
         """Test that citation injection is skipped if citation already exists and is up-to-date."""
         # Create bibliography with current, complete rxiv-maker citation
-        existing_content = """@misc{saraiva_2025_rxivmaker,
+        existing_content = """@article{saraiva_2025_rxivmaker,
       title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
       author={Bruno M. Saraiva and Rita Carlota and António D. Brito and Iván Hidalgo-Cenalmor and Guillaume Jacquemet and Ricardo Henriques},
-      year={2025},
-      eprint={2508.00836},
-      archivePrefix={arXiv},
-      primaryClass={cs.DL},
-      doi={10.48550/arXiv.2508.00836},
-      url={https://arxiv.org/abs/2508.00836},
+      journal={Journal of Cell Science},
+      year={2026},
+      doi={10.1242/jcs.265183},
+      url={https://doi.org/10.1242/jcs.265183},
 }
 """
         self.bib_file.write_text(existing_content, encoding="utf-8")
@@ -183,7 +182,7 @@ class TestInjectRxivCitation:
 
         # Should have newline between existing and new citation
         assert "}" in lines  # End of existing citation
-        assert any("@misc{saraiva_2025_rxivmaker" in line for line in lines)
+        assert any("@article{saraiva_2025_rxivmaker" in line for line in lines)
 
         # No double newlines at the junction
         assert "\n\n\n" not in content
@@ -266,18 +265,16 @@ class TestInjectRxivCitation:
         content = self.bib_file.read_text(encoding="utf-8")
 
         # Validate required BibTeX fields
-        assert "@misc{saraiva_2025_rxivmaker," in content
+        assert "@article{saraiva_2025_rxivmaker," in content
         assert "title={Rxiv-Maker: an automated template engine for streamlined scientific publications}" in content
         assert (
             "author={Bruno M. Saraiva and Rita Carlota and António D. Brito and Iván Hidalgo-Cenalmor and Guillaume Jacquemet and Ricardo Henriques}"
             in content
         )
-        assert "year={2025}" in content
-        assert "eprint={2508.00836}" in content
-        assert "archivePrefix={arXiv}" in content
-        assert "primaryClass={cs.DL}" in content
-        assert "doi={10.48550/arXiv.2508.00836}" in content
-        assert "url={https://arxiv.org/abs/2508.00836}" in content
+        assert "journal={Journal of Cell Science}" in content
+        assert "year={2026}" in content
+        assert "doi={10.1242/jcs.265183}" in content
+        assert "url={https://doi.org/10.1242/jcs.265183}" in content
         assert "}" in content  # Closing brace
 
     def test_inject_citation_success_message(self, capsys):
@@ -351,7 +348,7 @@ class TestInjectRxivCitation:
         content = self.bib_file.read_text(encoding="utf-8")
         assert "António D. Brito" in content
         assert "Rxiv-Maker: an automated template engine for streamlined scientific publications" in content
-        assert "2508.00836" in content
+        assert "10.1242/jcs.265183" in content
         assert "Old Title" not in content
 
     def test_inject_citation_preserves_surrounding_content(self, capsys):
@@ -450,13 +447,24 @@ class TestInjectRxivCitation:
 }"""
         assert is_citation_outdated(outdated_citation) is True
 
-        # Test current citation
-        current_citation = """@misc{saraiva_2025_rxivmaker,
+        # Test outdated arXiv citation (needs upgrading to JCS)
+        arxiv_citation = """@misc{saraiva_2025_rxivmaker,
       title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
       author={Bruno M. Saraiva and Rita Carlota and António D. Brito and Iván Hidalgo-Cenalmor and Guillaume Jacquemet and Ricardo Henriques},
       year={2025},
       eprint={2508.00836},
       doi={10.48550/arXiv.2508.00836}
+}"""
+        assert is_citation_outdated(arxiv_citation) is True
+
+        # Test current JCS citation
+        current_citation = """@article{saraiva_2025_rxivmaker,
+      title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
+      author={Bruno M. Saraiva and Rita Carlota and António D. Brito and Iván Hidalgo-Cenalmor and Guillaume Jacquemet and Ricardo Henriques},
+      journal={Journal of Cell Science},
+      year={2026},
+      doi={10.1242/jcs.265183},
+      url={https://doi.org/10.1242/jcs.265183}
 }"""
         assert is_citation_outdated(current_citation) is False
 

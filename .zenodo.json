@@ -48,6 +48,11 @@
   ],
   "related_identifiers": [
     {
+      "identifier": "10.1242/jcs.265183",
+      "relation": "isSupplementTo",
+      "scheme": "doi"
+    },
+    {
       "identifier": "10.48550/arXiv.2508.00836",
       "relation": "isSupplementTo",
       "scheme": "doi"

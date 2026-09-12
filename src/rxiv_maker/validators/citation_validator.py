@@ -99,7 +99,8 @@ class CitationValidator(BaseValidator):
             # Special entries that should be excluded from unused warnings
             # These are typically added dynamically by the system
             system_entries = {
-                "saraiva_2025_rxivmaker",  # Dynamically added Rxiv-Maker self-citation
+                "saraiva_2025_rxivmaker",  # Dynamically added Rxiv-Maker self-citation (preprint/legacy key)
+                "saraiva_2026_rxivmaker",  # Peer-reviewed journal citation key
             }
 
             # Filter out system entries from unused warnings
@@ -125,7 +126,7 @@ class CitationValidator(BaseValidator):
             {
                 "total_citations": sum(len(lines) for lines in self.citations_found.values()),
                 "unique_citations": len(self.citations_found),
-                "unused_entries": len(self.bib_keys - set(self.citations_found.keys()) - {"saraiva_2025_rxivmaker"})
+                "unused_entries": len(self.bib_keys - set(self.citations_found.keys()) - system_entries)
                 if self.bib_keys
                 else 0,
                 "undefined_citations": len(

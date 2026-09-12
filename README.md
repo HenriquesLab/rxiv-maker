@@ -1,4 +1,5 @@
-[![DOI](https://img.shields.io/badge/DOI-10.48550%2FarXiv.2508.00836-blue)](https://doi.org/10.48550/arXiv.2508.00836)
+[![DOI: 10.1242/jcs.265183](https://img.shields.io/badge/DOI-10.1242%2Fjcs.265183-blue)](https://doi.org/10.1242/jcs.265183)
+[![arXiv](https://img.shields.io/badge/arXiv-2508.00836-b31b1b.svg)](https://arxiv.org/abs/2508.00836)
 [![License](https://img.shields.io/github/license/henriqueslab/rxiv-maker?color=Green)](https://github.com/henriqueslab/rxiv-maker/blob/main/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/henriqueslab/rxiv-maker?style=social)](https://github.com/HenriquesLab/rxiv-maker/stargazers)
 
@@ -65,7 +66,7 @@ For contributors: **[CONTRIBUTING.md](CONTRIBUTING.md)**
 |------------|---------|
 | [rxiv-maker](https://github.com/HenriquesLab/rxiv-maker) | Core CLI tool |
 | [docker-rxiv-maker](https://github.com/HenriquesLab/docker-rxiv-maker) | Pre-configured container with LaTeX |
-| [manuscript-rxiv-maker](https://github.com/HenriquesLab/manuscript-rxiv-maker) | Complete example (arXiv:2508.00836) |
+| [manuscript-rxiv-maker](https://github.com/HenriquesLab/manuscript-rxiv-maker) | Complete example and official paper (JCS doi:10.1242/jcs.265183, arXiv:2508.00836) |
 | [vscode-rxiv-maker](https://marketplace.visualstudio.com/items?itemName=HenriquesLab.rxiv-maker) | VS Code extension |
 
 ## Publications
@@ -81,13 +82,13 @@ Preprints and papers written with Rxiv-Maker are collected on the [Publications 
 ## Citation
 
 ```bibtex
-@misc{saraiva_2025_rxivmaker,
+@article{saraiva_2025_rxivmaker,
   title={Rxiv-Maker: an automated template engine for streamlined scientific publications},
   author={Bruno M. Saraiva and Rita Carlota and Ant\'{o}nio D. Brito and Iván Hidalgo-Cenalmor and Guillaume Jacquemet and Ricardo Henriques},
-  year={2025},
-  eprint={2508.00836},
-  archivePrefix={arXiv},
-  url={https://arxiv.org/abs/2508.00836}
+  journal={Journal of Cell Science},
+  year={2026},
+  doi={10.1242/jcs.265183},
+  url={https://doi.org/10.1242/jcs.265183}
 }
 ```
 

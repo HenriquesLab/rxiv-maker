@@ -70,7 +70,7 @@ graph TB
 |------------|---------|------|-------|
 | **[rxiv-maker](https://github.com/HenriquesLab/rxiv-maker)** | Core tool, CLI, Python package | Python Package | All users |
 | **[docker-rxiv-maker](https://github.com/HenriquesLab/docker-rxiv-maker)** | Pre-built Docker images with dependencies | Docker Container | CI/CD, no-LaTeX users |
-| **[manuscript-rxiv-maker](https://github.com/HenriquesLab/manuscript-rxiv-maker)** | Official preprint (arXiv:2508.00836) & example | Example Repository | New users, learners |
+| **[manuscript-rxiv-maker](https://github.com/HenriquesLab/manuscript-rxiv-maker)** | Official paper (*J. Cell Sci.* doi:10.1242/jcs.265183, arXiv:2508.00836) & example | Example Repository | New users, learners |
 | **[vscode-rxiv-maker](https://github.com/HenriquesLab/vscode-rxiv-maker)** | VS Code extension for enhanced editing | VS Code Extension | VS Code users |
 | **[Documentation Website](https://rxiv-maker.henriqueslab.org)** | Official documentation and user guides | MkDocs Site | All users |
 
