@@ -160,6 +160,23 @@ class TestInjectRxivCitation:
         content = custom_bib_file.read_text(encoding="utf-8")
         assert "saraiva_2025_rxivmaker" in content
 
+    def test_inject_citation_with_dict_bibliography_config(self):
+        """Test citation injection when bibliography is a dict with file key."""
+        custom_bib_file = self.manuscript_dir / "custom_refs.bib"
+        yaml_metadata = {
+            "acknowledge_rxiv_maker": True,
+            "bibliography": {"file": "custom_refs.bib", "style": "nature"},
+        }
+
+        with patch.dict(os.environ, {"MANUSCRIPT_PATH": str(self.manuscript_dir)}):
+            with patch("pathlib.Path.cwd", return_value=Path(self.temp_dir)):
+                inject_rxiv_citation(yaml_metadata)
+
+        assert custom_bib_file.exists()
+        content = custom_bib_file.read_text(encoding="utf-8")
+        assert "saraiva_2025_rxivmaker" in content
+        assert "Journal of Cell Science" in content
+
     def test_inject_citation_adds_newline_to_file_without_trailing_newline(self):
         """Test that citation injection adds newline when existing file doesn't end with one."""
         # Create existing bibliography content without trailing newline
