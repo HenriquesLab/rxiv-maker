@@ -31,6 +31,7 @@ https://doi.org/%7BDOI%7D
 # DOI links that may return 403 (rate limiting or bot detection)
 https://doi.org/10.1101
 https://doi.org/10.64898
+https://doi.org/10.1242
 
 # Private repositories (if any)
 https://github.com/HenriquesLab/website-rxiv-maker
