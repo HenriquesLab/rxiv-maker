@@ -1058,6 +1058,40 @@ class DocxWriter:
             run.italic = True
             run.font.size = Pt(10)
 
+    def _add_display_equation_omml(self, paragraph, latex_content: str) -> bool:
+        """Add a display equation as centred Office Math, returning False if it cannot be built."""
+        try:
+            from docx.oxml import parse_xml
+
+            mathml_root = etree.fromstring(latex_to_mathml(latex_content).encode("utf-8"))
+            omml = self._mathml_to_omml(mathml_root)
+            # The flat fallback is a single text run carrying no structure, where an image reads better.
+            children = list(omml) if omml is not None else []
+            if not children or (len(children) == 1 and children[0].tag == qn("m:r")):
+                return False
+
+            wrapper = parse_xml(
+                '<m:oMathPara xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+                '<m:oMathParaPr><m:jc m:val="center"/></m:oMathParaPr></m:oMathPara>'
+            )
+            wrapper.append(omml)
+            paragraph._element.append(wrapper)
+            return True
+        except Exception as e:
+            logger.debug(f"Could not build Office Math for display equation: {e}")
+            return False
+
+    def _append_equation_number(self, para, equation_number):
+        """Add a right-aligned equation number to an equation paragraph."""
+        if not equation_number:
+            return
+        from docx.enum.text import WD_TAB_ALIGNMENT
+        from docx.shared import Inches
+
+        para.paragraph_format.tab_stops.add_tab_stop(Inches(6.5), WD_TAB_ALIGNMENT.RIGHT)
+        num_run = para.add_run(f"\t({equation_number})")
+        num_run.font.size = Pt(11)
+
     def _add_equation(self, doc: Document, section: Dict[str, Any]):
         """Add equation to document as rendered image with numbering.
 
@@ -1083,6 +1117,12 @@ class DocxWriter:
         # Create a paragraph for the equation
         para = doc.add_paragraph()
         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        # Office Math first, so the equation stays editable in Word; journals ask for this.
+        if self._add_display_equation_omml(para, latex_content):
+            self._append_equation_number(para, equation_number)
+            logger.info("Equation added as Office Math")
+            return
 
         # Try to render equation as image
         try:
@@ -1116,18 +1156,7 @@ class DocxWriter:
             logger.warning(f"Equation image rendering failed: {e}, using formatted text")
             self._render_latex_formatted(para, latex_content)
 
-        # Add equation number on the right side if available
-        if equation_number:
-            # Add tab stop for right alignment
-            from docx.enum.text import WD_TAB_ALIGNMENT
-            from docx.shared import Inches
-
-            tab_stops = para.paragraph_format.tab_stops
-            tab_stops.add_tab_stop(Inches(6.5), WD_TAB_ALIGNMENT.RIGHT)
-
-            # Add tab and equation number
-            num_run = para.add_run(f"\t({equation_number})")
-            num_run.font.size = Pt(11)
+        self._append_equation_number(para, equation_number)
 
         logger.info("Equation successfully added to document")
 
@@ -1506,8 +1535,18 @@ class DocxWriter:
         Returns:
             OMML element (OxmlElement)
         """
-        # For now, use basic OMML structure
-        # A full implementation would use XSLT transformation
+        try:
+            from docx.oxml import parse_xml
+
+            transform = etree.XSLT(etree.fromstring(self._get_mml2omml_xslt().encode("utf-8")))
+            converted = transform(mathml_elem)
+            root = converted.getroot() if hasattr(converted, "getroot") else converted
+            if root is not None and len(root):
+                return parse_xml(etree.tostring(root))
+        except Exception as e:
+            logger.debug(f"MathML to OMML transformation failed: {e}")
+
+        # Structure the transformation cannot express falls back to flat text.
         return self._create_basic_omml(mathml_elem)
 
     def _create_basic_omml(self, mathml_elem):
@@ -1610,6 +1649,36 @@ class DocxWriter:
             <m:num><xsl:apply-templates select="*[1]"/></m:num>
             <m:den><xsl:apply-templates select="*[2]"/></m:den>
         </m:f>
+    </xsl:template>
+
+    <xsl:template match="mml:msubsup">
+        <m:sSubSup>
+            <m:e><xsl:apply-templates select="*[1]"/></m:e>
+            <m:sub><xsl:apply-templates select="*[2]"/></m:sub>
+            <m:sup><xsl:apply-templates select="*[3]"/></m:sup>
+        </m:sSubSup>
+    </xsl:template>
+
+    <xsl:template match="mml:msqrt">
+        <m:rad>
+            <m:radPr><m:degHide m:val="1"/></m:radPr>
+            <m:deg/>
+            <m:e><xsl:apply-templates/></m:e>
+        </m:rad>
+    </xsl:template>
+
+    <xsl:template match="mml:mover">
+        <m:acc>
+            <m:accPr><m:chr m:val="{normalize-space(*[2])}"/></m:accPr>
+            <m:e><xsl:apply-templates select="*[1]"/></m:e>
+        </m:acc>
+    </xsl:template>
+
+    <xsl:template match="mml:munder">
+        <m:limLow>
+            <m:e><xsl:apply-templates select="*[1]"/></m:e>
+            <m:lim><xsl:apply-templates select="*[2]"/></m:lim>
+        </m:limLow>
     </xsl:template>
 
     <xsl:template match="text()">

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.24.3] - 2026-09-15
+
+### Fixed
+- Display equations export to DOCX as editable Office Math instead of a picture,
+  so they can be edited in Word's equation editor. Journals ask for this at
+  production. The image path remains as a fallback when the equation cannot be
+  converted.
+- Inline equations keep their structure. `_mathml_to_omml` carried a MathML to
+  OMML transformation but never applied it, so `$E = mc^2$` exported as the flat
+  text "E=mc2". The transformation now runs, and covers accents, roots and
+  combined sub-superscripts alongside the existing fractions, subscripts and
+  superscripts.
+
 ## [1.24.2] - 2026-09-15
 
 ### Fixed
