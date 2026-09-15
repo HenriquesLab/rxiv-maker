@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.24.2] - 2026-09-15
+
+### Fixed
+- `rxiv docx --track-changes` keeps inline formatting inside a marked paragraph.
+  Changed paragraphs were rebuilt from plain text, so code font, subscripts and
+  superscripts were lost in the highlighted copy. Runs are now split at the diff
+  boundaries and keep their own formatting, with a plain-text fallback for
+  paragraphs whose runs do not reconstruct the text, such as those holding an
+  equation. Word-level comparison also ignores trailing whitespace, which stops a
+  word being marked as replaced when only the spacing around it moved.
+
 ## [1.24.1] - 2026-09-12
 
 ### Fixed
