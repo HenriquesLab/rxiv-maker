@@ -10,14 +10,16 @@ The comparison runs on the two rendered DOCX files rather than on the Markdown
 sources, so what is marked is what a reader actually sees.
 """
 
+import copy
 import difflib
 import re
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from docx import Document
 from docx.enum.text import WD_COLOR_INDEX
 from docx.shared import RGBColor
+from docx.text.run import Run
 
 from ..core.logging_config import get_logger
 
@@ -77,13 +79,88 @@ def _add_marked_run(paragraph, text: str, mode: str) -> None:
         run.font.highlight_color = DELETED_HIGHLIGHT
 
 
-def _mark_paragraph(paragraph, old_text: str, new_text: str) -> None:
-    """Rewrite a paragraph as a word-level diff of old vs new text.
+def _clone_run(source, text: str, mode: str) -> Run:
+    """Insert a copy of ``source`` carrying ``text``, marked for ``mode``.
 
-    Existing runs are replaced, so inline formatting inside a changed paragraph
-    is not preserved. The clean export carries the real formatting; this file
-    exists to show what changed.
+    Copying the run element keeps its formatting (code font, subscripts,
+    italics), which a rebuilt plain-text run would lose.
     """
+    element = copy.deepcopy(source._element)
+    source._element.addprevious(element)
+    run = Run(element, source._parent)
+    run.text = text
+    if mode == "insert":
+        run.font.highlight_color = INSERTED_HIGHLIGHT
+    elif mode == "delete":
+        run.font.strike = True
+        run.font.color.rgb = DELETED_COLOR
+        run.font.highlight_color = DELETED_HIGHLIGHT
+    return run
+
+
+def _diff_marks(old_text: str, new_text: str) -> Tuple[List[Tuple[int, int]], List[Tuple[int, str]]]:
+    """Return inserted character spans of ``new_text`` and deleted text with its anchor."""
+    old_tokens = _tokenize(old_text)
+    matches = list(_TOKEN.finditer(new_text))
+    new_tokens = [m.group(0) for m in matches]
+    bounds = [m.start() for m in matches] + [len(new_text)]
+
+    # Compare the words themselves: a token carries its trailing whitespace, so
+    # "NaCl" and "NaCl " would otherwise read as a replacement.
+    matcher = difflib.SequenceMatcher(
+        None, [t.strip() for t in old_tokens], [t.strip() for t in new_tokens], autojunk=False
+    )
+    inserts: List[Tuple[int, int]] = []
+    deletions: List[Tuple[int, str]] = []
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "equal":
+            continue
+        if tag in ("delete", "replace"):
+            deletions.append((bounds[j1], "".join(old_tokens[i1:i2])))
+        if tag in ("insert", "replace"):
+            inserts.append((bounds[j1], bounds[j2]))
+    return inserts, deletions
+
+
+def _mark_runs(paragraph, new_text: str, inserts, deletions) -> bool:
+    """Mark a paragraph in place, splitting runs at the diff boundaries.
+
+    Returns False when the runs do not reconstruct the paragraph text, as with a
+    paragraph holding an equation or a hyperlink, so the caller can fall back to
+    rebuilding it as plain text.
+    """
+    runs = list(paragraph.runs)
+    if not runs or "".join(run.text for run in runs) != new_text:
+        return False
+
+    pending: Dict[int, List[str]] = {}
+    for pos, text in deletions:
+        pending.setdefault(pos, []).append(text)
+
+    cursor = 0
+    for run in runs:
+        text = run.text
+        start, end = cursor, cursor + len(text)
+        cursor = end
+        cuts = {start, end}
+        cuts.update(p for span in inserts for p in span if start < p < end)
+        cuts.update(p for p in pending if start < p < end)
+        ordered = sorted(cuts)
+        for piece_start, piece_end in zip(ordered, ordered[1:], strict=False):
+            for deleted in pending.pop(piece_start, []):
+                _clone_run(run, deleted, "delete")
+            mode = "insert" if any(s <= piece_start < e for s, e in inserts) else "equal"
+            _clone_run(run, text[piece_start - start : piece_end - start], mode)
+        run._element.getparent().remove(run._element)
+
+    for pos in sorted(pending):
+        for deleted in pending[pos]:
+            _add_marked_run(paragraph, deleted, "delete")
+    return True
+
+
+def _rebuild_paragraph(paragraph, old_text: str, new_text: str) -> None:
+    """Replace a paragraph with a plain-text word-level diff, dropping run formatting."""
     old_tokens, new_tokens = _tokenize(old_text), _tokenize(new_text)
     matcher = difflib.SequenceMatcher(None, old_tokens, new_tokens, autojunk=False)
 
@@ -98,6 +175,17 @@ def _mark_paragraph(paragraph, old_text: str, new_text: str) -> None:
         elif tag == "replace":
             _add_marked_run(paragraph, "".join(old_tokens[i1:i2]), "delete")
             _add_marked_run(paragraph, "".join(new_tokens[j1:j2]), "insert")
+
+
+def _mark_paragraph(paragraph, old_text: str, new_text: str) -> None:
+    """Rewrite a paragraph as a word-level diff of old vs new text.
+
+    Inline formatting survives wherever the paragraph's runs reconstruct its
+    text; the rest falls back to plain text.
+    """
+    inserts, deletions = _diff_marks(old_text, new_text)
+    if not _mark_runs(paragraph, new_text, inserts, deletions):
+        _rebuild_paragraph(paragraph, old_text, new_text)
 
 
 def _insert_deleted_paragraph(anchor, text: str) -> None:
