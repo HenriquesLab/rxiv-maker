@@ -248,6 +248,32 @@ showing correlation between variables A and B (n=150, p<0.001).](FIGURES/SFigure
 
 **When to use:** Data visualizations, statistical plots, dynamic content
 
+### 6. Long Figure Legend Continuation
+
+For multi-panel or detailed figures where a long legend needs to continue on the next page:
+
+```markdown
+![](FIGURES/Figure1.png)
+{#fig:cell-migration width="0.70" tex_position="p"} **Cell migration is regulated by matrix organisation.**
+
+(**A**) Overview of the experimental workflow.
+(**B**) Representative microscopy images.
+
+---continued---
+
+(**E--H**) Time-lapse imaging and analysis of protrusion dynamics.
+(**E**) Representative time-lapse images of cells migrating through tissue barrier.
+```
+
+Or with a custom continuation header:
+```markdown
+---continued: (Continued from page 1)---
+```
+
+**Behavior:**
+- **LaTeX**: Emits a `\ContinuedFloat` environment placed at the top of the next page (`[t!]`), keeping the same figure number without duplicate List of Figures entries.
+- **DOCX**: Appends the continued caption as a formatted follow-up paragraph with the continuation header.
+
 ---
 
 ## Troubleshooting
