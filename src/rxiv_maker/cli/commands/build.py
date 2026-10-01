@@ -20,6 +20,11 @@ from ..framework import BuildCommand
     metavar="DIR",
 )
 @click.option("--force-figures", "-f", is_flag=True, help="Force regeneration of all figures")
+@click.option(
+    "--install-deps",
+    is_flag=True,
+    help="Install Python packages declared in the manuscript's requirements.txt before running figure scripts",
+)
 @click.option("--skip-validation", "-s", is_flag=True, help="Skip validation step")
 @click.option(
     "--track-changes",
@@ -45,6 +50,7 @@ def build(
     manuscript_path: str | None,
     output_dir: str,
     force_figures: bool,
+    install_deps: bool,
     skip_validation: bool,
     track_changes: str | None,
     keep_output: bool,
@@ -109,6 +115,7 @@ def build(
         manuscript_path=manuscript_path,
         output_dir=output_dir,
         force_figures=force_figures,
+        install_deps=install_deps,
         skip_validation=skip_validation,
         track_changes=track_changes,
         keep_output=keep_output,

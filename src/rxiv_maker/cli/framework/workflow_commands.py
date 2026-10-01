@@ -146,6 +146,7 @@ class BuildCommand(BaseCommand):
         self,
         output_dir: str = "output",
         force_figures: bool = False,
+        install_deps: bool = False,
         skip_validation: bool = False,
         track_changes: Optional[str] = None,
         keep_output: bool = False,
@@ -161,6 +162,7 @@ class BuildCommand(BaseCommand):
         Args:
             output_dir: Output directory for generated files
             force_figures: Force regeneration of all figures
+            install_deps: Install declared figure dependencies before running figure scripts
             skip_validation: Skip validation step
             track_changes: Track changes against specified git tag
             keep_output: Preserve existing output directory
@@ -192,6 +194,7 @@ class BuildCommand(BaseCommand):
                     manuscript_path=str(self.path_manager.manuscript_path),
                     output_dir=output_dir,
                     force_figures=force_figures,
+                    install_deps=install_deps,
                     skip_validation=skip_validation,
                     track_changes_tag=track_changes,
                     clear_output=not keep_output,

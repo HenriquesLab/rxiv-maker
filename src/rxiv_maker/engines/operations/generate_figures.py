@@ -19,6 +19,7 @@ from typing import Optional
 
 from rich.console import Console
 
+from ...utils.figure_dependencies import ensure_figure_dependencies
 from ...utils.unicode_safe import get_safe_icon, safe_print
 
 try:
@@ -79,6 +80,7 @@ class FigureGenerator:
         r_only=False,
         enable_content_caching=True,
         manuscript_path=None,
+        install_deps=False,
     ):
         """Initialize the figure generator.
 
@@ -89,6 +91,7 @@ class FigureGenerator:
             r_only: Only process R files if True
             enable_content_caching: Enable content-based caching to avoid unnecessary rebuilds
             manuscript_path: Path to manuscript directory (for caching, defaults to current directory)
+            install_deps: Install missing dependencies declared by the manuscript before running scripts
         """
         # Initialize path management
         try:
@@ -110,6 +113,8 @@ class FigureGenerator:
         self.output_dir = Path(output_dir).resolve()
         self.output_format = output_format
         self.r_only = r_only
+        self.manuscript_dir = Path(manuscript_path).resolve() if manuscript_path else self.figures_dir.parent
+        self.install_deps = install_deps
 
         # Create directories if they don't exist
         self.figures_dir.mkdir(parents=True, exist_ok=True)
@@ -542,11 +547,42 @@ startxref
         except Exception as e:
             return False, f"{get_safe_icon('✗', '[FAIL]')} Error reading diagram: {str(e)[:50]}", {}
 
+    def _ensure_python_dependencies(self, py_files: list[Path], use_rich: bool = True) -> None:
+        """Resolve the manuscript's declared figure dependencies before running scripts.
+
+        Args:
+            py_files: Python figure scripts about to run
+            use_rich: Whether to use rich formatting
+
+        Raises:
+            FigureDependencyError: When declared dependencies are missing
+        """
+        if not py_files:
+            return
+
+        # Detection only. The command wrapper reports the failure, so the message
+        # is not printed here and then repeated by the caller.
+        status = ensure_figure_dependencies(self.manuscript_dir, self.figures_dir, auto_install=self.install_deps)
+
+        if status.declared:
+            if use_rich:
+                self.console.print(
+                    f"{get_safe_icon('✅', '[OK]')} [green]Declared figure dependencies satisfied "
+                    f"({len(status.declared)} checked)[/green]"
+                )
+            else:
+                safe_print(
+                    f"{get_safe_icon('✅', '[OK]')} Declared figure dependencies satisfied "
+                    f"({len(status.declared)} checked)"
+                )
+
     def _execute_python_files(self, progress=None, task_id=None, use_rich: bool = True):
         """Execute Python scripts to generate figures using local Python."""
         py_files = list(self.figures_dir.glob("*.py"))
         if not py_files:
             return []
+
+        self._ensure_python_dependencies(py_files, use_rich)
 
         processed_files = []
 

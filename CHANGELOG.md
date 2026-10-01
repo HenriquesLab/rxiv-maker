@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Manifests declare the Python packages their figure scripts need, in a
+  `requirements.txt` beside the scripts or a `figures.dependencies` list in
+  `00_CONFIG.yml`. Figure generation checks them before running any script and
+  stops with the exact missing package names, the file that declared them and
+  the install command. Pass `--install-deps` to `rxiv pdf` or `rxiv figures`
+  to install them into the active environment first, so a fresh clone of a
+  manuscript repository renders without manual setup. This closes the silent
+  `ModuleNotFoundError` mid-render that a manuscript with figure scripts
+  otherwise produces.
+
 ## [1.24.3] - 2026-09-15
 
 ### Fixed

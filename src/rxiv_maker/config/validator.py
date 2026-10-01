@@ -399,6 +399,15 @@ class ConfigValidator:
                     "language": {"type": "string", "enum": ["en", "es", "pt", "fr", "de"]},
                     "license": {"type": "string"},
                     "repository": {"type": "string", "format": "uri"},
+                    "figures": {
+                        "type": "object",
+                        "properties": {
+                            "directory": {"type": "string"},
+                            "generate": {"type": "boolean"},
+                            "formats": {"type": "array", "items": {"type": "string"}},
+                            "dependencies": {"type": "array", "items": {"type": "string"}},
+                        },
+                    },
                 },
             },
             "cli_commands": {
