@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.25.0] - 2026-10-02
+
 ### Added
 - Manifests declare the Python packages their figure scripts need, in a
   `requirements.txt` beside the scripts or a `figures.dependencies` list in
