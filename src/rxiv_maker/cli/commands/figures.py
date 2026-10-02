@@ -14,6 +14,11 @@ console = Console()
 @click.command()
 @click.argument("manuscript_path", required=False)
 @click.option("--force", "-f", is_flag=True, help="Force regeneration of all figures")
+@click.option(
+    "--install-deps",
+    is_flag=True,
+    help="Install Python packages declared in the manuscript's requirements.txt before running figure scripts",
+)
 @click.option("--figures-dir", "-d", help="Custom figures directory path")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.pass_context
@@ -21,6 +26,7 @@ def figures(
     ctx: click.Context,
     manuscript_path: str | None,
     force: bool,
+    install_deps: bool,
     figures_dir: str | None,
     verbose: bool,
 ) -> None:
@@ -80,6 +86,7 @@ def figures(
                 r_only=False,
                 enable_content_caching=not force,
                 manuscript_path=str(manuscript_dir),
+                install_deps=install_deps,
             )
 
             if verbose or ctx.obj.get("verbose", False):

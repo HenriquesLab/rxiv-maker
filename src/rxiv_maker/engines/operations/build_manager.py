@@ -36,6 +36,7 @@ class BuildManager:
         manuscript_path: str | None = None,
         output_dir: str = "output",
         force_figures: bool = False,
+        install_deps: bool = False,
         skip_validation: bool = False,
         skip_pdf_validation: bool = False,
         clear_output: bool = True,
@@ -50,6 +51,7 @@ class BuildManager:
             manuscript_path: Path to manuscript directory
             output_dir: Output directory for generated files
             force_figures: Force regeneration of all figures
+            install_deps: Install declared figure dependencies before running figure scripts
             skip_validation: Skip manuscript validation
             skip_pdf_validation: Skip PDF validation
             clear_output: Clear output directory before build (default: True)
@@ -64,6 +66,7 @@ class BuildManager:
 
         # Store configuration
         self.force_figures = force_figures or EnvironmentManager.is_force_figures()
+        self.install_deps = install_deps
         self.skip_validation = skip_validation
         self.skip_pdf_validation = skip_pdf_validation
         self.clear_output = clear_output
@@ -288,6 +291,7 @@ class BuildManager:
                 output_dir=str(self.figures_dir),
                 output_format="pdf",
                 manuscript_path=str(self.manuscript_path),
+                install_deps=self.install_deps,
             )
             figure_gen.process_figures()
 

@@ -339,7 +339,7 @@ class ConfigManager:
             "output": {"format": "pdf", "directory": "output", "filename": "manuscript"},
             "engine": {"type": "local", "docker_image": "henriqueslab/rxiv-maker-base:latest", "timeout": 300},
             "validation": {"enabled": True, "strict": False, "skip_doi_check": False},
-            "figures": {"directory": "FIGURES", "generate": True, "formats": ["png", "svg"]},
+            "figures": {"directory": "FIGURES", "generate": True, "formats": ["png", "svg"], "dependencies": []},
             "bibliography": {"file": "03_REFERENCES.bib", "style": "nature"},
             "citation_style": "numbered",
             "enable_inline_doi_resolution": False,

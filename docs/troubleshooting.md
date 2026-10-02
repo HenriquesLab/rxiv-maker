@@ -24,6 +24,11 @@ Almost always a LaTeX problem. Confirm a LaTeX distribution is installed (`pdfla
 
 A figure script that errors stops the build. Run the script directly (`python FIGURES/your_figure.py`) to see the traceback, and make sure its dependencies are installed in the same environment as `rxiv`. Use `rxiv pdf --force-figures` to regenerate cached figures.
 
+When a script raises `ModuleNotFoundError`, declare the package in a
+`requirements.txt` beside the scripts or under `figures.dependencies` in
+`00_CONFIG.yml`, then run `rxiv pdf --install-deps` to install it. See
+[Declaring Figure Dependencies](figures-guide.md#declaring-figure-dependencies).
+
 ## Citation and Bibliography Problems
 
 `rxiv validate` lists undefined or duplicate citation keys. Every `[@key]` must match an entry in `03_REFERENCES.bib`. If the bibliography does not render, check for BibTeX syntax errors in that file. Bare DOIs pasted in the text are resolved with `rxiv pdf --resolve-dois`.

@@ -410,6 +410,59 @@ pip install matplotlib numpy pandas seaborn
 install.packages(c("ggplot2", "dplyr", "readr"))
 ```
 
+### Declaring Figure Dependencies
+
+A manuscript repository renders correctly on a fresh clone when the figure
+scripts declare the packages they import. Write them in a `requirements.txt`
+next to the scripts:
+
+```
+FIGURES/
+├── requirements.txt
+├── Figure__analysis.py
+└── data/
+```
+
+```text
+# FIGURES/requirements.txt
+matplotlib>=3.7
+pandas>=2.0
+seaborn>=0.13
+```
+
+The file may also sit in the manuscript root. The equivalent declaration inside
+`00_CONFIG.yml` keeps everything in one file:
+
+```yaml
+figures:
+  directory: "FIGURES"
+  generate: true
+  dependencies:
+    - matplotlib>=3.7
+    - seaborn>=0.13
+```
+
+Before running any figure script, `rxiv` checks each declared package against
+the environment running `rxiv`. A missing package stops the build with the
+package names, the declaring file and the install command, rather than a
+traceback from inside a script. The check runs before the figure cache, so a
+rebuild that would skip every script still reports the gap.
+
+Pass `--install-deps` to install the missing packages into the active
+environment first:
+
+```bash
+rxiv pdf --install-deps
+rxiv figures --install-deps
+```
+
+The flag is off by default; without it `rxiv` reports the missing packages and
+exits. Installation uses the interpreter running `rxiv`, falling back to
+`uv pip` when that interpreter has no `pip` module.
+
+Version specifiers are honoured: `pandas>=2.0` reports an installed pandas
+1.5 as missing.
+
 ### Issue: Memory Issues with Large Figures
 
 **Solutions:**

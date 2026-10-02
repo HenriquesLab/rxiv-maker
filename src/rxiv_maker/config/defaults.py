@@ -17,6 +17,9 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "directory": "FIGURES",
         "generate": True,
         "formats": ["png", "svg"],
+        # Python packages the figure scripts need, e.g. ["seaborn>=0.13"].
+        # Also read from a requirements.txt in FIGURES/ or the manuscript root.
+        "dependencies": [],
     },
     # Validation configuration
     "validation": {
