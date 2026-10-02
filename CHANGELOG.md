@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.25.0] - 2026-10-02
 
 ### Added
-- Manifests declare the Python packages their figure scripts need, in a
+- Manuscripts declare the Python packages their figure scripts need, in a
   `requirements.txt` beside the scripts or a `figures.dependencies` list in
   `00_CONFIG.yml`. Figure generation checks them before running any script and
   stops with the exact missing package names, the file that declared them and
