@@ -142,6 +142,7 @@ citation_style: "numbered"
 #   directory: "FIGURES"
 #   generate: true
 #   formats: ["png", "svg"]
+#   dependencies: ["matplotlib>=3.7"]  # Python packages your figure scripts import
 #
 # validation:
 #   enabled: true
