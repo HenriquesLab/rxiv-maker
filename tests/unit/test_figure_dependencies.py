@@ -124,7 +124,7 @@ def test_missing_dependency_without_install_raises(manuscript_dir: Path):
         ensure_figure_dependencies(manuscript_dir, manuscript_dir / "FIGURES")
     message = str(excinfo.value)
     assert "definitely-not-installed-xyzzy" in message
-    assert "--install-deps" in message
+    assert "--no-install-deps" in message
 
 
 def test_install_command_uses_active_interpreter(manuscript_dir: Path):
@@ -194,6 +194,7 @@ def test_declared_gap_fails_before_figure_caching_can_mask_it(manuscript_dir: Pa
         figures_dir=str(figures_dir),
         output_dir=str(figures_dir),
         manuscript_path=str(manuscript_dir),
+        install_deps=False,
     )
 
     # Record checksums so regeneration would be skipped for the unchanged script,

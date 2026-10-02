@@ -21,9 +21,10 @@ from ..framework import BuildCommand
 )
 @click.option("--force-figures", "-f", is_flag=True, help="Force regeneration of all figures")
 @click.option(
-    "--install-deps",
-    is_flag=True,
-    help="Install Python packages declared in the manuscript's requirements.txt before running figure scripts",
+    "--install-deps/--no-install-deps",
+    default=True,
+    help="Run figure scripts in a per-manuscript environment with the packages declared in "
+    "requirements.txt or figures.dependencies (default: on)",
 )
 @click.option("--skip-validation", "-s", is_flag=True, help="Skip validation step")
 @click.option(

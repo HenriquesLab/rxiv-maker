@@ -146,7 +146,7 @@ class BuildCommand(BaseCommand):
         self,
         output_dir: str = "output",
         force_figures: bool = False,
-        install_deps: bool = False,
+        install_deps: bool = True,
         skip_validation: bool = False,
         track_changes: Optional[str] = None,
         keep_output: bool = False,
@@ -162,7 +162,7 @@ class BuildCommand(BaseCommand):
         Args:
             output_dir: Output directory for generated files
             force_figures: Force regeneration of all figures
-            install_deps: Install declared figure dependencies before running figure scripts
+            install_deps: Run figure scripts in the manuscript's figure environment
             skip_validation: Skip validation step
             track_changes: Track changes against specified git tag
             keep_output: Preserve existing output directory

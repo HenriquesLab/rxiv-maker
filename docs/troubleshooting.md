@@ -26,7 +26,8 @@ A figure script that errors stops the build. Run the script directly (`python FI
 
 When a script raises `ModuleNotFoundError`, declare the package in a
 `requirements.txt` beside the scripts or under `figures.dependencies` in
-`00_CONFIG.yml`, then run `rxiv pdf --install-deps` to install it. See
+`00_CONFIG.yml`. The next `rxiv pdf` installs it into the manuscript's figure
+environment. See
 [Declaring Figure Dependencies](figures-guide.md#declaring-figure-dependencies).
 
 ## Citation and Bibliography Problems
