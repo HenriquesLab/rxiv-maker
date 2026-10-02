@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.25.1] - 2026-10-02
+
+### Changed
+- Figure scripts in a manuscript that declares dependencies now run in an
+  environment of their own under `.rxiv_cache/figure-env`, and rxiv installs the
+  declared packages there automatically on the first build. The environment
+  lives with the manuscript, so it survives upgrades of rxiv-maker, including
+  `brew upgrade`, and it never changes the Python that runs `rxiv`. It also
+  holds matplotlib, numpy, pandas and seaborn, which figure scripts could always
+  use without declaring them. Installation is now the default, and
+  `--install-deps` remains accepted. `--no-install-deps` keeps the 1.25.0
+  behaviour: scripts run in the current interpreter and a missing package stops
+  the build.
+
+### Added
+- Before the first figure script runs, rxiv checks out any git submodule the
+  manuscript repository has not checked out, so a plain `git clone` of a
+  manuscript that keeps its figure data in a submodule builds without
+  `--recurse-submodules`.
+
 ## [1.25.0] - 2026-10-02
 
 ### Added

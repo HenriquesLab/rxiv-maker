@@ -8,17 +8,29 @@ is missing, so a fresh clone renders without manual setup.
 
 from __future__ import annotations
 
+import hashlib
 import importlib
 import importlib.metadata
+import json
+import os
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from packaging.requirements import InvalidRequirement, Requirement
+from packaging.utils import canonicalize_name
 
 REQUIREMENTS_FILENAME = "requirements.txt"
 INSTALL_TIMEOUT_SECONDS = 600
+
+# Figure scripts ran with rxiv's own interpreter before manuscripts could declare
+# dependencies, so they could rely on these packages without listing them. The
+# per-manuscript environment installs them alongside the declared packages.
+BASE_FIGURE_PACKAGES = ("matplotlib", "numpy", "pandas", "seaborn")
+FIGURE_ENV_DIRNAME = "figure-env"
+FIGURE_ENV_MARKER = "rxiv-figure-env.json"
 
 
 class FigureDependencyError(Exception):
@@ -321,6 +333,227 @@ def describe_missing(status: FigureDependencyStatus, auto_install: bool = False,
     else:
         lines.append("Install them with:")
         lines.append(f"  {command}")
-        lines.append("Or re-run with --install-deps to let rxiv-maker install them.")
+        lines.append("Or drop --no-install-deps to let rxiv install them into the manuscript's figure environment.")
 
     return "\n".join(lines)
+
+
+def declared_requirements(manuscript_dir: Path, figures_dir: Path) -> list[Requirement]:
+    """Return every requirement the manuscript declares for its figure scripts.
+
+    Args:
+        manuscript_dir: Manuscript root directory
+        figures_dir: Figures directory
+
+    Returns:
+        Requirements from requirements.txt and figures.dependencies, in that order
+    """
+    requirements_file = find_requirements_file(manuscript_dir, figures_dir)
+    requirements = parse_requirements(requirements_file) if requirements_file else []
+    requirements.extend(_parse_requirement_lines(config_requirements(manuscript_dir)))
+    return requirements
+
+
+def figure_env_dir(manuscript_dir: Path) -> Path:
+    """Return the location of the manuscript's figure environment.
+
+    It sits in the manuscript cache, which new manuscripts ignore in git and
+    `rxiv clean` removes.
+
+    Args:
+        manuscript_dir: Manuscript root directory
+
+    Returns:
+        Path of the environment directory
+    """
+    return manuscript_dir / ".rxiv_cache" / FIGURE_ENV_DIRNAME
+
+
+def _env_python(env_dir: Path) -> Path:
+    """Return the interpreter path inside a virtual environment."""
+    if os.name == "nt":
+        return env_dir / "Scripts" / "python.exe"
+    return env_dir / "bin" / "python"
+
+
+def environment_requirements(declared: list[Requirement]) -> list[Requirement]:
+    """Combine declared requirements with the packages figure scripts always had.
+
+    A declared requirement replaces the base entry of the same name, so its
+    version specifier applies.
+
+    Args:
+        declared: Requirements the manuscript declares
+
+    Returns:
+        Requirements to install into the figure environment
+    """
+    declared_names = {canonicalize_name(requirement.name) for requirement in declared}
+    base = [Requirement(name) for name in BASE_FIGURE_PACKAGES if canonicalize_name(name) not in declared_names]
+    return [*declared, *base]
+
+
+def _fingerprint(requirements: list[Requirement]) -> str:
+    """Identify an environment by its requirements and the Python that built it."""
+    payload = {
+        "requirements": sorted(str(requirement) for requirement in requirements),
+        "python": f"{sys.version_info.major}.{sys.version_info.minor}",
+        "platform": sys.platform,
+    }
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+
+
+_VERSION_PROBE = """
+import importlib.metadata, json, sys
+versions = {}
+for name in json.loads(sys.argv[1]):
+    try:
+        versions[name] = importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError:
+        versions[name] = None
+print(json.dumps(versions))
+"""
+
+
+def _installed_versions(python: Path, names: list[str]) -> dict[str, str | None] | None:
+    """Report installed distribution versions inside another interpreter.
+
+    Args:
+        python: Interpreter to inspect
+        names: Distribution names to look up
+
+    Returns:
+        Mapping of name to version (None when absent), or None when the
+        interpreter does not run
+    """
+    try:
+        result = subprocess.run(  # nosec # Probing the manuscript's own figure environment
+            [str(python), "-c", _VERSION_PROBE, json.dumps(names)],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return None
+
+
+def _missing_in(python: Path, requirements: list[Requirement]) -> list[Requirement] | None:
+    """Return the requirements an interpreter does not satisfy.
+
+    Args:
+        python: Interpreter to inspect
+        requirements: Requirements to check
+
+    Returns:
+        Unsatisfied requirements, or None when the interpreter does not run
+    """
+    versions = _installed_versions(python, [requirement.name for requirement in requirements])
+    if versions is None:
+        return None
+    missing = []
+    for requirement in requirements:
+        version = versions.get(requirement.name)
+        if version is None:
+            missing.append(requirement)
+        elif requirement.specifier and not requirement.specifier.contains(version, prereleases=True):
+            missing.append(requirement)
+    return missing
+
+
+def _run(command: list[str]) -> tuple[bool, str]:
+    """Run an environment command, returning success and combined output."""
+    try:
+        result = subprocess.run(  # nosec # Building the manuscript's own figure environment
+            command,
+            capture_output=True,
+            text=True,
+            timeout=INSTALL_TIMEOUT_SECONDS,
+        )
+    except FileNotFoundError:
+        return False, f"{command[0]} not found"
+    except subprocess.TimeoutExpired:
+        return False, f"{' '.join(command)} timed out"
+    return result.returncode == 0, (result.stdout + result.stderr).strip()
+
+
+def _create_environment(env_dir: Path) -> tuple[bool, str]:
+    """Create an empty virtual environment, with uv when available."""
+    env_dir.parent.mkdir(parents=True, exist_ok=True)
+    if shutil.which("uv"):
+        return _run(["uv", "venv", "--quiet", "--python", sys.executable, str(env_dir)])
+    return _run([sys.executable, "-m", "venv", str(env_dir)])
+
+
+def _install_into(python: Path, requirements: list[Requirement]) -> tuple[bool, str]:
+    """Install requirements into a figure environment, with uv when available."""
+    names = [str(requirement) for requirement in requirements]
+    if shutil.which("uv"):
+        return _run(["uv", "pip", "install", "--quiet", "--python", str(python), *names])
+    return _run([str(python), "-m", "pip", "install", "--quiet", "--disable-pip-version-check", *names])
+
+
+def ensure_figure_environment(manuscript_dir: Path, declared: list[Requirement], log=None) -> Path:
+    """Return an interpreter that satisfies the manuscript's figure dependencies.
+
+    The environment lives in the manuscript cache, so it outlives upgrades of
+    rxiv-maker itself. It is rebuilt when the declared requirements or the
+    Python version change, and topped up when a package goes missing.
+
+    Args:
+        manuscript_dir: Manuscript root directory
+        declared: Requirements the manuscript declares
+        log: Optional callable receiving progress messages
+
+    Returns:
+        Path of the environment's Python interpreter
+
+    Raises:
+        FigureDependencyError: When the environment cannot be built or installed
+    """
+    env_dir = figure_env_dir(manuscript_dir)
+    python = _env_python(env_dir)
+    marker = env_dir / FIGURE_ENV_MARKER
+    requirements = environment_requirements(declared)
+    fingerprint = _fingerprint(requirements)
+
+    recorded = None
+    if marker.is_file():
+        try:
+            recorded = json.loads(marker.read_text(encoding="utf-8")).get("fingerprint")
+        except (OSError, json.JSONDecodeError):
+            recorded = None
+
+    missing = _missing_in(python, requirements) if python.exists() and recorded == fingerprint else None
+    if missing == []:
+        return python
+
+    if missing is None:
+        if log:
+            log(f"Creating figure environment in {env_dir}")
+        if env_dir.exists():
+            shutil.rmtree(env_dir)
+        ok, output = _create_environment(env_dir)
+        if not ok:
+            raise FigureDependencyError(f"Could not create the figure environment in {env_dir}.\n{output}")
+        missing = requirements
+
+    if log:
+        log(f"Installing figure dependencies: {', '.join(str(requirement) for requirement in missing)}")
+    ok, output = _install_into(python, missing)
+    still_missing = _missing_in(python, requirements)
+    if not ok or still_missing:
+        names = ", ".join(str(requirement) for requirement in (still_missing or missing))
+        raise FigureDependencyError(
+            f"Could not install figure dependencies into {env_dir}: {names}\n"
+            "Check the package names and versions in requirements.txt or figures.dependencies.\n"
+            f"{output}"
+        )
+
+    marker.write_text(json.dumps({"fingerprint": fingerprint}), encoding="utf-8")
+    return python

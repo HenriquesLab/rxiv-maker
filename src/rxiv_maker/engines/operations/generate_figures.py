@@ -19,7 +19,12 @@ from typing import Optional
 
 from rich.console import Console
 
-from ...utils.figure_dependencies import ensure_figure_dependencies
+from ...utils.figure_dependencies import (
+    declared_requirements,
+    ensure_figure_dependencies,
+    ensure_figure_environment,
+)
+from ...utils.git_submodules import ensure_submodules
 from ...utils.unicode_safe import get_safe_icon, safe_print
 
 try:
@@ -80,7 +85,7 @@ class FigureGenerator:
         r_only=False,
         enable_content_caching=True,
         manuscript_path=None,
-        install_deps=False,
+        install_deps=True,
     ):
         """Initialize the figure generator.
 
@@ -91,7 +96,9 @@ class FigureGenerator:
             r_only: Only process R files if True
             enable_content_caching: Enable content-based caching to avoid unnecessary rebuilds
             manuscript_path: Path to manuscript directory (for caching, defaults to current directory)
-            install_deps: Install missing dependencies declared by the manuscript before running scripts
+            install_deps: Run Python figure scripts in a per-manuscript environment holding the
+                declared dependencies. When False, scripts use the running interpreter and a
+                missing declared package stops generation.
         """
         # Initialize path management
         try:
@@ -115,6 +122,8 @@ class FigureGenerator:
         self.r_only = r_only
         self.manuscript_dir = Path(manuscript_path).resolve() if manuscript_path else self.figures_dir.parent
         self.install_deps = install_deps
+        self._script_python: Optional[Path] = None
+        self._submodules_checked = False
 
         # Create directories if they don't exist
         self.figures_dir.mkdir(parents=True, exist_ok=True)
@@ -547,6 +556,72 @@ startxref
         except Exception as e:
             return False, f"{get_safe_icon('✗', '[FAIL]')} Error reading diagram: {str(e)[:50]}", {}
 
+    def _say(self, message: str, icon: str, fallback: str, style: str, use_rich: bool) -> None:
+        """Print a status line in rich or plain form."""
+        if use_rich:
+            self.console.print(f"{get_safe_icon(icon, fallback)} [{style}]{message}[/{style}]")
+        else:
+            safe_print(f"{get_safe_icon(icon, fallback)} {message}")
+
+    def _prepare_submodules(self, use_rich: bool = True) -> None:
+        """Check out missing git submodules once, before the first script runs.
+
+        Figure scripts often read data from a submodule, which a plain clone
+        leaves empty. A failure here is reported and generation continues; the
+        script that needs the data then reports the missing file.
+        """
+        if self._submodules_checked:
+            return
+        self._submodules_checked = True
+
+        ok, missing, output = ensure_submodules(self.manuscript_dir)
+        if not missing:
+            return
+        if ok:
+            self._say(f"Checked out git submodules: {', '.join(missing)}", "📦", "[GIT]", "cyan", use_rich)
+        else:
+            self._say(
+                f"Could not check out git submodules ({', '.join(missing)}); run "
+                f"'git submodule update --init --recursive'. {output}",
+                "⚠️",
+                "[WARNING]",
+                "yellow",
+                use_rich,
+            )
+
+    def _script_interpreter(self, use_rich: bool = True) -> Path:
+        """Return the interpreter for Python figure scripts, preparing it on first use.
+
+        Manuscripts that declare dependencies get their own environment under
+        .rxiv_cache, which survives upgrades of rxiv-maker. Manuscripts that
+        declare none keep using the running interpreter.
+
+        Raises:
+            FigureDependencyError: When the figure environment cannot be built
+        """
+        if self._script_python is not None:
+            return self._script_python
+
+        self._prepare_submodules(use_rich)
+        python = Path(sys.executable)
+        if self.install_deps:
+            declared = declared_requirements(self.manuscript_dir, self.figures_dir)
+            if declared:
+                python = ensure_figure_environment(
+                    self.manuscript_dir,
+                    declared,
+                    log=lambda message: self._say(message, "📦", "[ENV]", "cyan", use_rich),
+                )
+                self._say(
+                    f"Figure scripts run in the manuscript's figure environment ({len(declared)} declared)",
+                    "✅",
+                    "[OK]",
+                    "green",
+                    use_rich,
+                )
+        self._script_python = python
+        return python
+
     def _ensure_python_dependencies(self, py_files: list[Path], use_rich: bool = True) -> None:
         """Resolve the manuscript's declared figure dependencies before running scripts.
 
@@ -562,7 +637,7 @@ startxref
 
         # Detection only. The command wrapper reports the failure, so the message
         # is not printed here and then repeated by the caller.
-        status = ensure_figure_dependencies(self.manuscript_dir, self.figures_dir, auto_install=self.install_deps)
+        status = ensure_figure_dependencies(self.manuscript_dir, self.figures_dir, auto_install=False)
 
         if status.declared:
             if use_rich:
@@ -582,7 +657,10 @@ startxref
         if not py_files:
             return []
 
-        self._ensure_python_dependencies(py_files, use_rich)
+        # With installation off, scripts run in the current interpreter, so check it
+        # before the cache can skip every script and hide a missing package.
+        if not self.install_deps:
+            self._ensure_python_dependencies(py_files, use_rich)
 
         processed_files = []
 
@@ -604,6 +682,10 @@ startxref
                             safe_print(f"{get_safe_icon('⏭️', '[SKIP]')} Skipping {py_file.name}: No changes detected")
                         continue
 
+            # Prepared on the first script that runs, so a fully cached rebuild
+            # neither builds an environment nor touches the network.
+            python = self._script_interpreter(use_rich)
+
             # Execute the Python script using local Python
             try:
                 if use_rich:
@@ -614,7 +696,7 @@ startxref
                     safe_print(f"{get_safe_icon('🐍', '[PYTHON]')} Executing Python script: {py_file.name}")
 
                 result = subprocess.run(  # nosec # Safe: executing user's own Python scripts
-                    [sys.executable, str(py_file)],
+                    [str(python), str(py_file)],
                     cwd=str(self.figures_dir),
                     capture_output=True,
                     text=True,
@@ -744,6 +826,8 @@ startxref
                         else:
                             safe_print(f"{get_safe_icon('⏭️', '[SKIP]')} Skipping {r_file.name}: No changes detected")
                         continue
+
+            self._prepare_submodules(use_rich)
 
             # Execute the R script using local Rscript
             try:

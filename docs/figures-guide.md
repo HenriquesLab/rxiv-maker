@@ -442,26 +442,44 @@ figures:
     - seaborn>=0.13
 ```
 
-Before running any figure script, `rxiv` checks each declared package against
-the environment running `rxiv`. A missing package stops the build with the
-package names, the declaring file and the install command, rather than a
-traceback from inside a script. The check runs before the figure cache, so a
-rebuild that would skip every script still reports the gap.
+When a manuscript declares dependencies, `rxiv pdf` and `rxiv figures` run its
+Python figure scripts in an environment of their own, in
+`MANUSCRIPT/.rxiv_cache/figure-env/`. The first build creates it and installs
+the declared packages, plus matplotlib, numpy, pandas and seaborn, which figure
+scripts could always use without declaring them. Later builds reuse it. rxiv
+rebuilds it when the declared packages or the Python version change, and
+reinstalls a package that has gone missing. The environment uses `uv` when it
+is installed and Python's own `venv` and `pip` otherwise.
 
-Pass `--install-deps` to install the missing packages into the active
-environment first:
+The environment lives with the manuscript, so upgrading rxiv-maker (including
+`brew upgrade rxiv-maker`) keeps it, and it never changes the Python you run
+`rxiv` with. New manuscripts ignore `.rxiv_cache/` in git, and `rxiv clean`
+removes it, after which the next build recreates the environment. A manuscript
+that declares nothing keeps running its scripts with the interpreter that runs
+`rxiv`.
+
+Version specifiers are honoured: `pandas>=2.0` installs pandas 2.0 or later
+even when the interpreter running `rxiv` has pandas 1.5.
+
+To run the scripts in your own environment instead, pass `--no-install-deps`.
+`rxiv` then checks each declared package against the interpreter running
+`rxiv` and stops with the missing names, the declaring file and the install
+command. That check runs before the figure cache, so a rebuild that would skip
+every script still reports a missing package.
 
 ```bash
-rxiv pdf --install-deps
-rxiv figures --install-deps
+rxiv pdf --no-install-deps
 ```
 
-The flag is off by default; without it `rxiv` reports the missing packages and
-exits. Installation uses the interpreter running `rxiv`, falling back to
-`uv pip` when that interpreter has no `pip` module.
+### Figure Data in Git Submodules
 
-Version specifiers are honoured: `pandas>=2.0` reports an installed pandas
-1.5 as missing.
+Figure scripts often read data kept in a git submodule, and a plain
+`git clone` leaves submodules empty. Before the first figure script runs,
+`rxiv` checks out any submodule of the manuscript's repository that is not
+checked out yet, at the commit the repository pins. A fresh clone therefore
+builds without `--recurse-submodules`. Git runs without prompting, so a
+submodule you cannot access produces a warning naming it, and the script that
+needs its data then reports the missing file.
 
 ### Issue: Memory Issues with Large Figures
 

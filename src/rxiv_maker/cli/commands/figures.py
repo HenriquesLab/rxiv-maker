@@ -15,9 +15,10 @@ console = Console()
 @click.argument("manuscript_path", required=False)
 @click.option("--force", "-f", is_flag=True, help="Force regeneration of all figures")
 @click.option(
-    "--install-deps",
-    is_flag=True,
-    help="Install Python packages declared in the manuscript's requirements.txt before running figure scripts",
+    "--install-deps/--no-install-deps",
+    default=True,
+    help="Run figure scripts in a per-manuscript environment with the packages declared in "
+    "requirements.txt or figures.dependencies (default: on)",
 )
 @click.option("--figures-dir", "-d", help="Custom figures directory path")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")

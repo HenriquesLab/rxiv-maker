@@ -11,9 +11,9 @@ from rxiv_maker.engines.operations.build_manager import BuildManager
 from rxiv_maker.engines.operations.generate_figures import FigureGenerator
 
 
-def test_build_defaults_to_not_installing():
+def test_build_defaults_to_installing():
     signature = inspect.signature(BuildManager.__init__)
-    assert signature.parameters["install_deps"].default is False
+    assert signature.parameters["install_deps"].default is True
 
 
 def test_build_forwards_install_flag_to_generator(tmp_path):
@@ -44,9 +44,9 @@ def test_build_forwards_install_flag_to_generator(tmp_path):
     assert captured["manuscript_path"] == str(tmp_path)
 
 
-def test_install_default_off():
+def test_install_default_on():
     signature = inspect.signature(FigureGenerator.__init__)
-    assert signature.parameters["install_deps"].default is False
+    assert signature.parameters["install_deps"].default is True
 
 
 def test_unset_paths_fall_back_to_figures_parent(tmp_path):
@@ -54,4 +54,4 @@ def test_unset_paths_fall_back_to_figures_parent(tmp_path):
     figures_dir.mkdir()
     generator = FigureGenerator(figures_dir=str(figures_dir), output_dir=str(figures_dir))
     assert generator.manuscript_dir == tmp_path
-    assert generator.install_deps is False
+    assert generator.install_deps is True
