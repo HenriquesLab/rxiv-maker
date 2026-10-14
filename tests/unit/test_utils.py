@@ -162,6 +162,19 @@ class TestUtils:
         result = get_custom_pdf_filename(yaml_metadata_minimal)
         assert result == f"{current_year}__unknown_et_al__rxiv.pdf"
 
+    def test_get_custom_pdf_filename_cleans_latex(self):
+        """Co-first lead authors written with a LaTeX ampersand give a clean filename."""
+        cases = {
+            "Shakespeare \\& Saraiva": "2026__shakespeare_and_saraiva_et_al__rxiv.pdf",
+            "Smith & Jones": "2026__smith_and_jones_et_al__rxiv.pdf",
+            "{van Dijk}": "2026__van_dijk_et_al__rxiv.pdf",
+            "Smith": "2026__smith_et_al__rxiv.pdf",
+            "García-López": "2026__garcia-lopez_et_al__rxiv.pdf",
+        }
+        for author, expected in cases.items():
+            yaml_metadata = {"date": "2026-01-01", "title": {"lead_author": author}}
+            assert get_custom_pdf_filename(yaml_metadata) == expected, author
+
     def test_get_custom_pdf_filename_strips_accents(self):
         """Accented author names are transliterated to ASCII for portable filenames."""
         cases = {
