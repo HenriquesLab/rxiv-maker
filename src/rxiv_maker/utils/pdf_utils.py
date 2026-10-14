@@ -1,6 +1,7 @@
 """PDF handling utilities for Rxiv-Maker."""
 
 import os
+import re
 import shutil
 import unicodedata
 from datetime import datetime
@@ -86,8 +87,12 @@ def get_custom_pdf_filename(yaml_metadata: dict[str, Any]) -> str:
         lead_author = "unknown"
 
     # Clean the lead author name: strip accents (for filesystem portability),
-    # remove spaces, make lowercase.
-    lead_author_clean = _strip_accents(lead_author).lower().replace(" ", "_").replace(".", "")
+    # turn a LaTeX ampersand into "and" and drop other LaTeX escapes and braces
+    # (co-first authors such as "Smith \& Jones"), remove spaces, make lowercase.
+    lead_author_clean = re.sub(r"\\?&", " and ", _strip_accents(lead_author))
+    lead_author_clean = re.sub(r"[\\{}]", "", lead_author_clean)
+    lead_author_clean = re.sub(r"\s+", " ", lead_author_clean).strip()
+    lead_author_clean = lead_author_clean.lower().replace(" ", "_").replace(".", "")
 
     # Generate filename: year__lead_author_et_al__rxiv.pdf
     filename = f"{year}__{lead_author_clean}_et_al__rxiv.pdf"

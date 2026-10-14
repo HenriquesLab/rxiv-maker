@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.25.2] - 2026-10-14
+
+### Fixed
+- The PDF filename handles a LaTeX-escaped ampersand in `lead_author`, as used
+  for co-first authors (`lead_author: 'Shakespeare \& Saraiva'`). The name now
+  becomes `2026__shakespeare_and_saraiva_et_al__rxiv.pdf`, and other LaTeX
+  escapes and braces are dropped; before, the backslash and ampersand reached
+  the filename. In YAML, single-quote such a value: `\&` is an invalid escape
+  inside double quotes, and the title block then falls back to "Unknown".
+
 ## [1.25.1] - 2026-10-02
 
 ### Changed
