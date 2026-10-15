@@ -26,6 +26,7 @@ on:
 permissions:
   contents: write
   id-token: write  # Required for PyPI OIDC trusted publishing
+  actions: write  # Lets the orchestrator start sync-downstream-repos.yml (Docker image update)
 
 jobs:
   release:
