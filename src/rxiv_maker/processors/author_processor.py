@@ -85,7 +85,11 @@ def generate_authors_and_affiliations(yaml_metadata):
             if special_markers:
                 affil_str += "," + ",".join(special_markers)
 
-            authors_latex.append(f"\\author[{affil_str}]{{{name}}}")
+            # line_break_before starts this author on a new line of the title block only;
+            # the corresponding-author block and other uses keep the plain name
+            # \\ (not \newline) keeps both lines centred: \newline adds right-hand fill
+            name_tex = f"\\\\ {name}" if author.get("line_break_before", False) else name
+            authors_latex.append(f"\\author[{affil_str}]{{{name_tex}}}")
         elif isinstance(author, str):
             authors_latex.append(f"\\author[1]{{{author}}}")
 
