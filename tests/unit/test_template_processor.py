@@ -471,3 +471,14 @@ This discusses resource conflicts in the study area.
         assert "\\begin{interests}" not in result
         assert "\\end{interests}" not in result
         assert "resource conflicts in the study area" in result
+
+
+def test_parse_supplementary_sections_records_header_order():
+    from rxiv_maker.processors.template_processor import parse_supplementary_sections
+
+    md = "## Supplementary Notes\nnote\n## Supplementary Tables\ntable\n## Supplementary Figures\nfig\n"
+    sections = parse_supplementary_sections(md)
+    assert sections["order"] == ["notes", "tables", "figures"]
+    assert sections["notes"].strip() == "note"
+    legacy = parse_supplementary_sections("## Supplementary Tables\nt\n## Supplementary Notes\nn\n")
+    assert legacy["order"] == ["tables", "notes"]

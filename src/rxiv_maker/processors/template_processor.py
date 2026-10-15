@@ -39,8 +39,7 @@ def get_template_path():
         template_path = Path(pkg_resources.resource_filename("rxiv_maker", "tex/template.tex"))
         if template_path.exists():
             return template_path
-    except Exception:
-        # Catch all exceptions from pkg_resources
+    except Exception:  # nosec B110 - any pkg_resources failure falls through to the path fallbacks below
         pass
 
     # Fallback to relative path for development/source installations
@@ -211,8 +210,11 @@ def generate_supplementary_tex(output_dir, yaml_metadata=None, manuscript_path=N
             figures_content, is_supplementary=True, citation_style=citation_style
         )
 
-    # Combine sections in proper order
-    supplementary_latex = tables_latex + "\n" + notes_latex + "\n" + figures_latex
+    # Combine sections in the order the markdown gives them (tables, notes, figures when unstated)
+    parts = {"tables": tables_latex, "notes": notes_latex, "figures": figures_latex}
+    order = sections.get("order") or []
+    order = order + [k for k in ("tables", "notes", "figures") if k not in order]
+    supplementary_latex = "\n".join(parts[k] for k in order)
 
     # Set up supplementary figure and table environment and numbering
     supplementary_setup = """% Setup for supplementary figures and tables
@@ -763,9 +765,10 @@ def parse_supplementary_sections(content):
     - ## Supplementary Figures
 
     Returns:
-        dict: Dictionary with 'tables', 'notes', and 'figures' keys
+        dict: Dictionary with 'tables', 'notes', and 'figures' keys, plus 'order',
+        the section keys in the order their headers appear
     """
-    sections = {"tables": "", "notes": "", "figures": ""}
+    sections = {"tables": "", "notes": "", "figures": "", "order": []}
 
     # Split content by lines
     lines = content.split("\n")
@@ -781,18 +784,24 @@ def parse_supplementary_sections(content):
             if current_section and section_content:
                 sections[current_section] = "\n".join(section_content)
             current_section = "tables"
+            if "tables" not in sections["order"]:
+                sections["order"].append("tables")
             section_content = []
         elif stripped.startswith("## Supplementary Notes"):
             # Save previous section if exists
             if current_section and section_content:
                 sections[current_section] = "\n".join(section_content)
             current_section = "notes"
+            if "notes" not in sections["order"]:
+                sections["order"].append("notes")
             section_content = []
         elif stripped.startswith("## Supplementary Figures"):
             # Save previous section if exists
             if current_section and section_content:
                 sections[current_section] = "\n".join(section_content)
             current_section = "figures"
+            if "figures" not in sections["order"]:
+                sections["order"].append("figures")
             section_content = []
         else:
             # Add line to current section

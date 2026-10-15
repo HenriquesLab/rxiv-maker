@@ -58,6 +58,28 @@ class TestAuthorProcessor:
         assert "University A" in result
         assert "University B" in result
 
+    def test_line_break_before_author(self):
+        """line_break_before starts that author on a new title-block line and leaves the name elsewhere."""
+        yaml_metadata = {
+            "authors": [
+                {"name": "John Doe", "affiliations": ["A"]},
+                {
+                    "name": "Jane Smith",
+                    "affiliations": ["A"],
+                    "line_break_before": True,
+                    "corresponding_author": True,
+                    "email": "jane@test.com",
+                },
+            ],
+            "affiliations": [{"shortname": "A", "full_name": "University A"}],
+        }
+        authors = generate_authors_and_affiliations(yaml_metadata)
+        assert "{John Doe}" in authors
+        assert "{\\\\ Jane Smith}" in authors
+        corresponding = generate_corresponding_authors(yaml_metadata)
+        assert "J. Smith" in corresponding
+        assert "\\\\ " not in corresponding
+
     def test_corresponding_authors(self):
         """Test corresponding author generation."""
         yaml_metadata = {

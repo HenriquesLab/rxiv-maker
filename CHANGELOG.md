@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.25.3] - 2026-10-15
+
+### Added
+- An author in `00_CONFIG.yml` can set `line_break_before: true` to start a new
+  line of the title-block author list before that author. Only the title block
+  changes: the corresponding-author block, the extended author list and other
+  uses of the name are unaffected.
+
+### Changed
+- The supplementary information keeps the order of its `## Supplementary Notes`,
+  `## Supplementary Tables` and `## Supplementary Figures` sections as written in
+  `02_SUPPLEMENTARY_INFO.md`. Before, tables always came first, so notes written
+  first started under the table floats. Manuscripts that list tables first are
+  unchanged.
+
 ## [1.25.2] - 2026-10-14
 
 ### Fixed
