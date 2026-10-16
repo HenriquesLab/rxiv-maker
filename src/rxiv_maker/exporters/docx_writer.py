@@ -870,6 +870,63 @@ class DocxWriter:
             # Add spacing after figure (reduced from 12 to 6 for compactness)
             caption_para.paragraph_format.space_after = Pt(6)
 
+        # Add continued caption if present
+        cont_caption = section.get("continued_caption")
+        if cont_caption:
+            cont_para = doc.add_paragraph()
+            cont_para.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+            cont_para.paragraph_format.space_before = Pt(3)
+
+            hdr = section.get("continued_header") or "(Continued from previous page.)"
+            hdr_run = cont_para.add_run(f"{hdr} ")
+            hdr_run.bold = True
+            hdr_run.font.size = Pt(8)
+
+            from rxiv_maker.exporters.docx_content_processor import DocxContentProcessor
+
+            processor = DocxContentProcessor()
+            caption_runs = processor._parse_inline_formatting(cont_caption, {})
+
+            for run_data in caption_runs:
+                if run_data["type"] == "text":
+                    text = run_data["text"]
+                    run = cont_para.add_run(text)
+                    run.font.size = Pt(8)
+
+                    if run_data.get("bold"):
+                        run.bold = True
+                    if run_data.get("italic"):
+                        run.italic = True
+                    if run_data.get("subscript"):
+                        run.font.subscript = True
+                    if run_data.get("superscript"):
+                        run.font.superscript = True
+                    if run_data.get("code"):
+                        run.font.name = "Courier New"
+                    if run_data.get("xref"):
+                        xref_type = run_data.get("xref_type", "cite")
+                        self._apply_highlight(run, self.get_xref_color(xref_type))
+                    if run_data.get("highlight_yellow"):
+                        self._apply_highlight(run, WD_COLOR_INDEX.YELLOW)
+                elif run_data["type"] == "inline_equation":
+                    latex_content = run_data.get("latex", "")
+                    self._add_inline_equation(cont_para, latex_content)
+                elif run_data["type"] == "inline_comment":
+                    if not self.hide_comments:
+                        comment_text = run_data["text"]
+                        run = cont_para.add_run(f"[Comment: {comment_text}]")
+                        self._apply_highlight(run, WD_COLOR_INDEX.GRAY_25)
+                        run.italic = True
+                        run.font.size = Pt(8)
+                elif run_data["type"] == "citation":
+                    cite_num = run_data["number"]
+                    run = cont_para.add_run(f"[{cite_num}]")
+                    run.bold = True
+                    run.font.size = Pt(8)
+                    self._apply_highlight(run, WD_COLOR_INDEX.YELLOW)
+
+            cont_para.paragraph_format.space_after = Pt(6)
+
     def _add_table(self, doc: Document, section: Dict[str, Any]):
         """Add table to document.
 
