@@ -6,9 +6,11 @@ import pytest
 
 from rxiv_maker.engines.operations.prepare_biorxiv import (
     BioRxivAuthorError,
+    encode_biorxiv_text,
     encode_html_entities,
     format_author_row,
     generate_biorxiv_author_tsv,
+    unescape_latex,
     validate_author_data,
 )
 
@@ -173,6 +175,49 @@ class TestFormatAuthorRow:
         row = format_author_row(author_data, affiliation_map)
         assert row[1] == "Primary University; Secondary Institute"
 
+    def test_latex_escapes_removed_from_institution(self):
+        """LaTeX-escaped affiliations reach the TSV as plain HTML entities.
+
+        Affiliations are written LaTeX-escaped in 00_CONFIG.yml so the PDF renders
+        the literal character. The bioRxiv TSV is plain text, so the backslashes
+        must be gone and the bare ampersand written as the '&amp;' entity.
+        """
+        author_data = {
+            "name": "Ana P. Núñez",
+            "email": "ana@example.com",
+            "affiliations": ["inst1"],
+            "corresponding_author": True,
+        }
+        affiliation_map = {
+            "inst1": {"full_name": "Institute of Infectious Disease \\& Molecular Medicine"},
+        }
+
+        row = format_author_row(author_data, affiliation_map)
+
+        assert row[1] == "Institute of Infectious Disease &amp; Molecular Medicine"
+        assert "\\" not in row[1]
+        assert row[2] == "Ana"
+        assert row[4] == "N&uacute;&ntilde;ez"
+        assert "\\" not in row[4]
+
+    def test_latex_escapes_removed_from_all_text_fields(self):
+        """Every text column is unescaped, not only the institution."""
+        author_data = {
+            "name": "Zoë Meyer",
+            "email": "zoe@example.com",
+            "affiliations": ["inst1"],
+            "corresponding_author": True,
+        }
+        affiliation_map = {
+            "inst1": {"full_name": "R\\&D Unit 100\\% of the time"},
+        }
+
+        row = format_author_row(author_data, affiliation_map)
+
+        assert row[1] == "R&amp;D Unit 100% of the time"
+        for column in row:
+            assert "\\" not in column
+
     def test_inline_affiliation_strings(self):
         """Affiliations absent from the shortname map are used as literal full names.
 
@@ -266,6 +311,32 @@ affiliations:
         assert author_row[6] == "Yes"
         assert author_row[9] == "0000-0001-2345-6789"
 
+    def test_tsv_unescapes_latex_affiliation(self, tmp_path):
+        """End-to-end: an escaped affiliation in 00_CONFIG.yml lands unescaped."""
+        config_path = tmp_path / "00_CONFIG.yml"
+        config_content = """
+authors:
+  - name: "Ana P. Núñez"
+    email: "ana@example.com"
+    affiliations: [inst1]
+    corresponding_author: true
+
+affiliations:
+  - shortname: inst1
+    full_name: 'Institute of Infectious Disease \\& Molecular Medicine'
+"""
+        config_path.write_text(config_content)
+
+        output_path = tmp_path / "biorxiv_authors.tsv"
+        generate_biorxiv_author_tsv(config_path, output_path)
+
+        with open(output_path, newline="", encoding="utf-8") as f:
+            rows = list(csv.reader(f, delimiter="\t"))
+
+        assert rows[1][1] == "Institute of Infectious Disease &amp; Molecular Medicine"
+        assert rows[1][4] == "N&uacute;&ntilde;ez"
+        assert "\\" not in output_path.read_text()
+
     def test_email64_decoding(self, tmp_path):
         """Test that email64 is properly decoded."""
         config_path = tmp_path / "00_CONFIG.yml"
@@ -348,6 +419,28 @@ class TestEncodeHtmlEntities:
         """Test encoding of Nordic characters."""
         assert encode_html_entities("Åbo") == "&Aring;bo"
         assert encode_html_entities("Øyvind") == "&Oslash;yvind"
+
+    def test_latex_escaped_ampersand(self):
+        """A LaTeX-escaped ampersand becomes the '&amp;' entity, never a backslash."""
+        assert encode_biorxiv_text("Institute of Infectious Disease \\& Molecular Medicine") == (
+            "Institute of Infectious Disease &amp; Molecular Medicine"
+        )
+        assert encode_biorxiv_text("100\\% effort") == "100% effort"
+        assert encode_biorxiv_text("A\\_B") == "A_B"
+        assert encode_biorxiv_text("A \\# B \\$ C") == "A # B $ C"
+        assert encode_biorxiv_text("\\{x\\}") == "{x}"
+
+    def test_latex_escapes_removed_before_entity_encoding(self):
+        """Accents and escapes are both handled in one pass."""
+        assert encode_biorxiv_text("Núñez \\& Co") == "N&uacute;&ntilde;ez &amp; Co"
+        assert "\\" not in encode_biorxiv_text("Disease \\& Molecular")
+
+    def test_unescape_latex(self):
+        """LaTeX escapes are undone without touching other characters."""
+        assert unescape_latex("Disease \\& Molecular") == "Disease & Molecular"
+        assert unescape_latex("no escapes") == "no escapes"
+        assert unescape_latex("") == ""
+        assert unescape_latex(None) is None
 
     def test_lithuanian_characters(self):
         """Test encoding of Lithuanian characters using named HTML entities."""
