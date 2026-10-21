@@ -134,6 +134,66 @@ def encode_html_entities(text: str) -> str:
     return "".join(result)
 
 
+# LaTeX escape sequences that appear in manuscript YAML values. Affiliations and
+# names are usually written escaped so the PDF renders the literal character
+# (for example "Disease \\& Molecular"), and the bioRxiv TSV is plain text.
+_LATEX_UNESCAPES = [
+    ("\\textbackslash{}", "\\"),
+    ("\\&", "&"),
+    ("\\%", "%"),
+    ("\\_", "_"),
+    ("\\#", "#"),
+    ("\\$", "$"),
+    ("\\{", "{"),
+    ("\\}", "}"),
+]
+
+
+def unescape_latex(text: str) -> str:
+    r"""Remove LaTeX escaping from a metadata value.
+
+    Args:
+        text: Text that may contain LaTeX escapes
+
+    Returns:
+        Text with the escaping removed
+        (e.g. "Disease \\& Molecular" -> "Disease & Molecular")
+
+    Examples:
+        >>> unescape_latex("Disease \\& Molecular")
+        'Disease & Molecular'
+        >>> unescape_latex("100\\% effort")
+        '100% effort'
+    """
+    if not text:
+        return text
+
+    for escaped, plain in _LATEX_UNESCAPES:
+        text = text.replace(escaped, plain)
+    return text
+
+
+def encode_biorxiv_text(text: str) -> str:
+    r"""Prepare a metadata value for the bioRxiv TSV.
+
+    Removes LaTeX escaping, escapes bare ampersands as "&amp;" (the TSV is
+    HTML-entity encoded, so a literal ampersand must not be written raw), then
+    converts the remaining Unicode characters to HTML entities.
+
+    Args:
+        text: Raw metadata value from the manuscript configuration
+
+    Returns:
+        Text with LaTeX escapes removed and HTML entities applied
+        (e.g. "Disease \\& Molecular" -> "Disease &amp; Molecular",
+        "António" -> "Ant&oacute;nio")
+    """
+    if not text:
+        return text
+
+    return encode_html_entities(unescape_latex(text).replace("&", "&amp;"))
+
+
 class BioRxivAuthorError(Exception):
     """Exception raised for bioRxiv author template generation errors."""
 
@@ -205,16 +265,16 @@ def format_author_row(author_data: dict, affiliation_map: dict) -> list[str]:
             full_name = affiliation
         if full_name:
             resolved_affiliations.append(full_name)
-    institution = encode_html_entities("; ".join(resolved_affiliations))
+    institution = encode_biorxiv_text("; ".join(resolved_affiliations))
 
     # Parse name into components and encode HTML entities for bioRxiv
     name_str = author_data.get("name", "")
     name_parts = parse_author_name(name_str)
 
-    first_name = encode_html_entities(name_parts.get("first", ""))
-    middle_name = encode_html_entities(name_parts.get("middle", ""))
-    last_name = encode_html_entities(name_parts.get("last", ""))
-    suffix = encode_html_entities(name_parts.get("suffix", ""))
+    first_name = encode_biorxiv_text(name_parts.get("first", ""))
+    middle_name = encode_biorxiv_text(name_parts.get("middle", ""))
+    last_name = encode_biorxiv_text(name_parts.get("last", ""))
+    suffix = encode_biorxiv_text(name_parts.get("suffix", ""))
 
     # Corresponding author (any text for Yes, empty string for No)
     corresponding = "Yes" if author_data.get("corresponding_author", False) else ""
