@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.25.4] - 2026-10-21
 
 ### Fixed
-- bioRxiv author TSV no longer copies LaTeX escapes such as `\\&` into institutions and names; a bare ampersand is written as `&amp;`.
+- bioRxiv author TSV no longer copies LaTeX escapes such as `\&` into institutions and names; a bare ampersand is written as `&amp;`.
 
 ## [1.25.3] - 2026-10-15
 
