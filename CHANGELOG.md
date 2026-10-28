@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.25.5] - 2026-10-28
+
+### Changed
+- The page footer no longer carries the `rxiv-maker` mark printed in white.
+  Hidden-text and prompt-injection scanners, now run by some journals and
+  preprint servers, flagged that white-on-white text. The PDF metadata records
+  the generator instead (`Creator: rxiv-maker`).
+
 ## [1.25.4] - 2026-10-21
 
 ### Fixed
